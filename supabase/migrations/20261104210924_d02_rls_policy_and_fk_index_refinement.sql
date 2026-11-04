@@ -13,7 +13,6 @@ create index import_batches_received_by_idx on public.import_batches(received_by
 create index integration_records_financial_record_idx on public.integration_records(financial_record_id);
 create index integration_records_org_idx on public.integration_records(organization_id);
 create index integration_records_org_run_idx on public.integration_records(organization_id, integration_run_id);
-create index integration_records_org_financial_record_idx on public.integration_records(organization_id, financial_record_id);
 create index integration_runs_created_by_idx on public.integration_runs(created_by);
 create index integration_runs_org_source_idx on public.integration_runs(organization_id, data_source_id);
 create index source_artifacts_created_by_idx on public.source_artifacts(created_by);
