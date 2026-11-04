@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   if (orgError || !organization) return NextResponse.json({ error: "organization_create_failed" }, { status: 500 });
 
   const { data: invitation, error: invitationError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: new URL("/auth/callback", request.url).toString(),
+    redirectTo: new URL("/auth/callback?next=/account/password", request.url).toString(),
   });
   if (invitationError || !invitation.user) {
     await admin.from("organizations").delete().eq("id", organization.id);
