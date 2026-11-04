@@ -21,6 +21,12 @@ values
  ('66666666-6666-4666-8666-666666666666','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','operator')
 on conflict do nothing;
 
+insert into storage.objects (bucket_id,name,metadata)
+values
+ ('rsbuild-source-artifacts','55555555-5555-4555-8555-555555555555/imports/sample.csv','{"mimetype":"text/csv"}'),
+ ('rsbuild-source-artifacts','55555555-5555-4555-8555-555555555555/imports/sample-again.csv','{"mimetype":"text/csv"}'),
+ ('rsbuild-source-artifacts','55555555-5555-4555-8555-555555555555/imports/invalid.csv','{"mimetype":"text/csv"}');
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub','dddddddd-dddd-4ddd-8ddd-dddddddddddd',true);
 
