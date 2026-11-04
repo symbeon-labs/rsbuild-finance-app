@@ -44,8 +44,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_record_count" }, { status: 400 });
   }
 
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const fileHash = createHash("sha256").update(bytes).digest("hex");
   const normalized = [];
-  for (const row of incoming) {
+  for (const [rowIndex, row] of incoming.entries()) {
     if (!row || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) ||
         typeof row.description !== "string" || !row.description.trim() ||
         !Number.isFinite(row.amount) || row.amount < 0 ||
@@ -56,7 +58,9 @@ export async function POST(request: Request) {
     if (!Number.isSafeInteger(amountMinor) || amountMinor < 0) {
       return NextResponse.json({ error: "invalid_amount" }, { status: 422 });
     }
-    const keySource = [row.date, row.description.trim().toLocaleLowerCase("pt-BR"), amountMinor, row.direction, row.sourceRecordId ?? ""].join("|");
+    // Conservative idempotency: the same file row is stable across retries,
+    // while two legitimate identical transactions on different rows remain distinct.
+    const keySource = `${fileHash}|${rowIndex}`;
     normalized.push({
       transaction_date: row.date,
       description: row.description.trim().slice(0, 500),
@@ -68,8 +72,6 @@ export async function POST(request: Request) {
     });
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const fileHash = createHash("sha256").update(bytes).digest("hex");
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "statement.csv";
   const storagePath = `${organizationId}/imports/${randomUUID()}-${safeName}`;
 
