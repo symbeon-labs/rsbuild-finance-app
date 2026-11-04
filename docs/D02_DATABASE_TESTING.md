@@ -24,7 +24,6 @@ A suíte `d02_rls.test.sql` verifica:
 - isolamento de objetos no Storage por prefixo de tenant;
 - escrita permitida para operator e negada para viewer;
 - rejeição de inserções cross-tenant;
-- integridade das FKs compostas por organização;
 - autoria derivada de `auth.uid()`, não do payload do cliente;
 - estado inicial de movimentação não pode ser marcado como conciliado pelo cliente;
 - caminho de artefato deve pertencer ao tenant;
