@@ -1,6 +1,6 @@
 # RSBUILD Finance — Arquitetura de Persistência D02
 
-**Versão:** 0.3.0  
+**Versão:** 0.4.0  
 **Status:** D02 implantada em projeto dedicado; homologação funcional pendente.
 
 ## Decisões
