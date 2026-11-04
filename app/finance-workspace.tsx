@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FinancialRecord, formatCurrency, formatDate, parseCsv, parseOfx } from "@/lib/finance";
+import { validateImportFile } from "@/lib/import-validation";
 import { signOut } from "@/app/auth/actions";
 
 type Section = "visao-geral" | "movimentacoes" | "importacoes" | "contas" | "relatorios";
@@ -49,6 +50,16 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const fileError = validateImportFile(file);
+    if (fileError) {
+      setFileName(file.name);
+      setSourceFile(null);
+      setPendingImport([]);
+      setImportErrors([fileError]);
+      setSection("importacoes");
+      event.target.value = "";
+      return;
+    }
     setFileName(file.name);
     setSourceFile(file);
     setNotice("");
@@ -163,7 +174,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
           {section === "importacoes" && <>
             <div className="page-heading"><div><div className="eyebrow">ENTRADA DE DADOS</div><h1>Importações</h1><p>Carregue extratos e revise os registros antes de adicioná-los.</p></div></div>
             <section className="panel import-panel">
-              <div className="upload-zone"><div className="upload-icon">⇧</div><h2>Importar extrato financeiro</h2><p>Selecione um arquivo CSV ou OFX para visualizar os registros.</p><button className="secondary-button" onClick={() => inputRef.current?.click()}>Selecionar arquivo</button><span className="file-hint">CSV ou OFX · Até 10 MB</span></div>
+              <div className="upload-zone"><div className="upload-icon">⇧</div><h2>Importar extrato financeiro</h2><p>Selecione um arquivo CSV ou OFX para visualizar os registros.</p><button className="secondary-button" onClick={() => inputRef.current?.click()}>Selecionar arquivo</button><span className="file-hint">CSV ou OFX · Até 10 MiB</span></div>
               {fileName && <div className="import-file"><span className="file-badge">ARQ</span><div><strong>{fileName}</strong><span>{pendingImport.length} registro(s) reconhecido(s)</span></div></div>}
               {importErrors.length > 0 && <div className="error-list"><strong>Revisar importação</strong>{importErrors.map((error, index) => <p key={index}>{error}</p>)}</div>}
               {pendingImport.length > 0 && <><div className="preview-heading"><div><h2>Prévia dos registros</h2><p>Confira os dados antes de confirmar a importação.</p></div><span>{pendingImport.length} registros</span></div><RecordTable records={pendingImport.slice(0,8)} /><div className="import-actions"><button className="secondary-button" onClick={() => {setPendingImport([]);setFileName("");setSourceFile(null);setImportErrors([]);}}>Cancelar</button><button className="primary-button" onClick={confirmImport} disabled={isSaving}>{isSaving ? "Salvando..." : "Confirmar importação"}</button></div></>}
