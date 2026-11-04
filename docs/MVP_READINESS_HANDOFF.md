@@ -93,8 +93,31 @@ The MVP may be presented as a validated MVP only when all mandatory gates below 
 For each work item, record owner and reviewer; scope and exclusions; dependencies and access; implementation commit / pull request; automated and manual validation evidence; acceptance decision; and unresolved risks.
 
 ## Current status
-**Status: W01 and ENG-01 reproducibility validation passed on the ENG-01 branch; formal acceptance is pending PR review and merge. MVP readiness is not established.**
+**Status: W01 import-integrity tests and ENG-01 reproducibility work are accepted and merged into `main`. The ENG-01 gate is closed. Overall MVP readiness is not established.**
 
-W01 adds a native Node test suite for CSV/OFX parsing, monetary/date validation, source identifiers, and duplicate-preservation behavior. ENG-01 now commits `package-lock.json` (lockfile v3), generated with Node 22.16.0 / npm 10.9.2. The resolved dependency graph includes Next.js 15.5.28, React/React DOM 19.1.7, and PostCSS 8.5.32. CI has been changed from `npm install` to `npm ci`, and the temporary lockfile-bootstrap workflow has been removed.
+### W01 — Import integrity
+W01 provides a native Node test suite covering CSV/OFX parsing, monetary and date validation, source identifiers, and duplicate-preservation behavior. The current suite contains 9 tests. Parser tests preserve supplied FITID provenance and do not claim cross-import idempotency.
 
-Validation evidence on the ENG-01 PR branch: GitHub Actions run 41895819695 completed `npm ci`, `npm audit --audit-level=high`, all 9 tests, typecheck, and production build successfully. The PR is #3; these results are branch/PR evidence and are not yet post-merge evidence. W02 — Persistence and organization boundary remains blocked until ENG-01 is reviewed, merged, and the post-merge CI passes.
+### ENG-01 — Reproducible dependency installation
+ENG-01 is complete and accepted:
+- PR #3 merged into `main`; merge commit: `a33e761568a5b51a658e6baff6d596e061e79912`.
+- `package-lock.json` is committed (lockfileVersion 3; blob SHA: `fbab83b107ace7e4e97f3479ad48a59ac1075f02`).
+- Lockfile generation/runtime baseline: Node 22.16.0 and npm 10.9.2.
+- Resolved versions verified: Next.js 15.5.28, React/React DOM 19.1.7, and PostCSS 8.5.32.
+- CI uses `npm ci`; the temporary lockfile-bootstrap workflow was removed.
+- CI pins Node to `22.16.0` to match the lockfile-generation runtime.
+
+### Validation evidence
+The following GitHub Actions executions completed successfully:
+- PR/branch validation: [run 41895819695](https://github.com/symbeon-labs/rsbuild-finance-app/actions/runs/41895819695).
+- Post-merge validation on `main`: [run 41898162500](https://github.com/symbeon-labs/rsbuild-finance-app/actions/runs/41898162500).
+- Post-pin validation on `main`, commit `068658b04e3f62f7871c381a71c48cbfee5c74d4`: [run 41898819499](https://github.com/symbeon-labs/rsbuild-finance-app/actions/runs/41898819499).
+
+The post-pin run confirms successful completion of `npm ci`, `npm audit --audit-level=high`, all 9 tests, `npm run typecheck`, and `npm run build`. No high/critical audit findings blocked the configured audit gate.
+
+### Acceptance decision and next gate
+**ENG-01: ACCEPTED / CLOSED.** The issue's acceptance criteria are evidenced by the committed lockfile, pinned runtime, PR validation, post-merge validation, and post-pin validation.
+
+**W02 — Persistence and organization boundary is now unblocked for planning and implementation.** This does not mean W02 has started or been accepted. It must define and validate persistence, authentication, organization identity/isolation, provenance, retention, backup, and recovery before operational financial data is treated as safely persisted.
+
+**MVP readiness remains NOT ESTABLISHED.** The application still has session-only imported data, no authentication or organization isolation, no database persistence, and other limitations listed in this handoff. Passing ENG-01 is an engineering reproducibility milestone, not production readiness or MVP completion.
