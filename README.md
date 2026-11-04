@@ -35,3 +35,8 @@ npm run build
 ## Documentação
 
 - [Contrato de integração](docs/INTEGRATION_CONTRACT.md)
+
+## Execution handoff
+
+- [MVP readiness handoff](docs/MVP_READINESS_HANDOFF.md)
+- [RSBUILD product brand assets](docs/BRAND_ASSETS.md)
