@@ -4,18 +4,17 @@ on:
   push:
     branches:
       - chore/eng-01-lockfile-npm-ci
-  pull_request:
-    branches:
-      - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-lockfile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: chore/eng-01-lockfile-npm-ci
       - uses: actions/setup-node@v5
         with:
           node-version: 22.16.0
@@ -27,9 +26,11 @@ jobs:
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Validate lockfile metadata
         run: node -e "const p=require('./package-lock.json'); if(p.lockfileVersion!==3) process.exit(1); if(p.packages[''].dependencies.next!=='15.5.28') process.exit(2); if(p.packages['node_modules/postcss']?.version!=='8.5.32') process.exit(3); console.log('lockfileVersion',p.lockfileVersion)"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: eng-01-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 3
+      - name: Commit lockfile to ENG-01 branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git diff --cached --quiet && echo "Lockfile unchanged" && exit 0
+          git commit -m "chore(eng-01): commit reproducible npm lockfile"
+          git push origin HEAD:chore/eng-01-lockfile-npm-ci
