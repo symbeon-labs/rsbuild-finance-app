@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - chore/eng-01-lockfile-npm-ci
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
