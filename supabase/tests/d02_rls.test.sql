@@ -52,7 +52,7 @@ select is(
   'operator sees only source objects under their tenant prefix'
 );
 select lives_ok(
-  $$query$query$insert into public.financial_records
+  $insert into public.financial_records
     (organization_id,account_id,transaction_date,description,amount_minor,direction,created_by,status)
     values ('11111111-1111-4111-8111-111111111111',
             '33333333-3333-4333-8333-333333333333',
