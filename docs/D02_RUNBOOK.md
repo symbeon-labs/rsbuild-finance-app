@@ -47,7 +47,7 @@ Controles:
 - Usuário convidado pelo Supabase Auth e associado como `owner`.
 - Falha de convite ou membership executa rollback compensatório da organização/usuário recém-criado.
 
-Convites para e-mails já existentes são recusados por segurança; a associação de usuários existentes deve ser feita por um fluxo administrativo separado, não por convite duplicado.
+Se o e-mail já pertencer a uma conta existente, o endpoint localiza a conta e cria o vínculo owner sem reenviar convite. Em rollback, contas preexistentes nunca são excluídas; somente usuários recém-criados pelo próprio fluxo podem ser removidos.
 
 ## Importação
 
