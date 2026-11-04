@@ -52,12 +52,12 @@ select is(
   'operator sees only source objects under their tenant prefix'
 );
 select lives_ok(
-  $insert into public.financial_records
+  $sql$insert into public.financial_records
     (organization_id,account_id,transaction_date,description,amount_minor,direction,created_by,status)
     values ('11111111-1111-4111-8111-111111111111',
             '33333333-3333-4333-8333-333333333333',
             '2026-11-04','Test record',1250,'entrada',
-            'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','conciliado')$$,
+            'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','conciliado')$sql$,
   'operator can insert a financial record in their tenant'
 );
 select is(
