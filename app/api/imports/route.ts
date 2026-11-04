@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const MAX_BYTES = 10 * 1024 * 1024;
 
 type IncomingRecord = {
   date: string;
@@ -28,11 +28,11 @@ export async function POST(request: Request) {
   if (!/^[0-9a-f-]{36}$/i.test(organizationId) || !(file instanceof File)) {
     return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
   }
-  if (!["text/csv", "application/vnd.ms-excel", "application/x-ofx", "application/octet-stream"].includes(file.type)
-      && !/\.(csv|ofx)$/i.test(file.name)) {
-    return NextResponse.json({ error: "unsupported_file_type" }, { status: 415 });
+  const fileError = validateImportFile(file);
+  if (fileError) {
+    const status = file.size > MAX_IMPORT_FILE_BYTES ? 413 : 415;
+    return NextResponse.json({ error: fileError }, { status });
   }
-  if (file.size < 1 || file.size > MAX_BYTES) return NextResponse.json({ error: "file_size_limit" }, { status: 413 });
 
   let incoming: IncomingRecord[];
   try {
