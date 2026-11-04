@@ -50,11 +50,24 @@ export async function POST(request: Request) {
   const { data: invitation, error: invitationError } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: new URL("/auth/callback?next=/account/password", request.url).toString(),
   });
-  if (invitationError || !invitation.user) {
-    await admin.from("organizations").delete().eq("id", organization.id);
-    return NextResponse.json({ error: "invitation_failed_or_user_already_exists" }, { status: 422 });
+
+  let invitedUserId = invitation?.user?.id ?? null;
+  let createdUser = Boolean(invitedUserId);
+
+  if (invitationError || !invitedUserId) {
+    let page = 1;
+    while (!invitedUserId) {
+      const { data: usersPage, error: usersError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (usersError || !usersPage.users.length) break;
+      invitedUserId = usersPage.users.find((candidate) => candidate.email?.toLowerCase() === email)?.id ?? null;
+      if (usersPage.users.length < 1000) break;
+      page += 1;
+    }
+    if (!invitedUserId) {
+      await admin.from("organizations").delete().eq("id", organization.id);
+      return NextResponse.json({ error: "invitation_failed" }, { status: 422 });
+    }
   }
-  const invitedUserId = invitation.user.id;
 
   const { error: membershipError } = await admin.from("organization_memberships").insert({
     organization_id: organization.id,
@@ -63,7 +76,7 @@ export async function POST(request: Request) {
   });
 
   if (membershipError) {
-    await admin.auth.admin.deleteUser(invitedUserId);
+    if (createdUser) await admin.auth.admin.deleteUser(invitedUserId);
     await admin.from("organizations").delete().eq("id", organization.id);
     return NextResponse.json({ error: "membership_provision_failed" }, { status: 500 });
   }
@@ -79,7 +92,7 @@ export async function POST(request: Request) {
   if (auditError) {
     await admin.from("organization_memberships").delete()
       .eq("organization_id", organization.id).eq("user_id", invitedUserId);
-    await admin.auth.admin.deleteUser(invitedUserId);
+    if (createdUser) await admin.auth.admin.deleteUser(invitedUserId);
     await admin.from("organizations").delete().eq("id", organization.id);
     return NextResponse.json({ error: "provisioning_audit_failed" }, { status: 500 });
   }
