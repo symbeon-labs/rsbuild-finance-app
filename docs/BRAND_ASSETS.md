@@ -1,7 +1,7 @@
 # RSBUILD — Product Brand Assets
 
 ## Source of truth
-The approved source is the RSBUILD Visual Identity Guide supplied for this project. This repository contains product-facing derivatives and implementation tokens only; the guide remains the authority for logo selection and visual usage.
+The approved source is the RSBUILD Visual Identity Guide supplied for this project. The guide remains authoritative for logo selection and visual usage. The portable production export is maintained separately and must be copied from its verified package when binary assets are installed.
 
 ## Identity tokens
 | Token | Value | Intended use |
@@ -12,10 +12,13 @@ The approved source is the RSBUILD Visual Identity Guide supplied for this proje
 | Terracotta | #B5583C | Signature accents, key icons, selected calls to action |
 | Terracotta light | #C2694A | Subtle accent variation |
 
+Canonical code tokens live in `public/brand/tokens.css` and `public/brand/tokens.json`.
+
 ## Typography
 - Libre Franklin Bold / SemiBold: titles, headings, emphasis.
 - Libre Franklin Regular: body copy, paragraphs, captions.
 - For Office / Google Slides presentations, the guide specifies Arial.
+- Font files are not embedded in the supplied PDF; use a properly licensed distribution.
 
 ## Graphic language
 - Fine lines connecting nodes, with low opacity.
@@ -28,14 +31,18 @@ The approved source is the RSBUILD Visual Identity Guide supplied for this proje
 ## Logo handling
 Use the primary logo as the default. The secondary logo is reserved for materials at or above the guide's stated minimum size (300 × 150 px). Use the correct light/dark application from the guide.
 
-Do not redraw, recolor, distort, crop, or recreate the official logo from a screenshot. A clean official vector or transparent raster master should be added to public/brand/ when supplied as an export from the brand source.
+Do not redraw, recolor, distort, crop, or recreate the official logo from a screenshot. Use the transparent/vector lockups from the verified RSBUILD production kit.
 
 ## Repository assets
-- public/brand/rsbuild-network-pattern.svg: lightweight decorative pattern derived from the approved nodes-and-connections language. It is not a logo.
-- public/brand/README.md: asset inventory and usage guidance.
+- `public/brand/rsbuild-network-pattern.svg`: decorative pattern derived from the approved nodes-and-connections language. It is not a logo.
+- `public/brand/tokens.css` and `public/brand/tokens.json`: canonical product-facing tokens.
+- `public/brand/kit/README.md`: instructions for consuming and exporting the kit.
+- The full export package contains the official logo variants and individual icon exports; these binary assets are not yet copied into this repository.
 
 ## Accessibility and product usage
 - Maintain readable contrast for text and controls.
 - Terracotta is an accent, not the only indicator of state.
 - Decorative pattern must be hidden from assistive technology.
 - Keep visual assets lightweight and avoid placing busy patterns behind dense financial tables.
+
+See [Reusable Brand Kit and Product Export](BRAND_KIT_EXPORT.md) for the cross-product reuse protocol.
