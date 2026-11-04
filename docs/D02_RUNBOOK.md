@@ -56,6 +56,8 @@ Se o e-mail já pertencer a uma conta existente, o endpoint localiza a conta e c
 3. A API calcula SHA-256 do arquivo e normaliza valores para centavos inteiros.
 4. A RPC `commit_financial_import` valida membership/role, payload e path; cria lote, artefato, registros e evento de auditoria em uma transação.
 5. Índice único por organização + chave de deduplicação torna reenvios idempotentes.
+   - A chave atual usa hash do arquivo original + posição da linha, evitando colapsar duas transações legítimas com mesmo dia/descrição/valor.
+   - Isso garante retry idempotente do mesmo arquivo; não afirma deduplicação semântica entre extratos diferentes. `sourceRecordId` permanece como proveniência.
 6. Se a RPC falhar, a API remove o objeto recém-enviado; a política DELETE permite isso somente ao operador do tenant dono do prefixo.
 
 ## Aceitação antes de produção
