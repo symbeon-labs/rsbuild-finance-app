@@ -1,0 +1,33 @@
+name: ENG-01 Lockfile Bootstrap
+
+on:
+  push:
+    branches:
+      - chore/eng-01-lockfile-npm-ci
+
+permissions:
+  contents: read
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - name: Record toolchain
+        run: |
+          node --version
+          npm --version
+      - name: Generate lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Validate lockfile metadata
+        run: node -e "const p=require('./package-lock.json'); if(p.lockfileVersion!==3) process.exit(1); if(p.packages[''].dependencies.next!=='15.5.28') process.exit(2); if(p.packages[''].overrides?.postcss!=='8.5.32') process.exit(3); console.log('lockfileVersion',p.lockfileVersion)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eng-01-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 3
