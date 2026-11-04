@@ -67,17 +67,7 @@ create or replace function private.enforce_import_batch_initial_state()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
-as $
-begin
-  new.status := 'received';
-  new.record_count := 0;
-  new.accepted_count := 0;
-  new.rejected_count := 0;
-  new.committed_at := null;
-  new.received_at := now();
-  return new;
-end;
-$;
+as $batch_state$1$batch_state$;
 
 create trigger import_batches_initial_state_guard
 before insert on public.import_batches
@@ -89,12 +79,7 @@ create or replace function private.enforce_financial_record_initial_state()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
-as $
-begin
-  new.status := 'pendente';
-  return new;
-end;
-$;
+as $record_state$1$record_state$;
 
 create trigger financial_records_initial_state_guard
 before insert on public.financial_records
