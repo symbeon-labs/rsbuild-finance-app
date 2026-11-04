@@ -1,7 +1,9 @@
 # RSBUILD — Product Brand Assets
 
-## Source of truth
-The approved source is the RSBUILD Visual Identity Guide supplied for this project. The guide remains authoritative for logo selection and visual usage. The portable production export is maintained separately and must be copied from its verified package when binary assets are installed.
+## Scope and source of truth
+These assets implement the RSBUILD visual identity in RSBUILD Finance. The approved RSBUILD Visual Identity Guide supplied for this project remains authoritative for logo selection and visual usage. The production export must be copied only from its verified source package.
+
+This is a product-specific brand layer. It is not a neutral Symbeon design system and does not authorize applying RSBUILD identity to unrelated Symbeon products.
 
 ## Identity tokens
 | Token | Value | Intended use |
@@ -12,7 +14,7 @@ The approved source is the RSBUILD Visual Identity Guide supplied for this proje
 | Terracotta | #B5583C | Signature accents, key icons, selected calls to action |
 | Terracotta light | #C2694A | Subtle accent variation |
 
-Canonical code tokens live in `public/brand/tokens.css` and `public/brand/tokens.json`.
+Canonical RSBUILD product tokens live in `public/brand/tokens.css` and `public/brand/tokens.json`.
 
 ## Typography
 - Libre Franklin Bold / SemiBold: titles, headings, emphasis.
@@ -35,8 +37,8 @@ Do not redraw, recolor, distort, crop, or recreate the official logo from a scre
 
 ## Repository assets
 - `public/brand/rsbuild-network-pattern.svg`: decorative pattern derived from the approved nodes-and-connections language. It is not a logo.
-- `public/brand/tokens.css` and `public/brand/tokens.json`: canonical product-facing tokens.
-- `public/brand/kit/README.md`: instructions for consuming and exporting the kit.
+- `public/brand/tokens.css` and `public/brand/tokens.json`: RSBUILD-specific product tokens.
+- `public/brand/kit/README.md`: instructions for the RSBUILD identity layer.
 - The full export package contains the official logo variants and individual icon exports; these binary assets are not yet copied into this repository.
 
 ## Accessibility and product usage
@@ -45,4 +47,7 @@ Do not redraw, recolor, distort, crop, or recreate the official logo from a scre
 - Decorative pattern must be hidden from assistive technology.
 - Keep visual assets lightweight and avoid placing busy patterns behind dense financial tables.
 
-See [Reusable Brand Kit and Product Export](BRAND_KIT_EXPORT.md) for the cross-product reuse protocol.
+## Reuse boundary
+Reuse in another product is permitted only for products or deliverables developed by Symbeon within the RSBUILD commercial scope, subject to contract, statement of work, and brand approval. Other Symbeon products must use their own identity themes.
+
+See [Identity Layer, Reuse, and Product Export](BRAND_KIT_EXPORT.md) for the governance and separation rules.
