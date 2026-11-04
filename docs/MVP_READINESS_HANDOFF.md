@@ -73,7 +73,7 @@ Known limitations:
 
 ## MVP exit gate
 The MVP may be presented as a validated MVP only when all mandatory gates below are evidenced:
-1. npm ci completes reproducibly.
+1. A committed `package-lock.json` exists and `npm ci` completes reproducibly.
 2. Typecheck and production build pass.
 3. Automated tests cover import parsing, monetary/date validation, and financial totals.
 4. Persistence and organization isolation are implemented and tested, or the presentation is explicitly labelled as a non-production prototype.
@@ -93,6 +93,6 @@ The MVP may be presented as a validated MVP only when all mandatory gates below 
 For each work item, record owner and reviewer; scope and exclusions; dependencies and access; implementation commit / pull request; automated and manual validation evidence; acceptance decision; and unresolved risks.
 
 ## Current status
-**Status: W01 implementation added; acceptance is pending CI execution. MVP readiness is not established.**
+**Status: W01 tests pass on the previous dependency set; acceptance remains pending security revalidation and a committed lockfile. MVP readiness is not established.**
 
-W01 adds a native Node test suite for CSV/OFX parsing, monetary/date validation, source identifiers, and duplicate-preservation behavior. The CI workflow runs `npm test`, typecheck, and production build. Passing CI is required before W01 is accepted. W02 — Persistence and organization boundary follows only after W01 is accepted and before any use with real company financial data.
+W01 adds a native Node test suite for CSV/OFX parsing, monetary/date validation, source identifiers, and duplicate-preservation behavior. The previous CI run passed all 9 tests, typecheck, and production build. The dependency set was subsequently upgraded to Next.js 15.5.28 and React/React DOM 19.1.7; CI now runs `npm audit --audit-level=high` before tests. A committed `package-lock.json` is still required before `npm ci` can replace `npm install` and the reproducibility gate can be accepted. W02 — Persistence and organization boundary follows only after W01 is accepted and before any use with real company financial data.
