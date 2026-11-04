@@ -11,9 +11,9 @@
     "test": "tsc -p tsconfig.test.json && node --test .test-dist/tests/*.test.js"
   },
   "dependencies": {
-    "next": "15.5.7",
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "next": "15.5.28",
+    "react": "19.1.7",
+    "react-dom": "19.1.7"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
