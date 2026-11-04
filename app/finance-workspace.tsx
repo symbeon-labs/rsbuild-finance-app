@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FinancialRecord, formatCurrency, formatDate, parseCsv, parseOfx } from "@/lib/finance";
+import { signOut } from "@/app/auth/actions";
 
 type Section = "visao-geral" | "movimentacoes" | "importacoes" | "contas" | "relatorios";
 
@@ -118,7 +119,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
       <section className="main-area">
         <header className="topbar">
           <div className="breadcrumb">RSBUILD <span>/</span> {navigation.find((item) => item.id === section)?.label}</div>
-          <div className="topbar-right"><span className="period-label">PERÍODO</span><select value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Período"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Últimos 12 meses</option></select><div className="avatar">R</div></div>
+          <div className="topbar-right"><span className="period-label">PERÍODO</span><select value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Período"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Últimos 12 meses</option></select><form action={signOut}><button className="secondary-button" type="submit">Sair</button></form><div className="avatar">R</div></div>
         </header>
 
         <div className="content">
