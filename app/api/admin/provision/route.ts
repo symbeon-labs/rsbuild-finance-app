@@ -68,14 +68,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "membership_provision_failed" }, { status: 500 });
   }
 
-  await admin.from("audit_events").insert({
+  const { error: auditError } = await admin.from("audit_events").insert({
     organization_id: organization.id,
     actor_id: user.id,
     event_type: "organization_provisioned",
     entity_type: "organization",
     entity_id: organization.id,
-    metadata: { invited_email: email },
+    metadata: { invited_email: email, platform_admin_user_id: user.id, platform_admin_email: user.email },
   });
+  if (auditError) {
+    await admin.from("organization_memberships").delete()
+      .eq("organization_id", organization.id).eq("user_id", invitedUserId);
+    await admin.auth.admin.deleteUser(invitedUserId);
+    await admin.from("organizations").delete().eq("id", organization.id);
+    return NextResponse.json({ error: "provisioning_audit_failed" }, { status: 500 });
+  }
 
   return NextResponse.json({ organizationId: organization.id, invitedEmail: email }, {
     status: 201, headers: { "Cache-Control": "private, no-store" },
