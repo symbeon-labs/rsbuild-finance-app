@@ -16,7 +16,7 @@ Known limitations:
 - No live bank, Omie, acquirer, or point-of-sale integration.
 - No reconciliation workflow or auditable human decision trail.
 - Duplicate detection and idempotent import are not yet implemented.
-- CSV and OFX parsers require automated tests and representative, anonymized fixtures.
+- CSV and OFX parser validation is being closed through the W01 automated test suite; persistence and organization isolation remain outside this workstream.
 - No evidence currently establishes production readiness.
 
 ## Execution workstreams
