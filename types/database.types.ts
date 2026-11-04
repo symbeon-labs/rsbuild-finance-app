@@ -718,7 +718,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      commit_financial_import: {
+        Args: {
+          p_organization_id: string
+          p_original_filename: string
+          p_file_sha256: string
+          p_file_size_bytes: number
+          p_storage_path: string
+          p_records: Json
+        }
+        Returns: {
+          batch_id: string
+          inserted_count: number
+          duplicate_count: number
+        }[]
+      }
     }
     Enums: {
       rsbuild_attestation_status: "pending" | "attested" | "failed"
