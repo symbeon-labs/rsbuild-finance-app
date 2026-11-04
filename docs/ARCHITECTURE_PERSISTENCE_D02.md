@@ -1,6 +1,6 @@
 # RSBUILD Finance — Arquitetura de Persistência D02
 
-**Versão:** 0.2.0  
+**Versão:** 0.3.0  
 **Status:** D02 implantada em projeto dedicado; homologação funcional pendente.
 
 ## Decisões
@@ -48,14 +48,18 @@ O commit do lote deve ser transacional e idempotente. A chave de deduplicação 
 - Bucket `rsbuild-source-artifacts` criado como privado, limite 10 MiB.
 - Migration de hardening revogou execução RPC de `public.rls_auto_enable()` para PUBLIC, anon e authenticated; event trigger permanece habilitado.
 - Migration complementar separou políticas de escrita por comando e adicionou índices de FK.
+- Migration de hardening D02 aplicada: atribuição de ator derivada de `auth.uid()`, estado inicial de lotes e registros controlado pelo banco, referências de Storage restritas ao bucket e prefixo do tenant, escrita e mutação de workflow limitadas a fluxos confiáveis.
 - Security Advisor: zero findings no último resultado consultado.
 - Performance Advisor: um finding de FK sem índice foi corrigido com índice composto. Índices não utilizados permanecem como observações esperadas antes de existir workload.
 - Tipos TypeScript foram gerados a partir do schema remoto.
+- Histórico remoto sincronizado com quatro migrations D02 versionadas, incluindo hardening RPC, baseline, refinamento de RLS/índices e índice FK composto.
+- Migration `d02_security_hardening` aplicada em 2026-11-04; Security Advisor reexecutado após a aplicação e retornou zero findings.
+- Performance Advisor reporta 24 observações `unused_index` (nível INFO), esperadas antes da carga de workload; não há finding ativo de FK sem índice.
 
 ## Pendências antes da homologação
 - Configurar Auth, URLs de callback e SMTP.
 - Implementar provisionamento administrativo de tenants/memberships.
 - Implementar cliente SSR e camada de repositórios.
 - Executar testes de isolamento com dois tenants e validar Storage com usuários autenticados.
-- Sincronizar o histórico de migrations versionado com as migrations remotas.
-- Executar novamente os Advisors e registrar evidências de homologação.
+- Executar pgTAP no workflow de banco e registrar o resultado.
+- Executar testes de isolamento com dois tenants e validar Storage com usuários autenticados.
