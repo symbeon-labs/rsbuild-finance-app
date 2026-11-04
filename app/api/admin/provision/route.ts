@@ -47,21 +47,14 @@ export async function POST(request: Request) {
     .single();
   if (orgError || !organization) return NextResponse.json({ error: "organization_create_failed" }, { status: 500 });
 
-  let invitedUserId: string | null = null;
   const { data: invitation, error: invitationError } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: new URL("/auth/callback", request.url).toString(),
   });
-
-  if (invitationError) {
-    const { data: existing } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    invitedUserId = existing.users.find((candidate) => candidate.email?.toLowerCase() === email)?.id ?? null;
-    if (!invitedUserId) {
-      await admin.from("organizations").delete().eq("id", organization.id);
-      return NextResponse.json({ error: "invitation_failed" }, { status: 422 });
-    }
-  } else {
-    invitedUserId = invitation.user.id;
+  if (invitationError || !invitation.user) {
+    await admin.from("organizations").delete().eq("id", organization.id);
+    return NextResponse.json({ error: "invitation_failed_or_user_already_exists" }, { status: 422 });
   }
+  const invitedUserId = invitation.user.id;
 
   const { error: membershipError } = await admin.from("organization_memberships").insert({
     organization_id: organization.id,
