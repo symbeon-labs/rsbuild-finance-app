@@ -1,6 +1,6 @@
 # Plano de Implementação — RSBUILD Finance
 
-**Versão:** 0.4  
+**Versão:** 0.5  
 **Status:** D02 implantada no Supabase dedicado; integração da aplicação e homologação pendentes.
 
 ## Objetivo
@@ -12,7 +12,11 @@ Evoluir a aplicação de uma sessão de importação transitória para uma plata
 - Persistência gerenciada D02 implantada no Supabase em `us-east-2`.
 - Histórico de migrations remoto sincronizado com a sequência versionada.
 - Hardening de atribuição de ator, estado inicial e referências tenant-scoped aplicado.
-- Autenticação SSR, provisionamento, repositórios e importação persistida ainda pendentes.
+- Auth SSR implementado com cookies, login, callback PKCE e logout.
+- Provisionamento administrativo implementado por convite, allowlist de e-mails e chave secreta server-only.
+- Endpoints tenant-scoped para memberships e leitura de movimentações.
+- Upload privado e RPC transacional para importações, com hash SHA-256 e deduplicação por organização.
+- Homologação funcional remota ainda pendente: exige configuração de ambiente, convite do primeiro administrador e testes com dois usuários reais.
 - ERP e contas de origem dependem de confirmação de escopo e acesso.
 
 ## D02 — Persistência gerenciada
@@ -24,11 +28,11 @@ Evoluir a aplicação de uma sessão de importação transitória para uma plata
 - Provisionamento de tenant e membership inicial reservado a fluxo administrativo confiável.
 
 ## Próximas etapas
-1. Aguardar e corrigir eventuais falhas dos workflows CI e Database tests (pgTAP).
-2. Configurar Supabase Auth, URLs de callback e SMTP.
-3. Implementar fluxo administrativo para criar organização e membership inicial.
-4. Implementar cliente Supabase SSR e repositórios server-side.
-5. Persistir importações com idempotência, transação e upload privado.
+1. Sincronizar package-lock e executar CI + pgTAP para a nova camada D02.
+2. Configurar variáveis server-side e URLs de callback do Supabase Auth; validar SMTP de convites.
+3. Convidar o primeiro administrador por endpoint protegido e provisionar organização.
+4. Homologar leitura e persistência com sessão real.
+5. Homologar idempotência, upload privado e auditoria.
 6. Testar dois tenants independentes, incluindo negação cruzada no banco e Storage.
 7. Integrar UEAP por contrato versionado e fluxo assíncrono.
 8. D03: indicadores consultados do banco, filtros reais e precisão financeira.
