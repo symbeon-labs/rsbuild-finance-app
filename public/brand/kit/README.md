@@ -1,18 +1,36 @@
 # RSBUILD Brand Kit
 
-This folder is the product-ready, code-facing layer of the RSBUILD identity system.
+This directory documents the RSBUILD-specific, code-facing identity layer currently used by RSBUILD Finance.
 
-## Layers
-- `../tokens.css` and `../tokens.json`: reusable design tokens.
-- `../rsbuild-network-pattern.svg`: decorative background pattern.
-- `../README.md`: asset inventory and usage rules.
-- The exported production kit contains official primary/secondary logo lockups and individual icon exports. Add those files only from the verified export package; never recreate or approximate the official logo.
+It is not a neutral Symbeon design system, a universal UI foundation, or a default theme for other Symbeon products.
 
-## Reuse in another product
-1. Copy this brand-kit layer as the product's brand foundation.
-2. Copy token files and only the assets the product actually uses.
-3. Keep product-specific components and layouts outside this folder.
-4. Record the source guide, kit version, variants, and exclusions.
-5. Do not modify the source logo or silently change canonical tokens.
+## Current layers
 
-A product adapter may map these tokens into Tailwind, CSS Modules, or another theme system without changing canonical values.
+- `../tokens.css` and `../tokens.json`: canonical RSBUILD-specific visual tokens.
+- `../rsbuild-network-pattern.svg`: decorative RSBUILD background pattern.
+- `../README.md`: asset inventory, provenance, and usage boundaries.
+- The verified RSBUILD production export contains official primary/secondary logo lockups and individual icon exports. Add those files only from that source package; never recreate or approximate the official logo.
+
+## Permitted reuse
+
+Reuse is limited to products and deliverables developed by Symbeon within the RSBUILD commercial relationship. Each use remains subject to the applicable contract, statement of work, RSBUILD brand approval, and usage permissions.
+
+Do not copy or apply this identity layer by default to independent Symbeon products, including 3L0, ICIE, LASTRO, or other products outside the RSBUILD scope. Those products must select their own identity and theme.
+
+## Future extraction
+
+If a second in-scope RSBUILD product needs the same identity layer, the approved assets and tokens may be extracted into a separately versioned and configurable RSBUILD package.
+
+That package, its distribution pipeline, and cross-product installation workflow are future work; they are not implemented by this repository today.
+
+## Product adapter
+
+A product-specific adapter may map approved RSBUILD tokens into Tailwind, CSS Modules, or another theme system without changing canonical values. Keep product-specific components, layouts, workflows, and behavior outside this brand-assets directory.
+
+Record the source guide, package or kit version (when one exists), exact assets consumed, local overrides, provenance, and approval scope for each consuming product.
+
+## Ownership and governance
+
+Reusing RSBUILD brand assets does not automatically transfer ownership of repositories, product implementation, generic engineering tools, neutral design primitives, reusable adapters, or Symbeon methods. Ownership, licensing, permitted use, and maintenance obligations are governed by the signed contract and applicable statement of work.
+
+Never modify the source logo or silently change canonical RSBUILD tokens.
