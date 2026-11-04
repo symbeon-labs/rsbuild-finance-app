@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(4);
+select plan(5);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -55,7 +55,19 @@ select is(
 );
 
 select throws_ok(
- $$select * from public.commit_financial_import(
+ $select * from public.commit_financial_import(
+  '55555555-5555-4555-8555-555555555555',
+  'invalid.csv',repeat('d',64),10,
+  '55555555-5555-4555-8555-555555555555/imports/invalid.csv',
+  '[{"transaction_date":"not-a-date","description":"Bad row","amount_minor":"100","direction":"entrada","category":"Teste","deduplication_key":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","raw_payload":{}}]'::jsonb
+ )$,
+ '22023',
+ null,
+ 'malformed import records are rejected before any batch is committed'
+);
+
+select throws_ok(
+ $select * from public.commit_financial_import(
   '66666666-6666-4666-8666-666666666666',
   'foreign.csv',repeat('c',64),10,
   '66666666-6666-4666-8666-666666666666/imports/foreign.csv',
