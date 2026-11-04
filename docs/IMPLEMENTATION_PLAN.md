@@ -1,6 +1,6 @@
 # Plano de Implementação — RSBUILD Finance
 
-**Versão:** 0.3  
+**Versão:** 0.4  
 **Status:** D02 implantada no Supabase dedicado; integração da aplicação e homologação pendentes.
 
 ## Objetivo
@@ -9,7 +9,9 @@ Evoluir a aplicação de uma sessão de importação transitória para uma plata
 ## Estado identificado
 - Next.js App Router e interface responsiva.
 - Importação e pré-visualização CSV/OFX no cliente.
-- Persistência gerenciada D02 implantada no Supabase.
+- Persistência gerenciada D02 implantada no Supabase em `us-east-2`.
+- Histórico de migrations remoto sincronizado com a sequência versionada.
+- Hardening de atribuição de ator, estado inicial e referências tenant-scoped aplicado.
 - Autenticação SSR, provisionamento, repositórios e importação persistida ainda pendentes.
 - ERP e contas de origem dependem de confirmação de escopo e acesso.
 
@@ -22,17 +24,18 @@ Evoluir a aplicação de uma sessão de importação transitória para uma plata
 - Provisionamento de tenant e membership inicial reservado a fluxo administrativo confiável.
 
 ## Próximas etapas
-1. Configurar Supabase Auth, URLs de callback e SMTP.
-2. Implementar fluxo administrativo para criar organização e membership inicial.
-3. Implementar cliente Supabase SSR e repositórios server-side.
-4. Persistir importações com idempotência, transação e upload privado.
-5. Testar dois tenants independentes, incluindo negação cruzada no banco e Storage.
-6. Integrar UEAP por contrato versionado e fluxo assíncrono.
-7. D03: indicadores consultados do banco, filtros reais e precisão financeira.
-8. D04: gestão financeira.
-9. D05: adaptadores ERP somente leitura/dry-run; escrita exige autorização separada.
-10. D06: conciliação assistida e revisão humana.
-11. D07: expansão adaptativa.
+1. Aguardar e corrigir eventuais falhas dos workflows CI e Database tests (pgTAP).
+2. Configurar Supabase Auth, URLs de callback e SMTP.
+3. Implementar fluxo administrativo para criar organização e membership inicial.
+4. Implementar cliente Supabase SSR e repositórios server-side.
+5. Persistir importações com idempotência, transação e upload privado.
+6. Testar dois tenants independentes, incluindo negação cruzada no banco e Storage.
+7. Integrar UEAP por contrato versionado e fluxo assíncrono.
+8. D03: indicadores consultados do banco, filtros reais e precisão financeira.
+9. D04: gestão financeira.
+10. D05: adaptadores ERP somente leitura/dry-run; escrita exige autorização separada.
+11. D06: conciliação assistida e revisão humana.
+12. D07: expansão adaptativa.
 
 ## Regras
 - Não usar dados reais em fixtures ou no repositório.
