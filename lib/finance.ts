@@ -138,8 +138,8 @@ export function parseCsv(text: string): ImportResult {
     const description = (row.cells[descriptionIndex] ?? "").trim();
     const amount = parseAmount(row.cells[amountIndex] ?? "");
     const directionText = normalize(row.cells[directionIndex] ?? "");
-    const declaresOut = /^(saida|debito|despesa|pagamento)$/.test(directionText);
-    const declaresIn = /^(entrada|credito|receita|recebimento)$/.test(directionText);
+    const declaresOut = /^(saida|debito|debit|despesa|pagamento)$/.test(directionText);
+    const declaresIn = /^(entrada|credito|credit|receita|recebimento)$/.test(directionText);
     const hasUnknownDirection = directionText.length > 0 && !declaresOut && !declaresIn;
     const directionConflict = (declaresOut && declaresIn) || (amount?.negative && declaresIn);
     const direction = declaresOut || (amount?.negative && !directionText)
