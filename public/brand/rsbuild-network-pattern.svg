@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 480" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">RSBUILD network pattern</title>
+  <desc id="desc">Subtle hexagonal nodes and connecting lines with restrained terracotta accents.</desc>
+  <defs>
+    <pattern id="hex" width="96" height="112" patternUnits="userSpaceOnUse">
+      <path d="M24 2 48 16v28L24 58 0 44V16L24 2Z" stroke="#614943" stroke-opacity=".23" stroke-width="1.4"/>
+      <path d="M72 58 96 72v28l-24 14-24-14V72l24-14Z" stroke="#2B2C2E" stroke-opacity=".2" stroke-width="1.4"/>
+      <path d="M24 58 48 72M48 44v28M48 16l24 14M24 58v28" stroke="#2B2C2E" stroke-opacity=".14" stroke-width="1.2"/>
+      <circle cx="24" cy="2" r="3" fill="#B5583C" fill-opacity=".78"/>
+      <circle cx="72" cy="58" r="2.6" fill="#C2694A" fill-opacity=".65"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2B2C2E" stop-opacity=".03"/>
+      <stop offset="1" stop-color="#B5583C" stop-opacity=".13"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="480" fill="url(#hex)"/>
+  <path d="M0 0h960v480H0z" fill="url(#fade)"/>
+</svg>
