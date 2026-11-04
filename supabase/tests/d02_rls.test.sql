@@ -52,7 +52,7 @@ select is(
   'operator sees only source objects under their tenant prefix'
 );
 select lives_ok(
-  $$insert into public.financial_records
+  $$query$insert into public.financial_records
     (organization_id,account_id,transaction_date,description,amount_minor,direction,created_by,status)
     values ('11111111-1111-4111-8111-111111111111',
             '33333333-3333-4333-8333-333333333333',
@@ -86,18 +86,18 @@ select throws_ok(
     (organization_id,account_id,transaction_date,description,amount_minor,direction)
     values ('11111111-1111-4111-8111-111111111111',
             '44444444-4444-4444-8444-444444444444',
-            '2026-11-04','Cross tenant account reference',100,'entrada')$,
+            '2026-11-04','Cross tenant account reference',100,'entrada')$query$,
   '23503',
   null,
   'composite foreign key rejects an account from another tenant'
 );
 select throws_ok(
-  $insert into public.source_artifacts
+  $query$insert into public.source_artifacts
     (organization_id,storage_bucket,storage_path,file_sha256,file_size_bytes)
     values ('11111111-1111-4111-8111-111111111111',
             'rsbuild-source-artifacts',
             '22222222-2222-4222-8222-222222222222/foreign/file.csv',
-            repeat('a',64),10)$$,
+            repeat('a',64),10)$query$,
   '23514',
   null,
   'artifact storage path must start with its own tenant UUID'
