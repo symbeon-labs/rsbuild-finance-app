@@ -1,0 +1,11 @@
+:root {
+  --rsbuild-deep-brown: #614943;
+  --rsbuild-warm-beige: #D9CCB5;
+  --rsbuild-charcoal: #2B2C2E;
+  --rsbuild-terracotta: #B5583C;
+  --rsbuild-terracotta-light: #C2694A;
+  --rsbuild-font-family: "Libre Franklin", Arial, sans-serif;
+  --rsbuild-gradient: linear-gradient(105deg, #2B2C2E 0%, #B5583C 100%);
+}
+
+/* Use the gradient selectively; never apply it to the logo. */
