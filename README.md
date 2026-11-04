@@ -4,24 +4,34 @@ Aplicação financeira desenvolvida para apoiar os processos e as operações da
 
 ## Visão geral
 
-O projeto reúne a aplicação, seus fluxos operacionais, integrações e recursos necessários à execução do escopo definido para o produto.
+A aplicação oferece uma área de trabalho para acompanhamento de movimentações financeiras, importação de extratos e consulta de informações operacionais.
 
-## Escopo
+## Funcionalidades em desenvolvimento
 
-- Experiência e fluxos específicos da aplicação.
-- Orquestração das operações financeiras contempladas pelo projeto.
-- Integrações com serviços e sistemas autorizados.
-- Configurações dos ambientes de execução.
-- Testes, documentação técnica e evidências de validação.
+- Painel de visão geral com indicadores financeiros.
+- Consulta e pesquisa de movimentações.
+- Importação e pré-visualização de arquivos CSV e OFX.
+- Organização de contas, fontes e relatórios.
+- Evolução progressiva das integrações e rotinas financeiras.
+
+## Desenvolvimento
+
+Requisitos: Node.js 22 ou superior.
+
+```bash
+npm install
+npm run dev
+```
+
+A aplicação estará disponível em http://localhost:3000.
+
+## Validação
+
+```bash
+npm run typecheck
+npm run build
+```
 
 ## Documentação
 
 - [Contrato de integração](docs/INTEGRATION_CONTRACT.md)
-
-## Organização
-
-O código-fonte da aplicação e os recursos diretamente relacionados ao produto são mantidos neste repositório. A documentação acompanha a evolução das funcionalidades e das interfaces utilizadas.
-
-## Desenvolvimento
-
-As contribuições devem seguir os padrões de organização, qualidade, revisão e validação adotados pelo projeto.
