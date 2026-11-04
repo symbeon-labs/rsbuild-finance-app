@@ -39,6 +39,7 @@ Thumbs.db
 *.swo
 
 # Test and temporary data
+.test-dist/
 .tmp/
 temp/
 .tmp-data/
