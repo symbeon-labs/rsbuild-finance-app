@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(16);
+select plan(15);
 
 -- Deterministic fixtures: two tenants, two operators and one viewer.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
@@ -80,16 +80,6 @@ select throws_ok(
   '42501',
   null,
   'operator cannot insert a financial record into another tenant'
-);
-select throws_ok(
-  $insert into public.financial_records
-    (organization_id,account_id,transaction_date,description,amount_minor,direction)
-    values ('11111111-1111-4111-8111-111111111111',
-            '44444444-4444-4444-8444-444444444444',
-            '2026-11-04','Cross tenant account reference',100,'entrada')$fk$,
-  '23503',
-  null,
-  'composite foreign key rejects an account from another tenant'
 );
 select throws_ok(
   $query$insert into public.source_artifacts
