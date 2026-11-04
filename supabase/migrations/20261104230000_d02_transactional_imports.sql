@@ -38,7 +38,8 @@ begin
   if p_original_filename is null
      or length(p_original_filename) not between 1 and 255
      or p_file_sha256 is null
-     or p_file_sha256 !~ '^[a-f0-9]{64}'
+     or length(p_file_sha256) <> 64
+     or translate(p_file_sha256, '0123456789abcdef', '') <> ''
      or p_file_size_bytes is null
      or p_file_size_bytes < 0 then
     raise exception 'invalid import metadata' using errcode = '22023';
@@ -69,14 +70,17 @@ begin
     select 1
     from jsonb_array_elements(p_records) as item(value)
     where jsonb_typeof(item.value) <> 'object'
-       or coalesce(item.value->>'amount_minor','') !~ '^[0-9]+'
+       or coalesce(item.value->>'amount_minor','') = ''
+       or translate(coalesce(item.value->>'amount_minor',''), '0123456789', '') <> ''
+       or length(coalesce(item.value->>'transaction_date','')) <> 10
        or coalesce(item.value->>'transaction_date','') !~ '^\\d{4}-\\d{2}-\\d{2}'
        or length(coalesce(item.value->>'description','')) not between 1 and 500
        or coalesce(item.value->>'direction','') not in ('entrada','saída')
-       or coalesce(item.value->>'deduplication_key','') !~ '^[a-f0-9]{64}'
+       or length(coalesce(item.value->>'deduplication_key','')) <> 64
+       or translate(coalesce(item.value->>'deduplication_key',''), '0123456789abcdef', '') <> ''
        or length(coalesce(item.value->>'category','')) not between 1 and 120
        or length(coalesce(item.value->>'currency','BRL')) <> 3
-       or coalesce(item.value->>'currency','BRL') ~ '[^A-Z]'
+       or translate(coalesce(item.value->>'currency','BRL'), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '') <> ''
        or jsonb_typeof(coalesce(item.value->'raw_payload','{}'::jsonb)) <> 'object'
   ) then
     raise exception 'one or more import records are invalid' using errcode = '22023';
