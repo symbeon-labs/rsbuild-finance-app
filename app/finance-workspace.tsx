@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FinancialRecord, formatCurrency, formatDate, parseCsv, parseOfx } from "@/lib/finance";
 
 type Section = "visao-geral" | "movimentacoes" | "importacoes" | "contas" | "relatorios";
@@ -13,16 +13,27 @@ const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "relatorios", label: "Relatórios", icon: "▥" }
 ];
 
-export default function FinanceWorkspace() {
+export default function FinanceWorkspace({ organizationId }: { organizationId: string }) {
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState("30");
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/finance/records?organizationId=" + organizationId, { cache: "no-store" })
+      .then(async (response) => { if (!response.ok) throw new Error("Não foi possível carregar os registros."); return response.json(); })
+      .then((payload) => { if (active) setRecords(payload.records ?? []); })
+      .catch(() => { if (active) setNotice("Não foi possível carregar os dados persistidos."); });
+    return () => { active = false; };
+  }, [organizationId]);
 
   const totals = useMemo(() => {
     const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
@@ -38,6 +49,7 @@ export default function FinanceWorkspace() {
     const file = event.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
+    setSourceFile(file);
     setNotice("");
     const text = await file.text();
     const result = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(text) : parseCsv(text);
@@ -47,12 +59,32 @@ export default function FinanceWorkspace() {
     event.target.value = "";
   }
 
-  function confirmImport() {
-    setRecords((current) => [...pendingImport, ...current]);
-    setNotice(`${pendingImport.length} movimentação(ões) adicionada(s) à sessão atual.`);
-    setPendingImport([]);
-    setImportErrors([]);
-    setFileName("");
+  async function confirmImport() {
+    if (!sourceFile || !pendingImport.length || isSaving) return;
+    setIsSaving(true);
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.set("organizationId", organizationId);
+      form.set("file", sourceFile);
+      form.set("records", JSON.stringify(pendingImport));
+      const response = await fetch("/api/imports", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Falha ao persistir a importação.");
+      const refreshed = await fetch("/api/finance/records?organizationId=" + organizationId, { cache: "no-store" });
+      if (!refreshed.ok) throw new Error("Importação salva, mas não foi possível atualizar a listagem.");
+      const data = await refreshed.json();
+      setRecords(data.records ?? []);
+      setNotice((payload.result?.inserted_count ?? 0) + " movimentação(ões) persistida(s); " + (payload.result?.duplicate_count ?? 0) + " duplicada(s).");
+      setPendingImport([]);
+      setImportErrors([]);
+      setFileName("");
+      setSourceFile(null);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao persistir a importação.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function resetSession() {
@@ -133,9 +165,9 @@ export default function FinanceWorkspace() {
               <div className="upload-zone"><div className="upload-icon">⇧</div><h2>Importar extrato financeiro</h2><p>Selecione um arquivo CSV ou OFX para visualizar os registros.</p><button className="secondary-button" onClick={() => inputRef.current?.click()}>Selecionar arquivo</button><span className="file-hint">CSV ou OFX · Até 10 MB</span></div>
               {fileName && <div className="import-file"><span className="file-badge">ARQ</span><div><strong>{fileName}</strong><span>{pendingImport.length} registro(s) reconhecido(s)</span></div></div>}
               {importErrors.length > 0 && <div className="error-list"><strong>Revisar importação</strong>{importErrors.map((error, index) => <p key={index}>{error}</p>)}</div>}
-              {pendingImport.length > 0 && <><div className="preview-heading"><div><h2>Prévia dos registros</h2><p>Confira os dados antes de confirmar a importação.</p></div><span>{pendingImport.length} registros</span></div><RecordTable records={pendingImport.slice(0,8)} /><div className="import-actions"><button className="secondary-button" onClick={() => {setPendingImport([]);setFileName("");setImportErrors([]);}}>Cancelar</button><button className="primary-button" onClick={confirmImport}>Confirmar importação</button></div></>}
+              {pendingImport.length > 0 && <><div className="preview-heading"><div><h2>Prévia dos registros</h2><p>Confira os dados antes de confirmar a importação.</p></div><span>{pendingImport.length} registros</span></div><RecordTable records={pendingImport.slice(0,8)} /><div className="import-actions"><button className="secondary-button" onClick={() => {setPendingImport([]);setFileName("");setSourceFile(null);setImportErrors([]);}}>Cancelar</button><button className="primary-button" onClick={confirmImport} disabled={isSaving}>{isSaving ? "Salvando..." : "Confirmar importação"}</button></div></>}
             </section>
-            <div className="inline-note">Os registros desta versão permanecem disponíveis durante a sessão atual. A persistência segura e a conexão com as fontes serão configuradas na etapa de integração.</div>
+            <div className="inline-note">Os registros confirmados são persistidos na organização ativa. Arquivos originais ficam em armazenamento privado com isolamento por tenant.</div>
           </>}
 
           {section === "contas" && <Placeholder title="Contas financeiras" eyebrow="ESTRUTURA FINANCEIRA" text="A estrutura de contas será configurada a partir das instituições, contas e fontes autorizadas para a empresa." />}
