@@ -26,7 +26,7 @@ test("CSV rejeita entrada positiva sem direção explícita", () => {
   const result = parseCsv([
     "Data;Descrição;Valor",
     "2026-05-01;Recebimento sem tipo;100,00"
-  ].join("\\n"));
+  ].join("\n"));
   assert.equal(result.records.length, 0);
   assert.match(result.errors.join(" "), /direção.*ambíguo/i);
 });
@@ -35,7 +35,7 @@ test("CSV infere saída pelo sinal negativo quando direção está ausente", () 
   const result = parseCsv([
     "Data;Descrição;Valor",
     "2026-05-01;Pagamento identificado pelo sinal;-100,00"
-  ].join("\\n"));
+  ].join("\n"));
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].direction, "saída");
 });
@@ -45,7 +45,7 @@ test("CSV rejeita direção desconhecida e conflito entre sinal e direção", ()
     "Data;Descrição;Valor;Tipo",
     "2026-05-01;Tipo desconhecido;100,00;movimento",
     "2026-05-02;Conflito; -100,00;Entrada"
-  ].join("\\n"));
+  ].join("\n"));
   assert.equal(result.records.length, 0);
   assert.equal(result.errors.length, 2);
 });
