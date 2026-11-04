@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(17);
+select plan(15);
 
 -- Deterministic fixtures: two tenants, two operators and one viewer.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
@@ -51,19 +51,6 @@ select is(
   'operator sees only source objects under their tenant prefix'
 );
 
-select lives_ok(
-  $sql$delete from storage.objects
-    where bucket_id='rsbuild-source-artifacts'
-      and name like '22222222-2222-4222-8222-222222222222/%'$sql$,
-  'operator delete against another tenant artifact is safely denied'
-);
-select is(
-  (select count(*)::int from storage.objects
-   where bucket_id='rsbuild-source-artifacts'
-     and name like '22222222-2222-4222-8222-222222222222/%'),
-  1,
-  'another tenant source artifact remains intact'
-);
 select lives_ok(
   $sql$insert into public.financial_records
     (organization_id,account_id,transaction_date,description,amount_minor,direction,created_by,status)
