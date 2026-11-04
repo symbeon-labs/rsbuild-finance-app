@@ -63,7 +63,7 @@ begin
     from jsonb_array_elements(p_records) as item(value)
     where jsonb_typeof(item.value) <> 'object'
        or coalesce(item.value->>'amount_minor','') !~ '^[0-9]+$'
-       or coalesce(item.value->>'transaction_date','') !~ '^\\d{4}-\\d{2}-\\d{2}$'
+       or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}$'
        or length(coalesce(item.value->>'description','')) not between 1 and 500
        or coalesce(item.value->>'direction','') not in ('entrada','saída')
        or coalesce(item.value->>'deduplication_key','') !~ '^[a-f0-9]{64}$'
