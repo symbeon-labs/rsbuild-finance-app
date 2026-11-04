@@ -26,9 +26,10 @@ Known limitations:
 - Validate calendar dates and monetary values; reject ambiguous input.
 - Preserve import batch and source-record identifiers where supplied.
 - Add anonymized fixtures for Brazilian CSV variants and OFX statements.
-- Test malformed rows, quoted descriptions, negative values, decimal/grouping separators, missing fields, repeated FITID, and malformed OFX.
-- Define duplicate detection behavior; never discard a movement solely because date and amount match.
-**Acceptance:** automated tests pass; accepted and rejected rows are explained; repeated imports have deterministic, documented behavior.
+- Cover Brazilian CSV delimiters, BOM, quoted and escaped descriptions, ISO/BR dates, invalid calendar dates, decimal/grouping formats, negative values, missing headers, malformed values, and repeated same-date/same-amount movements.
+- Cover OFX credit/debit, dates, FITID provenance, malformed movements, and empty/invalid statements.
+- Preserve source FITID when supplied; do not silently deduplicate by date and amount. Cross-import idempotency remains a separate requirement and is not claimed by the parser tests.
+**Acceptance:** `npm test`, typecheck, and production build pass; accepted and rejected rows are explained; fixtures are anonymized and reproducible.
 
 ### W02 — Persistence and organization boundary
 - Select and document the persistence model.
@@ -92,6 +93,6 @@ The MVP may be presented as a validated MVP only when all mandatory gates below 
 For each work item, record owner and reviewer; scope and exclusions; dependencies and access; implementation commit / pull request; automated and manual validation evidence; acceptance decision; and unresolved risks.
 
 ## Current status
-**Status: execution handoff opened; MVP readiness not yet established.**
+**Status: W01 implementation added; acceptance is pending CI execution. MVP readiness is not established.**
 
-The first execution priority is W01 — Import integrity. W02 — Persistence and organization boundary follows before any use with real company financial data.
+W01 adds a native Node test suite for CSV/OFX parsing, monetary/date validation, source identifiers, and duplicate-preservation behavior. The CI workflow runs `npm test`, typecheck, and production build. Passing CI is required before W01 is accepted. W02 — Persistence and organization boundary follows only after W01 is accepted and before any use with real company financial data.
