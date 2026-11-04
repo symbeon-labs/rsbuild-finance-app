@@ -35,8 +35,7 @@ on conflict (id) do nothing;
 insert into storage.objects (bucket_id,name,metadata)
 values
   ('rsbuild-source-artifacts','11111111-1111-4111-8111-111111111111/a/file-a.csv','{"mimetype":"text/csv"}'),
-  ('rsbuild-source-artifacts','22222222-2222-4222-8222-222222222222/b/file-b.csv','{"mimetype":"text/csv"}')
-on conflict (bucket_id,name) do nothing;
+  ('rsbuild-source-artifacts','22222222-2222-4222-8222-222222222222/b/file-b.csv','{"mimetype":"text/csv"}');
 
 -- Operator A sees only Tenant A and cannot insert into Tenant B.
 set local role authenticated;
