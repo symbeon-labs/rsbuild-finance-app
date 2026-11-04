@@ -157,7 +157,8 @@ export function parseCsv(text: string): ImportResult {
 export function parseOfx(text: string): ImportResult {
   if (!/<OFX[>\s]/i.test(text)) return { records: [], errors: ["O arquivo não possui uma estrutura OFX reconhecida."] };
   const blocks = [...text.matchAll(/<STMTTRN\b[^>]*>([\s\S]*?)(?=<\/STMTTRN\s*>|<STMTTRN\b|<\/BANKTRANLIST\s*>)/gi)];
-  const records: FinancialRecord[] = [];\n  const errors: string[] = [];
+  const records: FinancialRecord[] = [];
+  const errors: string[] = [];
   const importBatchId = batchId();
   const get = (block: string, tag: string) => block.match(new RegExp(`<${tag}>([^<\\r\\n]*)`, "i"))?.[1]?.trim() ?? "";
   blocks.forEach((match, index) => {
