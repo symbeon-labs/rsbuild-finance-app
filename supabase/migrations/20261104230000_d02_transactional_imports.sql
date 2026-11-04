@@ -36,10 +36,17 @@ begin
   end if;
 
   if p_original_filename is null or length(p_original_filename) not between 1 and 255
-     or p_file_sha256 is null or p_file_sha256 !~ '^[a-f0-9]{64}
-     or p_records is null or jsonb_typeof(p_records) <> 'array'
-     or jsonb_array_length(p_records) < 1 or jsonb_array_length(p_records) > 5000 then
-    raise exception 'invalid import payload' using errcode = '22023';
+     or p_file_sha256 is null or p_file_sha256 !~ '^[a-f0-9]{64}$'
+     or p_file_size_bytes is null or p_file_size_bytes < 0 then
+    raise exception 'invalid import metadata' using errcode = '22023';
+  end if;
+
+  if p_records is null or jsonb_typeof(p_records) is distinct from 'array' then
+    raise exception 'import records must be a JSON array' using errcode = '22023';
+  end if;
+
+  if jsonb_array_length(p_records) < 1 or jsonb_array_length(p_records) > 5000 then
+    raise exception 'import record count out of range' using errcode = '22023';
   end if;
 
   if p_storage_path is null
