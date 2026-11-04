@@ -320,3 +320,14 @@ with check (bucket_id = 'rsbuild-source-artifacts' and exists (
     and m.organization_id::text = (storage.foldername(name))[1]
     and m.role in ('owner','admin','operator')
 ));
+
+-- Explicit grants: new public tables are not automatically exposed by default.
+grant usage on schema public to authenticated;
+grant select on public.organizations, public.organization_memberships to authenticated;
+grant select, insert, update, delete on
+  public.financial_accounts, public.data_sources, public.import_batches,
+  public.source_artifacts, public.financial_records to authenticated;
+grant select, insert on
+  public.validation_runs, public.evidence_records, public.attestations,
+  public.integration_runs, public.integration_records, public.audit_events to authenticated;
+grant usage, select on sequence public.audit_events_id_seq to authenticated;
