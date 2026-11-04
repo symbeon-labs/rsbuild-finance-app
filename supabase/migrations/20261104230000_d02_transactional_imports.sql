@@ -38,7 +38,7 @@ begin
   if p_original_filename is null or length(p_original_filename) not between 1 and 255
      or p_file_sha256 is null or p_file_sha256 !~ '^[a-f0-9]{64}
      or p_records is null or jsonb_typeof(p_records) <> 'array'
-     or jsonb_array_length(p_records) > 5000 then
+     or jsonb_array_length(p_records) < 1 or jsonb_array_length(p_records) > 5000 then
     raise exception 'invalid import payload' using errcode = '22023';
   end if;
 
@@ -562,3 +562,19 @@ $function$;
 
 revoke all on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
 grant execute on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb) to authenticated;
+
+-- Permit an operator to clean up only objects inside their own tenant prefix.
+create policy "tenant operators delete source files"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'rsbuild-source-artifacts'
+  and exists (
+    select 1
+    from public.organization_memberships m
+    where m.user_id = (select auth.uid())
+      and m.organization_id::text = (storage.foldername(name))[1]
+      and m.role in ('owner','admin','operator')
+  )
+);
