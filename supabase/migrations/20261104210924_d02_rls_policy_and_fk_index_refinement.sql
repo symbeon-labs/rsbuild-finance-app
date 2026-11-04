@@ -1,3 +1,38 @@
+-- Ensure the public-table RLS event trigger exists on a clean local stack.
+-- Hosted environments may already have this bootstrap object.
+create or replace function public.rls_auto_enable()
+returns event_trigger
+language plpgsql
+security definer
+set search_path to 'pg_catalog'
+as $function$
+declare
+  cmd record;
+  tbl name;
+begin
+  for cmd in
+    select *
+    from pg_event_trigger_ddl_commands()
+    where command_tag in ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
+      and object_type in ('table','partitioned table')
+  loop
+    if cmd.schema_name = 'public' then
+      begin
+        select c.relname into tbl from pg_catalog.pg_class c where c.oid = cmd.objid;
+        execute format('alter table if exists %I.%I enable row level security', cmd.schema_name, tbl);
+      exception when others then
+        raise log 'rls_auto_enable: failed to enable RLS on %', cmd.object_identity;
+      end;
+    end if;
+  end loop;
+end;
+$function$;
+
+drop event trigger if exists ensure_rls;
+create event trigger ensure_rls on ddl_command_end
+  execute function public.rls_auto_enable();
+revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+
 -- D02 post-deployment refinement: FK indexes and command-specific RLS policies.
 
 create index attestations_org_evidence_idx on public.attestations(organization_id, evidence_record_id);
