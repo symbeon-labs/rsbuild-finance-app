@@ -86,7 +86,7 @@ select throws_ok(
     (organization_id,account_id,transaction_date,description,amount_minor,direction)
     values ('11111111-1111-4111-8111-111111111111',
             '44444444-4444-4444-8444-444444444444',
-            '2026-11-04','Cross tenant account reference',100,'entrada')$query$,
+            '2026-11-04','Cross tenant account reference',100,'entrada')$,
   '23503',
   null,
   'composite foreign key rejects an account from another tenant'
