@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(13);
+select plan(16);
 
 -- Deterministic fixtures: two tenants, two operators and one viewer.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
@@ -53,11 +53,11 @@ select is(
 );
 select lives_ok(
   $$insert into public.financial_records
-    (organization_id,account_id,transaction_date,description,amount_minor,direction,created_by)
+    (organization_id,account_id,transaction_date,description,amount_minor,direction,created_by,status)
     values ('11111111-1111-4111-8111-111111111111',
             '33333333-3333-4333-8333-333333333333',
             '2026-11-04','Test record',1250,'entrada',
-            'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')$$,
+            'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','conciliado')$$,
   'operator can insert a financial record in their tenant'
 );
 select is(
@@ -65,6 +65,11 @@ select is(
    where description='Test record'),
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   'created_by is derived from auth.uid(), not client input'
+);
+select is(
+  (select status::text from public.financial_records where description='Test record'),
+  'pendente',
+  'new financial records cannot be inserted as reconciled by the client'
 );
 select throws_ok(
   $$insert into public.financial_records
@@ -137,6 +142,14 @@ select ok(
 select ok(
   not has_table_privilege('authenticated','public.audit_events','INSERT'),
   'authenticated role cannot forge audit events'
+);
+select ok(
+  not has_column_privilege('authenticated','public.financial_records','status','UPDATE'),
+  'authenticated role cannot directly change reconciliation status'
+);
+select ok(
+  not has_table_privilege('authenticated','public.validation_runs','INSERT'),
+  'authenticated role cannot forge validation outcomes'
 );
 
 select * from finish();
