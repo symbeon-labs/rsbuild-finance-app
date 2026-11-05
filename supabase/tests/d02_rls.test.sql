@@ -94,25 +94,25 @@ select throws_ok(
 );
 
 select lives_ok(
-  $insert into storage.objects (bucket_id,name,metadata)
+  $$insert into storage.objects (bucket_id,name,metadata)
     values ('rsbuild-source-artifacts',
             '11111111-1111-4111-8111-111111111111/a/uploaded-by-operator.csv',
-            '{"mimetype":"text/csv"}')$,
+            '{"mimetype":"text/csv"}')$$,
   'operator can upload a source artifact under their own tenant prefix'
 );
 select throws_ok(
-  $insert into storage.objects (bucket_id,name,metadata)
+  $$insert into storage.objects (bucket_id,name,metadata)
     values ('rsbuild-source-artifacts',
             '22222222-2222-4222-8222-222222222222/a/cross-tenant-upload.csv',
-            '{"mimetype":"text/csv"}')$,
+            '{"mimetype":"text/csv"}')$$,
   '42501',
   null,
   'operator cannot upload a source artifact under another tenant prefix'
 );
 select lives_ok(
-  $delete from storage.objects
+  $$delete from storage.objects
     where bucket_id='rsbuild-source-artifacts'
-      and name='11111111-1111-4111-8111-111111111111/a/uploaded-by-operator.csv'$,
+      and name='11111111-1111-4111-8111-111111111111/a/uploaded-by-operator.csv'$$,
   'operator can delete an object in their own tenant prefix for compensation'
 );
 select is(
@@ -148,18 +148,18 @@ select is(
   'viewer can read accounts in their tenant'
 );
 select throws_ok(
-  $insert into public.financial_accounts (organization_id,name)
-    values ('11111111-1111-4111-8111-111111111111','Viewer forbidden')$,
+  $$insert into public.financial_accounts (organization_id,name)
+    values ('11111111-1111-4111-8111-111111111111','Viewer forbidden')$$,
   '42501',
   null,
   'viewer cannot insert financial accounts'
 );
 
 select throws_ok(
-  $insert into storage.objects (bucket_id,name,metadata)
+  $$insert into storage.objects (bucket_id,name,metadata)
     values ('rsbuild-source-artifacts',
             '11111111-1111-4111-8111-111111111111/a/viewer-upload.csv',
-            '{"mimetype":"text/csv"}')$,
+            '{"mimetype":"text/csv"}')$$,
   '42501',
   null,
   'viewer cannot upload source artifacts'
