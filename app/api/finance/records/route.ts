@@ -32,8 +32,13 @@ export async function GET(request: Request) {
 
   if (error) return NextResponse.json({ error: "records_lookup_failed" }, { status: 403 });
   const rows = data ?? [];
-  return NextResponse.json({
-    records: rows.map((row) => ({
+  const records = [];
+  for (const row of rows) {
+    const amountMinor = Number(row.amount_minor);
+    if (!Number.isSafeInteger(amountMinor)) {
+      return NextResponse.json({ error: "unsafe_amount_minor" }, { status: 500 });
+    }
+    records.push({
       id: row.id,
       date: row.transaction_date,
       description: row.description,
@@ -44,7 +49,11 @@ export async function GET(request: Request) {
       status: row.status === "conciliado" ? "conciliado" : "pendente",
       importBatchId: row.import_batch_id ?? undefined,
       sourceRecordId: row.source_record_id ?? undefined,
-    })),
+    });
+  }
+
+  return NextResponse.json({
+    records,
     pagination: {
       limit,
       offset: rawOffset,
