@@ -1,10 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" fill="none">
-  <defs>
-    <linearGradient id="topGlow" x1="760" y1="0" x2="1160" y2="520" gradientUnits="userSpaceOnUse"><stop stop-color="#F5A06F" stop-opacity=".13"/><stop offset="1" stop-color="#F5A06F" stop-opacity="0"/></linearGradient>
-    <linearGradient id="bottomGlow" x1="0" y1="1120" x2="360" y2="1600" gradientUnits="userSpaceOnUse"><stop stop-color="#F2A078" stop-opacity="0"/><stop offset="1" stop-color="#F2A078" stop-opacity=".15"/></linearGradient>
-  </defs>
-  <path d="M690 0H1200V560H690z" fill="url(#topGlow)"/>
-  <path d="M0 1080H440V1600H0z" fill="url(#bottomGlow)"/>
   <g stroke="#B85D40" stroke-opacity=".23" stroke-width="1.5">
     <path d="M760 -54 845 -5V93L760 142 675 93V-5L760 -54Z"/>
     <path d="M930 -54 1015 -5V93L930 142 845 93V-5L930 -54Z"/>
