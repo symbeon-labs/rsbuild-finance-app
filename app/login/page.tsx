@@ -29,13 +29,13 @@ export default async function LoginPage({ searchParams }: Props) {
           <div className="login-mobile-brand login-mobile-brand--single">
             <div className="login-brand-logo-wrap login-mobile-logo-wrap">
               <Image
-                src="/brand/rsbuild-logo-primary.webp"
+                src="/brand/rsbuild-logo-primary.svg"
                 alt="RSBUILD — Inovação Corporativa"
-                width={240}
-                height={87}
+                width={1084}
+                height={346}
                 priority
                 className="login-brand-logo"
-                sizes="(max-width: 640px) 78vw, 620px"
+                sizes="(max-width: 640px) 88vw, 690px"
               />
             </div>
           </div>
