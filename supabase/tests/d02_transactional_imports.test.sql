@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(7);
+select plan(9);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -101,6 +101,26 @@ select throws_ok(
  '42501',
  null,
  'operator from tenant A cannot commit an import for tenant B'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'private.commit_financial_import(uuid,text,text,bigint,text,jsonb)',
+    'EXECUTE'
+  ),
+  'anonymous role cannot execute the private privileged import implementation'
+);
+
+select ok(
+  not (
+    select p.prosecdef
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'commit_financial_import'
+  ),
+  'public RPC entrypoint is an invoker wrapper, not SECURITY DEFINER'
 );
 
 select * from finish();
