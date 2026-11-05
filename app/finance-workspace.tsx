@@ -18,6 +18,9 @@ const navigation: { id: Section; label: string; icon: string }[] = [
 export default function FinanceWorkspace({ organizationId }: { organizationId: string }) {
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [hasMoreRecords, setHasMoreRecords] = useState(false);
+  const [nextRecordsOffset, setNextRecordsOffset] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
@@ -30,9 +33,9 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
 
   useEffect(() => {
     let active = true;
-    fetch("/api/finance/records?organizationId=" + organizationId, { cache: "no-store" })
+    fetch("/api/finance/records?organizationId=" + organizationId + "&limit=100&offset=0", { cache: "no-store" })
       .then(async (response) => { if (!response.ok) throw new Error("Não foi possível carregar os registros."); return response.json(); })
-      .then((payload) => { if (active) setRecords(payload.records ?? []); })
+      .then((payload) => { if (active) { setRecords(payload.records ?? []); setHasMoreRecords(Boolean(payload.pagination?.hasMore)); setNextRecordsOffset(payload.pagination?.nextOffset ?? 0); } })
       .catch(() => { if (active) setNotice("Não foi possível carregar os dados persistidos."); });
     return () => { active = false; };
   }, [organizationId]);
@@ -49,7 +52,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
   }, [records, period]);
 
   const totals = useMemo(() => {
-    const incoming = periodRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
+    const incoming = periodRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amountMinor, 0);
     const outgoing = periodRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
     return { incoming, outgoing, balance: incoming - outgoing };
   }, [periodRecords]);
@@ -94,10 +97,10 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
       const response = await fetch("/api/imports", { method: "POST", body: form });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Falha ao persistir a importação.");
-      const refreshed = await fetch("/api/finance/records?organizationId=" + organizationId, { cache: "no-store" });
+      const refreshed = await fetch("/api/finance/records?organizationId=" + organizationId + "&limit=100&offset=0", { cache: "no-store" });
       if (!refreshed.ok) throw new Error("Importação salva, mas não foi possível atualizar a listagem.");
       const data = await refreshed.json();
-      setRecords(data.records ?? []);
+      setRecords(data.records ?? []);\n      setHasMoreRecords(Boolean(data.pagination?.hasMore));\n      setNextRecordsOffset(data.pagination?.nextOffset ?? 0);
       setNotice((payload.result?.inserted_count ?? 0) + " movimentação(ões) persistida(s); " + (payload.result?.duplicate_count ?? 0) + " duplicada(s).");
       setPendingImport([]);
       setImportErrors([]);
@@ -154,7 +157,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
             </div>
             <div className="metric-grid">
               <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={periodRecords.length ? "Registros no período selecionado" : "Aguardando dados"} icon="↙" />
-              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↗" />
+              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Registros persistidos carregados" : "Aguardando dados"} icon="↗" />
               <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail="Entradas menos saídas" icon="＝" />
               <Metric label="Movimentações" value={String(periodRecords.length)} tone="neutral" detail={periodRecords.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
             </div>
@@ -179,7 +182,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
 
           {section === "movimentacoes" && <>
             <div className="page-heading"><div><div className="eyebrow">LANÇAMENTOS</div><h1>Movimentações</h1><p>Consulte os registros financeiros carregados.</p></div><button className="primary-button" onClick={() => inputRef.current?.click()}>＋ Importar arquivo</button></div>
-            <section className="panel"><div className="table-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por descrição, categoria ou origem..." aria-label="Buscar movimentações" /><span>{filteredRecords.length} registro(s)</span></div>{filteredRecords.length ? <RecordTable records={[...filteredRecords].sort((a,b) => b.date.localeCompare(a.date))} /> : <EmptyState icon="⇄" title="Nenhuma movimentação encontrada" text="Carregue um extrato CSV ou OFX para consultar os lançamentos." action="Importar arquivo" onAction={() => inputRef.current?.click()} />}</section>
+            <section className="panel"><div className="table-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por descrição, categoria ou origem..." aria-label="Buscar movimentações" /><span>{filteredRecords.length} registro(s)</span></div>{filteredRecords.length ? <RecordTable records={[...filteredRecords].sort((a,b) => b.date.localeCompare(a.date))} />{hasMoreRecords && <div className="import-actions"><button className="secondary-button" onClick={loadMoreRecords} disabled={isLoadingMore}>{isLoadingMore ? "Carregando..." : "Carregar mais registros"}</button></div>} : <EmptyState icon="⇄" title="Nenhuma movimentação encontrada" text="Carregue um extrato CSV ou OFX para consultar os lançamentos." action="Importar arquivo" onAction={() => inputRef.current?.click()} />}</section>
           </>}
 
           {section === "importacoes" && <>
@@ -198,7 +201,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
         </div>
       </section>
       <input ref={inputRef} className="hidden-input" type="file" accept=".csv,.ofx,text/csv,application/x-ofx" onChange={handleFile} />
-      <button className="session-reset" onClick={resetSession} title="Limpar os registros da sessão">Limpar sessão</button>
+      <button className="session-reset" onClick={resetSession} title="Limpar apenas a prévia e os filtros locais">Limpar visualização</button>
     </main>
   );
 }
@@ -212,7 +215,7 @@ function EmptyState({ icon, title, text, action, onAction }: { icon: string; tit
 }
 
 function RecordTable({ records }: { records: FinancialRecord[] }) {
-  return <div className="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Origem</th><th>Status</th><th className="align-right">Valor</th></tr></thead><tbody>{records.map((record) => <tr key={record.id}><td>{formatDate(record.date)}</td><td className="description-cell">{record.description}</td><td>{record.category}</td><td>{record.source}</td><td><span className="status-pill">{record.status}</span></td><td className={record.direction === "entrada" ? "align-right positive" : "align-right negative"}>{record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amount)}</td></tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Origem</th><th>Status</th><th className="align-right">Valor</th></tr></thead><tbody>{records.map((record) => <tr key={record.id}><td>{formatDate(record.date)}</td><td className="description-cell">{record.description}</td><td>{record.category}</td><td>{record.source}</td><td><span className="status-pill">{record.status}</span></td><td className={record.direction === "entrada" ? "align-right positive" : "align-right negative"}>{record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amountMinor)}</td></tr>)}</tbody></table></div>;
 }
 
 function Placeholder({ title, eyebrow, text }: { title: string; eyebrow: string; text: string }) {
