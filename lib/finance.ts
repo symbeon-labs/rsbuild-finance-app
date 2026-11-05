@@ -171,8 +171,8 @@ export function parseOfx(text: string): ImportResult {
     records.push({
       id: `ofx-${importBatchId}-${index + 1}`,
       date, description: get(block, "NAME") || get(block, "MEMO") || "Movimento bancário",
-      amount: Math.abs(Math.round(amount * 100) / 100),
-      direction: amount < 0 ? "saída" : "entrada",
+      amountMinor: parsedAmount.cents,
+      direction: parsedAmount.negative ? "saída" : "entrada",
       category: "Não classificado", source: "Importação OFX", status: "pendente",
       sourceRecordId: get(block, "FITID") || undefined, importBatchId
     });
@@ -181,8 +181,9 @@ export function parseOfx(text: string): ImportResult {
   return { records, errors };
 }
 
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+export function formatCurrency(amountMinor: number): string {
+  if (!Number.isSafeInteger(amountMinor)) throw new Error("Valor monetário fora do intervalo seguro.");
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amountMinor / 100);
 }
 
 export function formatDate(value: string): string {
