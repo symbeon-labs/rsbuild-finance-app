@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(5);
+select plan(7);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -58,6 +58,25 @@ select is(
  )),
  0,
  're-import of the same business record is idempotent'
+);
+
+select is(
+ (select duplicate_count from public.commit_financial_import(
+  '55555555-5555-4555-8555-555555555555',
+  'sample-again.csv',repeat('c',64),10,
+  '55555555-5555-4555-8555-555555555555/imports/sample-again.csv',
+  '[{"transaction_date":"2026-11-04","description":"Teste idempotente","amount_minor":"1234","direction":"entrada","category":"Teste","deduplication_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","raw_payload":{}}]'::jsonb
+ )),
+ 1,
+ 'duplicate rows are counted separately from rejected rows'
+);
+
+select is(
+ (select rejected_count from public.import_batches
+  where organization_id='55555555-5555-4555-8555-555555555555'
+  order by received_at desc limit 1),
+ 0,
+ 'a duplicate is not persisted as a rejected record'
 );
 
 select throws_ok(
