@@ -1,7 +1,7 @@
 # RSBUILD Finance — MVP Readiness Handoff
 
 ## Purpose
-This document is the execution handoff for taking the current RSBUILD Finance application from its initial demonstrator state to a validated MVP suitable for presentation to the initiative.
+This document tracks engineering readiness. The product scope and phased roadmap are governed by [EXECUTION_BASELINE.md](./EXECUTION_BASELINE.md), aligned to the five product documents. This handoff does not expand the approved MVP.
 
 This is an execution plan and acceptance framework. It is not a claim that listed capabilities are implemented, production-ready, or included in a commercial commitment.
 
@@ -14,12 +14,15 @@ Known limitations:
 - No database persistence or operational backup strategy.
 - Period selector is not yet applied consistently to dashboard calculations and movement views.
 - No live bank, Omie, acquirer, or point-of-sale integration.
+- No general-purpose export engine, additional XLSX/XML/JSON/PDF layouts, public API, webhooks, or ERP write-back.
 - No reconciliation workflow or auditable human decision trail.
 - Duplicate detection and idempotent import are not yet implemented.
 - CSV and OFX parser validation is being closed through the W01 automated test suite; persistence and organization isolation remain outside this workstream.
 - No evidence currently establishes production readiness.
 
 ## Execution workstreams
+
+The current ordered workstreams and future gates are consolidated in [EXECUTION_BASELINE.md](./EXECUTION_BASELINE.md). This handoff remains the engineering evidence log; the baseline is the scope and sequencing reference.
 
 ### W01 — Import integrity
 - Establish explicit CSV header and delimiter rules.
