@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(20);
+select plan(25);
 
 -- Deterministic fixtures: two tenants, two operators and one viewer.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
@@ -132,6 +132,11 @@ select is(
   0,
   'tenant B cannot read tenant A financial records'
 );
+select is(
+  (select count(*)::int from storage.objects where bucket_id='rsbuild-source-artifacts'),
+  1,
+  'tenant B can read only its own source artifacts'
+);
 reset role;
 
 -- Viewer has read access but cannot write.
@@ -159,6 +164,19 @@ select throws_ok(
   null,
   'viewer cannot upload source artifacts'
 );
+select lives_ok(
+  $delete$delete from storage.objects
+    where bucket_id='rsbuild-source-artifacts'
+      and name='11111111-1111-4111-8111-111111111111/a/file-a.csv'$delete$,
+  'viewer delete attempt is safely constrained by Storage RLS'
+);
+select is(
+  (select count(*)::int from storage.objects
+   where bucket_id='rsbuild-source-artifacts'
+     and name='11111111-1111-4111-8111-111111111111/a/file-a.csv'),
+  1,
+  'viewer cannot delete source artifacts'
+);
 reset role;
 
 select ok(
@@ -181,6 +199,25 @@ select ok(
   not has_table_privilege('authenticated','public.validation_runs','INSERT'),
   'authenticated role cannot forge validation outcomes'
 );
+
+reset role;
+delete from public.organization_memberships
+where organization_id='11111111-1111-4111-8111-111111111111'
+  and user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
+select is(
+  (select count(*)::int from public.organizations),
+  0,
+  'revoked membership removes organization visibility immediately'
+);
+select is(
+  (select count(*)::int from storage.objects where bucket_id='rsbuild-source-artifacts'),
+  0,
+  'revoked membership removes Storage object visibility immediately'
+);
+reset role;
 
 select * from finish();
 rollback;
