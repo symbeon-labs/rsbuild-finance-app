@@ -156,8 +156,8 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
               <button className="primary-button" onClick={() => inputRef.current?.click()}><span>＋</span> Importar movimentações</button>
             </div>
             <div className="metric-grid">
-              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={periodRecords.length ? "Registros no período selecionado" : "Aguardando dados"} icon="↙" />
-              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Registros persistidos carregados" : "Aguardando dados"} icon="↗" />
+              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={periodRecords.length ? "Somente registros carregados nesta página" : "Aguardando dados"} icon="↙" />
+              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Somente registros carregados nesta página" : "Aguardando dados"} icon="↗" />
               <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail="Entradas menos saídas" icon="＝" />
               <Metric label="Movimentações" value={String(periodRecords.length)} tone="neutral" detail={periodRecords.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
             </div>
@@ -181,7 +181,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
           </>}
 
           {section === "movimentacoes" && <>
-            <div className="page-heading"><div><div className="eyebrow">LANÇAMENTOS</div><h1>Movimentações</h1><p>Consulte os registros financeiros carregados.</p></div><button className="primary-button" onClick={() => inputRef.current?.click()}>＋ Importar arquivo</button></div>
+            <div className="page-heading"><div><div className="eyebrow">LANÇAMENTOS</div><h1>Movimentações</h1><p>Consulte os registros financeiros carregados. A listagem é paginada; os indicadores refletem somente os registros já carregados.</p></div><button className="primary-button" onClick={() => inputRef.current?.click()}>＋ Importar arquivo</button></div>
             <section className="panel"><div className="table-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por descrição, categoria ou origem..." aria-label="Buscar movimentações" /><span>{filteredRecords.length} registro(s)</span></div>{filteredRecords.length ? <RecordTable records={[...filteredRecords].sort((a,b) => b.date.localeCompare(a.date))} />{hasMoreRecords && <div className="import-actions"><button className="secondary-button" onClick={loadMoreRecords} disabled={isLoadingMore}>{isLoadingMore ? "Carregando..." : "Carregar mais registros"}</button></div>} : <EmptyState icon="⇄" title="Nenhuma movimentação encontrada" text="Carregue um extrato CSV ou OFX para consultar os lançamentos." action="Importar arquivo" onAction={() => inputRef.current?.click()} />}</section>
           </>}
 
@@ -191,7 +191,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
               <div className="upload-zone"><div className="upload-icon">⇧</div><h2>Importar extrato financeiro</h2><p>Selecione um arquivo CSV ou OFX para visualizar os registros.</p><button className="secondary-button" onClick={() => inputRef.current?.click()}>Selecionar arquivo</button><span className="file-hint">CSV ou OFX · Até 10 MiB</span></div>
               {fileName && <div className="import-file"><span className="file-badge">ARQ</span><div><strong>{fileName}</strong><span>{pendingImport.length} registro(s) reconhecido(s)</span></div></div>}
               {importErrors.length > 0 && <div className="error-list"><strong>Revisar importação</strong>{importErrors.map((error, index) => <p key={index}>{error}</p>)}</div>}
-              {pendingImport.length > 0 && <><div className="preview-heading"><div><h2>Prévia dos registros</h2><p>Confira os dados antes de confirmar a importação.</p></div><span>{pendingImport.length} registros</span></div><RecordTable records={pendingImport.slice(0,8)} /><div className="import-actions"><button className="secondary-button" onClick={() => {setPendingImport([]);setFileName("");setSourceFile(null);setImportErrors([]);}}>Cancelar</button><button className="primary-button" onClick={confirmImport} disabled={isSaving}>{isSaving ? "Salvando..." : "Confirmar importação"}</button></div></>}
+              {pendingImport.length > 0 && <><div className="preview-heading"><div><h2>Prévia dos registros</h2><p>Confira os dados antes de confirmar a importação.</p></div><span>{pendingImport.length} registros</span></div><RecordTable records={pendingImport.slice(0,8)} /><div className="import-actions"><button className="secondary-button" onClick={() => {setPendingImport([]);setFileName("");setSourceFile(null);setImportErrors([]);}}>Cancelar</button><button className="primary-button" onClick={confirmImport} disabled={isSaving || importErrors.length > 0}>{isSaving ? "Salvando..." : "Confirmar importação"}</button></div></>}
             </section>
             <div className="inline-note">Os registros confirmados são persistidos na organização ativa. Arquivos originais ficam em armazenamento privado com isolamento por tenant.</div>
           </>}
