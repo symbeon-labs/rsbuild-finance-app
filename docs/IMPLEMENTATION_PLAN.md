@@ -1,7 +1,7 @@
 # Plano de Implementação — RSBUILD Finance
 
 **Versão:** 0.5  
-**Status:** D02 implantada no Supabase dedicado; integração da aplicação e homologação pendentes.
+**Status:** D02 implementada na branch de aplicação; homologação remota, configuração operacional e aceite comercial permanecem pendentes.
 
 ## Objetivo
 Evoluir a aplicação de uma sessão de importação transitória para uma plataforma multiempresa com persistência, rastreabilidade e integrações controladas.
@@ -9,13 +9,13 @@ Evoluir a aplicação de uma sessão de importação transitória para uma plata
 ## Estado identificado
 - Next.js App Router e interface responsiva.
 - Importação e pré-visualização CSV/OFX no cliente.
-- Persistência gerenciada D02 implantada no Supabase em `us-east-2`.
+- Base de persistência gerenciada D02 e migrations versionadas no repositório; confirmar histórico remoto para declarar cada migration aplicada.
 - Histórico de migrations remoto sincronizado com a sequência versionada.
 - Hardening de atribuição de ator, estado inicial e referências tenant-scoped aplicado.
 - Auth SSR implementado com cookies, login, callback PKCE e logout.
 - Provisionamento administrativo implementado por convite, allowlist de e-mails e chave secreta server-only.
 - Endpoints tenant-scoped para memberships e leitura de movimentações.
-- Upload privado e RPC transacional para importações, com hash SHA-256 e deduplicação por organização.
+- Upload privado e RPC transacional para importações, com hash SHA-256, parsing autoritativo no servidor, versão do parser e deduplicação por organização. A etapa Storage + PostgreSQL usa compensação e não constitui transação distribuída.
 - Homologação funcional remota ainda pendente: exige configuração de ambiente, convite do primeiro administrador e testes com dois usuários reais.
 - ERP e contas de origem dependem de confirmação de escopo e acesso.
 
@@ -49,4 +49,4 @@ Evoluir a aplicação de uma sessão de importação transitória para uma plata
 - Cada etapa deve possuir testes automatizados, evidências e critérios de aceite.
 
 ## Critério de conclusão D02
-Dados persistem entre sessões; usuários de empresas diferentes não acessam dados entre si; importações são idempotentes; arquivos originais permanecem privados; nenhum segredo privilegiado chega ao browser.
+Dados persistem entre sessões; usuários de empresas diferentes não acessam dados entre si; importações são idempotentes e derivadas do arquivo no servidor; valores permanecem inteiros em centavos; Storage é privado e testado com usuários reais; contadores distinguem inserções, duplicatas e rejeições; listagens são paginadas; nenhum segredo privilegiado chega ao browser; compensações falhas são rastreáveis.
