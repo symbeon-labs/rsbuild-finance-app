@@ -63,4 +63,12 @@ O commit PostgreSQL do lote é transacional e idempotente; upload no Storage é 
 - Executar testes de isolamento com dois tenants e validar Storage com usuários autenticados.
 - Executar pgTAP no workflow de banco e registrar o resultado.
 - Executar testes de isolamento com dois tenants e validar Storage com usuários autenticados.
-\n## Hardening complementar — pacote D02.1\n- Parsing autoritativo no servidor: registros enviados pelo navegador não são aceitos como fonte de verdade.\n- Proveniência por importação: hash SHA-256, versão do parser e índice da linha são persistidos no payload de origem.\n- Precisão: API e domínio retornam/transportam `amount_minor` como inteiro; conversão para BRL ocorre somente na formatação visual.\n- Contadores: `inserted_count`, `duplicate_count` e `rejected_count` são separados. Arquivos com parsing parcial são rejeitados integralmente antes do commit.\n- Paginação: leitura de movimentações usa `limit`/`offset`, com teto de 200 por requisição.\n- Storage e PostgreSQL continuam com consistência compensatória, não atomicidade distribuída. Falhas na remoção compensatória geram log estruturado e exigem rotina operacional de reconciliação.\n- A limpeza da interface afeta apenas prévia/filtros locais; não exclui nem oculta a persistência no banco.
+
+## Hardening complementar — pacote D02.1
+- Parsing autoritativo no servidor: registros enviados pelo navegador não são aceitos como fonte de verdade.
+- Proveniência por importação: hash SHA-256, versão do parser e índice da linha são persistidos no payload de origem.
+- Precisão: API e domínio retornam/transportam `amount_minor` como inteiro; conversão para BRL ocorre somente na formatação visual.
+- Contadores: `inserted_count`, `duplicate_count` e `rejected_count` são separados. Arquivos com parsing parcial são rejeitados integralmente antes do commit.
+- Paginação: leitura de movimentações usa `limit`/`offset`, com teto de 200 por requisição.
+- Storage e PostgreSQL continuam com consistência compensatória, não atomicidade distribuída. Falhas na remoção compensatória geram log estruturado e exigem rotina operacional de reconciliação.
+- A limpeza da interface afeta apenas prévia/filtros locais; não exclui nem oculta a persistência no banco.
