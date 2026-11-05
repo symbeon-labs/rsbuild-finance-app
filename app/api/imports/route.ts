@@ -31,7 +31,10 @@ export async function POST(request: Request) {
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const fileHash = createHash("sha256").update(bytes).digest("hex");
-  const sourceText = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  let sourceText: string;
+  try { sourceText = new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch {
+    return NextResponse.json({ error: "source_encoding_invalid" }, { status: 422 });
+  }
   const parsed = file.name.toLowerCase().endsWith(".ofx")
     ? parseOfx(sourceText)
     : parseCsv(sourceText);
@@ -47,13 +50,14 @@ export async function POST(request: Request) {
     }, { status: 422 });
   }
 
-  const normalized = parsed.records.map((row, rowIndex) => {
+  const normalized = [];
+  for (const [rowIndex, row] of parsed.records.entries()) {
     if (!Number.isSafeInteger(row.amountMinor) || row.amountMinor < 0 ||
         !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !row.description.trim()) {
-      throw new Error("server_parser_invalid_record");
+      return NextResponse.json({ error: "server_parser_invalid_record" }, { status: 422 });
     }
     const keySource = `${fileHash}|${rowIndex}`;
-    return {
+    normalized.push({
       transaction_date: row.date,
       description: row.description.trim().slice(0, 500),
       amount_minor: String(row.amountMinor),
@@ -65,8 +69,8 @@ export async function POST(request: Request) {
         parser_version: PARSER_VERSION,
         source_row_index: rowIndex,
       },
-    };
-  });
+    });
+  }
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "statement.csv";
   const storagePath = `${organizationId}/imports/${randomUUID()}-${safeName}`;
