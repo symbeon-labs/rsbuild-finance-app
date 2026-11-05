@@ -77,7 +77,244 @@ begin
     where jsonb_typeof(item.value) <> 'object'
        or coalesce(item.value->>'amount_minor','') = ''
        or translate(coalesce(item.value->>'amount_minor',''), '0123456789', '') <> ''
-       or case when coalesce(item.value->>'amount_minor','') ~ '^\\d+
+       or case when coalesce(item.value->>'amount_minor','') ~ '^[0-9]+       or length(coalesce(item.value->>'transaction_date','')) <> 10
+       or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}$'
+       or length(coalesce(item.value->>'description','')) not between 1 and 500
+       or coalesce(item.value->>'direction','') not in ('entrada','saída')
+       or length(coalesce(item.value->>'deduplication_key','')) <> 64
+       or translate(coalesce(item.value->>'deduplication_key',''), '0123456789abcdef', '') <> ''
+       or length(coalesce(item.value->>'category','')) not between 1 and 120
+       or length(coalesce(item.value->>'currency','BRL')) <> 3
+       or translate(coalesce(item.value->>'currency','BRL'), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '') <> ''
+       or jsonb_typeof(coalesce(item.value->'raw_payload','{}'::jsonb)) <> 'object'
+  ) then
+    raise exception 'one or more import records are invalid' using errcode = '22023';
+  end if;
+
+  insert into public.import_batches
+    (organization_id, original_filename, file_sha256, file_size_bytes, metadata)
+  values
+    (p_organization_id, p_original_filename, p_file_sha256, p_file_size_bytes,
+     jsonb_build_object('source','rsbuild-finance-app','version','d02'))
+  returning id into v_batch_id;
+
+  insert into public.source_artifacts
+    (organization_id, import_batch_id, storage_bucket, storage_path, media_type, file_sha256, file_size_bytes)
+  values
+    (p_organization_id, v_batch_id, 'rsbuild-source-artifacts', p_storage_path,
+     case when lower(p_original_filename) like '%.ofx' then 'application/x-ofx' else 'text/csv' end,
+     p_file_sha256, p_file_size_bytes);
+
+  insert into public.financial_records
+    (organization_id, import_batch_id, source_record_id, transaction_date, description, amount_minor,
+     currency, direction, category, deduplication_key, raw_payload)
+  select
+    p_organization_id,
+    v_batch_id,
+    item.value->'raw_payload'->>'source_record_id',
+    (item.value->>'transaction_date')::date,
+    left(item.value->>'description', 500),
+    (item.value->>'amount_minor')::bigint,
+    coalesce(nullif(item.value->>'currency',''), 'BRL')::char(3),
+    (item.value->>'direction')::public.rsbuild_record_direction,
+    coalesce(nullif(item.value->>'category',''), 'Não classificado'),
+    item.value->>'deduplication_key',
+    coalesce(item.value->'raw_payload','{}'::jsonb)
+  from jsonb_array_elements(p_records) as item(value)
+  on conflict (organization_id, deduplication_key)
+    where deduplication_key is not null do nothing;
+
+  get diagnostics v_inserted = row_count;
+  v_duplicates := v_total - v_inserted;
+  -- This endpoint rejects malformed source files before invoking the RPC.
+  -- Duplicates are not rejected records and are reported separately.
+  v_rejected := 0;
+
+  update public.import_batches
+  set status = 'committed',
+      record_count = v_total,
+      accepted_count = v_inserted,
+      rejected_count = v_rejected,
+      metadata = metadata || jsonb_build_object(
+        'inserted_count', v_inserted,
+        'duplicate_count', v_duplicates,
+        'rejected_count', v_rejected
+      ),
+      committed_at = now()
+  where id = v_batch_id and organization_id = p_organization_id;
+
+  insert into public.audit_events
+    (organization_id, event_type, entity_type, entity_id, metadata)
+  values
+    (p_organization_id, 'financial_import_committed', 'import_batch', v_batch_id::text,
+     jsonb_build_object(
+       'inserted',v_inserted,
+       'duplicates',v_duplicates,
+       'rejected',v_rejected,
+       'file_sha256',p_file_sha256
+     ));
+
+  return query select v_batch_id, v_inserted, v_duplicates, v_rejected;
+end;
+$function$;
+
+-- Keep privileged implementation outside exposed API schemas. The public
+-- RPC is a SECURITY INVOKER wrapper; the private implementation independently
+-- verifies auth.uid(), tenant membership, role, path and uploaded object.
+revoke all on function private.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  from public, anon, authenticated;
+grant usage on schema private to authenticated;
+grant execute on function private.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  to authenticated;
+
+create or replace function public.commit_financial_import(
+  p_organization_id uuid,
+  p_original_filename text,
+  p_file_sha256 text,
+  p_file_size_bytes bigint,
+  p_storage_path text,
+  p_records jsonb
+)
+returns table(batch_id uuid, inserted_count integer, duplicate_count integer, rejected_count integer)
+language sql
+security invoker
+set search_path = pg_catalog, public
+as $wrapper$
+  select * from private.commit_financial_import(
+    p_organization_id,
+    p_original_filename,
+    p_file_sha256,
+    p_file_size_bytes,
+    p_storage_path,
+    p_records
+  );
+$wrapper$;
+
+revoke all on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  from public, anon, authenticated;
+grant execute on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  to authenticated;
+
+drop policy if exists "tenant operators delete source files" on storage.objects;
+create policy "tenant operators delete source files"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'rsbuild-source-artifacts'
+  and exists (
+    select 1 from public.organization_memberships m
+    where m.user_id = (select auth.uid())
+      and m.organization_id::text = (storage.foldername(name))[1]
+      and m.role in ('owner','admin','operator')
+  )
+);
+
+          then (item.value->>'amount_minor')::numeric > 9007199254740991
+          else true end
+       or length(coalesce(item.value->>'transaction_date','')) <> 10
+       or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}$'
+       or length(coalesce(item.value->>'description','')) not between 1 and 500
+       or coalesce(item.value->>'direction','') not in ('entrada','saída')
+       or length(coalesce(item.value->>'deduplication_key','')) <> 64
+       or translate(coalesce(item.value->>'deduplication_key',''), '0123456789abcdef', '') <> ''
+       or length(coalesce(item.value->>'category','')) not between 1 and 120
+       or length(coalesce(item.value->>'currency','BRL')) <> 3
+       or translate(coalesce(item.value->>'currency','BRL'), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '') <> ''
+       or jsonb_typeof(coalesce(item.value->'raw_payload','{}'::jsonb)) <> 'object'
+  ) then
+    raise exception 'one or more import records are invalid' using errcode = '22023';
+  end if;
+
+  insert into public.import_batches
+    (organization_id, original_filename, file_sha256, file_size_bytes, metadata)
+  values
+    (p_organization_id, p_original_filename, p_file_sha256, p_file_size_bytes,
+     jsonb_build_object('source','rsbuild-finance-app','version','d02'))
+  returning id into v_batch_id;
+
+  insert into public.source_artifacts
+    (organization_id, import_batch_id, storage_bucket, storage_path, media_type, file_sha256, file_size_bytes)
+  values
+    (p_organization_id, v_batch_id, 'rsbuild-source-artifacts', p_storage_path,
+     case when lower(p_original_filename) like '%.ofx' then 'application/x-ofx' else 'text/csv' end,
+     p_file_sha256, p_file_size_bytes);
+
+  insert into public.financial_records
+    (organization_id, import_batch_id, source_record_id, transaction_date, description, amount_minor,
+     currency, direction, category, deduplication_key, raw_payload)
+  select
+    p_organization_id,
+    v_batch_id,
+    item.value->'raw_payload'->>'source_record_id',
+    (item.value->>'transaction_date')::date,
+    left(item.value->>'description', 500),
+    (item.value->>'amount_minor')::bigint,
+    coalesce(nullif(item.value->>'currency',''), 'BRL')::char(3),
+    (item.value->>'direction')::public.rsbuild_record_direction,
+    coalesce(nullif(item.value->>'category',''), 'Não classificado'),
+    item.value->>'deduplication_key',
+    coalesce(item.value->'raw_payload','{}'::jsonb)
+  from jsonb_array_elements(p_records) as item(value)
+  on conflict (organization_id, deduplication_key)
+    where deduplication_key is not null do nothing;
+
+  get diagnostics v_inserted = row_count;
+  v_duplicates := v_total - v_inserted;
+  -- This endpoint rejects malformed source files before invoking the RPC.
+  -- Duplicates are not rejected records and are reported separately.
+  v_rejected := 0;
+
+  update public.import_batches
+  set status = 'committed',
+      record_count = v_total,
+      accepted_count = v_inserted,
+      rejected_count = v_rejected,
+      metadata = metadata || jsonb_build_object(
+        'inserted_count', v_inserted,
+        'duplicate_count', v_duplicates,
+        'rejected_count', v_rejected
+      ),
+      committed_at = now()
+  where id = v_batch_id and organization_id = p_organization_id;
+
+  insert into public.audit_events
+    (organization_id, event_type, entity_type, entity_id, metadata)
+  values
+    (p_organization_id, 'financial_import_committed', 'import_batch', v_batch_id::text,
+     jsonb_build_object(
+       'inserted',v_inserted,
+       'duplicates',v_duplicates,
+       'rejected',v_rejected,
+       'file_sha256',p_file_sha256
+     ));
+
+  return query select v_batch_id, v_inserted, v_duplicates, v_rejected;
+end;
+$function$;
+
+revoke all on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  from public, anon, authenticated;
+grant execute on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  to authenticated;
+
+drop policy if exists "tenant operators delete source files" on storage.objects;
+create policy "tenant operators delete source files"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'rsbuild-source-artifacts'
+  and exists (
+    select 1 from public.organization_memberships m
+    where m.user_id = (select auth.uid())
+      and m.organization_id::text = (storage.foldername(name))[1]
+      and m.role in ('owner','admin','operator')
+  )
+);
+
+          then (item.value->>'amount_minor')::numeric > 9007199254740991
+          else true end
        or length(coalesce(item.value->>'transaction_date','')) <> 10
        or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}$'
        or length(coalesce(item.value->>'description','')) not between 1 and 500
