@@ -21,6 +21,35 @@ test("CSV brasileiro: detecta ponto e vírgula, datas e valores com agrupamento"
   assert.equal(result.records[1].direction, "saída");
 });
 
+test("CSV rejeita entrada positiva sem direção explícita", () => {
+  const result = parseCsv([
+    "Data;Descrição;Valor",
+    "2026-05-01;Recebimento sem tipo;100,00"
+  ].join("\n"));
+  assert.equal(result.records.length, 0);
+  assert.match(result.errors.join(" "), /direção.*ambíguo/i);
+});
+
+test("CSV infere saída pelo sinal negativo quando direção está ausente", () => {
+  const result = parseCsv([
+    "Data;Descrição;Valor",
+    "2026-05-01;Pagamento identificado pelo sinal;-100,00"
+  ].join("\n"));
+  assert.equal(result.records.length, 1);
+  assert.equal(result.records[0].direction, "saída");
+  assert.equal(result.records[0].amountMinor, 10000);
+});
+
+test("CSV rejeita direção desconhecida e conflito entre sinal e direção", () => {
+  const result = parseCsv([
+    "Data;Descrição;Valor;Tipo",
+    "2026-05-01;Tipo desconhecido;100,00;movimento",
+    "2026-05-02;Conflito;-100,00;Entrada"
+  ].join("\n"));
+  assert.equal(result.records.length, 0);
+  assert.equal(result.errors.length, 2);
+});
+
 test("CSV com BOM, delimitador vírgula e aspas escapadas", () => {
   const input = '\uFEFFdate,description,amount,direction\n2026-03-04,"Peças ""premium""",99.90,credit';
   const result = parseCsv(input);
