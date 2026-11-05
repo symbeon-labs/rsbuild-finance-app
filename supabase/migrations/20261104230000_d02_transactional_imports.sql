@@ -5,7 +5,7 @@ create unique index if not exists financial_records_org_dedup_key_uidx
   on public.financial_records (organization_id, deduplication_key)
   where deduplication_key is not null;
 
-create or replace function public.commit_financial_import(
+create or replace function private.commit_financial_import(
   p_organization_id uuid,
   p_original_filename text,
   p_file_sha256 text,
@@ -156,6 +156,38 @@ begin
   return query select v_batch_id, v_inserted, v_duplicates, v_rejected;
 end;
 $function$;
+
+-- Keep privileged implementation outside exposed API schemas. The public
+-- RPC is a SECURITY INVOKER wrapper; the private implementation independently
+-- verifies auth.uid(), tenant membership, role, path and uploaded object.
+revoke all on function private.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  from public, anon, authenticated;
+grant usage on schema private to authenticated;
+grant execute on function private.commit_financial_import(uuid,text,text,bigint,text,jsonb)
+  to authenticated;
+
+create or replace function public.commit_financial_import(
+  p_organization_id uuid,
+  p_original_filename text,
+  p_file_sha256 text,
+  p_file_size_bytes bigint,
+  p_storage_path text,
+  p_records jsonb
+)
+returns table(batch_id uuid, inserted_count integer, duplicate_count integer, rejected_count integer)
+language sql
+security invoker
+set search_path = pg_catalog, public
+as $wrapper$
+  select * from private.commit_financial_import(
+    p_organization_id,
+    p_original_filename,
+    p_file_sha256,
+    p_file_size_bytes,
+    p_storage_path,
+    p_records
+  );
+$wrapper$;
 
 revoke all on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb)
   from public, anon, authenticated;
