@@ -37,6 +37,9 @@ Any future RSBUILD product consuming an extracted identity package should record
 5. product owner and approval scope.
 
 ## Ownership and governance
+
+The interim RSBUILD Finance validation direction and its contractual caveat are recorded in `docs/PRODUCT_VALIDATION_AND_IP_BOUNDARIES.md`. That document is an operational guardrail for the MVP, not a contract or legal determination.
+
 Reusing approved RSBUILD brand assets does not automatically transfer ownership of repositories, product implementation, generic engineering tools, neutral design primitives, reusable adapters, or Symbeon methods.
 
 Ownership, licenses, permitted use, maintenance obligations, and deliverable rights are governed by the signed contract and applicable statement of work. Nothing in this document grants rights beyond those agreements. RSBUILD's brand assets remain subject to RSBUILD's source materials and approvals.

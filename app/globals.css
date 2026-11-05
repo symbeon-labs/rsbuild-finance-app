@@ -44,3 +44,36 @@
 @media(max-width:850px){.login-page{grid-template-columns:minmax(0,.85fr) minmax(390px,1.15fr)}.login-brand-content{padding:42px 34px}.login-brand-message h1{font-size:clamp(34px,5vw,48px)}.login-form-panel{padding-left:35px;padding-right:35px}}
 @media(max-width:640px){.login-page{display:flex;flex-direction:column;min-height:100svh;background:#F5F1EB}.login-brand-panel{display:none}.login-form-panel{min-height:100svh;padding:35px 25px 70px;justify-content:center}.login-form-wrap{width:min(100%,410px)}.login-mobile-brand{display:flex;align-items:flex-start;margin-bottom:48px}.login-mobile-brand .login-brand-logo{width:min(230px,72vw);height:auto}.login-form-heading{margin-bottom:30px}.login-form-heading h2{font-size:31px}.login-copyright{bottom:20px;font-size:8px}}
 @media(prefers-reduced-motion:reduce){.login-field input,.login-submit{transition:none}.login-submit:hover{transform:none}}
+
+/* RSBUILD login refinement — tablet hierarchy, complete logo framing, restrained texture */
+.login-brand-panel:before{background:radial-gradient(ellipse at 12% 88%,rgba(181,88,60,.10),transparent 46%),linear-gradient(145deg,#292a2c 0%,#302d2b 100%)}
+.login-brand-pattern{opacity:.23}
+.login-brand-content{padding:clamp(30px,4.8vw,68px)}
+.login-brand-logo-wrap{padding:12px 16px;border-radius:3px;max-width:100%;background:#F5F1EB}
+.login-brand-logo{width:clamp(270px,34vw,360px);max-width:100%;height:auto;object-fit:contain}
+.login-brand-message{padding:clamp(48px,6vw,78px) 0;max-width:520px}
+.login-brand-message h1{font-size:clamp(35px,3.9vw,56px);line-height:1.12}
+.login-form-wrap{width:min(100%,420px)}
+.login-form-panel{padding:64px clamp(28px,6vw,90px) 76px}
+.login-mobile-logo-wrap{padding:10px 12px}
+.login-mobile-brand .login-brand-logo{width:min(250px,72vw);max-width:100%}
+@media(max-width:850px){
+ .login-brand-content{padding:34px 26px}
+ .login-brand-logo{width:min(100%,300px)}
+ .login-brand-message{padding:48px 0}
+ .login-brand-message h1{font-size:clamp(32px,4.7vw,44px)}
+ .login-form-panel{padding-left:28px;padding-right:28px}
+}
+@media(max-width:640px){
+ .login-form-panel{padding:30px 22px 68px}
+ .login-mobile-brand{margin-bottom:40px}
+ .login-mobile-brand .login-brand-logo{width:min(250px,72vw)}
+ .login-form-heading h2{font-size:32px}
+}
+@media(max-height:760px) and (min-width:641px){
+ .login-brand-content{padding-top:28px;padding-bottom:28px}
+ .login-brand-message{padding:34px 0}
+ .login-brand-message h1{font-size:clamp(32px,3.5vw,48px);margin:16px 0 14px}
+ .login-brand-message>p{font-size:13px;line-height:1.7}
+ .login-form-panel{padding-top:48px;padding-bottom:56px}
+}

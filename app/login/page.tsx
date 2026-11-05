@@ -45,14 +45,16 @@ export default async function LoginPage({ searchParams }: Props) {
       <section className="login-form-panel">
         <div className="login-form-wrap">
           <div className="login-mobile-brand">
+            <div className="login-brand-logo-wrap login-mobile-logo-wrap">
             <Image
               src="/brand/rsbuild-logo-primary.webp"
               alt="RSBUILD — Inovação Corporativa"
-              width={230}
-              height={83}
+              width={240}
+              height={87}
               priority
               className="login-brand-logo"
             />
+            </div>
           </div>
 
           <div className="login-form-heading">
