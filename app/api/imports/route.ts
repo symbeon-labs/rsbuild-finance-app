@@ -10,6 +10,11 @@ export const dynamic = "force-dynamic";
 const PARSER_VERSION = "rsbuild-import/1.1.0";
 
 export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin !== new URL(request.url).origin) {
+    return NextResponse.json({ error: "origin_forbidden" }, { status: 403 });
+  }
+
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
