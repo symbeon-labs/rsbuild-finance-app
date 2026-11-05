@@ -731,6 +731,7 @@ export type Database = {
           batch_id: string
           inserted_count: number
           duplicate_count: number
+          rejected_count: number
         }[]
       }
     }
