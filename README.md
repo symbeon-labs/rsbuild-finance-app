@@ -34,6 +34,7 @@ npm run build
 
 ## Documentação
 
+- [Baseline de execução sistemática](docs/EXECUTION_BASELINE.md)
 - [Contrato de integração](docs/INTEGRATION_CONTRACT.md)
 - [MVP readiness handoff](docs/MVP_READINESS_HANDOFF.md)
 - [RSBUILD product brand assets](docs/BRAND_ASSETS.md)
