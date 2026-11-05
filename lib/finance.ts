@@ -166,7 +166,7 @@ export function parseOfx(text: string): ImportResult {
     const posted = get(block, "DTPOSTED").slice(0, 8);
     const date = /^\d{8}$/.test(posted) ? parseDate(`${posted.slice(0,4)}-${posted.slice(4,6)}-${posted.slice(6,8)}`) : null;
     const rawAmount = get(block, "TRNAMT");
-    const amount = /^[-+]?\d+(?:\.\d{1,2})?$/.test(rawAmount) ? Number(rawAmount) : NaN;
+    const parsedAmount = parseAmount(rawAmount);
     if (!date || !parsedAmount) { errors.push(`Movimento OFX ${index + 1}: data ou valor inválido.`); return; }
     records.push({
       id: `ofx-${importBatchId}-${index + 1}`,
