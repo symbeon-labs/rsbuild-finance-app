@@ -5,6 +5,40 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type CleanupFailure = { step: string; message: string };
+
+async function compensate(
+  admin: ReturnType<typeof createAdminClient>,
+  organizationId: string,
+  userId: string | null,
+  createdUser: boolean,
+): Promise<CleanupFailure[]> {
+  const failures: CleanupFailure[] = [];
+  if (userId) {
+    const { error } = await admin.from("organization_memberships")
+      .delete().eq("organization_id", organizationId).eq("user_id", userId);
+    if (error) failures.push({ step: "membership_delete", message: error.message });
+    if (createdUser) {
+      const { error: userError } = await admin.auth.admin.deleteUser(userId);
+      if (userError) failures.push({ step: "auth_user_delete", message: userError.message });
+    }
+  }
+  const { error: organizationError } = await admin.from("organizations").delete().eq("id", organizationId);
+  if (organizationError) failures.push({ step: "organization_delete", message: organizationError.message });
+  return failures;
+}
+
+function reportCompensationFailure(organizationId: string, failures: CleanupFailure[]) {
+  if (!failures.length) return;
+  // Do not log email addresses, tokens, tax identifiers or financial data.
+  console.error(JSON.stringify({
+    event: "rsbuild_tenant_provision_compensation_failed",
+    organizationId,
+    failures,
+    requiresManualReconciliation: true,
+  }));
+}
+
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
   const requestOrigin = new URL(request.url).origin;
@@ -31,7 +65,8 @@ export async function POST(request: Request) {
   const legalName = (body.legalName ?? "").trim();
   const displayName = (body.displayName ?? "").trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-      !legalName || legalName.length > 180 || !displayName || displayName.length > 120) {
+      !legalName || legalName.length > 180 || !displayName || displayName.length > 120 ||
+      (body.taxIdentifier && body.taxIdentifier.length > 32)) {
     return NextResponse.json({ error: "invalid_provisioning_payload" }, { status: 422 });
   }
 
@@ -52,8 +87,7 @@ export async function POST(request: Request) {
   });
 
   let invitedUserId = invitation?.user?.id ?? null;
-  let createdUser = Boolean(invitedUserId);
-
+  const createdUser = Boolean(invitedUserId);
   if (invitationError || !invitedUserId) {
     let page = 1;
     while (!invitedUserId) {
@@ -64,8 +98,9 @@ export async function POST(request: Request) {
       page += 1;
     }
     if (!invitedUserId) {
-      await admin.from("organizations").delete().eq("id", organization.id);
-      return NextResponse.json({ error: "invitation_failed" }, { status: 422 });
+      const failures = await compensate(admin, organization.id, null, false);
+      reportCompensationFailure(organization.id, failures);
+      return NextResponse.json({ error: "invitation_failed", cleanupPending: failures.length > 0 }, { status: 422 });
     }
   }
 
@@ -74,11 +109,10 @@ export async function POST(request: Request) {
     user_id: invitedUserId,
     role: "owner",
   });
-
   if (membershipError) {
-    if (createdUser) await admin.auth.admin.deleteUser(invitedUserId);
-    await admin.from("organizations").delete().eq("id", organization.id);
-    return NextResponse.json({ error: "membership_provision_failed" }, { status: 500 });
+    const failures = await compensate(admin, organization.id, invitedUserId, createdUser);
+    reportCompensationFailure(organization.id, failures);
+    return NextResponse.json({ error: "membership_provision_failed", cleanupPending: failures.length > 0 }, { status: 500 });
   }
 
   const { error: auditError } = await admin.from("audit_events").insert({
@@ -90,11 +124,9 @@ export async function POST(request: Request) {
     metadata: { invited_email: email, platform_admin_user_id: user.id, platform_admin_email: user.email },
   });
   if (auditError) {
-    await admin.from("organization_memberships").delete()
-      .eq("organization_id", organization.id).eq("user_id", invitedUserId);
-    if (createdUser) await admin.auth.admin.deleteUser(invitedUserId);
-    await admin.from("organizations").delete().eq("id", organization.id);
-    return NextResponse.json({ error: "provisioning_audit_failed" }, { status: 500 });
+    const failures = await compensate(admin, organization.id, invitedUserId, createdUser);
+    reportCompensationFailure(organization.id, failures);
+    return NextResponse.json({ error: "provisioning_audit_failed", cleanupPending: failures.length > 0 }, { status: 500 });
   }
 
   return NextResponse.json({ organizationId: organization.id, invitedEmail: email }, {
