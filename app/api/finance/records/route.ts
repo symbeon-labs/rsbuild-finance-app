@@ -37,7 +37,7 @@ export async function GET(request: Request) {
       id: row.id,
       date: row.transaction_date,
       description: row.description,
-      amountMinor: Number(row.amount_minor),
+      amountMinor,
       direction: row.direction,
       category: row.category,
       source: "Supabase",
