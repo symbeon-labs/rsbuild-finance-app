@@ -4,7 +4,7 @@ export type FinancialRecord = {
   id: string;
   date: string;
   description: string;
-  amount: number;
+  amountMinor: number;
   direction: Direction;
   category: string;
   source: string;
@@ -154,7 +154,7 @@ export function parseCsv(text: string): ImportResult {
     }
     records.push({
       id: `csv-${importBatchId}-${row.line}`, date, description,
-      amount: amount.cents / 100, direction,
+      amountMinor: amount.cents, direction,
       category: categoryIndex >= 0 ? (row.cells[categoryIndex] || "Não classificado") : "Não classificado",
       source: "Importação CSV", status: "pendente", importBatchId
     });
@@ -174,13 +174,13 @@ export function parseOfx(text: string): ImportResult {
     const posted = get(block, "DTPOSTED").slice(0, 8);
     const date = /^\d{8}$/.test(posted) ? parseDate(`${posted.slice(0,4)}-${posted.slice(4,6)}-${posted.slice(6,8)}`) : null;
     const rawAmount = get(block, "TRNAMT");
-    const amount = /^[-+]?\d+(?:\.\d{1,2})?$/.test(rawAmount) ? Number(rawAmount) : NaN;
-    if (!date || !Number.isFinite(amount)) { errors.push(`Movimento OFX ${index + 1}: data ou valor inválido.`); return; }
+    const parsedAmount = parseAmount(rawAmount);
+    if (!date || !parsedAmount) { errors.push(`Movimento OFX ${index + 1}: data ou valor inválido.`); return; }
     records.push({
       id: `ofx-${importBatchId}-${index + 1}`,
       date, description: get(block, "NAME") || get(block, "MEMO") || "Movimento bancário",
-      amount: Math.abs(Math.round(amount * 100) / 100),
-      direction: amount < 0 ? "saída" : "entrada",
+      amountMinor: parsedAmount.cents,
+      direction: parsedAmount.negative ? "saída" : "entrada",
       category: "Não classificado", source: "Importação OFX", status: "pendente",
       sourceRecordId: get(block, "FITID") || undefined, importBatchId
     });
@@ -189,8 +189,9 @@ export function parseOfx(text: string): ImportResult {
   return { records, errors };
 }
 
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+export function formatCurrency(amountMinor: number): string {
+  if (!Number.isSafeInteger(amountMinor)) throw new Error("Valor monetário fora do intervalo seguro.");
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amountMinor / 100);
 }
 
 export function formatDate(value: string): string {

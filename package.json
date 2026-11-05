@@ -1,6 +1,6 @@
 {
   "name": "rsbuild-finance-app",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,7 +13,9 @@
   "dependencies": {
     "next": "15.5.28",
     "react": "19.1.7",
-    "react-dom": "19.1.7"
+    "react-dom": "19.1.7",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",

@@ -1,112 +1,52 @@
 # Plano de Implementação — RSBUILD Finance
 
-**Versão:** 0.1  
-**Status:** Plano técnico de trabalho
+**Versão:** 0.5  
+**Status:** D02 implementada na branch de aplicação; homologação remota, configuração operacional e aceite comercial permanecem pendentes.
 
 ## Objetivo
+Evoluir a aplicação de uma sessão de importação transitória para uma plataforma multiempresa com persistência, rastreabilidade e integrações controladas.
 
-Organizar a evolução da aplicação a partir das capacidades financeiras priorizadas, mantendo entregas verificáveis e separando funcionalidades já presentes de capacidades futuras.
+## Estado identificado
+- Next.js App Router e interface responsiva.
+- Importação e pré-visualização CSV/OFX no cliente.
+- Base de persistência gerenciada D02 e migrations versionadas no repositório; confirmar histórico remoto para declarar cada migration aplicada.
+- Histórico de migrations remoto sincronizado com a sequência versionada.
+- Hardening de atribuição de ator, estado inicial e referências tenant-scoped aplicado.
+- Auth SSR implementado com cookies, login, callback PKCE e logout.
+- Provisionamento administrativo implementado por convite, allowlist de e-mails e chave secreta server-only.
+- Endpoints tenant-scoped para memberships e leitura de movimentações.
+- Upload privado e RPC transacional para importações, com hash SHA-256, parsing autoritativo no servidor, versão do parser e deduplicação por organização. A etapa Storage + PostgreSQL usa compensação e não constitui transação distribuída.
+- Homologação funcional remota ainda pendente: exige configuração de ambiente, convite do primeiro administrador e testes com dois usuários reais.
+- ERP e contas de origem dependem de confirmação de escopo e acesso.
 
-## Estado identificado na aplicação
+## D02 — Persistência gerenciada
+- 13 tabelas de domínio implantadas com RLS.
+- Isolamento lógico baseado em `organization_memberships`.
+- Bucket privado para artefatos de origem, com paths tenant-scoped.
+- Valores monetários em unidades menores inteiras.
+- UEAP integrado apenas por contrato de gateway.
+- Provisionamento de tenant e membership inicial reservado a fluxo administrativo confiável.
 
-A versão atualmente registrada contém:
-- Aplicação Next.js com interface responsiva.
-- Painel de visão geral com indicadores calculados sobre os registros carregados na sessão.
-- Importação e pré-visualização de CSV e OFX.
-- Pesquisa de movimentações.
-- Áreas de contas e relatórios ainda em preparação.
-- Pipeline de CI configurado para instalação, verificação de tipos e build.
+## Próximas etapas
+1. Sincronizar package-lock e executar CI + pgTAP para a nova camada D02.
+2. Configurar variáveis server-side e URLs de callback do Supabase Auth; validar SMTP de convites.
+3. Convidar o primeiro administrador por endpoint protegido e provisionar organização.
+4. Homologar leitura e persistência com sessão real.
+5. Homologar idempotência, upload privado e auditoria.
+6. Testar dois tenants independentes, incluindo negação cruzada no banco e Storage.
+7. Integrar UEAP por contrato versionado e fluxo assíncrono.
+8. D03: indicadores consultados do banco, filtros reais e precisão financeira.
+9. D04: gestão financeira.
+10. D05: adaptadores ERP somente leitura/dry-run; escrita exige autorização separada.
+11. D06: conciliação assistida e revisão humana.
+12. D07: expansão adaptativa.
 
-Limitações identificadas:
-- Os registros ficam somente no estado da sessão e são perdidos ao recarregar a página.
-- Não há autenticação nem separação de acesso por empresa.
-- Não há persistência em banco de dados.
-- O seletor de período ainda não filtra os indicadores ou a lista.
-- Não há cadastro operacional de contas e fontes.
-- Não há integração ativa com Omie, bancos ou adquirentes.
-- Não há motor de conciliação.
-- Os registros importados não possuem ainda um processo robusto de deduplicação ou idempotência.
-- A classificação automática do CSV utiliza heurísticas simples e deve ser tratada como não validada.
-- A leitura OFX deve ser ampliada com fixtures reais anonimizadas e testes de conformidade.
-
-## Sequência de implementação
-
-### D01 — Integridade da importação
-
-- Definir contrato de importação para CSV e OFX.
-- Criar conjunto de arquivos de teste anonimizados.
-- Validar datas, valores, sinais, moeda e campos obrigatórios.
-- Preservar identificação da origem e referência ao lote.
-- Detectar duplicidades e permitir reprocessamento seguro.
-- Exibir erros por linha e resumo da importação.
-
-**Aceite:** fixtures aprovadas, totais conferidos e importações repetidas sem duplicação indevida.
-
-### D02 — Persistência e organização por empresa
-
-- Definir entidades de empresa, usuário, conta, fonte, lote e movimentação.
-- Implementar persistência com isolamento por empresa.
-- Estabelecer trilha de criação e atualização dos registros.
-- Definir política de acesso e retenção.
-- Remover dependência do estado transitório do navegador.
-
-**Aceite:** dados persistem após nova sessão e não são acessíveis entre empresas sem autorização.
-
-### D03 — Visão financeira confiável
-
-- Implementar filtros reais por período, conta, origem e direção.
-- Separar valores confirmados, pendentes e estimados.
-- Calcular indicadores a partir de registros persistidos e validados.
-- Exibir cobertura, período e atualização da informação.
-- Adicionar testes de cálculo financeiro com precisão decimal.
-
-**Aceite:** indicadores reproduzíveis e reconciliados com os registros de origem usados no teste.
-
-### D04 — Gestão financeira
-
-- Modelar contas a pagar e a receber sem confundi-las com movimentações bancárias.
-- Separar fluxo realizado de fluxo projetado.
-- Criar relatórios com critérios e período explícitos.
-- Registrar regras e classificações aprovadas pelos responsáveis.
-
-**Aceite:** cenários operacionais validados e relatórios reproduzíveis.
-
-### D05 — Integrações de fontes
-
-- Validar acesso, escopo e amostras do Omie antes de desenvolver o adaptador.
-- Implementar consulta somente leitura inicialmente.
-- Definir mapeamento de identificadores e paginação.
-- Adicionar adaptadores para outras fontes somente com amostras e testes representativos.
-
-**Aceite:** cobertura e integridade dos campos demonstradas, sem mutação nos sistemas de origem.
-
-### D06 — Conciliação
-
-- Definir relações possíveis entre movimentos, recebíveis, pagamentos e liquidações.
-- Gerar candidatos explicáveis, sem confirmar automaticamente casos ambíguos.
-- Criar fila de exceções e revisão humana.
-- Registrar decisões e justificativas.
-
-**Aceite:** conjunto de casos rotulados e métricas de precisão por tipo de relacionamento.
-
-### D07 — Expansão adaptativa
-
-- Permitir habilitar capacidades por empresa conforme configuração e validação.
-- Versionar regras operacionais e mapeamentos específicos.
-- Adicionar fontes, unidades e módulos conforme necessidade observada.
-- Monitorar cobertura, desempenho e qualidade por empresa.
-
-**Aceite:** expansão validada sem regressão de isolamento, integridade ou compatibilidade.
-
-## Regras de implementação
-
-- Não introduzir dados financeiros reais em fixtures ou no controle de versão.
-- Usar valores monetários com representação decimal exata ou unidades monetárias inteiras.
-- Não tratar sugestão algorítmica como confirmação financeira.
-- Não realizar escrita em ERP ou banco sem autorização e escopo próprios.
+## Regras
+- Não usar dados reais em fixtures ou no repositório.
+- Não declarar recursos disponíveis antes da homologação.
+- Não realizar escrita em ERP sem autorização específica.
+- UEAP atesta claims delimitados e relações criptográficas; não declara verdade financeira.
 - Cada etapa deve possuir testes automatizados, evidências e critérios de aceite.
-- Não declarar capacidade como disponível antes de cumprir seus critérios.
 
-## Próxima prioridade técnica
-
-A primeira prioridade é D01 — Integridade da importação. Antes de ampliar fontes ou construir indicadores mais sofisticados, a aplicação precisa demonstrar que interpreta corretamente os arquivos, preserva sua origem e evita duplicidades.
+## Critério de conclusão D02
+Dados persistem entre sessões; usuários de empresas diferentes não acessam dados entre si; importações são idempotentes e derivadas do arquivo no servidor; valores permanecem inteiros em centavos; Storage é privado e testado com usuários reais; contadores distinguem inserções, duplicatas e rejeições; listagens são paginadas; nenhum segredo privilegiado chega ao browser; compensações falhas são rastreáveis.

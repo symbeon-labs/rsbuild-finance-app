@@ -14,13 +14,12 @@ test("CSV brasileiro: detecta ponto e vírgula, datas e valores com agrupamento"
   assert.deepEqual(result.errors, []);
   assert.equal(result.records[0].date, "2026-02-01");
   assert.equal(result.records[0].description, "Venda, balcão");
-  assert.equal(result.records[0].amount, 1234.56);
+  assert.equal(result.records[0].amountMinor, 123456);
   assert.equal(result.records[0].direction, "entrada");
   assert.equal(result.records[0].category, "Vendas");
-  assert.equal(result.records[1].amount, 250);
+  assert.equal(result.records[1].amountMinor, 25000);
   assert.equal(result.records[1].direction, "saída");
 });
-
 
 test("CSV rejeita entrada positiva sem direção explícita", () => {
   const result = parseCsv([
@@ -38,13 +37,14 @@ test("CSV infere saída pelo sinal negativo quando direção está ausente", () 
   ].join("\n"));
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].direction, "saída");
+  assert.equal(result.records[0].amountMinor, 10000);
 });
 
 test("CSV rejeita direção desconhecida e conflito entre sinal e direção", () => {
   const result = parseCsv([
     "Data;Descrição;Valor;Tipo",
     "2026-05-01;Tipo desconhecido;100,00;movimento",
-    "2026-05-02;Conflito; -100,00;Entrada"
+    "2026-05-02;Conflito;-100,00;Entrada"
   ].join("\n"));
   assert.equal(result.records.length, 0);
   assert.equal(result.errors.length, 2);
@@ -55,7 +55,7 @@ test("CSV com BOM, delimitador vírgula e aspas escapadas", () => {
   const result = parseCsv(input);
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].description, 'Peças "premium"');
-  assert.equal(result.records[0].amount, 99.9);
+  assert.equal(result.records[0].amountMinor, 9990);
 });
 
 test("CSV aceita data ISO e rejeita datas impossíveis e valores ambíguos", () => {
@@ -103,10 +103,10 @@ test("OFX extrai crédito, débito, data, descrição e FITID", () => {
   assert.equal(result.records.length, 2);
   assert.deepEqual(result.errors, []);
   assert.equal(result.records[0].date, "2026-04-01");
-  assert.equal(result.records[0].amount, 1250.75);
+  assert.equal(result.records[0].amountMinor, 125075);
   assert.equal(result.records[0].direction, "entrada");
   assert.equal(result.records[0].sourceRecordId, "FIT-001");
-  assert.equal(result.records[1].amount, 89.9);
+  assert.equal(result.records[1].amountMinor, 8990);
   assert.equal(result.records[1].direction, "saída");
   assert.equal(result.records[1].description, "Tarifa bancária");
   assert.equal(result.records[1].sourceRecordId, "FIT-002");
@@ -120,7 +120,7 @@ test("OFX rejeita movimentos com data ou valor inválido sem perder os válidos"
 </BANKTRANLIST></OFX>`;
   const result = parseOfx(input);
   assert.equal(result.records.length, 1);
-  assert.equal(result.records[0].amount, 0.1);
+  assert.equal(result.records[0].amountMinor, 10);
   assert.equal(result.errors.length, 2);
 });
 
@@ -130,6 +130,10 @@ test("OFX sem estrutura ou sem movimentos reconhecíveis retorna erro", () => {
 });
 
 test("formatação monetária e de data usa padrão brasileiro", () => {
-  assert.equal(formatCurrency(1234.5), "R$ 1.234,50");
+  assert.equal(formatCurrency(123450), "R$ 1.234,50");
   assert.equal(formatDate("2026-04-09"), "09/04/2026");
+});
+
+test("formatCurrency rejects floating-point monetary inputs", () => {
+  assert.throws(() => formatCurrency(1.25), /inteiro|seguro/i);
 });
