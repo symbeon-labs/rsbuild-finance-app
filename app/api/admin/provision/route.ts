@@ -28,7 +28,7 @@ async function compensate(
   return failures;
 }
 
-function reportCompensationFailure(organizationId: string, failures: CleanupFailure[]) {
+function reportCompensationFailure(organizationId: string, userId: string | null, failures: CleanupFailure[]) {
   if (!failures.length) return;
   // Do not log email addresses, tokens, tax identifiers or financial data.
   console.error(JSON.stringify({
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     }
     if (!invitedUserId) {
       const failures = await compensate(admin, organization.id, null, false);
-      reportCompensationFailure(organization.id, failures);
+      reportCompensationFailure(organization.id, invitedUserId, failures);
       return NextResponse.json({ error: "invitation_failed", cleanupPending: failures.length > 0 }, { status: 422 });
     }
   }
