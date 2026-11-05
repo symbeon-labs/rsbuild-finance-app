@@ -100,7 +100,9 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
       const refreshed = await fetch("/api/finance/records?organizationId=" + organizationId + "&limit=100&offset=0", { cache: "no-store" });
       if (!refreshed.ok) throw new Error("Importação salva, mas não foi possível atualizar a listagem.");
       const data = await refreshed.json();
-      setRecords(data.records ?? []);\n      setHasMoreRecords(Boolean(data.pagination?.hasMore));\n      setNextRecordsOffset(data.pagination?.nextOffset ?? 0);
+      setRecords(data.records ?? []);
+      setHasMoreRecords(Boolean(data.pagination?.hasMore));
+      setNextRecordsOffset(data.pagination?.nextOffset ?? 0);
       setNotice((payload.result?.inserted_count ?? 0) + " movimentação(ões) persistida(s); " + (payload.result?.duplicate_count ?? 0) + " duplicada(s).");
       setPendingImport([]);
       setImportErrors([]);
