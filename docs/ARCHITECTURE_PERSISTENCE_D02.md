@@ -32,7 +32,7 @@
 ## Fluxo de importação
 `upload → import_batch → source_artifact → parse → validation_run → financial_records → evidence_record → optional UEAP attestation`
 
-O commit PostgreSQL do lote é transacional e idempotente; upload no Storage é um efeito externo e não participa da mesma transação. A API interpreta o arquivo original no servidor (parser versionado), rejeita o arquivo inteiro se houver erros de parsing e persiste somente os registros derivados da fonte. A chave de deduplicação é escopada pela organização. A interface distingue prévia, persistência e contadores de inseridos/duplicados/rejeitados.
+O commit PostgreSQL do lote é transacional e idempotente; upload no Storage é um efeito externo e não participa da mesma transação. A implementação privilegiada da RPC reside no schema não exposto `private`; o endpoint RPC público é `SECURITY INVOKER` e delega à função privada com verificações explícitas de identidade, membership, role e Storage. A API interpreta o arquivo original no servidor (parser versionado), rejeita o arquivo inteiro se houver erros de parsing e persiste somente os registros derivados da fonte. A chave de deduplicação é escopada pela organização. A interface distingue prévia, persistência e contadores de inseridos/duplicados/rejeitados.
 
 ## Limites de confiança
 1. Autenticação pelo RSBUILD com Supabase Auth.
