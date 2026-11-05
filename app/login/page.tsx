@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { signIn } from "@/app/auth/actions";
 
 type Props = { searchParams: Promise<{ error?: string; next?: string; reason?: string }> };
@@ -17,11 +18,16 @@ export default async function LoginPage({ searchParams }: Props) {
       <section className="login-brand-panel" aria-label="Identidade RSBUILD">
         <div className="login-brand-pattern" aria-hidden="true" />
         <div className="login-brand-content">
-          <div className="login-wordmark" aria-label="RSBUILD">
-            <span>RSBUILD</span>
-            <i aria-hidden="true" />
+          <div className="login-brand-logo-wrap">
+            <Image
+              src="/brand/rsbuild-logo-primary.webp"
+              alt="RSBUILD — Inovação Corporativa"
+              width={240}
+              height={87}
+              priority
+              className="login-brand-logo"
+            />
           </div>
-          <p className="login-brand-kicker">INOVAÇÃO CORPORATIVA</p>
 
           <div className="login-brand-message">
             <span className="login-overline">GESTÃO FINANCEIRA</span>
@@ -39,12 +45,18 @@ export default async function LoginPage({ searchParams }: Props) {
       <section className="login-form-panel">
         <div className="login-form-wrap">
           <div className="login-mobile-brand">
-            <span>RSBUILD</span>
-            <small>INOVAÇÃO CORPORATIVA</small>
+            <Image
+              src="/brand/rsbuild-logo-primary.webp"
+              alt="RSBUILD — Inovação Corporativa"
+              width={230}
+              height={83}
+              priority
+              className="login-brand-logo"
+            />
           </div>
 
           <div className="login-form-heading">
-            <span className="login-overline">ACESSO À PLATAFORMA</span>
+            <span className="login-overline">RSBUILD FINANCE</span>
             <h2>Bem-vindo de volta.</h2>
             <p>Entre com suas credenciais para continuar.</p>
           </div>
@@ -65,7 +77,7 @@ export default async function LoginPage({ searchParams }: Props) {
             </label>
 
             <button className="login-submit" type="submit">
-              <span>Entrar na plataforma</span>
+              <span>Entrar no RSBUILD Finance</span>
               <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
                 <path d="M4 10h11M10 5l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
