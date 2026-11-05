@@ -34,7 +34,7 @@ Os testes usam tenants e usuários sintéticos e fazem rollback ao final. Não u
 
 ## Cobertura complementar requerida para Storage remoto
 
-A suíte pgTAP valida políticas no PostgreSQL local, mas não comprova o ciclo HTTP completo do Storage. A homologação deve executar com duas contas autenticadas e dois tenants: upload permitido no prefixo próprio; upload negado em prefixo alheio; download permitido apenas no tenant proprietário; delete permitido apenas para owner/admin/operator do tenant; viewer sem escrita; revogação de membership impedindo operações subsequentes. Guardar evidências sem incluir tokens, chaves ou dados financeiros reais.
+A suíte pgTAP valida políticas no PostgreSQL local, incluindo o limite entre wrapper RPC público `SECURITY INVOKER` e implementação `SECURITY DEFINER` no schema não exposto `private`, mas não comprova o ciclo HTTP completo do Storage. A homologação deve executar com duas contas autenticadas e dois tenants: upload permitido no prefixo próprio; upload negado em prefixo alheio; download permitido apenas no tenant proprietário; delete permitido apenas para owner/admin/operator do tenant; viewer sem escrita; revogação de membership impedindo operações subsequentes. Guardar evidências sem incluir tokens, chaves ou dados financeiros reais.
 
 A importação registra contadores separados (`inserted_count`, `duplicate_count`, `rejected_count`). O parser server-side rejeita integralmente arquivos com erros de parsing; por isso `rejected_count` no lote transacional é zero para os lotes aceitos, enquanto as duplicatas são contadas separadamente.
 
