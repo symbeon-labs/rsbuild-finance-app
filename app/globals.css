@@ -133,3 +133,53 @@
 .login-input-wrap input{height:58px}
 .login-form-panel--single .login-submit{height:68px}
 }
+
+
+/* Final alignment to the approved RSBUILD login reference */
+.login-page--single{
+  background:#f7f1e9;
+  padding:clamp(30px,4.5vw,64px) 24px 92px;
+}
+.login-page--single:before{
+  background:
+    radial-gradient(ellipse at 100% 100%,rgba(237,126,75,.38),transparent 27%),
+    radial-gradient(ellipse at 0% 100%,rgba(236,155,112,.20),transparent 24%),
+    radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.92),transparent 62%);
+}
+.login-ambient-pattern{
+  opacity:.52;
+  background-image:url("/brand/rsbuild-network-pattern.svg"),url("/brand/rsbuild-network-pattern.svg");
+  background-position:top right,bottom left;
+  background-size:52% auto,43% auto;
+  background-repeat:no-repeat,no-repeat;
+  mix-blend-mode:multiply;
+}
+.login-form-panel--single .login-form-wrap{max-width:784px}
+.login-mobile-brand--single{margin-bottom:clamp(44px,5.5vw,68px)}
+.login-mobile-brand--single .login-brand-logo-wrap{
+  max-width:690px;
+  overflow:visible;
+}
+.login-mobile-brand--single .login-brand-logo{
+  width:100%;
+  max-width:690px;
+  height:auto;
+  object-fit:contain;
+  object-position:center;
+}
+.login-form-panel--single .login-form-heading{margin-bottom:46px}
+.login-form-panel--single .login-form-heading h1{font-size:clamp(40px,6vw,68px)}
+.login-form-panel--single .login-form{gap:28px}
+.login-input-wrap{min-height:82px}
+.login-input-wrap input{height:78px}
+.login-form-panel--single .login-submit{height:90px}
+@media(max-width:640px){
+  .login-page--single{padding:30px 22px 78px}
+  .login-mobile-brand--single{margin-bottom:42px}
+  .login-mobile-brand--single .login-brand-logo{max-width:100%}
+  .login-form-panel--single .login-form-heading{margin-bottom:30px}
+  .login-form-panel--single .login-form{gap:22px}
+  .login-input-wrap{min-height:66px}
+  .login-input-wrap input{height:62px}
+  .login-form-panel--single .login-submit{height:70px}
+}
