@@ -31,8 +31,8 @@ export default async function LoginPage({ searchParams }: Props) {
               <Image
                 src="/brand/rsbuild-logo-primary.svg"
                 alt="RSBUILD — Inovação Corporativa"
-                width={1084}
-                height={346}
+                width={1220}
+                height={390}
                 priority
                 className="login-brand-logo"
                 sizes="(max-width: 640px) 88vw, 690px"
