@@ -1,4 +1,6 @@
--- D02: atomic, tenant-scoped and idempotent financial import.
+-- D02: tenant-scoped, idempotent financial import.
+-- Storage upload remains an external side effect; failed compensations are logged
+-- by the API and must be reconciled using the tenant-scoped imports prefix.
 create unique index if not exists financial_records_org_dedup_key_uidx
   on public.financial_records (organization_id, deduplication_key)
   where deduplication_key is not null;
@@ -11,7 +13,7 @@ create or replace function public.commit_financial_import(
   p_storage_path text,
   p_records jsonb
 )
-returns table(batch_id uuid, inserted_count integer, duplicate_count integer)
+returns table(batch_id uuid, inserted_count integer, duplicate_count integer, rejected_count integer)
 language plpgsql
 security definer
 set search_path = pg_catalog, public
@@ -21,6 +23,8 @@ declare
   v_batch_id uuid;
   v_inserted integer := 0;
   v_total integer := 0;
+  v_duplicates integer := 0;
+  v_rejected integer := 0;
 begin
   if v_user_id is null then
     raise exception 'authentication required' using errcode = '42501';
@@ -41,15 +45,15 @@ begin
      or length(p_file_sha256) <> 64
      or translate(p_file_sha256, '0123456789abcdef', '') <> ''
      or p_file_size_bytes is null
-     or p_file_size_bytes < 0 then
+     or p_file_size_bytes < 1 then
     raise exception 'invalid import metadata' using errcode = '22023';
   end if;
 
   if p_records is null or jsonb_typeof(p_records) is distinct from 'array' then
     raise exception 'import records must be a JSON array' using errcode = '22023';
   end if;
-
-  if jsonb_array_length(p_records) < 1 or jsonb_array_length(p_records) > 5000 then
+  v_total := jsonb_array_length(p_records);
+  if v_total < 1 or v_total > 5000 then
     raise exception 'import record count out of range' using errcode = '22023';
   end if;
 
@@ -73,7 +77,7 @@ begin
        or coalesce(item.value->>'amount_minor','') = ''
        or translate(coalesce(item.value->>'amount_minor',''), '0123456789', '') <> ''
        or length(coalesce(item.value->>'transaction_date','')) <> 10
-       or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}'
+       or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}$'
        or length(coalesce(item.value->>'description','')) not between 1 and 500
        or coalesce(item.value->>'direction','') not in ('entrada','saída')
        or length(coalesce(item.value->>'deduplication_key','')) <> 64
@@ -120,13 +124,21 @@ begin
     where deduplication_key is not null do nothing;
 
   get diagnostics v_inserted = row_count;
-  v_total := jsonb_array_length(p_records);
+  v_duplicates := v_total - v_inserted;
+  -- This endpoint rejects malformed source files before invoking the RPC.
+  -- Duplicates are not rejected records and are reported separately.
+  v_rejected := 0;
 
   update public.import_batches
   set status = 'committed',
       record_count = v_total,
       accepted_count = v_inserted,
-      rejected_count = v_total - v_inserted,
+      rejected_count = v_rejected,
+      metadata = metadata || jsonb_build_object(
+        'inserted_count', v_inserted,
+        'duplicate_count', v_duplicates,
+        'rejected_count', v_rejected
+      ),
       committed_at = now()
   where id = v_batch_id and organization_id = p_organization_id;
 
@@ -134,9 +146,14 @@ begin
     (organization_id, event_type, entity_type, entity_id, metadata)
   values
     (p_organization_id, 'financial_import_committed', 'import_batch', v_batch_id::text,
-     jsonb_build_object('inserted',v_inserted,'duplicates',v_total-v_inserted,'file_sha256',p_file_sha256));
+     jsonb_build_object(
+       'inserted',v_inserted,
+       'duplicates',v_duplicates,
+       'rejected',v_rejected,
+       'file_sha256',p_file_sha256
+     ));
 
-  return query select v_batch_id, v_inserted, v_total - v_inserted;
+  return query select v_batch_id, v_inserted, v_duplicates, v_rejected;
 end;
 $function$;
 
