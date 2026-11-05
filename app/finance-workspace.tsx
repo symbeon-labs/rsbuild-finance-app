@@ -115,11 +115,30 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
     }
   }
 
+  async function loadMoreRecords() {
+    if (isLoadingMore || !hasMoreRecords) return;
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(`/api/finance/records?organizationId=${organizationId}&limit=100&offset=${nextRecordsOffset}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Não foi possível carregar mais registros.");
+      const payload = await response.json();
+      setRecords((current) => [...current, ...(payload.records ?? [])]);
+      setHasMoreRecords(Boolean(payload.pagination?.hasMore));
+      setNextRecordsOffset(payload.pagination?.nextOffset ?? nextRecordsOffset);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao carregar registros.");
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
   function resetSession() {
-    setRecords([]);
     setPendingImport([]);
     setImportErrors([]);
-    setNotice("A sessão foi limpa.");
+    setFileName("");
+    setSourceFile(null);
+    setQuery("");
+    setNotice("Prévia e filtros limpos. Os registros persistidos continuam salvos na organização.");
   }
 
   return (
