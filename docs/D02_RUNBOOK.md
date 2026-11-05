@@ -56,7 +56,7 @@ Se o e-mail já pertencer a uma conta existente, o endpoint localiza a conta e c
 3. A API calcula SHA-256 e interpreta o arquivo original no servidor usando parser versionado. O campo `records` do navegador, se enviado por cliente antigo ou adulterado, não é fonte de dados e não é persistido.
 4. Se houver qualquer erro de parsing, o arquivo inteiro é rejeitado; não há importação parcial silenciosa. A versão do parser, índice da linha e identificador de origem são registrados nos metadados de cada registro.
 5. Valores são mantidos como inteiros em centavos (`amount_minor`) do parser ao banco, API e agregações; apenas a camada de formatação converte para BRL.
-6. A RPC `commit_financial_import` valida membership/role, payload e path; cria lote, artefato, registros e evento de auditoria em uma transação.
+6. A RPC pública `commit_financial_import` é `SECURITY INVOKER`; delega à implementação privilegiada no schema não exposto `private`, que valida `auth.uid()`, membership/role, payload, path e objeto Storage antes de criar lote, artefato, registros e evento de auditoria em uma transação.
 7. Índice único por organização + chave de deduplicação torna reenvios idempotentes.
    - A chave atual usa hash do arquivo original + posição da linha, evitando colapsar duas transações legítimas com mesmo dia/descrição/valor.
    - Isso garante retry idempotente do mesmo arquivo; não afirma deduplicação semântica entre extratos diferentes. `sourceRecordId` permanece como proveniência.
