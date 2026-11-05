@@ -77,3 +77,59 @@
  .login-brand-message>p{font-size:13px;line-height:1.7}
  .login-form-panel{padding-top:48px;padding-bottom:56px}
 }
+
+/* RSBUILD Finance — single-surface responsive login */
+.login-page--single{--login-charcoal:#242322;--login-brown:#623b2c;--login-terracotta:#df4d1b;position:relative;isolation:isolate;display:flex;min-height:100svh;overflow:hidden;align-items:center;justify-content:center;padding:clamp(28px,5vw,72px) 24px 92px;background:#f7f2ea;color:var(--login-charcoal)}
+.login-page--single:before{content:"";position:absolute;z-index:-2;inset:0;background:radial-gradient(ellipse at 100% 100%,rgba(235,105,48,.34),transparent 28%),radial-gradient(ellipse at 0% 100%,rgba(236,129,78,.18),transparent 25%),radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.9),transparent 58%)}
+.login-ambient-pattern{position:absolute;z-index:-1;inset:0;pointer-events:none;opacity:.52;background-image:url("/brand/rsbuild-network-pattern.svg");background-repeat:no-repeat;background-position:center;background-size:cover;mix-blend-mode:multiply}
+.login-page--single .login-brand-panel{display:none}
+.login-form-panel--single{width:min(100%,760px);min-height:0;padding:0;margin:auto;justify-content:center;align-items:stretch;background:transparent}
+.login-form-panel--single .login-form-wrap{width:100%;max-width:760px;margin:0}
+.login-mobile-brand--single{display:flex;width:100%;justify-content:center;align-items:center;margin:0 0 clamp(48px,7vw,88px)}
+.login-mobile-brand--single .login-brand-logo-wrap{width:100%;max-width:620px;padding:0;background:transparent;border-radius:0;display:flex;justify-content:center;overflow:visible}
+.login-mobile-brand--single .login-brand-logo{display:block;width:100%;max-width:620px;height:auto;max-height:none;object-fit:contain;object-position:center}
+.login-form-panel--single .login-form-heading{margin-bottom:42px}
+.login-form-panel--single .login-overline{font-size:clamp(12px,1.5vw,17px);letter-spacing:.19em;gap:16px}
+.login-form-panel--single .login-overline:before{width:42px;height:2px}
+.login-form-panel--single .login-form-heading h1{margin:28px 0 14px;color:#242322;font-size:clamp(38px,6vw,66px);line-height:1.08;letter-spacing:-.055em;font-weight:700}
+.login-form-panel--single .login-form-heading>p{font-size:clamp(16px,2.3vw,24px);color:#8d827a}
+.login-form-panel--single .login-form{gap:28px}
+.login-form-panel--single .login-field{gap:12px;font-size:clamp(14px,1.8vw,19px);color:#302c29}
+.login-input-wrap{display:flex;align-items:center;gap:20px;min-height:78px;padding:0 28px;border:1.5px solid #dfcbbd;border-radius:13px;background:rgba(255,255,255,.62);color:#79675c;transition:border-color .18s,box-shadow .18s}
+.login-input-wrap:focus-within{border-color:#a75d3c;box-shadow:0 0 0 4px rgba(181,88,60,.10)}
+.login-input-wrap>svg{width:28px;height:28px;flex:0 0 auto}
+.login-input-wrap input{width:100%;min-width:0;height:74px;padding:0;border:0;outline:0;background:transparent;color:#292522;font-size:clamp(16px,2vw,23px);box-shadow:none!important}
+.login-input-wrap input::placeholder{color:#928982}
+.login-form-panel--single .login-submit{height:88px;margin-top:8px;padding:0 34px;border-radius:13px;background:linear-gradient(105deg,#794633 0%,#542f22 100%);font-size:clamp(17px,2.3vw,26px);letter-spacing:-.015em}
+.login-form-panel--single .login-submit:hover{background:linear-gradient(105deg,#89523a 0%,#623727 100%)}
+.login-form-panel--single .login-submit svg{width:42px;height:42px;color:#f08a55}
+.login-form-panel--single .login-security-note{margin-top:28px;gap:14px;color:#5d514b;font-size:clamp(14px,1.8vw,20px)}
+.login-form-panel--single .login-security-note span{font-size:17px;color:#f36a2b}
+.login-form-panel--single .login-copyright{position:fixed;bottom:clamp(20px,4vw,48px);left:20px;right:20px;color:#81766e;font-size:clamp(11px,1.3vw,16px)}
+@media(max-width:640px){
+.login-page--single{min-height:100svh;padding:34px 22px 82px}
+.login-mobile-brand--single{margin-bottom:clamp(38px,9vh,70px)}
+.login-mobile-brand--single .login-brand-logo{width:100%;max-width:100%}
+.login-form-panel--single .login-form-heading{margin-bottom:30px}
+.login-form-panel--single .login-form-heading h1{font-size:clamp(34px,9vw,46px);margin:20px 0 12px}
+.login-form-panel--single .login-form-heading>p{font-size:16px;line-height:1.55}
+.login-form-panel--single .login-form{gap:22px}
+.login-input-wrap{min-height:66px;padding:0 17px;gap:14px;border-radius:11px}
+.login-input-wrap>svg{width:24px;height:24px}
+.login-input-wrap input{height:62px;font-size:16px}
+.login-form-panel--single .login-submit{height:70px;padding:0 20px;font-size:16px;border-radius:11px}
+.login-form-panel--single .login-submit svg{width:32px;height:32px}
+.login-form-panel--single .login-security-note{margin-top:22px;font-size:13px}
+.login-form-panel--single .login-security-note span{font-size:13px}
+.login-form-panel--single .login-copyright{bottom:18px;font-size:10px}
+}
+@media(max-height:780px) and (min-width:641px){
+.login-page--single{padding-top:24px;padding-bottom:72px}
+.login-mobile-brand--single{margin-bottom:38px}
+.login-mobile-brand--single .login-brand-logo{max-width:490px}
+.login-form-panel--single .login-form-heading{margin-bottom:26px}
+.login-form-panel--single .login-form{gap:18px}
+.login-input-wrap{min-height:62px}
+.login-input-wrap input{height:58px}
+.login-form-panel--single .login-submit{height:68px}
+}
