@@ -138,15 +138,23 @@ export function parseCsv(text: string): ImportResult {
     const description = (row.cells[descriptionIndex] ?? "").trim();
     const amount = parseAmount(row.cells[amountIndex] ?? "");
     const directionText = normalize(row.cells[directionIndex] ?? "");
-    const isOut = amount?.negative || /saida|debito|despesa|pagamento/.test(directionText);
-    const isIn = /entrada|credito|receita|recebimento/.test(directionText);
-    if (!date || !description || !amount || (isOut && isIn)) {
+    const declaresOut = /^(saida|debito|debit|despesa|pagamento)$/.test(directionText);
+    const declaresIn = /^(entrada|credito|credit|receita|recebimento)$/.test(directionText);
+    const hasUnknownDirection = directionText.length > 0 && !declaresOut && !declaresIn;
+    const directionConflict = (declaresOut && declaresIn) || (amount?.negative && declaresIn);
+    const direction = declaresOut || (amount?.negative && !directionText)
+      ? "saída"
+      : declaresIn
+        ? "entrada"
+        : null;
+
+    if (!date || !description || !amount || hasUnknownDirection || directionConflict || !direction) {
       errors.push(`Linha ${row.line}: data, descrição, direção ou valor inválido/ambíguo; registro rejeitado.`);
       continue;
     }
     records.push({
       id: `csv-${importBatchId}-${row.line}`, date, description,
-      amountMinor: amount.cents, direction: isOut ? "saída" : "entrada",
+      amountMinor: amount.cents, direction,
       category: categoryIndex >= 0 ? (row.cells[categoryIndex] || "Não classificado") : "Não classificado",
       source: "Importação CSV", status: "pendente", importBatchId
     });
