@@ -3,6 +3,14 @@ import { signIn } from "@/app/auth/actions";
 
 type Props = { searchParams: Promise<{ error?: string; next?: string; reason?: string }> };
 
+function MailIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="m4 7 8 6 8-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+}
+
+function LockIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><path d="M12 14v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>;
+}
+
 export default async function LoginPage({ searchParams }: Props) {
   const params = await searchParams;
   const message = params.reason === "configuration"
@@ -14,52 +22,27 @@ export default async function LoginPage({ searchParams }: Props) {
         : "";
 
   return (
-    <main className="login-page">
-      <section className="login-brand-panel" aria-label="Identidade RSBUILD">
-        <div className="login-brand-pattern" aria-hidden="true" />
-        <div className="login-brand-content">
-          <div className="login-brand-logo-wrap">
-            <Image
-              src="/brand/rsbuild-logo-primary.webp"
-              alt="RSBUILD — Inovação Corporativa"
-              width={240}
-              height={87}
-              priority
-              className="login-brand-logo"
-            />
-          </div>
-
-          <div className="login-brand-message">
-            <span className="login-overline">GESTÃO FINANCEIRA</span>
-            <h1>Clareza para<br />decidir. Controle<br />para evoluir.</h1>
-            <p>Uma visão organizada da operação financeira da sua empresa, em um ambiente seguro e integrado.</p>
-          </div>
-
-          <div className="login-brand-footer">
-            <span className="login-footer-line" />
-            <span>RSBUILD FINANCE <b>·</b> AMBIENTE CORPORATIVO</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="login-form-panel">
+    <main className="login-page login-page--single">
+      <div className="login-ambient-pattern" aria-hidden="true" />
+      <section className="login-form-panel login-form-panel--single" aria-label="Acesso ao RSBUILD Finance">
         <div className="login-form-wrap">
-          <div className="login-mobile-brand">
+          <div className="login-mobile-brand login-mobile-brand--single">
             <div className="login-brand-logo-wrap login-mobile-logo-wrap">
-            <Image
-              src="/brand/rsbuild-logo-primary.webp"
-              alt="RSBUILD — Inovação Corporativa"
-              width={240}
-              height={87}
-              priority
-              className="login-brand-logo"
-            />
+              <Image
+                src="/brand/rsbuild-logo-primary.webp"
+                alt="RSBUILD — Inovação Corporativa"
+                width={240}
+                height={87}
+                priority
+                className="login-brand-logo"
+                sizes="(max-width: 640px) 78vw, 620px"
+              />
             </div>
           </div>
 
           <div className="login-form-heading">
             <span className="login-overline">RSBUILD FINANCE</span>
-            <h2>Bem-vindo de volta.</h2>
+            <h1>Bem-vindo de volta.</h1>
             <p>Entre com suas credenciais para continuar.</p>
           </div>
 
@@ -67,31 +50,30 @@ export default async function LoginPage({ searchParams }: Props) {
 
           <form action={signIn} className="login-form">
             <input type="hidden" name="next" value={params.next ?? "/"} />
-
             <label className="login-field">
               <span>E-mail corporativo</span>
-              <input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="nome@empresa.com.br" />
+              <span className="login-input-wrap">
+                <MailIcon />
+                <input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="nome@empresa.com.br" />
+              </span>
             </label>
-
             <label className="login-field">
               <span>Senha</span>
-              <input name="password" type="password" autoComplete="current-password" required maxLength={256} placeholder="Digite sua senha" />
+              <span className="login-input-wrap">
+                <LockIcon />
+                <input name="password" type="password" autoComplete="current-password" required maxLength={256} placeholder="Digite sua senha" />
+              </span>
             </label>
-
             <button className="login-submit" type="submit">
               <span>Entrar no RSBUILD Finance</span>
-              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                <path d="M4 10h11M10 5l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12h15M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           </form>
 
-          <p className="login-security-note">
-            <span aria-hidden="true">◆</span>
-            Acesso restrito a usuários autorizados.
-          </p>
+          <p className="login-security-note"><span aria-hidden="true">◆</span>Acesso restrito a usuários autorizados.</p>
         </div>
-
         <footer className="login-copyright">© {new Date().getFullYear()} RSBUILD · Todos os direitos reservados.</footer>
       </section>
     </main>
