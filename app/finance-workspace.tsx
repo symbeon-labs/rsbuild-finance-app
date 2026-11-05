@@ -53,7 +53,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
 
   const totals = useMemo(() => {
     const incoming = periodRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amountMinor, 0);
-    const outgoing = periodRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
+    const outgoing = periodRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amountMinor, 0);
     return { incoming, outgoing, balance: incoming - outgoing };
   }, [periodRecords]);
 
