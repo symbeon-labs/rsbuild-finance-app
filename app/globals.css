@@ -147,11 +147,11 @@
     radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.92),transparent 62%);
 }
 .login-ambient-pattern{
-  opacity:.52;
-  background-image:url("/brand/rsbuild-network-pattern.svg"),url("/brand/rsbuild-network-pattern.svg");
-  background-position:top right,bottom left;
-  background-size:52% auto,43% auto;
-  background-repeat:no-repeat,no-repeat;
+  opacity:1;
+  background-image:url("/brand/rsbuild-ambient-honeycomb.svg");
+  background-position:center;
+  background-size:100% 100%;
+  background-repeat:no-repeat;
   mix-blend-mode:multiply;
 }
 .login-form-panel--single .login-form-wrap{max-width:784px}
