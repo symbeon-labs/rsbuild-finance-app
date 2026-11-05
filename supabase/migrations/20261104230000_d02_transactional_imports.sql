@@ -45,7 +45,8 @@ begin
      or length(p_file_sha256) <> 64
      or translate(p_file_sha256, '0123456789abcdef', '') <> ''
      or p_file_size_bytes is null
-     or p_file_size_bytes < 1\n     or p_file_size_bytes > 10485760 then
+     or p_file_size_bytes < 1
+     or p_file_size_bytes > 10485760 then
     raise exception 'invalid import metadata' using errcode = '22023';
   end if;
 
@@ -75,7 +76,8 @@ begin
     from jsonb_array_elements(p_records) as item(value)
     where jsonb_typeof(item.value) <> 'object'
        or coalesce(item.value->>'amount_minor','') = ''
-       or translate(coalesce(item.value->>'amount_minor',''), '0123456789', '') <> ''\n       or case when coalesce(item.value->>'amount_minor','') ~ '^\\d+
+       or translate(coalesce(item.value->>'amount_minor',''), '0123456789', '') <> ''
+       or case when coalesce(item.value->>'amount_minor','') ~ '^\\d+
        or length(coalesce(item.value->>'transaction_date','')) <> 10
        or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}$'
        or length(coalesce(item.value->>'description','')) not between 1 and 500
@@ -208,7 +210,9 @@ using (
       and m.role in ('owner','admin','operator')
   )
 );
-\n          then (item.value->>'amount_minor')::numeric > 9007199254740991\n          else true end
+
+          then (item.value->>'amount_minor')::numeric > 9007199254740991
+          else true end
        or length(coalesce(item.value->>'transaction_date','')) <> 10
        or coalesce(item.value->>'transaction_date','') !~ '^\d{4}-\d{2}-\d{2}$'
        or length(coalesce(item.value->>'description','')) not between 1 and 500
