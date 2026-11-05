@@ -17,7 +17,7 @@ test("CSV brasileiro: detecta ponto e vírgula, datas e valores com agrupamento"
   assert.equal(result.records[0].amountMinor, 123456);
   assert.equal(result.records[0].direction, "entrada");
   assert.equal(result.records[0].category, "Vendas");
-  assert.equal(result.records[1].amountMinor, 25000;
+  assert.equal(result.records[1].amountMinor, 25000);
   assert.equal(result.records[1].direction, "saída");
 });
 
