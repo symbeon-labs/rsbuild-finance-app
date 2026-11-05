@@ -112,7 +112,7 @@ export async function POST(request: Request) {
   });
   if (membershipError) {
     const failures = await compensate(admin, organization.id, invitedUserId, createdUser);
-    reportCompensationFailure(organization.id, failures);
+    reportCompensationFailure(organization.id, invitedUserId, failures);
     return NextResponse.json({ error: "membership_provision_failed", cleanupPending: failures.length > 0 }, { status: 500 });
   }
 
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
   });
   if (auditError) {
     const failures = await compensate(admin, organization.id, invitedUserId, createdUser);
-    reportCompensationFailure(organization.id, failures);
+    reportCompensationFailure(organization.id, invitedUserId, failures);
     return NextResponse.json({ error: "provisioning_audit_failed", cleanupPending: failures.length > 0 }, { status: 500 });
   }
 
