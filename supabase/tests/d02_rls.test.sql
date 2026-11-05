@@ -109,19 +109,9 @@ select throws_ok(
   null,
   'operator cannot upload a source artifact under another tenant prefix'
 );
-select lives_ok(
-  $$delete from storage.objects
-    where bucket_id='rsbuild-source-artifacts'
-      and name='11111111-1111-4111-8111-111111111111/a/uploaded-by-operator.csv'$$,
-  'operator can delete an object in their own tenant prefix for compensation'
-);
-select is(
-  (select count(*)::int from storage.objects
-   where bucket_id='rsbuild-source-artifacts'
-     and name='11111111-1111-4111-8111-111111111111/a/uploaded-by-operator.csv'),
-  0,
-  'compensation removes the uploaded object'
-);
+-- Storage object deletion is deliberately not a client capability.
+-- Backend compensation must call the Storage API with a privileged server credential;
+-- SQL DELETE is unsupported and must never be used to remove Storage objects.
 reset role;
 
 -- Tenant B cannot read Tenant A data.
@@ -164,21 +154,20 @@ select throws_ok(
   null,
   'viewer cannot upload source artifacts'
 );
-select lives_ok(
-  $delete$delete from storage.objects
-    where bucket_id='rsbuild-source-artifacts'
-      and name='11111111-1111-4111-8111-111111111111/a/file-a.csv'$delete$,
-  'viewer delete attempt is safely constrained by Storage RLS'
-);
-select is(
-  (select count(*)::int from storage.objects
-   where bucket_id='rsbuild-source-artifacts'
-     and name='11111111-1111-4111-8111-111111111111/a/file-a.csv'),
-  1,
-  'viewer cannot delete source artifacts'
-);
+
 reset role;
 
+select ok(
+  not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'DELETE'
+      and 'authenticated' = any (roles)
+  ),
+  'authenticated clients have no Storage DELETE policy; cleanup is server-side via Storage API'
+);
 select ok(
   not has_table_privilege('authenticated','public.financial_records','DELETE'),
   'authenticated role has no DELETE privilege on financial records'
