@@ -34,6 +34,7 @@ function reportCompensationFailure(organizationId: string, userId: string | null
   console.error(JSON.stringify({
     event: "rsbuild_tenant_provision_compensation_failed",
     organizationId,
+    userId,
     failures,
     requiresManualReconciliation: true,
   }));
