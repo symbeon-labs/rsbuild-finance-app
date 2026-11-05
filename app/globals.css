@@ -141,10 +141,7 @@
   padding:clamp(30px,4.5vw,64px) 24px 92px;
 }
 .login-page--single:before{
-  background:
-    radial-gradient(ellipse at 100% 100%,rgba(237,126,75,.38),transparent 27%),
-    radial-gradient(ellipse at 0% 100%,rgba(236,155,112,.20),transparent 24%),
-    radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.92),transparent 62%);
+  background:none;
 }
 .login-ambient-pattern{
   opacity:1;
