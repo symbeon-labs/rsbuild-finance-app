@@ -1,30 +1,25 @@
 import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { parseCsv, parseOfx } from "@/lib/finance";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type IncomingRecord = {
-  date: string;
-  description: string;
-  amount: number;
-  direction: "entrada" | "saída";
-  category?: string;
-  sourceRecordId?: string;
-};
+const PARSER_VERSION = "rsbuild-import/1.1.0";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 
-  const form = await request.formData();
+  let form: FormData;
+  try { form = await request.formData(); } catch {
+    return NextResponse.json({ error: "invalid_multipart" }, { status: 400 });
+  }
   const organizationId = String(form.get("organizationId") ?? "");
   const file = form.get("file");
-  const recordsRaw = String(form.get("records") ?? "");
-
   if (!/^[0-9a-f-]{36}$/i.test(organizationId) || !(file instanceof File)) {
     return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
   }
@@ -34,47 +29,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: fileError }, { status });
   }
 
-  let incoming: IncomingRecord[];
-  try {
-    incoming = JSON.parse(recordsRaw);
-  } catch {
-    return NextResponse.json({ error: "invalid_records_json" }, { status: 400 });
-  }
-  if (!Array.isArray(incoming) || incoming.length < 1 || incoming.length > 5000) {
-    return NextResponse.json({ error: "invalid_record_count" }, { status: 400 });
-  }
-
   const bytes = Buffer.from(await file.arrayBuffer());
   const fileHash = createHash("sha256").update(bytes).digest("hex");
-  const normalized = [];
-  for (const [rowIndex, row] of incoming.entries()) {
-    if (!row || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) ||
-        typeof row.description !== "string" || !row.description.trim() ||
-        !Number.isFinite(row.amount) || row.amount < 0 ||
-        !["entrada", "saída"].includes(row.direction)) {
-      return NextResponse.json({ error: "invalid_record" }, { status: 422 });
+  const sourceText = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  const parsed = file.name.toLowerCase().endsWith(".ofx")
+    ? parseOfx(sourceText)
+    : parseCsv(sourceText);
+
+  // The server is authoritative: client-supplied parsed rows are never persisted.
+  // A partially parsed statement is rejected as a whole to avoid silent omissions.
+  if (parsed.errors.length || !parsed.records.length || parsed.records.length > 5000) {
+    return NextResponse.json({
+      error: "source_parse_failed",
+      parserVersion: PARSER_VERSION,
+      rejectedCount: parsed.errors.length,
+      details: parsed.errors.slice(0, 25),
+    }, { status: 422 });
+  }
+
+  const normalized = parsed.records.map((row, rowIndex) => {
+    if (!Number.isSafeInteger(row.amountMinor) || row.amountMinor < 0 ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !row.description.trim()) {
+      throw new Error("server_parser_invalid_record");
     }
-    const amountMinor = Math.round(row.amount * 100);
-    if (!Number.isSafeInteger(amountMinor) || amountMinor < 0) {
-      return NextResponse.json({ error: "invalid_amount" }, { status: 422 });
-    }
-    // Conservative idempotency: the same file row is stable across retries,
-    // while two legitimate identical transactions on different rows remain distinct.
     const keySource = `${fileHash}|${rowIndex}`;
-    normalized.push({
+    return {
       transaction_date: row.date,
       description: row.description.trim().slice(0, 500),
-      amount_minor: String(amountMinor),
+      amount_minor: String(row.amountMinor),
       direction: row.direction,
-      category: (row.category ?? "Não classificado").slice(0, 120),
+      category: row.category.slice(0, 120) || "Não classificado",
       deduplication_key: createHash("sha256").update(keySource).digest("hex"),
-      raw_payload: { source_record_id: row.sourceRecordId ?? null },
-    });
-  }
+      raw_payload: {
+        source_record_id: row.sourceRecordId ?? null,
+        parser_version: PARSER_VERSION,
+        source_row_index: rowIndex,
+      },
+    };
+  });
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "statement.csv";
   const storagePath = `${organizationId}/imports/${randomUUID()}-${safeName}`;
-
   const { error: uploadError } = await supabase.storage
     .from("rsbuild-source-artifacts")
     .upload(storagePath, new Blob([bytes], { type: file.type || "application/octet-stream" }), {
@@ -93,9 +88,25 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    await supabase.storage.from("rsbuild-source-artifacts").remove([storagePath]);
-    return NextResponse.json({ error: "import_commit_failed" }, { status: 422 });
+    const { error: cleanupError } = await supabase.storage.from("rsbuild-source-artifacts").remove([storagePath]);
+    if (cleanupError) {
+      console.error(JSON.stringify({
+        event: "rsbuild_import_artifact_cleanup_failed",
+        organizationId,
+        storagePath,
+        fileHash,
+        errorCode: cleanupError.name ?? "storage_cleanup_error",
+      }));
+    }
+    return NextResponse.json({
+      error: "import_commit_failed",
+      cleanupPending: Boolean(cleanupError),
+    }, { status: 422 });
   }
 
-  return NextResponse.json({ result: data?.[0] ?? null }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({
+    result: data?.[0] ?? null,
+    parserVersion: PARSER_VERSION,
+    parsedCount: normalized.length,
+  }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
 }
