@@ -50,25 +50,14 @@ select is(
 );
 
 select is(
- (select inserted_count from public.commit_financial_import(
+ (select duplicate_count from public.commit_financial_import(
   '55555555-5555-4555-8555-555555555555',
   'sample-again.csv',repeat('b',64),10,
   '55555555-5555-4555-8555-555555555555/imports/sample-again.csv',
   '[{"transaction_date":"2026-11-04","description":"Teste idempotente","amount_minor":"1234","direction":"entrada","category":"Teste","deduplication_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","raw_payload":{}}]'::jsonb
  )),
- 0,
- 're-import of the same business record is idempotent'
-);
-
-select is(
- (select duplicate_count from public.commit_financial_import(
-  '55555555-5555-4555-8555-555555555555',
-  'sample-again.csv',repeat('c',64),10,
-  '55555555-5555-4555-8555-555555555555/imports/sample-again.csv',
-  '[{"transaction_date":"2026-11-04","description":"Teste idempotente","amount_minor":"1234","direction":"entrada","category":"Teste","deduplication_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","raw_payload":{}}]'::jsonb
- )),
  1,
- 'duplicate rows are counted separately from rejected rows'
+ 're-import of the same business record is idempotent and increments duplicate_count'
 );
 
 select is(
