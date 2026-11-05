@@ -4,7 +4,7 @@ export type FinancialRecord = {
   id: string;
   date: string;
   description: string;
-  amount: number;
+  amountMinor: number;
   direction: Direction;
   category: string;
   source: string;
@@ -146,7 +146,7 @@ export function parseCsv(text: string): ImportResult {
     }
     records.push({
       id: `csv-${importBatchId}-${row.line}`, date, description,
-      amount: amount.cents / 100, direction: isOut ? "saída" : "entrada",
+      amountMinor: amount.cents, direction: isOut ? "saída" : "entrada",
       category: categoryIndex >= 0 ? (row.cells[categoryIndex] || "Não classificado") : "Não classificado",
       source: "Importação CSV", status: "pendente", importBatchId
     });
@@ -167,7 +167,7 @@ export function parseOfx(text: string): ImportResult {
     const date = /^\d{8}$/.test(posted) ? parseDate(`${posted.slice(0,4)}-${posted.slice(4,6)}-${posted.slice(6,8)}`) : null;
     const rawAmount = get(block, "TRNAMT");
     const amount = /^[-+]?\d+(?:\.\d{1,2})?$/.test(rawAmount) ? Number(rawAmount) : NaN;
-    if (!date || !Number.isFinite(amount)) { errors.push(`Movimento OFX ${index + 1}: data ou valor inválido.`); return; }
+    if (!date || !parsedAmount) { errors.push(`Movimento OFX ${index + 1}: data ou valor inválido.`); return; }
     records.push({
       id: `ofx-${importBatchId}-${index + 1}`,
       date, description: get(block, "NAME") || get(block, "MEMO") || "Movimento bancário",
