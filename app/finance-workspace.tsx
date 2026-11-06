@@ -15,7 +15,7 @@ const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "relatorios", label: "Relatórios", icon: "▥" }
 ];
 
-export default function FinanceWorkspace({ organizationId }: { organizationId: string }) {
+export default function FinanceWorkspace({ organizationId, isDevUser = false }: { organizationId: string; isDevUser?: boolean }) {
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [hasMoreRecords, setHasMoreRecords] = useState(false);
@@ -165,7 +165,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
       <section className="main-area">
         <header className="topbar">
           <div className="breadcrumb">RSBUILD <span>/</span> {navigation.find((item) => item.id === section)?.label}</div>
-          <div className="topbar-right"><span className="period-label">PERÍODO</span><select value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Período"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Últimos 12 meses</option></select><form action={signOut}><button className="secondary-button" type="submit">Sair</button></form><div className="avatar">R</div></div>
+          <div className="topbar-right"><span className="period-label">PERÍODO</span><select value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Período"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Últimos 12 meses</option></select>{isDevUser && <a href="/dev" className="secondary-button" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8 }}>⌘ Modo Dev</a>}<form action={signOut}><button className="secondary-button" type="submit">Sair</button></form><div className="avatar">R</div></div>
         </header>
 
         <div className="content">
