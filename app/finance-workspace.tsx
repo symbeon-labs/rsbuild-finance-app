@@ -2,15 +2,72 @@
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
 import { BankMetadata, FinancialRecord, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
+import {
+  ReceivableTitle,
+  ReconciliationMatch,
+  matchTitlesWithRecords,
+  buildSettlementItems,
+  generateOmieBatchSettlementCsv,
+  parseReceivablesCsv
+} from "@/lib/reconciliation";
 
-type Section = "visao-geral" | "movimentacoes" | "importacoes" | "contas" | "relatorios";
+type Section = "visao-geral" | "movimentacoes" | "importacoes" | "baixas" | "relatorios";
 
 const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "visao-geral", label: "Visão geral", icon: "◫" },
   { id: "movimentacoes", label: "Movimentações", icon: "⇄" },
   { id: "importacoes", label: "Importações", icon: "⇧" },
-  { id: "contas", label: "Contas", icon: "▤" },
+  { id: "baixas", label: "Baixas Omie (ENG-02)", icon: "✓" },
   { id: "relatorios", label: "Relatórios", icon: "▥" }
+];
+
+const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
+  {
+    id: "tit-101",
+    documentNumber: "NF-4580",
+    customerName: "Supermercado Real Salvador",
+    amount: 1500.0,
+    dueDate: "2026-04-10",
+    bankAccount: "Itaú Unibanco",
+    ourNumber: "0341999888",
+    status: "pendente"
+  },
+  {
+    id: "tit-102",
+    documentNumber: "NF-4581",
+    customerName: "Distribuidora Alimentos Bahia",
+    amount: 3200.5,
+    dueDate: "2026-04-12",
+    bankAccount: "Banco do Nordeste (BNB)",
+    status: "pendente"
+  },
+  {
+    id: "tit-103",
+    documentNumber: "NF-4582",
+    customerName: "Padaria e Lanchonete Estrela",
+    amount: 850.0,
+    dueDate: "2026-04-15",
+    bankAccount: "Banco Inter",
+    status: "pendente"
+  },
+  {
+    id: "tit-104",
+    documentNumber: "NF-4583",
+    customerName: "Mercado Regional Lauro de Freitas",
+    amount: 5000.0,
+    dueDate: "2026-04-20",
+    bankAccount: "Itaú Unibanco",
+    status: "pendente"
+  },
+  {
+    id: "tit-105",
+    documentNumber: "NF-4584",
+    customerName: "Cantina Sabor Central",
+    amount: 2400.0,
+    dueDate: "2026-04-22",
+    bankAccount: "Itaú Unibanco",
+    status: "pendente"
+  }
 ];
 
 export default function FinanceWorkspace() {
@@ -25,6 +82,10 @@ export default function FinanceWorkspace() {
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Estado para Contas a Receber e Baixas em Lote (ENG-MS-02)
+  const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
+  const titlesInputRef = useRef<HTMLInputElement>(null);
+
   const totals = useMemo(() => {
     const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
     const outgoing = records.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
@@ -34,6 +95,19 @@ export default function FinanceWorkspace() {
   const filteredRecords = useMemo(() => records.filter((item) =>
     `${item.description} ${item.category} ${item.source} ${item.bankName || ""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))
   ), [records, query]);
+
+  // Casamento algorítmico entre títulos a receber e extratos importados
+  const matches = useMemo(() => {
+    return matchTitlesWithRecords(titles, records);
+  }, [titles, records]);
+
+  const matchStats = useMemo(() => {
+    const ready = matches.filter((m) => m.suggestedStatus === "pronto_para_baixa");
+    const divergent = matches.filter((m) => m.suggestedStatus === "divergente");
+    const pending = matches.filter((m) => m.suggestedStatus === "nao_identificado");
+    const totalReadyAmount = ready.reduce((sum, m) => sum + (m.statementRecord?.amount || 0), 0);
+    return { ready, divergent, pending, totalReadyAmount };
+  }, [matches]);
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -81,6 +155,50 @@ export default function FinanceWorkspace() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
+  }
+
+  // Ações de Baixa em Lote (ENG-MS-02)
+  async function handleImportTitlesFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const result = parseReceivablesCsv(text);
+    if (result.errors.length > 0) {
+      setNotice(`Aviso: ${result.errors[0]}`);
+    } else {
+      setTitles((curr) => [...result.titles, ...curr]);
+      setNotice(`${result.titles.length} título(s) a receber carregado(s) do Omie com sucesso.`);
+    }
+    event.target.value = "";
+  }
+
+  function handleExportBatchSettlement(customMatches?: ReconciliationMatch[]) {
+    const target = customMatches && customMatches.length ? customMatches : matchStats.ready;
+    if (!target.length) {
+      setNotice("Não há títulos com correspondência bancária pronta para baixa.");
+      return;
+    }
+    const settlements = buildSettlementItems(target);
+    const csvContent = generateOmieBatchSettlementCsv(settlements);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `lote_baixas_omie_${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setNotice(`Planilha oficial de Baixa em Lote do Omie gerada com sucesso (${settlements.length} títulos liquidados).`);
+  }
+
+  function handleConfirmSettlementInSession() {
+    const matchedTitleIds = new Set(matchStats.ready.map((m) => m.title.id));
+    setTitles((curr) =>
+      curr.map((t) => (matchedTitleIds.has(t.id) ? { ...t, status: "baixado" as const } : t))
+    );
+    setNotice(`${matchedTitleIds.size} título(s) marcados como baixados na sessão.`);
   }
 
   return (
@@ -198,11 +316,177 @@ export default function FinanceWorkspace() {
             <div className="inline-note">Os registros desta versão permanecem disponíveis durante a sessão atual. A persistência segura e a conexão com as fontes serão configuradas na etapa de integração.</div>
           </>}
 
-          {section === "contas" && <Placeholder title="Contas financeiras" eyebrow="ESTRUTURA FINANCEIRA" text="A estrutura de contas será configurada a partir das instituições, contas e fontes autorizadas para a empresa." />}
+          {section === "baixas" && <>
+            <div className="page-heading">
+              <div>
+                <div className="eyebrow">BRIDGE OMIE · ENG-MS-02</div>
+                <h1>Baixas Automatizadas de Títulos</h1>
+                <p>Conciliação inteligente e liquidação de contas a receber sem arrastar cards manuais no ERP.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button className="secondary-button" onClick={() => setTitles(INITIAL_SAMPLE_TITLES)} title="Recarregar títulos exemplo da Mundo do Sabor">
+                  ⚡ Amostra Mundo do Sabor
+                </button>
+                <button className="secondary-button" onClick={() => titlesInputRef.current?.click()}>
+                  ＋ Importar Títulos (CSV)
+                </button>
+                {matchStats.ready.length > 0 && (
+                  <button className="primary-button" onClick={() => handleExportBatchSettlement()}>
+                    📥 Gerar Lote de Baixas (.CSV)
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <section className="dashboard-grid">
+              <Metric
+                label="Prontos para Baixa (Casados)"
+                value={`${matchStats.ready.length} títulos`}
+                tone="positive"
+                detail={`Total liquidável: ${formatCurrency(matchStats.totalReadyAmount)}`}
+                icon="✓"
+              />
+              <Metric
+                label="Divergentes / Juros / Desconto"
+                value={`${matchStats.divergent.length} títulos`}
+                tone={matchStats.divergent.length > 0 ? "warning" : "neutral"}
+                detail="Requer validação expressa do operador"
+                icon="!"
+              />
+              <Metric
+                label="Aguardando Extrato Bancário"
+                value={`${matchStats.pending.length} títulos`}
+                tone="neutral"
+                detail="Ainda não localizados nas entradas bancárias"
+                icon="◫"
+              />
+            </section>
+
+            <section className="panel" style={{ marginTop: "24px" }}>
+              <div className="panel-heading">
+                <div>
+                  <h2>Painel de Conciliação e Baixa em Lote</h2>
+                  <p>Cruzamento entre contas a receber do Omie e lançamentos bancários conciliados</p>
+                </div>
+                {matchStats.ready.length > 0 && (
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button className="secondary-button" onClick={handleConfirmSettlementInSession}>
+                      Marcar Baixados na Sessão
+                    </button>
+                    <button className="primary-button" onClick={() => handleExportBatchSettlement()}>
+                      ⚡ Baixar Lote Oficial Omie (.CSV)
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {titles.length ? (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Nº Documento</th>
+                        <th>Cliente / Sacado</th>
+                        <th>Vencimento</th>
+                        <th className="align-right">Valor Título</th>
+                        <th>Entrada Extrato Bancário</th>
+                        <th>Confiança</th>
+                        <th>Diferença</th>
+                        <th>Status Sugerido</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {matches.map((m) => {
+                        const isReady = m.suggestedStatus === "pronto_para_baixa";
+                        const isDivergent = m.suggestedStatus === "divergente";
+                        return (
+                          <tr key={m.title.id} style={{ opacity: m.title.status === "baixado" ? 0.6 : 1 }}>
+                            <td>
+                              <strong>{m.title.documentNumber}</strong>
+                              {m.title.ourNumber && (
+                                <span style={{ display: "block", fontSize: "11px", color: "#64748B" }}>
+                                  Nosso Nº: {m.title.ourNumber}
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <div className="description-cell">{m.title.customerName}</div>
+                              <span style={{ fontSize: "11px", color: "#64748B" }}>{m.title.bankAccount || "Conta Geral"}</span>
+                            </td>
+                            <td>{formatDate(m.title.dueDate)}</td>
+                            <td className="align-right">{formatCurrency(m.title.amount)}</td>
+                            <td>
+                              {m.statementRecord ? (
+                                <div>
+                                  <strong style={{ fontSize: "12px", color: "#0F172A" }}>
+                                    {formatCurrency(m.statementRecord.amount)} em {formatDate(m.statementRecord.date)}
+                                  </strong>
+                                  <span style={{ display: "block", fontSize: "11px", color: "#64748B" }}>
+                                    {m.statementRecord.source} · {m.statementRecord.sourceRecordId ? `FITID: ${m.statementRecord.sourceRecordId}` : ""}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span style={{ color: "#94A3B8", fontStyle: "italic", fontSize: "12px" }}>Nenhuma entrada compatível</span>
+                              )}
+                            </td>
+                            <td>
+                              <span
+                                className="status-pill"
+                                style={{
+                                  background: m.confidence === "exato" || m.confidence === "documental" ? "#DCFCE7" : m.confidence === "aproximado" ? "#FEF3C7" : "#F1F5F9",
+                                  color: m.confidence === "exato" || m.confidence === "documental" ? "#15803D" : m.confidence === "aproximado" ? "#92400E" : "#64748B",
+                                  borderColor: m.confidence === "exato" || m.confidence === "documental" ? "#86EFAC" : m.confidence === "aproximado" ? "#FCD34D" : "#CBD5E1"
+                                }}
+                              >
+                                {m.confidence === "exato" ? "Exato (100%)" : m.confidence === "documental" ? "Documental" : m.confidence === "aproximado" ? "Aproximado" : "Pendente"}
+                              </span>
+                            </td>
+                            <td>
+                              {m.amountDifference !== 0 ? (
+                                <span style={{ color: m.amountDifference > 0 ? "#DC2626" : "#2563EB", fontWeight: 600, fontSize: "12px" }}>
+                                  {m.amountDifference > 0 ? `+ ${formatCurrency(m.amountDifference)} (Juros)` : `- ${formatCurrency(Math.abs(m.amountDifference))} (Desc.)`}
+                                </span>
+                              ) : (
+                                <span style={{ color: "#64748B", fontSize: "12px" }}>—</span>
+                              )}
+                            </td>
+                            <td>
+                              {m.title.status === "baixado" ? (
+                                <span className="status-pill" style={{ background: "#E2E8F0", color: "#334155" }}>Baixado</span>
+                              ) : isReady ? (
+                                <span className="status-pill" style={{ background: "#DCFCE7", color: "#15803D", borderColor: "#86EFAC" }}>Pronto p/ Baixa</span>
+                              ) : isDivergent ? (
+                                <span className="status-pill" style={{ background: "#FEF3C7", color: "#92400E", borderColor: "#FCD34D" }}>Revisar Diferença</span>
+                              ) : (
+                                <span className="status-pill" style={{ background: "#F1F5F9", color: "#64748B" }}>Aguardando</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState
+                  icon="✓"
+                  title="Nenhum título a receber carregado"
+                  text="Carregue os títulos pendentes do Omie ou utilize a amostra da Mundo do Sabor."
+                  action="Carregar Amostra Mundo do Sabor"
+                  onAction={() => setTitles(INITIAL_SAMPLE_TITLES)}
+                />
+              )}
+            </section>
+            <div className="inline-note" style={{ marginTop: "16px" }}>
+              <strong>Diretriz Omie Blueprint (ENG-MS-02):</strong> O motor de conciliação assistida gera o lote de liquidação e o arquivo de importação oficial para o Omie sem intervenção manual de arraste de cards, preservando a alçada de aprovação do operador financeiro antes da efetivação bancária.
+            </div>
+          </>}
+
           {section === "relatorios" && <Placeholder title="Relatórios" eyebrow="ANÁLISE FINANCEIRA" text="Os relatórios serão habilitados após a validação das fontes e dos dados financeiros importados." />}
         </div>
       </section>
       <input ref={inputRef} className="hidden-input" type="file" accept=".csv,.ofx,text/csv,application/x-ofx" onChange={handleFile} />
+      <input ref={titlesInputRef} className="hidden-input" type="file" accept=".csv,text/csv" onChange={handleImportTitlesFile} />
       <button className="session-reset" onClick={resetSession} title="Limpar os registros da sessão">Limpar sessão</button>
     </main>
   );
