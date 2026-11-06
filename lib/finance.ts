@@ -274,11 +274,11 @@ export function parseOfx(text: string): ImportResult {
   blocks.forEach(({ block, index }) => {
     const fitid = get(block, "FITID");
     const posted = get(block, "DTPOSTED").slice(0, 8);
-    const date = /^\\d{8}$/.test(posted)
+    const date = /^\d{8}$/.test(posted)
       ? parseDate(posted.slice(0, 4) + "-" + posted.slice(4, 6) + "-" + posted.slice(6, 8))
       : null;
     const rawAmount = get(block, "TRNAMT");
-    const amountIsValid = /^[-+]?\\d+(?:\\.\\d{1,2})?$/.test(rawAmount);
+    const amountIsValid = /^[-+]?\d+(?:\.\d{1,2})?$/.test(rawAmount);
     const signedAmount = amountIsValid ? Number(rawAmount) : NaN;
     const trnType = get(block, "TRNTYPE").toUpperCase();
     if (!date || !amountIsValid || !Number.isSafeInteger(Math.round(Math.abs(signedAmount) * 100))) {
