@@ -300,7 +300,7 @@ export function parseOfx(text: string): ImportResult {
       source: sourceLabel,
       status: "pendente",
       sourceRecordId: fitid || undefined,
-      bankCode: bankInfo.code !== "0000" ? bankInfo.code : undefined,
+      bankCode: bankInfo.code !== "0000" ? bankInfo.code : (rawBankId || undefined),
       bankName: bankInfo.name,
       accountId,
       branchId,

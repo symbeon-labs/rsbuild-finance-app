@@ -340,5 +340,5 @@ test("ENG-MS-01: codifica texto em bytes Windows-1252", () => {
 test("DASH-01: período de 30 dias inclui hoje e os 29 dias anteriores", () => {
   const records = [{ date: "2026-04-01", value: 1 }, { date: "2026-04-02", value: 2 }, { date: "2026-05-01", value: 3 }, { date: "2026-05-02", value: 4 }];
   const result = filterRecordsByPeriod(records, 30, new Date(2026, 4, 2, 12));
-  assert.deepEqual(result.map((record) => record.value), [2, 3, 4]);
+  assert.deepEqual(result.map((record) => record.value), [3, 4]);
 });
