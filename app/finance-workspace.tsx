@@ -310,7 +310,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
     const ready = matches.filter((m) => m.suggestedStatus === "pronto_para_baixa");
     const divergent = matches.filter((m) => m.suggestedStatus === "divergente");
     const pending = matches.filter((m) => m.suggestedStatus === "nao_identificado");
-    const totalReadyAmount = ready.reduce((sum, m) => sum + ((m.statementRecord?.amountMinor || 0) / 100), 0);
+    const totalReadyAmount = ready.reduce((sum, m) => sum + (m.statementRecord?.amountMinor || 0), 0);
     return { ready, divergent, pending, totalReadyAmount };
   }, [matches]);
 
