@@ -707,3 +707,94 @@ tbody tr:last-child td { border-bottom: 0; }
   .import-actions button { justify-content: center; }
   .session-reset { display: none; }
 }
+
+
+/* ============================================================
+   RSBUILD Login — CSS portado do branch feat/rsbuild-branded-login
+   ============================================================ */
+.login-page{--login-charcoal:#2B2C2E;--login-brown:#614943;--login-beige:#D9CCB5;--login-terracotta:#B5583C;min-height:100vh;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(440px,.98fr);background:#f5f1eb;font-family:"Libre Franklin",Arial,sans-serif;color:var(--login-charcoal)}
+.login-brand-panel{position:relative;isolation:isolate;overflow:hidden;display:flex;min-height:100vh;background:var(--login-charcoal);color:#f7f3ed}
+.login-brand-panel:before{content:"";position:absolute;inset:0;z-index:-2;background:radial-gradient(ellipse at 15% 90%,rgba(181,88,60,.16),transparent 48%),linear-gradient(145deg,#2B2C2E 0%,#34302e 100%)}
+.login-brand-pattern{position:absolute;z-index:-1;inset:0;background-image:url("/brand/rsbuild-network-pattern.svg");background-position:center;background-size:cover;opacity:.36;mix-blend-mode:screen;pointer-events:none}
+.login-brand-content{width:min(100%,760px);min-height:100vh;margin:0 auto;padding:clamp(34px,5vw,76px);display:flex;flex-direction:column}
+.login-brand-logo-wrap{width:max-content;max-width:100%;padding:9px 13px;background:#F5F1EB;border-radius:2px}
+.login-brand-logo{display:block;width:clamp(205px,19vw,250px);height:auto;object-fit:contain}
+.login-brand-kicker{display:none}
+.login-brand-message{margin:auto 0;max-width:510px;padding:78px 0 90px}
+.login-overline{display:inline-flex;align-items:center;gap:10px;color:var(--login-terracotta);font-size:9px;font-weight:700;letter-spacing:.2em}
+.login-overline:before{content:"";width:22px;height:1px;background:currentColor}
+.login-brand-message h1{font-family:"Libre Franklin",Arial,sans-serif;font-size:clamp(36px,4.15vw,62px);line-height:1.13;letter-spacing:-.055em;font-weight:600;margin:22px 0 20px;color:#F4F0E9}
+.login-brand-message>p{max-width:390px;color:rgba(244,240,233,.68);font-size:14px;line-height:1.9;margin:0}
+.login-brand-footer{display:flex;align-items:center;gap:13px;color:rgba(217,204,181,.68);font-size:9px;letter-spacing:.15em}
+.login-footer-line{height:1px;width:34px;background:var(--login-terracotta)}
+.login-brand-footer b{color:var(--login-terracotta);padding:0 5px}
+.login-form-panel{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:72px clamp(28px,7vw,104px) 78px;background:#F5F1EB}
+.login-form-wrap{width:min(100%,410px);margin:auto}
+.login-form-heading{margin-bottom:34px}
+.login-form-heading h1,.login-form-heading h2{font-family:"Libre Franklin",Arial,sans-serif;font-size:clamp(29px,3vw,37px);font-weight:600;letter-spacing:-.05em;color:var(--login-charcoal);margin:18px 0 10px}
+.login-form-heading>p{font-size:13px;color:#81776e;line-height:1.7;margin:0}
+.login-form{display:grid;gap:21px}
+.login-field{display:grid;gap:9px;color:#514944;font-size:11px;font-weight:600;letter-spacing:.015em}
+.login-field input{width:100%;height:51px;border:1px solid #ded6ca;border-radius:3px;background:rgba(255,255,255,.72);padding:0 15px;color:var(--login-charcoal);font-size:13px;outline:none;transition:border-color .18s,box-shadow .18s}
+.login-field input::placeholder{color:#aaa197}
+.login-field input:focus{border-color:var(--login-brown);box-shadow:0 0 0 3px rgba(97,73,67,.1)}
+.login-submit{width:100%;height:52px;border:0;border-radius:3px;background:var(--login-brown);color:#fffaf3;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-family:"Libre Franklin",Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:.025em;margin-top:5px;cursor:pointer;transition:background .18s,transform .18s}
+.login-submit:hover{background:#76564d;transform:translateY(-1px)}
+.login-submit:focus-visible{outline:3px solid rgba(181,88,60,.35);outline-offset:3px}
+.login-submit:disabled{opacity:.65;cursor:not-allowed;transform:none}
+.login-submit svg{width:19px;height:19px;color:#E1B29E}
+.login-error{border-left:3px solid var(--login-terracotta);background:#f0e4dc;color:#75483d;padding:12px 14px;font-size:12px;line-height:1.6;margin:0 0 20px}
+.login-security-note{display:flex;align-items:center;gap:9px;color:#8c8177;font-size:10px;margin:25px 0 0}
+.login-security-note span{font-size:8px;color:var(--login-terracotta)}
+.login-copyright{position:absolute;bottom:26px;left:28px;right:28px;text-align:center;color:#a39a8f;font-size:9px;letter-spacing:.035em}
+.login-mobile-brand{display:none}
+@media(max-width:850px){.login-page{grid-template-columns:minmax(0,.85fr) minmax(390px,1.15fr)}.login-brand-content{padding:42px 34px}.login-brand-message h1{font-size:clamp(34px,5vw,48px)}.login-form-panel{padding-left:35px;padding-right:35px}}
+@media(max-width:640px){.login-page{display:flex;flex-direction:column;min-height:100svh;background:#F5F1EB}.login-brand-panel{display:none}.login-form-panel{min-height:100svh;padding:35px 25px 70px;justify-content:center}.login-form-wrap{width:min(100%,410px)}.login-mobile-brand{display:flex;align-items:flex-start;margin-bottom:48px}.login-mobile-brand .login-brand-logo{width:min(230px,72vw);height:auto}.login-form-heading{margin-bottom:30px}.login-form-heading h2{font-size:31px}.login-copyright{bottom:20px;font-size:8px}}
+@media(prefers-reduced-motion:reduce){.login-field input,.login-submit{transition:none}.login-submit:hover{transform:none}}
+
+/* Refinamentos — layout single-surface */
+.login-brand-panel:before{background:radial-gradient(ellipse at 12% 88%,rgba(181,88,60,.10),transparent 46%),linear-gradient(145deg,#292a2c 0%,#302d2b 100%)}
+.login-brand-pattern{opacity:.23}
+.login-brand-content{padding:clamp(30px,4.8vw,68px)}
+.login-brand-logo-wrap{padding:12px 16px;border-radius:3px;max-width:100%;background:#F5F1EB}
+.login-brand-logo{width:clamp(270px,34vw,360px);max-width:100%;height:auto;object-fit:contain}
+.login-brand-message{padding:clamp(48px,6vw,78px) 0;max-width:520px}
+.login-brand-message h1{font-size:clamp(35px,3.9vw,56px);line-height:1.12}
+.login-form-wrap{width:min(100%,420px)}
+.login-form-panel{padding:64px clamp(28px,6vw,90px) 76px}
+.login-mobile-logo-wrap{padding:10px 12px}
+.login-mobile-brand .login-brand-logo{width:min(250px,72vw);max-width:100%}
+@media(max-width:850px){.login-brand-content{padding:34px 26px}.login-brand-logo{width:min(100%,300px)}.login-brand-message{padding:48px 0}.login-brand-message h1{font-size:clamp(32px,4.7vw,44px)}.login-form-panel{padding-left:28px;padding-right:28px}}
+@media(max-width:640px){.login-form-panel{padding:30px 22px 68px}.login-mobile-brand{margin-bottom:40px}.login-mobile-brand .login-brand-logo{width:min(250px,72vw)}.login-form-heading h2{font-size:32px}}
+@media(max-height:760px) and (min-width:641px){.login-brand-content{padding-top:28px;padding-bottom:28px}.login-brand-message{padding:34px 0}.login-brand-message h1{font-size:clamp(32px,3.5vw,48px);margin:16px 0 14px}.login-brand-message>p{font-size:13px;line-height:1.7}.login-form-panel{padding-top:48px;padding-bottom:56px}}
+
+/* Variante single-surface (login-page--single) */
+.login-page--single{--login-charcoal:#242322;--login-brown:#623b2c;--login-terracotta:#df4d1b;position:relative;isolation:isolate;display:flex;min-height:100svh;overflow:hidden;align-items:center;justify-content:center;padding:clamp(28px,5vw,72px) 24px 92px;background:#f7f2ea;color:var(--login-charcoal)}
+.login-page--single:before{content:"";position:absolute;z-index:-2;inset:0;background:none}
+.login-ambient-pattern{position:absolute;z-index:-1;inset:0;pointer-events:none;opacity:1;background-image:url("/brand/rsbuild-ambient-honeycomb.svg");background-repeat:no-repeat;background-position:center;background-size:100% 100%;mix-blend-mode:multiply}
+.login-page--single .login-brand-panel{display:none}
+.login-form-panel--single{width:min(100%,760px);min-height:0;padding:0;margin:auto;justify-content:center;align-items:stretch;background:transparent}
+.login-form-panel--single .login-form-wrap{width:100%;max-width:784px;margin:0}
+.login-mobile-brand--single{display:flex;width:100%;justify-content:center;align-items:center;margin:0 0 clamp(44px,5.5vw,68px)}
+.login-mobile-brand--single .login-brand-logo-wrap{width:100%;max-width:690px;padding:0;background:transparent;border-radius:0;display:flex;justify-content:center;overflow:visible}
+.login-mobile-brand--single .login-brand-logo{display:block;width:100%;max-width:690px;height:auto;max-height:none;object-fit:contain;object-position:center}
+.login-form-panel--single .login-form-heading{margin-bottom:46px}
+.login-form-panel--single .login-overline{font-size:clamp(12px,1.5vw,17px);letter-spacing:.19em;gap:16px}
+.login-form-panel--single .login-overline:before{width:42px;height:2px}
+.login-form-panel--single .login-form-heading h1{margin:28px 0 14px;color:#242322;font-size:clamp(40px,6vw,68px);line-height:1.08;letter-spacing:-.055em;font-weight:700}
+.login-form-panel--single .login-form-heading>p{font-size:clamp(16px,2.3vw,24px);color:#8d827a}
+.login-form-panel--single .login-form{gap:28px}
+.login-form-panel--single .login-field{gap:12px;font-size:clamp(14px,1.8vw,19px);color:#302c29}
+.login-input-wrap{display:flex;align-items:center;gap:20px;min-height:82px;padding:0 28px;border:1.5px solid #dfcbbd;border-radius:13px;background:rgba(255,255,255,.62);color:#79675c;transition:border-color .18s,box-shadow .18s}
+.login-input-wrap:focus-within{border-color:#a75d3c;box-shadow:0 0 0 4px rgba(181,88,60,.10)}
+.login-input-wrap>svg{width:28px;height:28px;flex:0 0 auto}
+.login-input-wrap input{width:100%;min-width:0;height:78px;padding:0;border:0;outline:0;background:transparent;color:#292522;font-size:clamp(16px,2vw,23px);box-shadow:none!important}
+.login-input-wrap input::placeholder{color:#928982}
+.login-form-panel--single .login-submit{height:90px;margin-top:8px;padding:0 34px;border-radius:13px;background:linear-gradient(105deg,#794633 0%,#542f22 100%);font-size:clamp(17px,2.3vw,26px);letter-spacing:-.015em}
+.login-form-panel--single .login-submit:hover{background:linear-gradient(105deg,#89523a 0%,#623727 100%)}
+.login-form-panel--single .login-submit svg{width:42px;height:42px;color:#f08a55}
+.login-form-panel--single .login-security-note{margin-top:28px;gap:14px;color:#5d514b;font-size:clamp(14px,1.8vw,20px)}
+.login-form-panel--single .login-security-note span{font-size:17px;color:#f36a2b}
+.login-form-panel--single .login-copyright{position:fixed;bottom:clamp(20px,4vw,48px);left:20px;right:20px;color:#81766e;font-size:clamp(11px,1.3vw,16px)}
+@media(max-width:640px){.login-page--single{min-height:100svh;padding:30px 22px 78px}.login-mobile-brand--single{margin-bottom:42px}.login-mobile-brand--single .login-brand-logo{max-width:100%}.login-form-panel--single .login-form-heading{margin-bottom:30px}.login-form-panel--single .login-form-heading h1{font-size:clamp(34px,9vw,46px);margin:20px 0 12px}.login-form-panel--single .login-form-heading>p{font-size:16px;line-height:1.55}.login-form-panel--single .login-form{gap:22px}.login-input-wrap{min-height:66px;padding:0 17px;gap:14px;border-radius:11px}.login-input-wrap>svg{width:24px;height:24px}.login-input-wrap input{height:62px;font-size:16px}.login-form-panel--single .login-submit{height:70px;padding:0 20px;font-size:16px;border-radius:11px}.login-form-panel--single .login-submit svg{width:32px;height:32px}.login-form-panel--single .login-security-note{margin-top:22px;font-size:13px}.login-form-panel--single .login-security-note span{font-size:13px}.login-form-panel--single .login-copyright{bottom:18px;font-size:10px}}
+@media(max-height:780px) and (min-width:641px){.login-page--single{padding-top:24px;padding-bottom:72px}.login-mobile-brand--single{margin-bottom:38px}.login-mobile-brand--single .login-brand-logo{max-width:490px}.login-form-panel--single .login-form-heading{margin-bottom:26px}.login-form-panel--single .login-form{gap:18px}.login-input-wrap{min-height:62px}.login-input-wrap input{height:58px}.login-form-panel--single .login-submit{height:68px}}
