@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
-import { BankMetadata, FinancialRecord, encodeWindows1252, filterRecordsByPeriod, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
+import { BankMetadata, FinancialRecord, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
 import {
   ReceivableTitle,
   ReconciliationMatch,
@@ -10,14 +10,24 @@ import {
   generateOmieBatchSettlementCsv,
   parseReceivablesCsv
 } from "@/lib/reconciliation";
+import {
+  DeliveryProof,
+  DeliveryStatus,
+  ProtestoEvaluation,
+  computeDeliveryMetrics,
+  evaluateProtestoRisk,
+  generateDeliveryBlindageCsv,
+  parseDeliveryCsv
+} from "@/lib/delivery";
 
-type Section = "visao-geral" | "movimentacoes" | "importacoes" | "baixas" | "relatorios";
+type Section = "visao-geral" | "movimentacoes" | "importacoes" | "baixas" | "canhotos" | "relatorios";
 
 const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "visao-geral", label: "Visão geral", icon: "◫" },
   { id: "movimentacoes", label: "Movimentações", icon: "⇄" },
   { id: "importacoes", label: "Importações", icon: "⇧" },
   { id: "baixas", label: "Baixas Omie (ENG-02)", icon: "✓" },
+  { id: "canhotos", label: "Canhotos (ENG-03)", icon: "📦" },
   { id: "relatorios", label: "Relatórios", icon: "▥" }
 ];
 
@@ -70,6 +80,66 @@ const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
   }
 ];
 
+const INITIAL_SAMPLE_PROOFS: DeliveryProof[] = [
+  {
+    id: "prf-4580",
+    nfeNumber: "4580",
+    nfeKey: "29260401234567000199550010000045801000000010",
+    customerName: "Supermercado Real Salvador",
+    nfeAmount: 1500.0,
+    issueDate: "2026-04-01",
+    deliveryDate: "2026-04-03",
+    status: "comprovado",
+    driverName: "Carlos Rota Litoral",
+    receiverName: "Marcos Souza (Doca 2)",
+    receiverDocument: "RG 12.345.678-BA",
+    proofFileUrl: "canhoto_nf_4580_assinado.pdf"
+  },
+  {
+    id: "prf-4581",
+    nfeNumber: "4581",
+    customerName: "Distribuidora Alimentos Bahia",
+    nfeAmount: 3200.5,
+    issueDate: "2026-04-02",
+    status: "recusa_devolucao",
+    driverName: "Carlos Rota Litoral",
+    notes: "Recusa parcial registrada: 4 caixas avariadas na descarga."
+  },
+  {
+    id: "prf-4582",
+    nfeNumber: "4582",
+    customerName: "Padaria e Lanchonete Estrela",
+    nfeAmount: 850.0,
+    issueDate: "2026-04-03",
+    status: "pendente_entrega",
+    driverName: "Raimundo Entregas",
+    notes: "Carga em trânsito com previsão hoje às 17h."
+  },
+  {
+    id: "prf-4583",
+    nfeNumber: "4583",
+    customerName: "Mercado Regional Lauro de Freitas",
+    nfeAmount: 5000.0,
+    issueDate: "2026-04-04",
+    deliveryDate: "2026-04-05",
+    status: "comprovado",
+    driverName: "Raimundo Entregas",
+    receiverName: "Sueli Alcântara (Financeiro)",
+    receiverDocument: "CPF 012.345.678-99",
+    proofFileUrl: "canhoto_nf_4583_carimbado.jpg"
+  },
+  {
+    id: "prf-4584",
+    nfeNumber: "4584",
+    customerName: "Cantina Sabor Central",
+    nfeAmount: 2400.0,
+    issueDate: "2026-03-25",
+    status: "extraviado",
+    driverName: "Terceirizado Rota 4",
+    notes: "Motorista não retornou com canhoto físico assinado."
+  }
+];
+
 export default function FinanceWorkspace() {
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
@@ -86,17 +156,29 @@ export default function FinanceWorkspace() {
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
   const titlesInputRef = useRef<HTMLInputElement>(null);
 
-  const periodRecords = useMemo(() => filterRecordsByPeriod(records, Number(period)), [records, period]);
+  // Estado para Canhotos de Entrega e Blindagem de Cobrança (ENG-MS-03)
+  const [proofs, setProofs] = useState<DeliveryProof[]>(INITIAL_SAMPLE_PROOFS);
+  const proofsInputRef = useRef<HTMLInputElement>(null);
+
+  const deliveryMetrics = useMemo(() => computeDeliveryMetrics(proofs), [proofs]);
+
+  const evaluations = useMemo(() => {
+    return proofs.map((p) => {
+      const relatedTitle = titles.find((t) => t.documentNumber.includes(p.nfeNumber));
+      const isOverdue = relatedTitle ? new Date(relatedTitle.dueDate) < new Date() : false;
+      return evaluateProtestoRisk(p, { dueDate: relatedTitle?.dueDate, isOverdue });
+    });
+  }, [proofs, titles]);
 
   const totals = useMemo(() => {
-    const incoming = periodRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
-    const outgoing = periodRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
+    const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
+    const outgoing = records.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
     return { incoming, outgoing, balance: incoming - outgoing };
-  }, [periodRecords]);
+  }, [records]);
 
-  const filteredRecords = useMemo(() => periodRecords.filter((item) =>
+  const filteredRecords = useMemo(() => records.filter((item) =>
     `${item.description} ${item.category} ${item.source} ${item.bankName || ""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))
-  ), [periodRecords, query]);
+  ), [records, query]);
 
   // Casamento algorítmico entre títulos a receber e extratos importados
   const matches = useMemo(() => {
@@ -145,24 +227,18 @@ export default function FinanceWorkspace() {
   function handleExportOmie(targetRecords?: FinancialRecord[]) {
     const list = targetRecords && targetRecords.length ? targetRecords : (records.length ? records : pendingImport);
     if (!list.length) return;
-    try {
-      const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
-      const encoded = encodeWindows1252(ofxContent);
-      const bytes = encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength) as ArrayBuffer;
-      const blob = new Blob([bytes], { type: "application/x-ofx;charset=windows-1252" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const dateStr = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = `extrato_padronizado_omie_${dateStr}.ofx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Não foi possível gerar o arquivo OFX.");
-    }
+    const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
+    const blob = new Blob([ofxContent], { type: "application/x-ofx;charset=windows-1252" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `extrato_padronizado_omie_${dateStr}.ofx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
   }
 
   // Ações de Baixa em Lote (ENG-MS-02)
@@ -209,6 +285,59 @@ export default function FinanceWorkspace() {
     setNotice(`${matchedTitleIds.size} título(s) marcados como baixados na sessão.`);
   }
 
+  // Ações de Canhotos e Blindagem de Protesto (ENG-MS-03)
+  async function handleImportProofsFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const result = parseDeliveryCsv(text);
+    if (result.errors.length > 0) {
+      setNotice(`Aviso na importação de canhotos: ${result.errors[0]}`);
+    }
+    if (result.proofs.length > 0) {
+      setProofs((curr) => [...result.proofs, ...curr]);
+      setNotice(`${result.proofs.length} comprovante(s) de entrega importado(s) com sucesso.`);
+    }
+    event.target.value = "";
+  }
+
+  function handleExportBlindageReport() {
+    if (!proofs.length) {
+      setNotice("Não há canhotos ou notas registradas para exportar o protocolo.");
+      return;
+    }
+    const csvContent = generateDeliveryBlindageCsv(proofs, evaluations);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `protocolo_blindagem_canhotos_${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setNotice(`Protocolo de blindagem jurídica exportado com sucesso (${evaluations.length} notas analisadas).`);
+  }
+
+  function handleConfirmReceipt(proofId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    setProofs((curr) =>
+      curr.map((p) => {
+        if (p.id !== proofId) return p;
+        return {
+          ...p,
+          status: "comprovado",
+          deliveryDate: p.deliveryDate || today,
+          receiverName: p.receiverName || "Recebedor Confirmado (Operador)",
+          receiverDocument: p.receiverDocument || "Confirmado em Sessão",
+          notes: "Canhoto validado manualmente no fechamento."
+        };
+      })
+    );
+    setNotice("Canhoto validado e liberado para protesto/cobrança jurídica com sucesso!");
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -245,27 +374,27 @@ export default function FinanceWorkspace() {
               <button className="primary-button" onClick={() => inputRef.current?.click()}><span>＋</span> Importar movimentações</button>
             </div>
             <div className="metric-grid">
-              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={periodRecords.length ? "Registros importados no período" : "Aguardando dados"} icon="↙" />
-              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={periodRecords.length ? "Registros importados no período" : "Aguardando dados"} icon="↗" />
+              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↙" />
+              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↗" />
               <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail="Entradas menos saídas" icon="＝" />
-              <Metric label="Movimentações" value={String(periodRecords.length)} tone="neutral" detail={periodRecords.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
+              <Metric label="Movimentações" value={String(records.length)} tone="neutral" detail={records.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
             </div>
             <div className="dashboard-grid">
               <section className="panel chart-panel">
                 <div className="panel-heading"><div><h2>Movimentação financeira</h2><p>Consolidação dos registros importados</p></div><span className="subtle-tag">BRL</span></div>
-                {periodRecords.length ? <div className="activity-summary"><div><span>Entradas</span><strong className="positive">{formatCurrency(totals.incoming)}</strong></div><div><span>Saídas</span><strong className="negative">{formatCurrency(totals.outgoing)}</strong></div><div><span>Saldo líquido</span><strong>{formatCurrency(totals.balance)}</strong></div></div> : <EmptyState icon="⌁" title="Ainda não há movimentações" text="Importe um extrato bancário para começar a visualizar a posição financeira." action="Importar extrato" onAction={() => inputRef.current?.click()} />}
+                {records.length ? <div className="activity-summary"><div><span>Entradas</span><strong className="positive">{formatCurrency(totals.incoming)}</strong></div><div><span>Saídas</span><strong className="negative">{formatCurrency(totals.outgoing)}</strong></div><div><span>Saldo líquido</span><strong>{formatCurrency(totals.balance)}</strong></div></div> : <EmptyState icon="⌁" title="Ainda não há movimentações" text="Importe um extrato bancário para começar a visualizar a posição financeira." action="Importar extrato" onAction={() => inputRef.current?.click()} />}
               </section>
               <section className="panel">
                 <div className="panel-heading"><div><h2>Qualidade dos dados</h2><p>Situação dos registros carregados</p></div></div>
-                <div className="quality-row"><span>Movimentações importadas</span><strong>{periodRecords.length}</strong></div>
-                <div className="quality-row"><span>Pendentes de revisão</span><strong>{periodRecords.filter((item) => item.status === "pendente").length}</strong></div>
-                <div className="quality-row"><span>Fontes identificadas</span><strong>{new Set(periodRecords.map((item) => item.source)).size}</strong></div>
+                <div className="quality-row"><span>Movimentações importadas</span><strong>{records.length}</strong></div>
+                <div className="quality-row"><span>Pendentes de revisão</span><strong>{records.filter((item) => item.status === "pendente").length}</strong></div>
+                <div className="quality-row"><span>Fontes identificadas</span><strong>{new Set(records.map((item) => item.source)).size}</strong></div>
                 <div className="quality-footnote">A classificação e a conciliação serão habilitadas conforme a configuração das fontes.</div>
               </section>
             </div>
             <section className="panel recent-panel">
               <div className="panel-heading"><div><h2>Movimentações recentes</h2><p>Últimos registros adicionados</p></div><button className="text-button" onClick={() => setSection("movimentacoes")}>Ver todas <span>→</span></button></div>
-              {periodRecords.length ? <RecordTable records={[...periodRecords].sort((a,b) => b.date.localeCompare(a.date)).slice(0,5)} /> : <div className="table-empty">Os registros aparecerão aqui após a primeira importação.</div>}
+              {records.length ? <RecordTable records={[...records].sort((a,b) => b.date.localeCompare(a.date)).slice(0,5)} /> : <div className="table-empty">Os registros aparecerão aqui após a primeira importação.</div>}
             </section>
           </>}
 
@@ -490,11 +619,200 @@ export default function FinanceWorkspace() {
             </div>
           </>}
 
+          {section === "canhotos" && <>
+            <div className="page-heading">
+              <div>
+                <div className="eyebrow">RASTREABILIDADE DE ENTREGA & JURÍDICO (ENG-MS-03)</div>
+                <h1>Protocolo Digital de Canhotos</h1>
+                <p>Indexação de comprovantes de entrega da expedição e blindagem jurídica preventiva contra protestos indevidos (Lei nº 5.474/1968).</p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <button className="secondary-button" onClick={() => proofsInputRef.current?.click()}>
+                  <span>⇧</span> Importar Canhotos (CSV)
+                </button>
+                <button className="primary-button" onClick={handleExportBlindageReport}>
+                  <span>⤓</span> Exportar Protocolo de Blindagem
+                </button>
+              </div>
+            </div>
+
+            <div className="metric-grid">
+              <Metric
+                label="Taxa de Comprovação"
+                value={`${deliveryMetrics.coverageRate}%`}
+                tone="positive"
+                detail={`${deliveryMetrics.provenCount} de ${deliveryMetrics.totalInvoices} entregas comprovadas`}
+                icon="✓"
+              />
+              <Metric
+                label="Faturamento Blindado"
+                value={formatCurrency(deliveryMetrics.provenAmount)}
+                tone="positive"
+                detail="Canhoto assinado / Apto a protesto"
+                icon="🛡"
+              />
+              <Metric
+                label="Risco de Protesto / Sem Canhoto"
+                value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
+                tone="negative"
+                detail="Bloqueio preventivo ativo"
+                icon="⚠"
+              />
+              <Metric
+                label="Em Trânsito / Expedição"
+                value={`${deliveryMetrics.pendingDeliveryCount} faturas`}
+                tone="neutral"
+                detail={formatCurrency(deliveryMetrics.pendingDeliveryAmount)}
+                icon="🚚"
+              />
+            </div>
+
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Painel de Gestão e Rastreabilidade de Canhotos</h2>
+                  <p>Acompanhamento individual de NF-e, recebedores na doca e veredito de proteção judicial.</p>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button className="secondary-button" onClick={() => setProofs(INITIAL_SAMPLE_PROOFS)}>
+                    Restaurar Amostra Mundo do Sabor
+                  </button>
+                </div>
+              </div>
+
+              {proofs.length > 0 ? (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>NF-e / Chave</th>
+                        <th>Cliente / Destinatário</th>
+                        <th className="align-right">Valor NF</th>
+                        <th>Motorista / Rota</th>
+                        <th>Status Entrega</th>
+                        <th>Blindagem de Protesto</th>
+                        <th>Recebedor / Data</th>
+                        <th>Ação Operacional</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {proofs.map((p) => {
+                        const evaluation = evaluations.find((ev) => ev.proofId === p.id || ev.nfeNumber === p.nfeNumber);
+                        const isProven = p.status === "comprovado";
+                        const isRejected = p.status === "recusa_devolucao";
+                        const isLost = p.status === "extraviado";
+
+                        return (
+                          <tr key={p.id}>
+                            <td>
+                              <strong>NF-{p.nfeNumber}</strong>
+                              {p.nfeKey && (
+                                <span style={{ display: "block", fontSize: "10px", color: "#64748B", fontFamily: "var(--font-mono, monospace)" }}>
+                                  SEFAZ: {p.nfeKey.slice(0, 10)}...{p.nfeKey.slice(-6)}
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <div className="description-cell">{p.customerName}</div>
+                              {p.notes && (
+                                <span style={{ fontSize: "10px", color: "#94A3B8", fontStyle: "italic" }}>
+                                  Obs: {p.notes}
+                                </span>
+                              )}
+                            </td>
+                            <td className="align-right font-semibold">{formatCurrency(p.nfeAmount)}</td>
+                            <td>
+                              <span style={{ fontSize: "11px", color: "#475569" }}>
+                                {p.driverName || "Expedição Interna"}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                className="status-pill"
+                                style={{
+                                  background: isProven ? "#DCFCE7" : isRejected ? "#FEE2E2" : isLost ? "#F3E8FF" : "#FEF3C7",
+                                  color: isProven ? "#15803D" : isRejected ? "#991B1B" : isLost ? "#6B21A8" : "#92400E",
+                                  borderColor: isProven ? "#86EFAC" : isRejected ? "#FCA5A5" : isLost ? "#D8B4FE" : "#FCD34D"
+                                }}
+                              >
+                                {isProven ? "Comprovado" : isRejected ? "Recusa / Avaria" : isLost ? "Extraviado" : "Em Trânsito"}
+                              </span>
+                            </td>
+                            <td>
+                              <div>
+                                <span
+                                  className="status-pill"
+                                  style={{
+                                    background: evaluation?.risk === "liberado" ? "#DCFCE7" : evaluation?.risk === "bloqueio_preventivo" ? "#FEE2E2" : "#FEF3C7",
+                                    color: evaluation?.risk === "liberado" ? "#166534" : evaluation?.risk === "bloqueio_preventivo" ? "#991B1B" : "#854D0E",
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  {evaluation?.risk === "liberado"
+                                    ? "✓ APTO A PROTESTO"
+                                    : evaluation?.risk === "bloqueio_preventivo"
+                                    ? "⛔ BLOQUEIO PREVENTIVO"
+                                    : "⚠ ATENÇÃO PRAZO"}
+                                </span>
+                                <span style={{ display: "block", fontSize: "10px", color: "#64748B", marginTop: "4px", maxWidth: "260px", whiteSpace: "normal" }}>
+                                  {evaluation?.reason}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              {p.receiverName ? (
+                                <div>
+                                  <strong style={{ fontSize: "11px", color: "#1E293B" }}>{p.receiverName}</strong>
+                                  <span style={{ display: "block", fontSize: "10px", color: "#64748B" }}>
+                                    {p.deliveryDate ? formatDate(p.deliveryDate) : "Data não informada"} {p.receiverDocument ? `· ${p.receiverDocument}` : ""}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span style={{ color: "#94A3B8", fontStyle: "italic", fontSize: "11px" }}>Aguardando assinatura</span>
+                              )}
+                            </td>
+                            <td>
+                              {!isProven ? (
+                                <button
+                                  className="secondary-button"
+                                  style={{ fontSize: "10px", padding: "6px 10px" }}
+                                  onClick={() => handleConfirmReceipt(p.id)}
+                                  title="Validar recebimento e liberar título para cobrança/protesto"
+                                >
+                                  Validar Canhoto
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: "11px", color: "#15803D", fontWeight: 600 }}>Arquivado</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState
+                  icon="📦"
+                  title="Nenhum canhoto carregado"
+                  text="Importe a planilha de expedição ou utilize os dados de amostra da Mundo do Sabor."
+                  action="Carregar Amostra Mundo do Sabor"
+                  onAction={() => setProofs(INITIAL_SAMPLE_PROOFS)}
+                />
+              )}
+            </section>
+
+            <div className="inline-note" style={{ marginTop: "16px" }}>
+              <strong>Fundamentação Jurídica (Lei nº 5.474/1968, Art. 15):</strong> A duplicata mercantil não aceita só é legalmente passível de protesto e execução judicial mediante comprovação da entrega e recebimento efetivo das mercadorias (canhoto assinado pelo sacado). O protocolo digital impede que títulos com canhotos pendentes, extraviados ou em devolução sigam para cobrança coercitiva, eliminando riscos de litígios e processos por protesto indevido contra a Mundo do Sabor.
+            </div>
+          </>}
+
           {section === "relatorios" && <Placeholder title="Relatórios" eyebrow="ANÁLISE FINANCEIRA" text="Os relatórios serão habilitados após a validação das fontes e dos dados financeiros importados." />}
         </div>
       </section>
       <input ref={inputRef} className="hidden-input" type="file" accept=".csv,.ofx,text/csv,application/x-ofx" onChange={handleFile} />
       <input ref={titlesInputRef} className="hidden-input" type="file" accept=".csv,text/csv" onChange={handleImportTitlesFile} />
+      <input ref={proofsInputRef} className="hidden-input" type="file" accept=".csv,text/csv" onChange={handleImportProofsFile} />
       <button className="session-reset" onClick={resetSession} title="Limpar os registros da sessão">Limpar sessão</button>
     </main>
   );
