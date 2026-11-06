@@ -134,7 +134,7 @@ export function matchTitlesWithRecords(
         const valDiff = Math.abs(record.amountMinor - Math.round(title.amount * 100));
         const dDiff = daysDiff(record.date, title.dueDate);
 
-        if (valDiff < 0.01 && dDiff <= maxDays) {
+        if (valDiff < 1 && dDiff <= maxDays) {
           bestMatch = record;
           bestConfidence = "exato";
           notes.push(`Valor exato na janela de compensação (${dDiff} dia(s) do vencimento)`);
