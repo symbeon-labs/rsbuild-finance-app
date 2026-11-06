@@ -19,8 +19,13 @@ import {
   generateDeliveryBlindageCsv,
   parseDeliveryCsv
 } from "@/lib/delivery";
+import {
+  ParsedWhatsAppOrder,
+  generateOmieSalesOrderCsv,
+  parseWhatsAppOrderMessage
+} from "@/lib/orders";
 
-type Section = "visao-geral" | "movimentacoes" | "importacoes" | "baixas" | "canhotos" | "relatorios";
+type Section = "visao-geral" | "movimentacoes" | "importacoes" | "baixas" | "canhotos" | "pedidos-ha" | "relatorios";
 
 const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "visao-geral", label: "Visão geral", icon: "◫" },
@@ -28,6 +33,7 @@ const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "importacoes", label: "Importações", icon: "⇧" },
   { id: "baixas", label: "Baixas Omie (ENG-02)", icon: "✓" },
   { id: "canhotos", label: "Canhotos (ENG-03)", icon: "📦" },
+  { id: "pedidos-ha", label: "Pedidos Hub Açaí (HA-01)", icon: "📱" },
   { id: "relatorios", label: "Relatórios", icon: "▥" }
 ];
 
@@ -140,6 +146,92 @@ const INITIAL_SAMPLE_PROOFS: DeliveryProof[] = [
   }
 ];
 
+const INITIAL_SAMPLE_HA_ORDERS: ParsedWhatsAppOrder[] = [
+  {
+    id: "ord-ha-001",
+    rawMessage: "Bom dia! Aqui é o Marcos do Açaí do Parque Salvador.\nManda 15 caixas do tradicional 10L e 5 de banana.\nBoleto 7 dias.",
+    customerName: "Marcos do Açaí do Parque Salvador",
+    paymentMethod: "boleto_7d",
+    items: [
+      {
+        sku: "ACAI-TRAD-10L",
+        productName: "Açaí Tradicional Especial 10L",
+        flavor: "Tradicional",
+        quantity: 15,
+        unitPrice: 120.0,
+        totalAmount: 1800.0,
+        boxesTotal: 15,
+        rawText: "15 caixas do tradicional 10L",
+        confidence: "alta"
+      },
+      {
+        sku: "ACAI-BAN-10L",
+        productName: "Açaí com Banana 10L",
+        flavor: "Banana",
+        quantity: 5,
+        unitPrice: 125.0,
+        totalAmount: 625.0,
+        boxesTotal: 5,
+        rawText: "5 de banana",
+        confidence: "alta"
+      }
+    ],
+    totalBoxes: 20,
+    totalAmount: 2425.0,
+    confidence: "alta",
+    unrecognizedLines: [],
+    createdAt: new Date().toISOString(),
+    status: "confirmado"
+  },
+  {
+    id: "ord-ha-002",
+    rawMessage: "Sou a Danielle do Quiosque Orla Pituba.\nPreciso de 4 de morango, 2 de cupuaçu e 4 de trufado ninho.\nPix na entrega.",
+    customerName: "Danielle do Quiosque Orla Pituba",
+    paymentMethod: "pix",
+    items: [
+      {
+        sku: "ACAI-MOR-10L",
+        productName: "Açaí com Morango 10L",
+        flavor: "Morango",
+        quantity: 4,
+        unitPrice: 125.0,
+        totalAmount: 500.0,
+        boxesTotal: 4,
+        rawText: "4 de morango",
+        confidence: "alta"
+      },
+      {
+        sku: "ACAI-CUPU-10L",
+        productName: "Açaí com Cupuaçu 10L",
+        flavor: "Cupuaçu",
+        quantity: 2,
+        unitPrice: 130.0,
+        totalAmount: 260.0,
+        boxesTotal: 2,
+        rawText: "2 de cupuaçu",
+        confidence: "alta"
+      },
+      {
+        sku: "ACAI-TRUF-10L",
+        productName: "Açaí Trufado Leite Ninho 10L",
+        flavor: "Trufado Ninho",
+        quantity: 4,
+        unitPrice: 145.0,
+        totalAmount: 580.0,
+        boxesTotal: 4,
+        rawText: "4 de trufado ninho",
+        confidence: "alta"
+      }
+    ],
+    totalBoxes: 10,
+    totalAmount: 1340.0,
+    confidence: "alta",
+    unrecognizedLines: [],
+    createdAt: new Date().toISOString(),
+    status: "confirmado"
+  }
+];
+
 export default function FinanceWorkspace() {
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
@@ -169,6 +261,19 @@ export default function FinanceWorkspace() {
       return evaluateProtestoRisk(p, { dueDate: relatedTitle?.dueDate, isOverdue });
     });
   }, [proofs, titles]);
+
+  // Estado para Pedidos WhatsApp do Hub Açaí (ENG-HA-01)
+  const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>(INITIAL_SAMPLE_HA_ORDERS);
+  const [whatsAppText, setWhatsAppText] = useState("");
+  const [parsedPreview, setParsedPreview] = useState<ParsedWhatsAppOrder | null>(null);
+
+  const hubAcaiMetrics = useMemo(() => {
+    const totalOrders = orders.length;
+    const totalBoxes = orders.reduce((sum, o) => sum + o.totalBoxes, 0);
+    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const hrOccupancy = Math.min(100, Math.round((totalBoxes / 350) * 100));
+    return { totalOrders, totalBoxes, totalRevenue, hrOccupancy };
+  }, [orders]);
 
   const totals = useMemo(() => {
     const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
@@ -336,6 +441,44 @@ export default function FinanceWorkspace() {
       })
     );
     setNotice("Canhoto validado e liberado para protesto/cobrança jurídica com sucesso!");
+  }
+
+  // Ações do Padronizador WhatsApp Hub Açaí (ENG-HA-01)
+  function handleParseWhatsApp() {
+    if (!whatsAppText.trim()) {
+      setNotice("Cole ou digite a mensagem de WhatsApp antes de processar.");
+      return;
+    }
+    const result = parseWhatsAppOrderMessage(whatsAppText);
+    setParsedPreview(result);
+    setNotice(`Mensagem decifrada: ${result.customerName} (${result.totalBoxes} caixas identificadas).`);
+  }
+
+  function handleConfirmParsedOrder() {
+    if (!parsedPreview) return;
+    setOrders((curr) => [parsedPreview, ...curr]);
+    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à esteira de expedição do Hub Açaí!`);
+    setParsedPreview(null);
+    setWhatsAppText("");
+  }
+
+  function handleExportOmieSalesOrders() {
+    if (!orders.length) {
+      setNotice("Não há pedidos estruturados para exportar.");
+      return;
+    }
+    const csvContent = generateOmieSalesOrderCsv(orders);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `pedidos_vendas_omie_hub_acai_${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setNotice(`Arquivo de Pedidos de Venda exportado com sucesso para o Omie (${orders.length} pedidos).`);
   }
 
   return (
@@ -804,6 +947,254 @@ export default function FinanceWorkspace() {
 
             <div className="inline-note" style={{ marginTop: "16px" }}>
               <strong>Fundamentação Jurídica (Lei nº 5.474/1968, Art. 15):</strong> A duplicata mercantil não aceita só é legalmente passível de protesto e execução judicial mediante comprovação da entrega e recebimento efetivo das mercadorias (canhoto assinado pelo sacado). O protocolo digital impede que títulos com canhotos pendentes, extraviados ou em devolução sigam para cobrança coercitiva, eliminando riscos de litígios e processos por protesto indevido contra a Mundo do Sabor.
+            </div>
+          </>}
+
+          {section === "pedidos-ha" && <>
+            <div className="page-heading">
+              <div>
+                <div className="eyebrow">OPERAÇÃO DE VENDAS & EXPEDIÇÃO (ENG-HA-01)</div>
+                <h1>Padronizador de Pedidos WhatsApp</h1>
+                <p>Conversão automática de texto livre em pedidos estruturados com grade de sabores e contagem de caixas (Hub Açaí Salvador).</p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <button className="primary-button" onClick={handleExportOmieSalesOrders}>
+                  <span>⤓</span> Exportar Pedidos Omie (CSV)
+                </button>
+              </div>
+            </div>
+
+            <div className="metric-grid">
+              <Metric
+                label="Carga do Dia"
+                value={`${hubAcaiMetrics.totalBoxes} caixas`}
+                tone="neutral"
+                detail={`${hubAcaiMetrics.totalOrders} pedidos na esteira`}
+                icon="📦"
+              />
+              <Metric
+                label="Faturamento do Dia"
+                value={formatCurrency(hubAcaiMetrics.totalRevenue)}
+                tone="positive"
+                detail="Receita bruta dos pedidos decifrados"
+                icon="💰"
+              />
+              <Metric
+                label="Ocupação Caminhão HR"
+                value={`${hubAcaiMetrics.hrOccupancy}%`}
+                tone={hubAcaiMetrics.hrOccupancy > 90 ? "negative" : "positive"}
+                detail={`${hubAcaiMetrics.totalBoxes} / 350 caixas de capacidade`}
+                icon="🚚"
+              />
+              <Metric
+                label="Produtividade Atendimento"
+                value="Zero Digitação"
+                tone="positive"
+                detail="Elimina contagem manual no dedo (C1)"
+                icon="⚡"
+              />
+            </div>
+
+            <div className="dashboard-grid" style={{ marginBottom: "20px" }}>
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h2>Ingestão de Mensagem do WhatsApp</h2>
+                    <p>Cole o texto da conversa ou áudio transcrito do cliente.</p>
+                  </div>
+                  <button
+                    className="secondary-button"
+                    style={{ fontSize: "10px", padding: "6px 10px" }}
+                    onClick={() =>
+                      setWhatsAppText(
+                        "Bom dia! Aqui é o Fabiano da Sorveteria Barra Vento.\n" +
+                        "Favor mandar pra gente amanhã:\n" +
+                        "- 12 caixas de tradicional 10L\n" +
+                        "- 4 caixas de morango\n" +
+                        "- 4 caixas de banana\n" +
+                        "- duas de cupuaçu\n" +
+                        "Fazer no boleto 7 dias."
+                      )
+                    }
+                  >
+                    Carregar Exemplo Real
+                  </button>
+                </div>
+                <textarea
+                  style={{
+                    width: "100%",
+                    minHeight: "140px",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--line)",
+                    fontSize: "12px",
+                    fontFamily: "inherit",
+                    resize: "vertical",
+                    outline: "none"
+                  }}
+                  placeholder="Ex: Bom dia! Aqui é o Marcos do Açaí do Parque. Manda 10 caixas do tradicional 10L e 5 de banana pra amanhã cedo..."
+                  value={whatsAppText}
+                  onChange={(e) => setWhatsAppText(e.target.value)}
+                />
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
+                  <button className="secondary-button" onClick={() => setWhatsAppText("")}>Limpar</button>
+                  <button className="primary-button" onClick={handleParseWhatsApp}>
+                    <span>⚡</span> Decifrar Pedido (ENG-HA-01)
+                  </button>
+                </div>
+              </section>
+
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h2>Pré-visualização Estruturada</h2>
+                    <p>Validação da interpretação semântica antes de confirmar.</p>
+                  </div>
+                  {parsedPreview && (
+                    <span
+                      className="status-pill"
+                      style={{
+                        background: parsedPreview.confidence === "alta" ? "#DCFCE7" : "#FEF3C7",
+                        color: parsedPreview.confidence === "alta" ? "#15803D" : "#92400E",
+                        fontWeight: 700
+                      }}
+                    >
+                      Confiança: {parsedPreview.confidence.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                {parsedPreview ? (
+                  <div>
+                    <div style={{ marginBottom: "12px", fontSize: "12px" }}>
+                      <strong>Cliente:</strong> {parsedPreview.customerName}
+                      <span style={{ display: "block", color: "#64748B", fontSize: "11px", marginTop: "2px" }}>
+                        Condição: {parsedPreview.paymentMethod.replace("_", " ").toUpperCase()} · Total: {parsedPreview.totalBoxes} caixas · {formatCurrency(parsedPreview.totalAmount)}
+                      </span>
+                    </div>
+
+                    <div className="table-wrap" style={{ maxHeight: "150px" }}>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Sabor / Produto</th>
+                            <th className="align-right">Qtd</th>
+                            <th className="align-right">Caixas</th>
+                            <th className="align-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsedPreview.items.map((it, idx) => (
+                            <tr key={idx}>
+                              <td><strong>{it.flavor}</strong> <span style={{ fontSize: "10px", color: "#64748B" }}>({it.productName})</span></td>
+                              <td className="align-right">{it.quantity}</td>
+                              <td className="align-right font-semibold">{it.boxesTotal} cx</td>
+                              <td className="align-right font-semibold">{formatCurrency(it.totalAmount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
+                      <button className="primary-button" onClick={handleConfirmParsedOrder}>
+                        <span>✓</span> Confirmar e Adicionar à Carga do Dia
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-state" style={{ minHeight: "150px" }}>
+                    <div className="empty-icon">📱</div>
+                    <strong>Nenhuma mensagem processada</strong>
+                    <p>Cole o texto do WhatsApp ao lado e clique em decifrar para visualizar a decomposição dos itens.</p>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Fila de Pedidos do Dia (Expedição & Carregamento)</h2>
+                  <p>Consolidação da carga para os veículos refrigerados e HR do Hub Açaí.</p>
+                </div>
+                <button className="secondary-button" onClick={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}>
+                  Restaurar Amostra do Hub Açaí
+                </button>
+              </div>
+
+              {orders.length > 0 ? (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Cód. Pedido</th>
+                        <th>Cliente / Sacado</th>
+                        <th>Sabores e Quantidades</th>
+                        <th className="align-right">Caixas Físicas</th>
+                        <th>Pagamento</th>
+                        <th className="align-right">Valor Total</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map((ord) => (
+                        <tr key={ord.id}>
+                          <td><strong>{ord.id.slice(0, 12)}</strong></td>
+                          <td>
+                            <div className="description-cell">{ord.customerName}</div>
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", maxWidth: "340px" }}>
+                              {ord.items.map((it, i) => (
+                                <span
+                                  key={i}
+                                  style={{
+                                    fontSize: "10px",
+                                    background: "#F1F5F9",
+                                    color: "#334155",
+                                    padding: "3px 7px",
+                                    borderRadius: "4px",
+                                    border: "1px solid #E2E8F0"
+                                  }}
+                                >
+                                  {it.quantity}x {it.flavor}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="align-right font-semibold" style={{ color: "#4338CA" }}>
+                            {ord.totalBoxes} cx
+                          </td>
+                          <td>
+                            <span className="status-pill" style={{ background: "#F1F5F9", color: "#334155" }}>
+                              {ord.paymentMethod.replace("_", " ").toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="align-right font-semibold">{formatCurrency(ord.totalAmount)}</td>
+                          <td>
+                            <span className="status-pill" style={{ background: "#DCFCE7", color: "#15803D" }}>
+                              {ord.status.toUpperCase()}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState
+                  icon="📱"
+                  title="Nenhum pedido na esteira"
+                  text="Decifre novas mensagens do WhatsApp para montar a carga de expedição."
+                  action="Carregar Amostra Hub Açaí"
+                  onAction={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}
+                />
+              )}
+            </section>
+
+            <div className="inline-note" style={{ marginTop: "16px" }}>
+              <strong>Constatação Operacional RS2BUILD (Laudo Hub Açaí - C1 / IA1):</strong> Os pedidos chegavam por mensagem livre no WhatsApp e eram redigitados no sistema item a item por duas atendentes, com as caixas contadas à mão. O padronizador automatiza a decodificação dos sabores, computa o volume físico exato para a capacidade do veículo HR (300 a 350 caixas) e prepara o arquivo de integração com o Omie ERP, permitindo que os caminhões saiam no horário e os motoristas não retornem de madrugada.
             </div>
           </>}
 
