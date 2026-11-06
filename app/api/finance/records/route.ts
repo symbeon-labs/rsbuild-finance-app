@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       direction: row.direction,
       category: row.category,
       source: "Supabase",
-      status: row.status === "conciliado" ? "conciliado" : "pendente",
+      status: row.status,
       importBatchId: row.import_batch_id ?? undefined,
       sourceRecordId: row.source_record_id ?? undefined,
     });
