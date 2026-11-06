@@ -253,10 +253,33 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
 
   useEffect(() => {
     let active = true;
-    fetch("/api/finance/records?organizationId=" + organizationId + "&limit=100&offset=0", { cache: "no-store" })
-      .then(async (response) => { if (!response.ok) throw new Error("Não foi possível carregar os registros."); return response.json(); })
-      .then((payload) => { if (active) { setRecords(payload.records ?? []); setHasMoreRecords(Boolean(payload.pagination?.hasMore)); setNextRecordsOffset(payload.pagination?.nextOffset ?? 0); } })
-      .catch(() => { if (active) setNotice("Não foi possível carregar os dados persistidos."); });
+    (async () => {
+      try {
+        const accumulated: FinancialRecord[] = [];
+        let offset = 0;
+        let hasMore = true;
+        const pageSize = 200;
+        // Load every page needed by financial totals and reconciliation; the table
+        // must not silently calculate on only the first 100 rows.
+        while (hasMore && accumulated.length < 10000) {
+          const response = await fetch(`/api/finance/records?organizationId=${organizationId}&limit=${pageSize}&offset=${offset}`, { cache: "no-store" });
+          if (!response.ok) throw new Error("Não foi possível carregar os registros.");
+          const payload = await response.json();
+          accumulated.push(...(payload.records ?? []));
+          hasMore = Boolean(payload.pagination?.hasMore);
+          offset = payload.pagination?.nextOffset ?? offset + (payload.records?.length ?? 0);
+          if (!payload.records?.length) break;
+        }
+        if (active) {
+          setRecords(accumulated);
+          setHasMoreRecords(hasMore);
+          setNextRecordsOffset(offset);
+          if (hasMore) setNotice("Exibindo os primeiros 10.000 registros. Carregue os demais para completar a análise.");
+        }
+      } catch {
+        if (active) setNotice("Não foi possível carregar os dados persistidos.");
+      }
+    })();
     return () => { active = false; };
   }, [organizationId]);
 
@@ -291,20 +314,29 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
     return { totalOrders, totalBoxes, totalRevenue, hrOccupancy };
   }, [orders]);
 
-  const totals = useMemo(() => {
-    const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amountMinor, 0);
-    const outgoing = records.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amountMinor, 0);
-    return { incoming, outgoing, balance: incoming - outgoing };
-  }, [records]);
+  const periodRecords = useMemo(() => {
+    const days = Number(period);
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - Math.max(1, days) + 1);
+    const startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+    return records.filter((item) => item.date >= startDate && item.date <= new Date().toISOString().slice(0, 10));
+  }, [records, period]);
 
-  const filteredRecords = useMemo(() => records.filter((item) =>
+  const totals = useMemo(() => {
+    const incoming = periodRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amountMinor, 0);
+    const outgoing = periodRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amountMinor, 0);
+    return { incoming, outgoing, balance: incoming - outgoing };
+  }, [periodRecords]);
+
+  const filteredRecords = useMemo(() => periodRecords.filter((item) =>
     `${item.description} ${item.category} ${item.source} ${item.bankName || ""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))
-  ), [records, query]);
+  ), [periodRecords, query]);
 
   // Casamento algorítmico entre títulos a receber e extratos importados
   const matches = useMemo(() => {
-    return matchTitlesWithRecords(titles, records);
-  }, [titles, records]);
+    return matchTitlesWithRecords(titles, periodRecords);
+  }, [titles, periodRecords]);
 
   const matchStats = useMemo(() => {
     const ready = matches.filter((m) => m.suggestedStatus === "pronto_para_baixa");
@@ -551,9 +583,9 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
               <button className="primary-button" onClick={() => inputRef.current?.click()}><span>＋</span> Importar movimentações</button>
             </div>
             <div className="metric-grid">
-              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↙" />
-              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↗" />
-              <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail="Entradas menos saídas" icon="＝" />
+              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={`${periodRecords.length} registros persistidos no período`} icon="↙" />
+              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={`${periodRecords.length} registros persistidos no período`} icon="↗" />
+              <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail={`Entradas menos saídas · ${period} dias`} icon="＝" />
               <Metric label="Movimentações" value={String(records.length)} tone="neutral" detail={records.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
             </div>
             <div className="dashboard-grid">
