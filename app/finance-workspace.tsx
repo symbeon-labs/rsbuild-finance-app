@@ -147,7 +147,9 @@ export default function FinanceWorkspace() {
     if (!list.length) return;
     try {
       const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
-      const blob = new Blob([encodeWindows1252(ofxContent)], { type: "application/x-ofx;charset=windows-1252" });
+      const encoded = encodeWindows1252(ofxContent);
+      const bytes = encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength) as ArrayBuffer;
+      const blob = new Blob([bytes], { type: "application/x-ofx;charset=windows-1252" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const dateStr = new Date().toISOString().slice(0, 10);
