@@ -8,7 +8,7 @@ export type FinancialRecord = {
   direction: Direction;
   category: string;
   source: string;
-  status: "conciliado" | "pendente";
+  status: "conciliado" | "pendente" | "ignorado";
   sourceRecordId?: string;
   importBatchId?: string;
 };
