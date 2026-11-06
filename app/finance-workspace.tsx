@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { BankMetadata, FinancialRecord, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
 import {
   ReceivableTitle,
@@ -484,9 +485,21 @@ export default function FinanceWorkspace() {
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">R</div>
-          <div><strong>RSBUILD</strong><span>FINANCEIRO</span></div>
+        <div className="brand-header">
+          <div className="brand-logo-card">
+            <Image
+              src="/brand/rsbuild-logo-primary.svg"
+              alt="RSBUILD Inovação Corporativa"
+              width={200}
+              height={64}
+              priority
+              className="brand-logo-img"
+            />
+          </div>
+          <div className="brand-tagline">
+            <span>FINANCEIRO</span>
+            <b>v0.1</b>
+          </div>
         </div>
         <div className="workspace-label">ESPAÇO DE TRABALHO</div>
         <nav className="nav-list" aria-label="Navegação principal">
