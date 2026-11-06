@@ -319,8 +319,10 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     start.setDate(start.getDate() - Math.max(1, days) + 1);
-    const startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
-    return records.filter((item) => item.date >= startDate && item.date <= new Date().toISOString().slice(0, 10));
+    const formatLocalDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const startDate = formatLocalDate(start);
+    const endDate = formatLocalDate(new Date());
+    return records.filter((item) => item.date >= startDate && item.date <= endDate);
   }, [records, period]);
 
   const totals = useMemo(() => {
