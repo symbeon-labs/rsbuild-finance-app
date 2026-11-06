@@ -37,9 +37,10 @@ Do not redraw, recolor, distort, crop, or recreate the official logo from a scre
 
 ## Repository assets
 - `public/brand/rsbuild-network-pattern.svg`: decorative pattern derived from the approved nodes-and-connections language. It is not a logo.
+- `public/brand/rsbuild-logo-primary.svg`: scalable primary RSBUILD logo lockup reconstructed from the original vector paths on page 7 of the approved guide. The emblem and RSBUILD wordmark retain the guide's vector geometry; the descriptor is rendered as scalable text. The guide remains the visual source of truth.
 - `public/brand/tokens.css` and `public/brand/tokens.json`: RSBUILD-specific product tokens.
 - `public/brand/kit/README.md`: instructions for the RSBUILD identity layer.
-- The full export package contains the official logo variants and individual icon exports; these binary assets are not yet copied into this repository.
+- The supplied PDF includes the primary and secondary logo presentations and the icon library. The primary lockup used by the login screen is sourced from the page 7 vector artwork in the supplied PDF. The original editable design package and separate icon exports are still not present in this repository.
 
 ## Accessibility and product usage
 - Maintain readable contrast for text and controls.
