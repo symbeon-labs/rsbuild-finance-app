@@ -15,7 +15,7 @@ const sampleTitles: ReceivableTitle[] = [
     id: "tit-001",
     documentNumber: "NF-4580",
     customerName: "Supermercado Bahia Real",
-    amount: 1500.0,
+    amountMinor: 150000,
     dueDate: "2026-04-10",
     bankAccount: "Itaú",
     ourNumber: "0341999888",
@@ -34,7 +34,7 @@ const sampleTitles: ReceivableTitle[] = [
     id: "tit-003",
     documentNumber: "NF-4582",
     customerName: "Padaria e Lanchonete Estrela",
-    amount: 850.0,
+    amountMinor: 85000,
     dueDate: "2026-04-15",
     bankAccount: "Inter",
     status: "pendente"
@@ -55,7 +55,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-1",
     date: "2026-04-11",
     description: "TED 0341999888 Supermercado Bahia",
-    amount: 1500.0,
+    amountMinor: 150000,
     direction: "entrada",
     category: "Recebimentos",
     source: "Itaú Unibanco",
@@ -67,7 +67,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-2",
     date: "2026-04-12",
     description: "PIX Recebido NF-4581",
-    amount: 3250.5, // 50 reais de juros de mora
+    amountMinor: 325050, // 50 reais de juros de mora
     direction: "entrada",
     category: "Recebimentos",
     source: "Banco do Nordeste (BNB)",
