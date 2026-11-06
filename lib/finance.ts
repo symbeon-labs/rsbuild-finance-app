@@ -324,11 +324,16 @@ export function generateOmieOfx(records: FinancialRecord[], metadata?: BankMetad
   if (!records.length) throw new Error("Não há movimentações para exportar.");
   const bankIds = [...new Set(records.map((record) => record.bankCode).filter(Boolean))];
   const accountIds = [...new Set(records.map((record) => record.accountId).filter(Boolean))];
+  if (bankIds.length > 1 || accountIds.length > 1) {
+    throw new Error("Exportação bloqueada: o arquivo deve conter registros de uma única conta bancária.");
+  }
   const bankId = metadata?.bankId || (bankIds.length === 1 ? bankIds[0] : undefined);
   const acctId = metadata?.accountId || (accountIds.length === 1 ? accountIds[0] : undefined);
-  if (!bankId || !acctId) throw new Error("Exportação bloqueada: instituição e conta bancária devem estar identificadas.");
-  if (bankIds.length !== 1 || accountIds.length !== 1 || bankIds[0] !== bankId || accountIds[0] !== acctId) {
-    throw new Error("Exportação bloqueada: o arquivo deve conter registros de uma única conta bancária.");
+  if (!bankId || !acctId || bankIds.length !== 1 || accountIds.length !== 1) {
+    throw new Error("Exportação bloqueada: instituição e conta bancária devem estar identificadas em todos os registros.");
+  }
+  if (records.some((record) => record.bankCode !== bankId || record.accountId !== acctId)) {
+    throw new Error("Exportação bloqueada: os metadados bancários dos registros não são consistentes.");
   }
   const accountType = metadata?.accountType || records[0]?.accountType;
   if (!accountType || !["CHECKING", "SAVINGS", "MONEYMRKT", "CREDITLINE"].includes(accountType.toUpperCase())) {

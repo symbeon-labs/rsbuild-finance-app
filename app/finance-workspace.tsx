@@ -148,15 +148,15 @@ export default function FinanceWorkspace() {
     try {
       const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
       const blob = new Blob([encodeWindows1252(ofxContent)], { type: "application/x-ofx;charset=windows-1252" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const dateStr = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `extrato_padronizado_omie_${dateStr}.ofx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `extrato_padronizado_omie_${dateStr}.ofx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Não foi possível gerar o arquivo OFX.");
