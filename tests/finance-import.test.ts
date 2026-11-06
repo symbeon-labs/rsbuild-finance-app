@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod } from "../lib/finance";
+import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, buildImportIdentity } from "../lib/finance";
 
 const csv = [
   "Data;Descrição;Valor;Tipo;Categoria",
@@ -341,4 +341,21 @@ test("DASH-01: período de 30 dias inclui hoje e os 29 dias anteriores", () => {
   const records = [{ date: "2026-04-01", value: 1 }, { date: "2026-04-02", value: 2 }, { date: "2026-05-01", value: 3 }, { date: "2026-05-02", value: 4 }];
   const result = filterRecordsByPeriod(records, 30, new Date(2026, 4, 2, 12));
   assert.deepEqual(result.map((record) => record.value), [3, 4]);
+});
+test("import identity: OFX remains stable across reordered files and separates reused FITIDs", () => {
+  const first = {
+    sourceRecordId: "FIT-001", bankCode: "0341", accountId: "56789-0",
+    date: "2026-04-01", amountMinor: 125075, direction: "entrada" as const,
+    description: "Recebimento Cliente"
+  };
+  const regenerated = { ...first };
+  const distinctReuse = { ...first, amountMinor: 7550, description: "Outro movimento" };
+  assert.equal(buildImportIdentity(first, "hash-a", 0), buildImportIdentity(regenerated, "hash-b", 9));
+  assert.notEqual(buildImportIdentity(first, "hash-a", 0), buildImportIdentity(distinctReuse, "hash-a", 1));
+});
+
+test("import identity: CSV rows remain scoped to file and row", () => {
+  const row = { date: "2026-04-01", amountMinor: 1000, direction: "entrada" as const, description: "Venda" };
+  assert.equal(buildImportIdentity(row, "file-a", 0), "file|file-a|0");
+  assert.notEqual(buildImportIdentity(row, "file-a", 0), buildImportIdentity(row, "file-a", 1));
 });
