@@ -769,11 +769,11 @@ tbody tr:last-child td { border-bottom: 0; }
 @media(max-height:760px) and (min-width:641px){.login-brand-content{padding-top:28px;padding-bottom:28px}.login-brand-message{padding:34px 0}.login-brand-message h1{font-size:clamp(32px,3.5vw,48px);margin:16px 0 14px}.login-brand-message>p{font-size:13px;line-height:1.7}.login-form-panel{padding-top:48px;padding-bottom:56px}}
 
 /* Variante single-surface (login-page--single) */
-.login-page--single{--login-charcoal:#242322;--login-brown:#623b2c;--login-terracotta:#df4d1b;position:relative;isolation:isolate;display:flex;min-height:100svh;overflow:hidden;align-items:center;justify-content:center;padding:clamp(28px,5vw,72px) 24px 92px;background:#f7f2ea;color:var(--login-charcoal)}
+.login-page--single{--login-charcoal:#242322;--login-brown:#623b2c;--login-terracotta:#df4d1b;position:relative;display:flex;min-height:100svh;overflow:hidden;align-items:center;justify-content:center;padding:clamp(28px,5vw,72px) 24px 92px;background:#f7f2ea;color:var(--login-charcoal)}
 .login-page--single:before{content:"";position:absolute;z-index:-2;inset:0;background:none}
-.login-ambient-pattern{position:absolute;z-index:-1;inset:0;pointer-events:none;opacity:1;background-image:url("/brand/rsbuild-ambient-honeycomb.svg");background-repeat:no-repeat;background-position:center;background-size:100% 100%;mix-blend-mode:multiply}
+.login-ambient-pattern{position:fixed;z-index:0;inset:0;pointer-events:none;opacity:0.55;background-image:url("/brand/rsbuild-ambient-honeycomb.svg");background-repeat:no-repeat;background-position:center;background-size:100% 100%;mix-blend-mode:multiply}
 .login-page--single .login-brand-panel{display:none}
-.login-form-panel--single{width:min(100%,760px);min-height:0;padding:0;margin:auto;justify-content:center;align-items:stretch;background:transparent}
+.login-form-panel--single{position:relative;z-index:1;width:min(100%,760px);min-height:0;padding:0;margin:auto;justify-content:center;align-items:stretch;background:transparent}
 .login-form-panel--single .login-form-wrap{width:100%;max-width:784px;margin:0}
 .login-mobile-brand--single{display:flex;width:100%;justify-content:center;align-items:center;margin:0 0 clamp(44px,5.5vw,68px)}
 .login-mobile-brand--single .login-brand-logo-wrap{width:100%;max-width:690px;padding:0;background:transparent;border-radius:0;display:flex;justify-content:center;overflow:visible}
@@ -795,6 +795,6 @@ tbody tr:last-child td { border-bottom: 0; }
 .login-form-panel--single .login-submit svg{width:42px;height:42px;color:#f08a55}
 .login-form-panel--single .login-security-note{margin-top:28px;gap:14px;color:#5d514b;font-size:clamp(14px,1.8vw,20px)}
 .login-form-panel--single .login-security-note span{font-size:17px;color:#f36a2b}
-.login-form-panel--single .login-copyright{position:fixed;bottom:clamp(20px,4vw,48px);left:20px;right:20px;color:#81766e;font-size:clamp(11px,1.3vw,16px)}
+.login-form-panel--single .login-copyright{position:static;margin-top:36px;text-align:center;color:#81766e;font-size:clamp(11px,1.3vw,14px)}
 @media(max-width:640px){.login-page--single{min-height:100svh;padding:30px 22px 78px}.login-mobile-brand--single{margin-bottom:42px}.login-mobile-brand--single .login-brand-logo{max-width:100%}.login-form-panel--single .login-form-heading{margin-bottom:30px}.login-form-panel--single .login-form-heading h1{font-size:clamp(34px,9vw,46px);margin:20px 0 12px}.login-form-panel--single .login-form-heading>p{font-size:16px;line-height:1.55}.login-form-panel--single .login-form{gap:22px}.login-input-wrap{min-height:66px;padding:0 17px;gap:14px;border-radius:11px}.login-input-wrap>svg{width:24px;height:24px}.login-input-wrap input{height:62px;font-size:16px}.login-form-panel--single .login-submit{height:70px;padding:0 20px;font-size:16px;border-radius:11px}.login-form-panel--single .login-submit svg{width:32px;height:32px}.login-form-panel--single .login-security-note{margin-top:22px;font-size:13px}.login-form-panel--single .login-security-note span{font-size:13px}.login-form-panel--single .login-copyright{bottom:18px;font-size:10px}}
 @media(max-height:780px) and (min-width:641px){.login-page--single{padding-top:24px;padding-bottom:72px}.login-mobile-brand--single{margin-bottom:38px}.login-mobile-brand--single .login-brand-logo{max-width:490px}.login-form-panel--single .login-form-heading{margin-bottom:26px}.login-form-panel--single .login-form{gap:18px}.login-input-wrap{min-height:62px}.login-input-wrap input{height:58px}.login-form-panel--single .login-submit{height:68px}}
