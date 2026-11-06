@@ -12,6 +12,9 @@ export default async function Home({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const devEmail = process.env.RSBUILD_DEV_EMAIL?.trim().toLowerCase();
+  const isDevUser = Boolean(devEmail && user.email?.toLowerCase() === devEmail);
+
   const { data: memberships, error: membershipError } = await supabase
     .from("organization_memberships")
     .select("organization_id, role")
@@ -64,5 +67,5 @@ export default async function Home({ searchParams }: Props) {
     );
   }
 
-  return <FinanceWorkspace organizationId={selected.id} />;
+  return <FinanceWorkspace organizationId={selected.id} isDevUser={isDevUser} />;
 }
