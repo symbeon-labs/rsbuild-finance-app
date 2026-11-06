@@ -729,7 +729,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
                               <span style={{ fontSize: "11px", color: "#64748B" }}>{m.title.bankAccount || "Conta Geral"}</span>
                             </td>
                             <td>{formatDate(m.title.dueDate)}</td>
-                            <td className="align-right">{formatCurrency(m.title.amount)}</td>
+                            <td className="align-right">{formatCurrency(Math.round(m.title.amount * 100))}</td>
                             <td>
                               {m.statementRecord ? (
                                 <div>
@@ -759,7 +759,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
                             <td>
                               {m.amountDifference !== 0 ? (
                                 <span style={{ color: m.amountDifference > 0 ? "#DC2626" : "#2563EB", fontWeight: 600, fontSize: "12px" }}>
-                                  {m.amountDifference > 0 ? `+ ${formatCurrency(Math.round(m.amountDifference * 100))} (Juros)` : `- ${formatCurrency(Math.abs(m.amountDifference))} (Desc.)`}
+                                  {m.amountDifference > 0 ? `+ ${formatCurrency(Math.round(m.amountDifference * 100))} (Juros)` : `- ${formatCurrency(Math.round(Math.abs(m.amountDifference) * 100))} (Desc.)`}
                                 </span>
                               ) : (
                                 <span style={{ color: "#64748B", fontSize: "12px" }}>—</span>
@@ -824,14 +824,14 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
               />
               <Metric
                 label="Faturamento Blindado"
-                value={formatCurrency(deliveryMetrics.provenAmount)}
+                value={formatCurrency(Math.round(deliveryMetrics.provenAmount * 100))}
                 tone="positive"
                 detail="Canhoto assinado / Apto a protesto"
                 icon="🛡"
               />
               <Metric
                 label="Risco de Protesto / Sem Canhoto"
-                value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
+                value={formatCurrency(Math.round(deliveryMetrics.atRiskProtestAmount * 100))}
                 tone="negative"
                 detail="Bloqueio preventivo ativo"
                 icon="⚠"
@@ -840,7 +840,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
                 label="Em Trânsito / Expedição"
                 value={`${deliveryMetrics.pendingDeliveryCount} faturas`}
                 tone="neutral"
-                detail={formatCurrency(deliveryMetrics.pendingDeliveryAmount)}
+                detail={formatCurrency(Math.round(deliveryMetrics.pendingDeliveryAmount * 100))}
                 icon="🚚"
               />
             </div>
@@ -898,7 +898,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
                                 </span>
                               )}
                             </td>
-                            <td className="align-right font-semibold">{formatCurrency(p.nfeAmount)}</td>
+                            <td className="align-right font-semibold">{formatCurrency(Math.round(p.nfeAmount * 100))}</td>
                             <td>
                               <span style={{ fontSize: "11px", color: "#475569" }}>
                                 {p.driverName || "Expedição Interna"}
@@ -1009,7 +1009,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
               />
               <Metric
                 label="Faturamento do Dia"
-                value={formatCurrency(hubAcaiMetrics.totalRevenue)}
+                value={formatCurrency(Math.round(hubAcaiMetrics.totalRevenue * 100))}
                 tone="positive"
                 detail="Receita bruta dos pedidos decifrados"
                 icon="💰"
@@ -1104,7 +1104,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
                     <div style={{ marginBottom: "12px", fontSize: "12px" }}>
                       <strong>Cliente:</strong> {parsedPreview.customerName}
                       <span style={{ display: "block", color: "#64748B", fontSize: "11px", marginTop: "2px" }}>
-                        Condição: {parsedPreview.paymentMethod.replace("_", " ").toUpperCase()} · Total: {parsedPreview.totalBoxes} caixas · {formatCurrency(parsedPreview.totalAmount)}
+                        Condição: {parsedPreview.paymentMethod.replace("_", " ").toUpperCase()} · Total: {parsedPreview.totalBoxes} caixas · {formatCurrency(Math.round(parsedPreview.totalAmount * 100))}
                       </span>
                     </div>
 
@@ -1124,7 +1124,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
                               <td><strong>{it.flavor}</strong> <span style={{ fontSize: "10px", color: "#64748B" }}>({it.productName})</span></td>
                               <td className="align-right">{it.quantity}</td>
                               <td className="align-right font-semibold">{it.boxesTotal} cx</td>
-                              <td className="align-right font-semibold">{formatCurrency(it.totalAmount)}</td>
+                              <td className="align-right font-semibold">{formatCurrency(Math.round(it.totalAmount * 100))}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1206,7 +1206,7 @@ export default function FinanceWorkspace({ organizationId }: { organizationId: s
                               {ord.paymentMethod.replace("_", " ").toUpperCase()}
                             </span>
                           </td>
-                          <td className="align-right font-semibold">{formatCurrency(ord.totalAmount)}</td>
+                          <td className="align-right font-semibold">{formatCurrency(Math.round(ord.totalAmount * 100))}</td>
                           <td>
                             <span className="status-pill" style={{ background: "#DCFCE7", color: "#15803D" }}>
                               {ord.status.toUpperCase()}
