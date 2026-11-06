@@ -1,7 +1,7 @@
 # RSBUILD Finance — MVP Readiness Handoff
 
 ## Purpose
-This document is the execution handoff for taking the current RSBUILD Finance application from its initial demonstrator state to a validated MVP suitable for presentation to the initiative.
+This document tracks engineering readiness. The product scope and phased roadmap are governed by [EXECUTION_BASELINE.md](./EXECUTION_BASELINE.md), aligned to the five product documents. This handoff does not expand the approved MVP.
 
 This is an execution plan and acceptance framework. It is not a claim that listed capabilities are implemented, production-ready, or included in a commercial commitment.
 
@@ -14,12 +14,15 @@ Known limitations:
 - No database persistence or operational backup strategy.
 - Period selector is not yet applied consistently to dashboard calculations and movement views.
 - No live bank, Omie, acquirer, or point-of-sale integration.
+- No general-purpose export engine, additional XLSX/XML/JSON/PDF layouts, public API, webhooks, or ERP write-back.
 - No reconciliation workflow or auditable human decision trail.
 - Duplicate detection and idempotent import are not yet implemented.
 - CSV and OFX parser validation is being closed through the W01 automated test suite; persistence and organization isolation remain outside this workstream.
 - No evidence currently establishes production readiness.
 
 ## Execution workstreams
+
+The current ordered workstreams and future gates are consolidated in [EXECUTION_BASELINE.md](./EXECUTION_BASELINE.md). This handoff remains the engineering evidence log; the baseline is the scope and sequencing reference.
 
 ### W01 — Import integrity
 - Establish explicit CSV header and delimiter rules.
@@ -46,23 +49,25 @@ Known limitations:
 - Distinguish session/demo data from persisted operational data.
 **Acceptance:** dashboard totals reconcile to the filtered movement set and are covered by tests.
 
-### W04 — Financial management
-- Define accounts, payables, receivables, and cash-flow semantics.
-- Separate realized from projected values.
-- Add reports only after source definitions and calculation rules are accepted.
-**Acceptance:** each indicator has a documented definition, source, period, and validation example.
+### W04 — Assisted reconciliation workflow
+- Define the minimum matching criteria and evidence required for candidate matches.
+- Distinguish imported records, suggested matches, confirmed matches, divergences, and unresolved pending records.
+- Require human review for confirmation; never mutate source financial state silently.
+**Acceptance:** representative cases are tested; each decision is traceable to source records and evidence.
 
-### W05 — Source integrations
-- Start with read-only access and approved credentials.
-- Define contracts, scopes, rate limits, error handling, and idempotency per source.
-- Validate against representative data before enabling an integration.
-**Acceptance:** source ownership, permissions, failure modes, and data provenance are documented and tested.
+### W05 — Events and auditability
+- Record actor, timestamp, action, evidence, reason, and outcome for relevant review decisions.
+- Preserve source provenance and import-batch references.
+- Make history inspectable without exposing secrets or unnecessary sensitive data.
+**Acceptance:** a reviewer can reconstruct who did what, when, why, and against which source records.
 
-### W06 — Reconciliation and auditability
-- Suggest candidate matches without silently changing financial state.
-- Support human review, exceptions, and explicit decisions.
-- Record who decided what, when, and on which evidence.
-**Acceptance:** no autonomous settlement or write-back; decisions are traceable and reversible where applicable.
+Source integrations such as Omie remain a separate future gate. They require discovery, explicit authorization, a source contract, representative samples, read-only homologation, and a separately approved scope.
+
+### W06 — Executive dashboard perspective
+- Provide a director-oriented summary from the same reconciliation dataset as the operational workspace.
+- Show only indicators whose definitions, sources, and calculation rules are documented.
+- Support drill-down from each relevant indicator to underlying records and evidence, subject to authorization.
+**Acceptance:** executive totals reconcile to the underlying filtered records; no generic cash-flow, liquidity, profitability, or forecast claims without separately validated sources and rules.
 
 ### W07 — Presentation and operational readiness
 - Apply the approved RSBUILD visual identity consistently.
