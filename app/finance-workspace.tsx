@@ -276,7 +276,7 @@ export default function FinanceWorkspace() {
   }, [orders]);
 
   const totals = useMemo(() => {
-    const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
+    const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amountMinor, 0);
     const outgoing = records.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
     return { incoming, outgoing, balance: incoming - outgoing };
   }, [records]);
@@ -294,7 +294,7 @@ export default function FinanceWorkspace() {
     const ready = matches.filter((m) => m.suggestedStatus === "pronto_para_baixa");
     const divergent = matches.filter((m) => m.suggestedStatus === "divergente");
     const pending = matches.filter((m) => m.suggestedStatus === "nao_identificado");
-    const totalReadyAmount = ready.reduce((sum, m) => sum + (m.statementRecord?.amount || 0), 0);
+    const totalReadyAmount = ready.reduce((sum, m) => sum + ((m.statementRecord?.amountMinor || 0) / 100), 0);
     return { ready, divergent, pending, totalReadyAmount };
   }, [matches]);
 
@@ -699,7 +699,7 @@ export default function FinanceWorkspace() {
                               {m.statementRecord ? (
                                 <div>
                                   <strong style={{ fontSize: "12px", color: "#0F172A" }}>
-                                    {formatCurrency(m.statementRecord.amount)} em {formatDate(m.statementRecord.date)}
+                                    {formatCurrency(m.statementRecord.amountMinor)} em {formatDate(m.statementRecord.date)}
                                   </strong>
                                   <span style={{ display: "block", fontSize: "11px", color: "#64748B" }}>
                                     {m.statementRecord.source} · {m.statementRecord.sourceRecordId ? `FITID: ${m.statementRecord.sourceRecordId}` : ""}
@@ -1251,7 +1251,7 @@ function RecordTable({ records }: { records: FinancialRecord[] }) {
               </td>
               <td><span className="status-pill">{record.status}</span></td>
               <td className={record.direction === "entrada" ? "align-right positive" : "align-right negative"}>
-                {record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amount)}
+                {record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amountMinor)}
               </td>
             </tr>
           ))}
