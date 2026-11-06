@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseCsv, parseOfx } from "@/lib/finance";
+import { buildImportIdentity, parseCsv, parseOfx } from "@/lib/finance";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 
 export const runtime = "nodejs";
@@ -61,15 +61,8 @@ export async function POST(request: Request) {
         !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !row.description.trim()) {
       return NextResponse.json({ error: "server_parser_invalid_record" }, { status: 422 });
     }
-    const stableSourceIdentity = row.sourceRecordId
-      ? [row.bankCode || row.bankName || "unknown-bank", row.accountId || "unknown-account", row.sourceRecordId, row.date, row.amountMinor, row.direction, row.description.trim().toLocaleLowerCase("pt-BR")].join("|")
-      : null;
-    // OFX FITID is stable across regenerated/reordered statements. Include account and
-    // transaction attributes so reused FITIDs do not collapse distinct movements.
-    // CSV sources without a stable row ID retain file+row identity.
-    const keySource = stableSourceIdentity
-      ? `ofx|${stableSourceIdentity}`
-      : `file|${fileHash}|${rowIndex}`;
+    // Stable OFX identity survives statement regeneration and row reordering.
+    const keySource = buildImportIdentity(row, fileHash, rowIndex);
     normalized.push({
       transaction_date: row.date,
       description: row.description.trim().slice(0, 500),
