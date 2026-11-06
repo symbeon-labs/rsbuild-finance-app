@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
-import { BankMetadata, FinancialRecord, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
+import { BankMetadata, FinancialRecord, encodeWindows1252, filterRecordsByPeriod, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
 import {
   ReceivableTitle,
   ReconciliationMatch,
@@ -86,15 +86,17 @@ export default function FinanceWorkspace() {
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
   const titlesInputRef = useRef<HTMLInputElement>(null);
 
-  const totals = useMemo(() => {
-    const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
-    const outgoing = records.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
-    return { incoming, outgoing, balance: incoming - outgoing };
-  }, [records]);
+  const periodRecords = useMemo(() => filterRecordsByPeriod(records, Number(period)), [records, period]);
 
-  const filteredRecords = useMemo(() => records.filter((item) =>
+  const totals = useMemo(() => {
+    const incoming = periodRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
+    const outgoing = periodRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
+    return { incoming, outgoing, balance: incoming - outgoing };
+  }, [periodRecords]);
+
+  const filteredRecords = useMemo(() => periodRecords.filter((item) =>
     `${item.description} ${item.category} ${item.source} ${item.bankName || ""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))
-  ), [records, query]);
+  ), [periodRecords, query]);
 
   // Casamento algorítmico entre títulos a receber e extratos importados
   const matches = useMemo(() => {
@@ -143,8 +145,9 @@ export default function FinanceWorkspace() {
   function handleExportOmie(targetRecords?: FinancialRecord[]) {
     const list = targetRecords && targetRecords.length ? targetRecords : (records.length ? records : pendingImport);
     if (!list.length) return;
-    const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
-    const blob = new Blob([ofxContent], { type: "application/x-ofx;charset=windows-1252" });
+    try {
+      const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
+      const blob = new Blob([encodeWindows1252(ofxContent)], { type: "application/x-ofx;charset=windows-1252" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     const dateStr = new Date().toISOString().slice(0, 10);
@@ -154,7 +157,10 @@ export default function FinanceWorkspace() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
+      setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível gerar o arquivo OFX.");
+    }
   }
 
   // Ações de Baixa em Lote (ENG-MS-02)
@@ -237,27 +243,27 @@ export default function FinanceWorkspace() {
               <button className="primary-button" onClick={() => inputRef.current?.click()}><span>＋</span> Importar movimentações</button>
             </div>
             <div className="metric-grid">
-              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↙" />
-              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↗" />
+              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={periodRecords.length ? "Registros importados no período" : "Aguardando dados"} icon="↙" />
+              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={periodRecords.length ? "Registros importados no período" : "Aguardando dados"} icon="↗" />
               <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail="Entradas menos saídas" icon="＝" />
-              <Metric label="Movimentações" value={String(records.length)} tone="neutral" detail={records.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
+              <Metric label="Movimentações" value={String(periodRecords.length)} tone="neutral" detail={periodRecords.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
             </div>
             <div className="dashboard-grid">
               <section className="panel chart-panel">
                 <div className="panel-heading"><div><h2>Movimentação financeira</h2><p>Consolidação dos registros importados</p></div><span className="subtle-tag">BRL</span></div>
-                {records.length ? <div className="activity-summary"><div><span>Entradas</span><strong className="positive">{formatCurrency(totals.incoming)}</strong></div><div><span>Saídas</span><strong className="negative">{formatCurrency(totals.outgoing)}</strong></div><div><span>Saldo líquido</span><strong>{formatCurrency(totals.balance)}</strong></div></div> : <EmptyState icon="⌁" title="Ainda não há movimentações" text="Importe um extrato bancário para começar a visualizar a posição financeira." action="Importar extrato" onAction={() => inputRef.current?.click()} />}
+                {periodRecords.length ? <div className="activity-summary"><div><span>Entradas</span><strong className="positive">{formatCurrency(totals.incoming)}</strong></div><div><span>Saídas</span><strong className="negative">{formatCurrency(totals.outgoing)}</strong></div><div><span>Saldo líquido</span><strong>{formatCurrency(totals.balance)}</strong></div></div> : <EmptyState icon="⌁" title="Ainda não há movimentações" text="Importe um extrato bancário para começar a visualizar a posição financeira." action="Importar extrato" onAction={() => inputRef.current?.click()} />}
               </section>
               <section className="panel">
                 <div className="panel-heading"><div><h2>Qualidade dos dados</h2><p>Situação dos registros carregados</p></div></div>
-                <div className="quality-row"><span>Movimentações importadas</span><strong>{records.length}</strong></div>
-                <div className="quality-row"><span>Pendentes de revisão</span><strong>{records.filter((item) => item.status === "pendente").length}</strong></div>
-                <div className="quality-row"><span>Fontes identificadas</span><strong>{new Set(records.map((item) => item.source)).size}</strong></div>
+                <div className="quality-row"><span>Movimentações importadas</span><strong>{periodRecords.length}</strong></div>
+                <div className="quality-row"><span>Pendentes de revisão</span><strong>{periodRecords.filter((item) => item.status === "pendente").length}</strong></div>
+                <div className="quality-row"><span>Fontes identificadas</span><strong>{new Set(periodRecords.map((item) => item.source)).size}</strong></div>
                 <div className="quality-footnote">A classificação e a conciliação serão habilitadas conforme a configuração das fontes.</div>
               </section>
             </div>
             <section className="panel recent-panel">
               <div className="panel-heading"><div><h2>Movimentações recentes</h2><p>Últimos registros adicionados</p></div><button className="text-button" onClick={() => setSection("movimentacoes")}>Ver todas <span>→</span></button></div>
-              {records.length ? <RecordTable records={[...records].sort((a,b) => b.date.localeCompare(a.date)).slice(0,5)} /> : <div className="table-empty">Os registros aparecerão aqui após a primeira importação.</div>}
+              {periodRecords.length ? <RecordTable records={[...periodRecords].sort((a,b) => b.date.localeCompare(a.date)).slice(0,5)} /> : <div className="table-empty">Os registros aparecerão aqui após a primeira importação.</div>}
             </section>
           </>}
 

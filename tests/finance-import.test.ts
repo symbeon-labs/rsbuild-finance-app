@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx } from "../lib/finance";
+import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod } from "../lib/finance";
 
 const csv = [
   "Data;Descrição;Valor;Tipo;Categoria",
@@ -151,22 +151,33 @@ ENCODING:1252
   assert.deepEqual(result.errors, []);
 });
 
-test("OFX: merge de PIX Itaú por FITID prefix", () => {
-  const input = `<OFX>
-<BANKTRANLIST>
-<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>50.00<FITID>PIX202401<NAME>Pix parte 1</STMTTRN>
-<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>75.50<FITID>PIX202401<NAME>Pix parte 2</STMTTRN>
-<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>25.00<FITID>PIX202401<NAME>Pix parte 3</STMTTRN>
-</BANKTRANLIST></OFX>`;
+test("OFX: preserva movimentos PIX distintos mesmo com prefixo FITID compartilhado", () => {
+  const input = "<OFX><BANKTRANLIST>" +
+    "<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>50.00<FITID>PIX202401-A<NAME>PIX A</STMTTRN>" +
+    "<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>75.50<FITID>PIX202401-B<NAME>PIX B</STMTTRN>" +
+    "<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>25.00<FITID>PIX202401-C<NAME>PIX C</STMTTRN>" +
+    "</BANKTRANLIST></OFX>";
   const result = parseOfx(input);
-  assert.equal(result.records.length, 1);
-  assert.equal(result.records[0].amount, 150.5);
-  assert.match(result.records[0].description, /PIX:/);
-  assert.match(result.records[0].description, /parte 1/);
-  assert.match(result.records[0].description, /parte 2/);
-  assert.match(result.records[0].description, /parte 3/);
+  assert.equal(result.records.length, 3);
+  assert.deepEqual(result.records.map((record) => record.amount), [50, 75.5, 25]);
 });
 
+test("OFX: FITID repetido não autoriza fundir transações", () => {
+  const input = "<OFX><BANKTRANLIST>" +
+    "<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>10.00<FITID>SAME<NAME>A</STMTTRN>" +
+    "<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>20.00<FITID>SAME<NAME>B</STMTTRN>" +
+    "</BANKTRANLIST></OFX>";
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 2);
+  assert.deepEqual(result.records.map((record) => record.amount), [10, 20]);
+});
+
+test("OFX: rejeita TRNTYPE CREDIT com valor negativo", () => {
+  const input = "<OFX><BANKTRANLIST><STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>-10.00<FITID>BAD</STMTTRN></BANKTRANLIST></OFX>";
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 0);
+  assert.match(result.errors.join(" "), /conflita com valor negativo/);
+});
 test("OFX: detecta ordenação de datas fora de ordem", () => {
   const input = `<OFX>
 <BANKTRANLIST>
@@ -273,7 +284,7 @@ test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e
       category: "Insumos",
       source: "Itaú",
       status: "pendente" as const,
-      sourceRecordId: "ITAU-999"
+      sourceRecordId: "ITAU-999", bankCode: "0341", accountId: "56789-0", accountType: "CHECKING"
     },
     {
       id: "rec-1",
@@ -284,16 +295,16 @@ test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e
       category: "Vendas",
       source: "Itaú",
       status: "pendente" as const,
-      sourceRecordId: "ITAU-888"
+      sourceRecordId: "ITAU-888", bankCode: "0341", accountId: "56789-0", accountType: "CHECKING"
     }
   ];
 
-  const metadata = { bankId: "0341", accountId: "56789-0" };
+  const metadata = { bankId: "0341", accountId: "56789-0", accountType: "CHECKING" };
   const generatedOfx = generateOmieOfx(records, metadata);
 
   // Valida cabeçalho SGML padrão Omie
   assert.match(generatedOfx, /OFXHEADER:100/);
-  assert.match(generatedOfx, /ENCODING:USASCII/);
+  assert.match(generatedOfx, /ENCODING:1252/);
   assert.match(generatedOfx, /CHARSET:1252/);
   assert.match(generatedOfx, /<BANKID>0341<\/BANKID>/);
   assert.match(generatedOfx, /<ACCTID>56789-0<\/ACCTID>/);
@@ -311,4 +322,23 @@ test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e
   assert.ok(!generatedOfx.includes("<Lote 10>"));
   assert.ok(!generatedOfx.includes("& Cia"));
   assert.match(generatedOfx, /Supermercado   Cia/);
+});
+
+test("ENG-MS-01: bloqueia exportação de contas misturadas ou sem identidade bancária", () => {
+  const sample = { id: "x", date: "2026-04-10", description: "X", amount: 10, direction: "entrada" as const, category: "X", source: "CSV", status: "pendente" as const };
+  assert.throws(() => generateOmieOfx([sample]), /instituição e conta bancária/);
+  const one = { ...sample, bankCode: "0341", accountId: "111", accountType: "CHECKING" };
+  const two = { ...sample, id: "y", bankCode: "0341", accountId: "222", accountType: "CHECKING" };
+  assert.throws(() => generateOmieOfx([one, two]), /única conta bancária/);
+});
+
+test("ENG-MS-01: codifica texto em bytes Windows-1252", () => {
+  assert.deepEqual([...encodeWindows1252("Ação, café")], [65, 231, 227, 111, 44, 32, 99, 97, 102, 233]);
+  assert.throws(() => encodeWindows1252("漢"), /não pode ser representado/);
+});
+
+test("DASH-01: período de 30 dias inclui hoje e os 29 dias anteriores", () => {
+  const records = [{ date: "2026-04-01", value: 1 }, { date: "2026-04-02", value: 2 }, { date: "2026-05-01", value: 3 }, { date: "2026-05-02", value: 4 }];
+  const result = filterRecordsByPeriod(records, 30, new Date(2026, 4, 2, 12));
+  assert.deepEqual(result.map((record) => record.value), [2, 3, 4]);
 });
