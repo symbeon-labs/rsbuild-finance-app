@@ -6,10 +6,20 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "rootDir": ".",
     "outDir": ".test-dist",
-    "noEmit": false
+    "noEmit": false,
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
   },
-  "include": ["lib/**/*.ts", "tests/**/*.test.ts"]
+  "include": [
+    "lib/**/*.ts",
+    "tests/**/*.test.ts"
+  ]
 }
