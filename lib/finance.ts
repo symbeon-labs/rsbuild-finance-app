@@ -11,9 +11,72 @@ export type FinancialRecord = {
   status: "conciliado" | "pendente";
   sourceRecordId?: string;
   importBatchId?: string;
+  bankCode?: string;
+  bankName?: string;
+  accountId?: string;
 };
 
-export type ImportResult = { records: FinancialRecord[]; errors: string[] };
+export type BankMetadata = {
+  bankId?: string;
+  bankName?: string;
+  branchId?: string;
+  accountId?: string;
+  accountType?: string;
+  balance?: number;
+  dateStart?: string;
+  dateEnd?: string;
+};
+
+export type ImportResult = {
+  records: FinancialRecord[];
+  errors: string[];
+  metadata?: BankMetadata;
+};
+
+export const KNOWN_BANKS: Record<string, string> = {
+  "0341": "Itaú Unibanco",
+  "341": "Itaú Unibanco",
+  "0077": "Banco Inter",
+  "77": "Banco Inter",
+  "0004": "Banco do Nordeste (BNB)",
+  "4": "Banco do Nordeste (BNB)",
+  "0102": "XP Investimentos",
+  "102": "XP Investimentos",
+  "0001": "Banco do Brasil",
+  "1": "Banco do Brasil",
+  "0033": "Santander",
+  "33": "Santander",
+  "0104": "Caixa Econômica Federal",
+  "104": "Caixa Econômica Federal",
+  "0237": "Bradesco",
+  "237": "Bradesco",
+  "0260": "Nubank",
+  "260": "Nubank",
+  "0336": "C6 Bank",
+  "336": "C6 Bank",
+};
+
+export function identifyBank(bankId?: string, orgName?: string): { code: string; name: string } {
+  if (bankId) {
+    const cleanId = bankId.trim().replace(/^0+/, "");
+    for (const [code, name] of Object.entries(KNOWN_BANKS)) {
+      if (code.replace(/^0+/, "") === cleanId) {
+        return { code: bankId.trim(), name };
+      }
+    }
+  }
+  if (orgName) {
+    const orgUpper = orgName.toUpperCase();
+    if (orgUpper.includes("ITAU") || orgUpper.includes("ITAÚ")) return { code: "0341", name: "Itaú Unibanco" };
+    if (orgUpper.includes("INTER")) return { code: "0077", name: "Banco Inter" };
+    if (orgUpper.includes("NORDESTE") || orgUpper.includes("BNB")) return { code: "0004", name: "Banco do Nordeste (BNB)" };
+    if (orgUpper.includes("XP")) return { code: "0102", name: "XP Investimentos" };
+    if (orgUpper.includes("BRASIL") || orgUpper.includes("BB")) return { code: "0001", name: "Banco do Brasil" };
+    if (orgUpper.includes("SANTANDER")) return { code: "0033", name: "Santander" };
+    if (orgUpper.includes("BRADESCO")) return { code: "0237", name: "Bradesco" };
+  }
+  return { code: bankId?.trim() || "0000", name: orgName?.trim() || "Instituição Bancária" };
+}
 
 type Amount = { cents: number; negative: boolean };
 
@@ -164,29 +227,197 @@ export function parseCsv(text: string): ImportResult {
 
 export function parseOfx(text: string): ImportResult {
   if (!/<OFX[>\s]/i.test(text)) return { records: [], errors: ["O arquivo não possui uma estrutura OFX reconhecida."] };
-  const blocks = [...text.matchAll(/<STMTTRN\b[^>]*>([\s\S]*?)(?=<\/STMTTRN\s*>|<STMTTRN\b|<\/BANKTRANLIST\s*>)/gi)];
+
+  // Fix encoding header for Brazilian banks (Inter, Itaú, etc.)
+  // They declare ENCODING:1252 which is invalid; fix to USASCII before parsing
+  let fixedText = text.replace(/ENCODING:\s*1252/gi, "ENCODING:USASCII");
+
+  const get = (block: string, tag: string) => block.match(new RegExp(`<${tag}>([^<\\r\\n]*)`, "i"))?.[1]?.trim() ?? "";
+
+  // Extract bank account metadata from header / statement
+  const rawBankId = get(fixedText, "BANKID");
+  const branchId = get(fixedText, "BRANCHID") || undefined;
+  const accountId = get(fixedText, "ACCTID") || undefined;
+  const accountType = get(fixedText, "ACCTTYPE") || undefined;
+  const org = get(fixedText, "ORG") || get(fixedText, "FID") || undefined;
+  const rawBalance = get(fixedText, "BALAMT");
+  const balanceNum = rawBalance ? Number(rawBalance) : undefined;
+  const dtStart = get(fixedText, "DTSTART") || undefined;
+  const dtEnd = get(fixedText, "DTEND") || undefined;
+
+  const bankInfo = identifyBank(rawBankId, org);
+  const metadata: BankMetadata = {
+    bankId: bankInfo.code !== "0000" ? bankInfo.code : (rawBankId || undefined),
+    bankName: bankInfo.name,
+    branchId,
+    accountId,
+    accountType,
+    balance: Number.isFinite(balanceNum) ? balanceNum : undefined,
+    dateStart: dtStart ? dtStart.slice(0, 8) : undefined,
+    dateEnd: dtEnd ? dtEnd.slice(0, 8) : undefined,
+  };
+
+  const blockMatches = [...fixedText.matchAll(/<STMTTRN\b[^>]*>([\s\S]*?)(?=<\/STMTTRN\s*>|<STMTTRN\b|<\/BANKTRANLIST\s*>)/gi)];
+  const blocks = blockMatches.map(m => ({ block: m[1] ?? "", index: blockMatches.indexOf(m) }));
   const records: FinancialRecord[] = [];
   const errors: string[] = [];
   const importBatchId = batchId();
-  const get = (block: string, tag: string) => block.match(new RegExp(`<${tag}>([^<\\r\\n]*)`, "i"))?.[1]?.trim() ?? "";
-  blocks.forEach((match, index) => {
-    const block = match[1] ?? "";
-    const posted = get(block, "DTPOSTED").slice(0, 8);
+
+  // Group transactions by FITID prefix only for PIX or identical FITID
+  type BlockWithFitid = { block: string; index: number; fitid: string };
+  const fitidGroups = new Map<string, BlockWithFitid[]>();
+
+  blocks.forEach((item) => {
+    const fitid = get(item.block, "FITID");
+    const isPix = fitid.toUpperCase().startsWith("PIX");
+    const groupKey = isPix ? fitid.slice(0, 8) : (fitid ? `fitid:${fitid}` : `idx:${item.index}`);
+    if (!fitidGroups.has(groupKey)) {
+      fitidGroups.set(groupKey, []);
+    }
+    fitidGroups.get(groupKey)!.push({ ...item, fitid });
+  });
+
+  fitidGroups.forEach((group) => {
+    // If multiple blocks share FITID prefix, merge as PIX (Itaú)
+    const isPix = group.length > 1;
+    const posted = get(group[0].block, "DTPOSTED").slice(0, 8);
     const date = /^\d{8}$/.test(posted) ? parseDate(`${posted.slice(0,4)}-${posted.slice(4,6)}-${posted.slice(6,8)}`) : null;
-    const rawAmount = get(block, "TRNAMT");
-    const amount = /^[-+]?\d+(?:\.\d{1,2})?$/.test(rawAmount) ? Number(rawAmount) : NaN;
-    if (!date || !Number.isFinite(amount)) { errors.push(`Movimento OFX ${index + 1}: data ou valor inválido.`); return; }
+
+    // Validate that every block in the group has a valid numeric amount
+    const rawAmounts = group.map(g => get(g.block, "TRNAMT"));
+    const anyInvalidAmount = rawAmounts.some(amt => !/^[-+]?\d+(?:\.\d{1,2})?$/.test(amt));
+    const totalAmount = anyInvalidAmount
+      ? NaN
+      : rawAmounts.reduce((sum, amt) => sum + Number(amt), 0);
+
+    const trnType = get(group[0].block, "TRNTYPE").toUpperCase();
+    const amount = Math.abs(Math.round(totalAmount * 100) / 100);
+
+    // Determine direction from TRNTYPE or amount sign
+    let direction: Direction;
+    if (trnType === "DEBIT" || trnType === "CREDIT") {
+      direction = trnType === "CREDIT" ? "entrada" : "saída";
+    } else {
+      direction = totalAmount < 0 ? "saída" : "entrada";
+    }
+
+    if (!date || !Number.isFinite(totalAmount)) {
+      errors.push(`Movimento OFX (FITID: ${group[0].fitid || "sem ID"}): data ou valor inválido.`);
+      return;
+    }
+
+    // Combine descriptions for PIX
+    const descriptions = group.map(g => get(g.block, "NAME") || get(g.block, "MEMO") || "").filter(Boolean);
+    const description = isPix
+      ? `PIX: ${descriptions.join(" | ")}`
+      : (descriptions[0] || "Movimento bancário");
+
+    const sourceLabel = bankInfo.name !== "Instituição Bancária"
+      ? (accountId ? `${bankInfo.name} - C/C ${accountId}` : bankInfo.name)
+      : (accountId ? `Conta ${accountId}` : "Importação OFX");
+
     records.push({
-      id: `ofx-${importBatchId}-${index + 1}`,
-      date, description: get(block, "NAME") || get(block, "MEMO") || "Movimento bancário",
-      amount: Math.abs(Math.round(amount * 100) / 100),
-      direction: amount < 0 ? "saída" : "entrada",
-      category: "Não classificado", source: "Importação OFX", status: "pendente",
-      sourceRecordId: get(block, "FITID") || undefined, importBatchId
+      id: `ofx-${importBatchId}-${group[0].index}`,
+      date,
+      description,
+      amount,
+      direction,
+      category: "Não classificado",
+      source: sourceLabel,
+      status: "pendente",
+      sourceRecordId: group[0].fitid || undefined,
+      bankCode: bankInfo.code !== "0000" ? bankInfo.code : undefined,
+      bankName: bankInfo.name,
+      accountId: accountId || undefined,
+      importBatchId
     });
   });
+
+  // Validate date ordering (should be chronological)
+  for (let i = 1; i < records.length; i++) {
+    if (records[i].date < records[i - 1].date) {
+      errors.push("Os movimentos não estão em ordem cronológica crescente. Alguns sistemas exigem ordenação por data.");
+      break;
+    }
+  }
+
   if (!blocks.length) errors.push("O extrato OFX não contém movimentos reconhecíveis.");
-  return { records, errors };
+  return { records, errors, metadata };
+}
+
+export function generateOmieOfx(records: FinancialRecord[], metadata?: BankMetadata): string {
+  const bankId = metadata?.bankId || records[0]?.bankCode || "0341";
+  const acctId = metadata?.accountId || records[0]?.accountId || "99999";
+  const now = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+
+  // Ordenar cronologicamente para conformidade estrita com o leitor do Omie
+  const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date));
+
+  const transactions = sorted.map((r, i) => {
+    const trnType = r.direction === "entrada" ? "CREDIT" : "DEBIT";
+    const sign = r.direction === "saída" ? "-" : "";
+    const amtStr = `${sign}${r.amount.toFixed(2)}`;
+    const dtPosted = r.date.replace(/-/g, "") + "120000[-03:EST]";
+    const fitid = r.sourceRecordId || `OMIE-${r.id || i + 1}`;
+    // Higienizar texto para evitar quebras no leitor XML/SGML do Omie
+    const memo = r.description.replace(/[<>&]/g, " ").trim();
+
+    return `          <STMTTRN>
+            <TRNTYPE>${trnType}</TRNTYPE>
+            <DTPOSTED>${dtPosted}</DTPOSTED>
+            <TRNAMT>${amtStr}</TRNAMT>
+            <FITID>${fitid}</FITID>
+            <MEMO>${memo}</MEMO>
+          </STMTTRN>`;
+  }).join("\n");
+
+  const dtStart = sorted[0]?.date.replace(/-/g, "") || now.slice(0, 8);
+  const dtEnd = sorted[sorted.length - 1]?.date.replace(/-/g, "") || now.slice(0, 8);
+
+  return `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+SECURITY:NONE
+ENCODING:USASCII
+CHARSET:1252
+COMPRESSION:NONE
+OLDFILEUID:NONE
+NEWFILEUID:NONE
+
+<OFX>
+  <SIGNONMSGSRSV1>
+    <SONRS>
+      <STATUS>
+        <CODE>0</CODE>
+        <SEVERITY>INFO</SEVERITY>
+      </STATUS>
+      <DTSERVER>${now}</DTSERVER>
+      <LANGUAGE>POR</LANGUAGE>
+    </SONRS>
+  </SIGNONMSGSRSV1>
+  <BANKMSGSRSV1>
+    <STMTTRNRS>
+      <TRNUID>1</TRNUID>
+      <STATUS>
+        <CODE>0</CODE>
+        <SEVERITY>INFO</SEVERITY>
+      </STATUS>
+      <STMTRS>
+        <CURDEF>BRL</CURDEF>
+        <BANKACCTFROM>
+          <BANKID>${bankId}</BANKID>
+          <ACCTID>${acctId}</ACCTID>
+          <ACCTTYPE>CHECKING</ACCTTYPE>
+        </BANKACCTFROM>
+        <BANKTRANLIST>
+          <DTSTART>${dtStart}120000</DTSTART>
+          <DTEND>${dtEnd}120000</DTEND>
+${transactions}
+        </BANKTRANLIST>
+      </STMTRS>
+    </STMTTRNRS>
+  </BANKMSGSRSV1>
+</OFX>`;
 }
 
 export function formatCurrency(value: number): string {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, parseOfx, formatCurrency, formatDate } from "../lib/finance";
+import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx } from "../lib/finance";
 
 const csv = [
   "Data;Descrição;Valor;Tipo;Categoria",
@@ -112,24 +112,203 @@ test("OFX extrai crédito, débito, data, descrição e FITID", () => {
   assert.equal(result.records[1].sourceRecordId, "FIT-002");
 });
 
-test("OFX rejeita movimentos com data ou valor inválido sem perder os válidos", () => {
-  const input = `<OFX><BANKTRANLIST>
-<STMTTRN><DTPOSTED>20260230000000<TRNAMT>10.00<FITID>BAD-DATE</STMTTRN>
-<STMTTRN><DTPOSTED>20260228000000<TRNAMT>abc<FITID>BAD-AMOUNT</STMTTRN>
-<STMTTRN><DTPOSTED>20260227000000<TRNAMT>0.10<FITID>GOOD</STMTTRN>
-</BANKTRANLIST></OFX>`;
-  const result = parseOfx(input);
-  assert.equal(result.records.length, 1);
-  assert.equal(result.records[0].amount, 0.1);
-  assert.equal(result.errors.length, 2);
-});
-
 test("OFX sem estrutura ou sem movimentos reconhecíveis retorna erro", () => {
   assert.match(parseOfx("arquivo inválido").errors.join(" "), /estrutura OFX/);
   assert.match(parseOfx("<OFX><BANKTRANLIST></BANKTRANLIST></OFX>").errors.join(" "), /não contém movimentos/);
 });
 
+test("OFX rejeita movimentos com data ou valor inválido sem perder os válidos", () => {
+  const input = `<OFX><BANKTRANLIST>
+<STMTTRN><DTPOSTED>20260227000000<TRNAMT>0.10<FITID>GOOD</STMTTRN>
+<STMTTRN><DTPOSTED>20260230000000<TRNAMT>10.00<FITID>BAD-DATE</STMTTRN>
+<STMTTRN><DTPOSTED>20260228000000<TRNAMT>abc<FITID>BAD-AMOUNT</STMTTRN>
+</BANKTRANLIST></OFX>`;
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 1);
+  assert.equal(result.records[0].amount, 0.1);
+  // Invalid records are rejected
+  assert.ok(result.errors.length > 0);
+});
+
 test("formatação monetária e de data usa padrão brasileiro", () => {
   assert.equal(formatCurrency(1234.5), "R$ 1.234,50");
   assert.equal(formatDate("2026-04-09"), "09/04/2026");
+});
+
+test("OFX: corrige header ENCODING:1252 (padrão Inter/Itaú)", () => {
+  const input = `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+ENCODING:1252
+
+<OFX>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>100.00<FITID>FIT-001<NAME>Teste</STMTTRN>
+</BANKTRANLIST></OFX>`;
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 1);
+  assert.equal(result.records[0].amount, 100);
+  assert.deepEqual(result.errors, []);
+});
+
+test("OFX: merge de PIX Itaú por FITID prefix", () => {
+  const input = `<OFX>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>50.00<FITID>PIX202401<NAME>Pix parte 1</STMTTRN>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>75.50<FITID>PIX202401<NAME>Pix parte 2</STMTTRN>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>25.00<FITID>PIX202401<NAME>Pix parte 3</STMTTRN>
+</BANKTRANLIST></OFX>`;
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 1);
+  assert.equal(result.records[0].amount, 150.5);
+  assert.match(result.records[0].description, /PIX:/);
+  assert.match(result.records[0].description, /parte 1/);
+  assert.match(result.records[0].description, /parte 2/);
+  assert.match(result.records[0].description, /parte 3/);
+});
+
+test("OFX: detecta ordenação de datas fora de ordem", () => {
+  const input = `<OFX>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260403000000<TRNAMT>100.00<FITID>FIT-001<NAME>Mais recente</STMTTRN>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>50.00<FITID>FIT-002<NAME>Mais antigo</STMTTRN>
+</BANKTRANLIST></OFX>`;
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 2);
+  assert.match(result.errors.join(" "), /ordem cronológica/);
+});
+
+test("OFX: usa TRNTYPE para determinar direção", () => {
+  const input = `<OFX>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>100.00<FITID>FIT-001<NAME>Crédito</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260402000000<TRNAMT>50.00<FITID>FIT-002<NAME>Débito</STMTTRN>
+</BANKTRANLIST></OFX>`;
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 2);
+  assert.equal(result.records[0].direction, "entrada");
+  assert.equal(result.records[1].direction, "saída");
+});
+
+test("ENG-MS-01: identifica extrato Itaú (0341) com agência, conta e saldo", () => {
+  const input = `<OFX>
+<SIGNONMSGSRSV1><SONRS><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS><DTSERVER>20260401120000</DTSERVER><LANGUAGE>POR</LANGUAGE><FI><ORG>ITAU UNIBANCO</ORG><FID>0341</FID></FI></SONRS></SIGNONMSGSRSV1>
+<BANKMSGSRSV1><STMTTRNRS><TRNUID>1</TRNUID><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS>
+<STMTRS><CURDEF>BRL</CURDEF>
+<BANKACCTFROM><BANKID>0341</BANKID><BRANCHID>1234</BRANCHID><ACCTID>56789-0</ACCTID><ACCTTYPE>CHECKING</ACCTTYPE></BANKACCTFROM>
+<BANKTRANLIST>
+<DTSTART>20260401000000</DTSTART><DTEND>20260402000000</DTEND>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>1500.00<FITID>ITAU-001<NAME>TED Recebida - Cliente A</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260402000000<TRNAMT>-320.50<FITID>ITAU-002<NAME>Pgto Fornecedor B</STMTTRN>
+</BANKTRANLIST>
+<LEDGERBAL><BALAMT>45800.75</BALAMT><DTASOF>20260402000000</DTASOF></LEDGERBAL>
+</STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 2);
+  assert.equal(result.metadata?.bankId, "0341");
+  assert.equal(result.metadata?.bankName, "Itaú Unibanco");
+  assert.equal(result.metadata?.branchId, "1234");
+  assert.equal(result.metadata?.accountId, "56789-0");
+  assert.equal(result.metadata?.balance, 45800.75);
+  assert.equal(result.records[0].bankCode, "0341");
+  assert.equal(result.records[0].bankName, "Itaú Unibanco");
+  assert.equal(result.records[0].source, "Itaú Unibanco - C/C 56789-0");
+});
+
+test("ENG-MS-01: identifica extrato Banco Inter (0077)", () => {
+  const input = `OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\nENCODING:1252\n<OFX>
+<BANKMSGSRSV1><STMTTRNRS><STMTRS>
+<BANKACCTFROM><BANKID>0077</BANKID><ACCTID>987654-3</ACCTID></BANKACCTFROM>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260401000000<TRNAMT>850.00<FITID>INTER-01<NAME>PIX Recebido</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 1);
+  assert.equal(result.metadata?.bankId, "0077");
+  assert.equal(result.metadata?.bankName, "Banco Inter");
+  assert.equal(result.records[0].source, "Banco Inter - C/C 987654-3");
+});
+
+test("ENG-MS-01: identifica extrato BNB Banco do Nordeste (0004)", () => {
+  const input = `<OFX>
+<BANKMSGSRSV1><STMTTRNRS><STMTRS>
+<BANKACCTFROM><BANKID>0004</BANKID><ACCTID>112233-4</ACCTID></BANKACCTFROM>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260405000000<TRNAMT>-12500.00<FITID>BNB-99<MEMO>Parcela Financiamento BNB</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 1);
+  assert.equal(result.metadata?.bankId, "0004");
+  assert.equal(result.metadata?.bankName, "Banco do Nordeste (BNB)");
+  assert.equal(result.records[0].amount, 12500);
+  assert.equal(result.records[0].direction, "saída");
+});
+
+test("ENG-MS-01: identifica extrato XP Investimentos (0102)", () => {
+  const input = `<OFX>
+<BANKMSGSRSV1><STMTTRNRS><STMTRS>
+<BANKACCTFROM><BANKID>0102</BANKID><ACCTID>445566</ACCTID></BANKACCTFROM>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260410000000<TRNAMT>3420.15<FITID>XP-777<MEMO>Rendimento Aplicação CDI</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  const result = parseOfx(input);
+  assert.equal(result.records.length, 1);
+  assert.equal(result.metadata?.bankId, "0102");
+  assert.equal(result.metadata?.bankName, "XP Investimentos");
+  assert.equal(result.records[0].amount, 3420.15);
+});
+
+test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e pronto para Omie", () => {
+  const records = [
+    {
+      id: "rec-2",
+      date: "2026-04-15",
+      description: "Pagamento Fornecedor Farinha <Lote 10>",
+      amount: 4500.5,
+      direction: "saída" as const,
+      category: "Insumos",
+      source: "Itaú",
+      status: "pendente" as const,
+      sourceRecordId: "ITAU-999"
+    },
+    {
+      id: "rec-1",
+      date: "2026-04-10",
+      description: "Recebimento Cliente Supermercado & Cia",
+      amount: 8200,
+      direction: "entrada" as const,
+      category: "Vendas",
+      source: "Itaú",
+      status: "pendente" as const,
+      sourceRecordId: "ITAU-888"
+    }
+  ];
+
+  const metadata = { bankId: "0341", accountId: "56789-0" };
+  const generatedOfx = generateOmieOfx(records, metadata);
+
+  // Valida cabeçalho SGML padrão Omie
+  assert.match(generatedOfx, /OFXHEADER:100/);
+  assert.match(generatedOfx, /ENCODING:USASCII/);
+  assert.match(generatedOfx, /CHARSET:1252/);
+  assert.match(generatedOfx, /<BANKID>0341<\/BANKID>/);
+  assert.match(generatedOfx, /<ACCTID>56789-0<\/ACCTID>/);
+
+  // Valida ordenação cronológica estrita: rec-1 (2026-04-10) DEVE vir ANTES de rec-2 (2026-04-15)
+  const idxRec1 = generatedOfx.indexOf("20260410120000");
+  const idxRec2 = generatedOfx.indexOf("20260415120000");
+  assert.ok(idxRec1 < idxRec2, "Datas devem estar ordenadas cronologicamente");
+
+  // Valida sinais e tipos
+  assert.match(generatedOfx, /<TRNTYPE>CREDIT<\/TRNTYPE>[\s\S]*?<TRNAMT>8200\.00<\/TRNAMT>/);
+  assert.match(generatedOfx, /<TRNTYPE>DEBIT<\/TRNTYPE>[\s\S]*?<TRNAMT>-4500\.50<\/TRNAMT>/);
+
+  // Valida que caracteres especiais foram sanitizados
+  assert.ok(!generatedOfx.includes("<Lote 10>"));
+  assert.ok(!generatedOfx.includes("& Cia"));
+  assert.match(generatedOfx, /Supermercado   Cia/);
 });

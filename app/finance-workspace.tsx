@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
-import { FinancialRecord, formatCurrency, formatDate, parseCsv, parseOfx } from "@/lib/finance";
+import { BankMetadata, FinancialRecord, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
 
 type Section = "visao-geral" | "movimentacoes" | "importacoes" | "contas" | "relatorios";
 
@@ -17,6 +17,7 @@ export default function FinanceWorkspace() {
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
+  const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [query, setQuery] = useState("");
@@ -31,7 +32,7 @@ export default function FinanceWorkspace() {
   }, [records]);
 
   const filteredRecords = useMemo(() => records.filter((item) =>
-    `${item.description} ${item.category} ${item.source}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))
+    `${item.description} ${item.category} ${item.source} ${item.bankName || ""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))
   ), [records, query]);
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -43,6 +44,7 @@ export default function FinanceWorkspace() {
     const result = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(text) : parseCsv(text);
     setPendingImport(result.records);
     setImportErrors(result.errors);
+    setPendingMetadata(result.metadata || null);
     setSection("importacoes");
     event.target.value = "";
   }
@@ -51,6 +53,7 @@ export default function FinanceWorkspace() {
     setRecords((current) => [...pendingImport, ...current]);
     setNotice(`${pendingImport.length} movimentação(ões) adicionada(s) à sessão atual.`);
     setPendingImport([]);
+    setPendingMetadata(null);
     setImportErrors([]);
     setFileName("");
   }
@@ -58,8 +61,26 @@ export default function FinanceWorkspace() {
   function resetSession() {
     setRecords([]);
     setPendingImport([]);
+    setPendingMetadata(null);
     setImportErrors([]);
     setNotice("A sessão foi limpa.");
+  }
+
+  function handleExportOmie(targetRecords?: FinancialRecord[]) {
+    const list = targetRecords && targetRecords.length ? targetRecords : (records.length ? records : pendingImport);
+    if (!list.length) return;
+    const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
+    const blob = new Blob([ofxContent], { type: "application/x-ofx;charset=windows-1252" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `extrato_padronizado_omie_${dateStr}.ofx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
   }
 
   return (
@@ -123,7 +144,21 @@ export default function FinanceWorkspace() {
           </>}
 
           {section === "movimentacoes" && <>
-            <div className="page-heading"><div><div className="eyebrow">LANÇAMENTOS</div><h1>Movimentações</h1><p>Consulte os registros financeiros carregados.</p></div><button className="primary-button" onClick={() => inputRef.current?.click()}>＋ Importar arquivo</button></div>
+            <div className="page-heading">
+              <div>
+                <div className="eyebrow">LANÇAMENTOS</div>
+                <h1>Movimentações</h1>
+                <p>Consulte os registros financeiros carregados.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {records.length > 0 && (
+                  <button className="secondary-button" onClick={() => handleExportOmie()} title="Exportar lote padronizado para conciliação no Omie">
+                    📥 Exportar OFX (Omie)
+                  </button>
+                )}
+                <button className="primary-button" onClick={() => inputRef.current?.click()}>＋ Importar arquivo</button>
+              </div>
+            </div>
             <section className="panel"><div className="table-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por descrição, categoria ou origem..." aria-label="Buscar movimentações" /><span>{filteredRecords.length} registro(s)</span></div>{filteredRecords.length ? <RecordTable records={[...filteredRecords].sort((a,b) => b.date.localeCompare(a.date))} /> : <EmptyState icon="⇄" title="Nenhuma movimentação encontrada" text="Carregue um extrato CSV ou OFX para consultar os lançamentos." action="Importar arquivo" onAction={() => inputRef.current?.click()} />}</section>
           </>}
 
@@ -131,9 +166,34 @@ export default function FinanceWorkspace() {
             <div className="page-heading"><div><div className="eyebrow">ENTRADA DE DADOS</div><h1>Importações</h1><p>Carregue extratos e revise os registros antes de adicioná-los.</p></div></div>
             <section className="panel import-panel">
               <div className="upload-zone"><div className="upload-icon">⇧</div><h2>Importar extrato financeiro</h2><p>Selecione um arquivo CSV ou OFX para visualizar os registros.</p><button className="secondary-button" onClick={() => inputRef.current?.click()}>Selecionar arquivo</button><span className="file-hint">CSV ou OFX · Até 10 MB</span></div>
-              {fileName && <div className="import-file"><span className="file-badge">ARQ</span><div><strong>{fileName}</strong><span>{pendingImport.length} registro(s) reconhecido(s)</span></div></div>}
+              {fileName && (
+                <div className="import-file">
+                  <span className="file-badge">ARQ</span>
+                  <div>
+                    <strong>{fileName}</strong>
+                    <span>{pendingImport.length} registro(s) reconhecido(s)</span>
+                    {pendingMetadata?.bankName && (
+                      <span style={{ display: "block", fontSize: "12px", color: "#0284c7", marginTop: "3px" }}>
+                        🏦 {pendingMetadata.bankName}
+                        {pendingMetadata.accountId ? ` · Conta: ${pendingMetadata.accountId}` : ""}
+                        {pendingMetadata.balance !== undefined ? ` · Saldo: ${formatCurrency(pendingMetadata.balance)}` : ""}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               {importErrors.length > 0 && <div className="error-list"><strong>Revisar importação</strong>{importErrors.map((error, index) => <p key={index}>{error}</p>)}</div>}
-              {pendingImport.length > 0 && <><div className="preview-heading"><div><h2>Prévia dos registros</h2><p>Confira os dados antes de confirmar a importação.</p></div><span>{pendingImport.length} registros</span></div><RecordTable records={pendingImport.slice(0,8)} /><div className="import-actions"><button className="secondary-button" onClick={() => {setPendingImport([]);setFileName("");setImportErrors([]);}}>Cancelar</button><button className="primary-button" onClick={confirmImport}>Confirmar importação</button></div></>}
+              {pendingImport.length > 0 && <>
+                <div className="preview-heading"><div><h2>Prévia dos registros</h2><p>Confira os dados antes de confirmar a importação.</p></div><span>{pendingImport.length} registros</span></div>
+                <RecordTable records={pendingImport.slice(0,8)} />
+                <div className="import-actions">
+                  <button className="secondary-button" onClick={() => {setPendingImport([]);setFileName("");setImportErrors([]);setPendingMetadata(null);}}>Cancelar</button>
+                  <button className="secondary-button" onClick={() => handleExportOmie(pendingImport)} title="Exportar lote normalizado pronto para Omie">
+                    ⚡ Exportar OFX (Omie)
+                  </button>
+                  <button className="primary-button" onClick={confirmImport}>Confirmar importação</button>
+                </div>
+              </>}
             </section>
             <div className="inline-note">Os registros desta versão permanecem disponíveis durante a sessão atual. A persistência segura e a conexão com as fontes serão configuradas na etapa de integração.</div>
           </>}
@@ -157,7 +217,47 @@ function EmptyState({ icon, title, text, action, onAction }: { icon: string; tit
 }
 
 function RecordTable({ records }: { records: FinancialRecord[] }) {
-  return <div className="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Origem</th><th>Status</th><th className="align-right">Valor</th></tr></thead><tbody>{records.map((record) => <tr key={record.id}><td>{formatDate(record.date)}</td><td className="description-cell">{record.description}</td><td>{record.category}</td><td>{record.source}</td><td><span className="status-pill">{record.status}</span></td><td className={record.direction === "entrada" ? "align-right positive" : "align-right negative"}>{record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amount)}</td></tr>)}</tbody></table></div>;
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Origem / Instituição</th>
+            <th>Status</th>
+            <th className="align-right">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.map((record) => (
+            <tr key={record.id}>
+              <td>{formatDate(record.date)}</td>
+              <td className="description-cell">
+                <div>{record.description}</div>
+                {record.sourceRecordId && (
+                  <span style={{ fontSize: "11px", color: "#64748B", fontFamily: "var(--font-mono, monospace)" }}>
+                    FITID: {record.sourceRecordId}
+                  </span>
+                )}
+              </td>
+              <td>{record.category}</td>
+              <td>
+                <span className="status-pill" style={{ background: "#F1F5F9", color: "#334155", borderColor: "#CBD5E1" }}>
+                  {record.bankName || record.source}
+                </span>
+              </td>
+              <td><span className="status-pill">{record.status}</span></td>
+              <td className={record.direction === "entrada" ? "align-right positive" : "align-right negative"}>
+                {record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amount)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function Placeholder({ title, eyebrow, text }: { title: string; eyebrow: string; text: string }) {
