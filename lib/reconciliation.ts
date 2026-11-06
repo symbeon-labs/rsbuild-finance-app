@@ -118,7 +118,7 @@ export function matchTitlesWithRecords(
         break;
       }
 
-      if (isCustomerMatch && Math.abs(record.amount - title.amount) < 0.01) {
+      if (isCustomerMatch && Math.abs(record.amountMinor - Math.round(title.amount * 100)) < 1) {
         bestMatch = record;
         bestConfidence = "exato";
         notes.push("Correspondência exata de valor e nome do cliente");
@@ -131,7 +131,7 @@ export function matchTitlesWithRecords(
       for (const record of incomingRecords) {
         if (matchedRecordIds.has(record.id)) continue;
 
-        const valDiff = Math.abs(record.amount - title.amount);
+        const valDiff = Math.abs(record.amountMinor - Math.round(title.amount * 100));
         const dDiff = daysDiff(record.date, title.dueDate);
 
         if (valDiff < 0.01 && dDiff <= maxDays) {
@@ -151,16 +151,16 @@ export function matchTitlesWithRecords(
         const dDiff = daysDiff(record.date, title.dueDate);
         if (dDiff > maxDays) continue;
 
-        const ratio = record.amount / title.amount;
+        const ratio = record.amountMinor / Math.round(title.amount * 100);
         // Pagamento com até 5% de acréscimo (juros) ou até 10% de desconto comercial
         if (ratio >= (1 - tolerance * 2) && ratio <= (1 + tolerance)) {
-          const diff = record.amount - title.amount;
+          const diffMinor = record.amountMinor - Math.round(title.amount * 100);
           bestMatch = record;
           bestConfidence = "aproximado";
-          if (diff > 0) {
-            notes.push(`Possível acréscimo de juros/multa de ${formatCurrency(diff)}`);
+          if (diffMinor > 0) {
+            notes.push(`Possível acréscimo de juros/multa de ${formatCurrency(diffMinor)}`);
           } else {
-            notes.push(`Possível desconto concedido de ${formatCurrency(Math.abs(diff))}`);
+            notes.push(`Possível desconto concedido de ${formatCurrency(Math.abs(diffMinor))}`);
           }
           break;
         }
@@ -169,7 +169,8 @@ export function matchTitlesWithRecords(
 
     if (bestMatch) {
       matchedRecordIds.add(bestMatch.id);
-      const diff = Math.round((bestMatch.amount - title.amount) * 100) / 100;
+      const diffMinor = bestMatch.amountMinor - Math.round(title.amount * 100);
+      const diff = diffMinor / 100;
       const suggestedStatus = Math.abs(diff) < 0.01 || bestConfidence === "documental"
         ? "pronto_para_baixa"
         : "divergente";
@@ -214,7 +215,7 @@ export function buildSettlementItems(matches: ReconciliationMatch[]): BatchSettl
       customerName: m.title.customerName,
       settlementDate: m.statementRecord.date,
       amountOriginal: m.title.amount,
-      amountPaid: m.statementRecord.amount,
+      amountPaid: m.statementRecord.amountMinor / 100,
       interest,
       discount,
       bankCode: m.statementRecord.bankCode,
