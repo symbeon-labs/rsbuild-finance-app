@@ -15,7 +15,7 @@ const sampleTitles: ReceivableTitle[] = [
     id: "tit-001",
     documentNumber: "NF-4580",
     customerName: "Supermercado Bahia Real",
-    amountMinor: 150000,
+    amount: 1500.0,
     dueDate: "2026-04-10",
     bankAccount: "Itaú",
     ourNumber: "0341999888",
@@ -34,7 +34,7 @@ const sampleTitles: ReceivableTitle[] = [
     id: "tit-003",
     documentNumber: "NF-4582",
     customerName: "Padaria e Lanchonete Estrela",
-    amountMinor: 85000,
+    amount: 850.0,
     dueDate: "2026-04-15",
     bankAccount: "Inter",
     status: "pendente"
@@ -79,7 +79,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-3",
     date: "2026-04-15",
     description: "Depósito identificado",
-    amount: 850.0, // Valor exato na data de vencimento
+    amountMinor: 85000, // Valor exato na data de vencimento
     direction: "entrada",
     category: "Recebimentos",
     source: "Banco Inter",
@@ -91,7 +91,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-4",
     date: "2026-04-10",
     description: "Pagamento de Fornecedor Farinha",
-    amount: 1500.0, // Mesmo valor de tit-001, mas é SAÍDA bancária!
+    amountMinor: 150000, // Mesmo valor de tit-001, mas é SAÍDA bancária!
     direction: "saída",
     category: "Fornecedores",
     source: "Itaú Unibanco",
