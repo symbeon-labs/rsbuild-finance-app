@@ -85,21 +85,21 @@ export default function LoginPage() {
           </div>
 
           <div className="login-brand-message">
-            <span className="login-overline">GESTÃO FINANCEIRA</span>
+            <span className="login-overline">SISTEMA OPERACIONAL</span>
             <h1>
               Clareza para<br />
               decidir. Controle<br />
               para evoluir.
             </h1>
             <p>
-              Uma visão organizada da operação financeira da sua empresa,
-              em um ambiente seguro e integrado.
+              Uma visão organizada da operação da sua empresa,
+              em um ambiente seguro, integrado e de alto desempenho.
             </p>
           </div>
 
           <div className="login-brand-footer">
             <span className="login-footer-line" />
-            <span>RSBUILD FINANCE <b>·</b> AMBIENTE CORPORATIVO</span>
+            <span>RSBUILD OS <b>·</b> AMBIENTE CORPORATIVO</span>
           </div>
         </div>
       </section>
@@ -109,7 +109,7 @@ export default function LoginPage() {
           No mobile: ambient pattern com hexágonos nas quinas + glow alaranjado difuso
           No desktop: fundo claro limpo com o formulário refinado
           ======================================================== */}
-      <section className="login-form-panel" aria-label="Acesso ao RSBUILD Finance">
+      <section className="login-form-panel" aria-label="Acesso ao RSBUILD OS">
         {/* Camadas visuais exclusivas do mobile */}
         <div className="login-mobile-ambient-glow" aria-hidden="true" />
         <div className="login-mobile-pattern" aria-hidden="true" />
@@ -131,7 +131,7 @@ export default function LoginPage() {
           </div>
 
           <div className="login-form-heading">
-            <span className="login-overline">RSBUILD FINANCE</span>
+            <span className="login-overline">RSBUILD OS</span>
             <h2>Bem-vindo de volta.</h2>
             <p>Entre com suas credenciais para continuar.</p>
           </div>
@@ -180,7 +180,7 @@ export default function LoginPage() {
             </label>
 
             <button className="login-submit" type="submit" disabled={loading}>
-              <span>{loading ? "Entrando…" : "Entrar no RSBUILD Finance"}</span>
+              <span>{loading ? "Entrando…" : "Entrar no RSBUILD OS"}</span>
               <ArrowIcon />
             </button>
           </form>
