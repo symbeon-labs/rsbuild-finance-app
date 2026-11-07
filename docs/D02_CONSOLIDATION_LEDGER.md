@@ -53,3 +53,23 @@ A presença desses arquivos na branch da #20 foi verificada diretamente. A compa
 Este registro foi elaborado a partir das listas e patches das PRs #12, #19, #20 e #21, comparação de refs da linha original e da candidata com `main`, leitura de arquivos críticos e resultados de GitHub Actions/Vercel.
 
 Este documento registra destinação e estado de consolidação; não declara merge, deploy, execução de CI ou homologação remota.
+
+## Auditoria do projeto Supabase conectado — 2026-11-07
+
+**Projeto consultado:** `rsbuild-finance-app` (`vsgbzgoeiatgjopasnlu`, região `us-east-2`, status `ACTIVE_HEALTHY`). A consulta foi somente leitura.
+
+### Estado observado
+- Migrations aplicadas no projeto: `20261104210806`, `20261104210850`, `20261104210924`, `20261104210940` e `20261104211619`.
+- A migration `20261104230000_d02_transactional_imports` ainda não consta no histórico remoto.
+- A função `private.commit_financial_import` / wrapper `public.commit_financial_import` não foi encontrada no banco conectado.
+- O bucket `rsbuild-source-artifacts` existe, está privado e tem limite de 10 MiB.
+- O banco reportou 13 tabelas do domínio com RLS habilitado.
+- Existem 2 políticas em `storage.objects` para o bucket: leitura por membros e upload por operadores. A política de delete usada na compensação da importação ainda não está presente porque pertence à migration pendente.
+- Contagem observada: 1 usuário Auth, 0 organizações, 0 memberships e 0 registros financeiros.
+- Supabase Security Advisor: um aviso `WARN` — proteção contra senhas vazadas desabilitada. [Orientação de correção](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+- Performance Advisor reportou índices ainda não utilizados; sem carga operacional, isso é informativo e não justifica remoção antecipada.
+
+### Consequência para a liberação
+A migration transacional final deve ser aplicada e verificada em ambiente de validação antes de qualquer homologação funcional. Não foi aplicada no projeto conectado durante esta auditoria, para não alterar o banco ativo antes do aceite da candidata. Como não existem organizações/memberships nem dados de teste, isolamento entre tenants, convite real, persistência pós-login e compensação Storage ainda não foram homologados remotamente.
+
+O workflow local de database tests/pgTAP passou na candidata SHA `28ceba87c0da9eb409c4eaab6066ebad73917d3d`, que contém os mesmos arquivos SQL e migrations; a execução subsequente foi iniciada após atualização documental.
