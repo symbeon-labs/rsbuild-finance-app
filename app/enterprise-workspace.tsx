@@ -257,9 +257,13 @@ export default function EnterpriseWorkspace() {
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Lista de e-mails com permissão de Superadmin / Engenharia Symbeon
+  const SUPERADMIN_EMAILS = ["neo.sh1w4@gmail.com"];
+
   // Customização de Marca do Workspace (White-label)
   const [companyName, setCompanyName] = useState("RSBUILD Inovação");
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("neo.sh1w4@gmail.com");
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -269,12 +273,18 @@ export default function EnterpriseWorkspace() {
     logistics: true
   });
 
+  const isSuperAdmin = useMemo(() => {
+    return Boolean(currentUserEmail && SUPERADMIN_EMAILS.includes(currentUserEmail.trim().toLowerCase()));
+  }, [currentUserEmail]);
+
   useEffect(() => {
     try {
       const savedName = localStorage.getItem("rsbuild_workspace_company");
       if (savedName) setCompanyName(savedName);
       const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
       if (savedLogo) setCompanyLogoUrl(savedLogo);
+      const savedUser = localStorage.getItem("rsbuild_auth_email");
+      if (savedUser) setCurrentUserEmail(savedUser);
       const savedModules = localStorage.getItem("rsbuild_workspace_modules");
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
@@ -1499,35 +1509,44 @@ export default function EnterpriseWorkspace() {
                 />
               </div>
 
-              {/* Controle de Módulos Contratados / Ativos (Superadmin / Gestão) */}
-              <div style={{ borderTop: "1px solid var(--line)", paddingTop: "14px", display: "grid", gap: "8px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
-                    MÓDULOS CONTRATADOS DO WORKSPACE
-                  </span>
-                  <span style={{ fontSize: "10px", color: "var(--muted)" }}>Controle de Acesso</span>
+              {/* Controle de Módulos Contratados / Ativos (Exclusivo Superadmin / Symbeon) */}
+              {isSuperAdmin ? (
+                <div style={{ borderTop: "1px solid var(--line)", paddingTop: "14px", display: "grid", gap: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
+                      MÓDULOS CONTRATADOS DO WORKSPACE (SUPERADMIN)
+                    </span>
+                    <span style={{ fontSize: "10px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
+                      🔒 Acesso Symbeon
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gap: "10px", background: "#FAF8F5", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
+                      <input
+                        type="checkbox"
+                        name="modFinance"
+                        defaultChecked={enabledModules.finance}
+                        style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                      />
+                      <span>💼 Módulo Financeiro (Conciliação, Extratos & Baixas ERP)</span>
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
+                      <input
+                        type="checkbox"
+                        name="modLogistics"
+                        defaultChecked={enabledModules.logistics}
+                        style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                      />
+                      <span>🚚 Módulo Logística & Expedição (WhatsApp, Canhotos & Cargas)</span>
+                    </label>
+                  </div>
                 </div>
-                <div style={{ display: "grid", gap: "10px", background: "#FAF8F5", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
-                    <input
-                      type="checkbox"
-                      name="modFinance"
-                      defaultChecked={enabledModules.finance}
-                      style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
-                    />
-                    <span>💼 Módulo Financeiro (Conciliação, Extratos & Baixas ERP)</span>
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
-                    <input
-                      type="checkbox"
-                      name="modLogistics"
-                      defaultChecked={enabledModules.logistics}
-                      style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
-                    />
-                    <span>🚚 Módulo Logística & Expedição (WhatsApp, Canhotos & Cargas)</span>
-                  </label>
+              ) : (
+                <div style={{ borderTop: "1px solid var(--line)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", color: "var(--muted)" }}>
+                  <span>Licenciamento do Workspace gerenciado por <strong>Symbeon / RSBUILD</strong></span>
+                  <span style={{ color: "var(--green)", fontWeight: 600 }}>● Ativo</span>
                 </div>
-              </div>
+              )}
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
                 <button

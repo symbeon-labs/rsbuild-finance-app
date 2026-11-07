@@ -54,6 +54,15 @@ export default function LoginPage() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
+    const emailInput = form.elements.namedItem("email") as HTMLInputElement;
+    if (emailInput?.value) {
+      try {
+        localStorage.setItem("rsbuild_auth_email", emailInput.value.trim().toLowerCase());
+      } catch {
+        // noop
+      }
+    }
     setLoading(true);
     setTimeout(() => {
       window.location.href = "/";
