@@ -39,7 +39,8 @@ import {
   type NavSection,
   type EnabledModulesConfig,
   type OrganizationId,
-  ORGANIZATION_PRESETS
+  ORGANIZATION_PRESETS,
+  orgHasExecutiveTower
 } from "@/app/types/workspace";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
@@ -53,7 +54,13 @@ import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 
-const SUPERADMIN_EMAILS = ["neo.sh1w4@gmail.com"];
+const SUPERADMIN_EMAILS = [
+  "neo.sh1w4@gmail.com",
+  "admin@rsbuild.com.br",
+  "diretoria@rsbuild.com.br",
+  "admin@symbeon.com.br",
+  "contato@symbeon.com.br"
+];
 
 export default function EnterpriseWorkspace() {
   const router = useRouter();
@@ -68,22 +75,23 @@ export default function EnterpriseWorkspace() {
 
   const [section, setSection] = useState<NavSection>(initialSection);
   const [activeModule, setActiveModule] = useState<ModuleType>(
-    initialSection === "torre-controle"
-      ? "executive"
-      : initialSection === "canhotos" || initialSection === "pedidos-ha"
-      ? "logistics"
-      : "finance"
+    initialSection === "canhotos" || initialSection === "pedidos-ha" ? "logistics" : "finance"
   );
 
   function navigateTo(nextSection: NavSection) {
+    if (nextSection === "torre-controle" && !orgHasExecutiveTower(currentOrgId)) {
+      setNotice("A Torre de Controle está disponível exclusivamente no workspace Hub Açaí Salvador.");
+      setSection("visao-geral");
+      setActiveModule("finance");
+      router.push(`/?tab=visao-geral`, { scroll: false });
+      return;
+    }
     setSection(nextSection);
-    const mod: ModuleType =
-      nextSection === "torre-controle"
-        ? "executive"
-        : nextSection === "canhotos" || nextSection === "pedidos-ha"
-        ? "logistics"
-        : "finance";
-    setActiveModule(mod);
+    if (nextSection === "canhotos" || nextSection === "pedidos-ha") {
+      setActiveModule("logistics");
+    } else if (nextSection !== "torre-controle") {
+      setActiveModule("finance");
+    }
     router.push(`/?tab=${nextSection}`, { scroll: false });
   }
 
@@ -138,13 +146,21 @@ export default function EnterpriseWorkspace() {
   // Controle de Módulos Habilitados
   const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({
     finance: true,
-    logistics: true,
-    executive: true
+    logistics: true
   });
 
   const isSuperAdmin = useMemo(() => {
     return Boolean(currentUserEmail && SUPERADMIN_EMAILS.includes(currentUserEmail.trim().toLowerCase()));
   }, [currentUserEmail]);
+
+  // Blindagem de Governança: Torre de Controle não existe em RSBUILD nem Mundo do Sabor
+  useEffect(() => {
+    if (section === "torre-controle" && !orgHasExecutiveTower(currentOrgId)) {
+      setSection("visao-geral");
+      setActiveModule("finance");
+      router.push(`/?tab=visao-geral`, { scroll: false });
+    }
+  }, [section, currentOrgId, router]);
 
   // Contas a Receber e Baixas em Lote
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
@@ -249,8 +265,6 @@ export default function EnterpriseWorkspace() {
         navigateTo("pedidos-ha");
       } else if (!modules.logistics && modules.finance && activeModule === "logistics") {
         navigateTo("visao-geral");
-      } else if (modules.executive && !modules.finance && !modules.logistics) {
-        navigateTo("torre-controle");
       }
     }
     try {
@@ -525,11 +539,10 @@ export default function EnterpriseWorkspace() {
         activeModule={activeModule}
         section={section}
         enabledModules={enabledModules}
+        currentOrgId={currentOrgId}
         onSelectModule={(mod) => {
           setActiveModule(mod);
-          const defaultSection: NavSection =
-            mod === "executive" ? "torre-controle" : mod === "logistics" ? "pedidos-ha" : "visao-geral";
-          navigateTo(defaultSection);
+          navigateTo(mod === "finance" ? "visao-geral" : "pedidos-ha");
         }}
         onSelectSection={navigateTo}
         onOpenConfig={() => setIsConfigOpen(true)}

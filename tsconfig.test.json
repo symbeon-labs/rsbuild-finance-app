@@ -9,7 +9,11 @@
     "types": ["node"],
     "rootDir": ".",
     "outDir": ".test-dist",
-    "noEmit": false
+    "noEmit": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": ["lib/**/*.ts", "tests/**/*.test.ts"]
+  "include": ["lib/**/*.ts", "app/types/**/*.ts", "tests/**/*.test.ts"]
 }

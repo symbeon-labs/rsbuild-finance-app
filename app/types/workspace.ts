@@ -1,10 +1,15 @@
-import { ReceivableTitle } from "@/lib/reconciliation";
-import { DeliveryProof } from "@/lib/delivery";
-import { ParsedWhatsAppOrder } from "@/lib/orders";
+import { ReceivableTitle } from "../../lib/reconciliation";
+import { DeliveryProof } from "../../lib/delivery";
+import { ParsedWhatsAppOrder } from "../../lib/orders";
 
-export type ModuleType = "finance" | "logistics" | "executive";
+export type ModuleType = "finance" | "logistics";
 
 export type OrganizationId = "rsbuild" | "hub_acai" | "mundo_sabor";
+
+export interface EnabledModulesConfig {
+  finance: boolean;
+  logistics: boolean;
+}
 
 export interface OrganizationPreset {
   id: OrganizationId;
@@ -14,29 +19,36 @@ export interface OrganizationPreset {
   badge: string;
   defaultModule: ModuleType;
   enabledModules: EnabledModulesConfig;
+  hasExecutiveTower: boolean;
   description: string;
+}
+
+export function orgHasExecutiveTower(orgId?: OrganizationId): boolean {
+  return orgId === "hub_acai";
 }
 
 export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
   {
     id: "rsbuild",
     name: "RSBUILD Inovação",
-    tagline: "Holding & Engenharia de Sistemas",
+    tagline: "Holding & Obras Corporativas",
     logoUrl: "",
     badge: "🏢 HOLDING",
     defaultModule: "finance",
-    enabledModules: { finance: true, logistics: true, executive: true },
-    description: "Ambiente master corporativo com acesso irrestrito a todos os módulos e esteiras analíticas."
+    enabledModules: { finance: true, logistics: false },
+    hasExecutiveTower: false,
+    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter) e fluxo de caixa."
   },
   {
     id: "hub_acai",
     name: "Hub Açaí Salvador",
-    tagline: "Distribuidora de Polpas & Sorvetes",
+    tagline: "Distribuição de Polpas & Sorvetes",
     logoUrl: "",
     badge: "🍨 DISTRIBUIÇÃO",
     defaultModule: "logistics",
-    enabledModules: { finance: false, logistics: true, executive: true },
-    description: "Operação B2B de congelados com pedidos WhatsApp, cubagem do caminhão HR (350 cx) e governança executiva."
+    enabledModules: { finance: true, logistics: true },
+    hasExecutiveTower: true,
+    description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), cruzamento de canhotos e Torre de Controle de Operações."
   },
   {
     id: "mundo_sabor",
@@ -45,16 +57,11 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     logoUrl: "",
     badge: "🏭 INDÚSTRIA",
     defaultModule: "finance",
-    enabledModules: { finance: true, logistics: true, executive: true },
-    description: "Operação com conciliação multibanco (Itaú/BNB/Inter), liquidação Omie e blindagem de canhotos SEFAZ."
+    enabledModules: { finance: true, logistics: true },
+    hasExecutiveTower: false,
+    description: "Indústria alimentícia com conciliação multibanco, liquidação de recebíveis Omie e canhotos SEFAZ."
   }
 ];
-
-export interface EnabledModulesConfig {
-  finance: boolean;
-  logistics: boolean;
-  executive: boolean;
-}
 
 export type NavSection =
   | "visao-geral"
@@ -74,8 +81,11 @@ export interface NavItem {
 }
 
 export const ALL_NAV_ITEMS: NavItem[] = [
+  // Visões Globais da Empresa
+  { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "all" },
+  { id: "torre-controle", label: "Torre de Controle", icon: "⎈", module: "all" },
+
   // Módulo Financeiro
-  { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "finance" },
   { id: "movimentacoes", label: "Movimentações", icon: "⇄", module: "finance" },
   { id: "importacoes", label: "Importações", icon: "⇧", module: "finance" },
   { id: "baixas", label: "Baixas & Liquidações", icon: "✓", module: "finance" },
@@ -83,10 +93,7 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 
   // Módulo Logística & Expedição
   { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱", module: "logistics" },
-  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" },
-
-  // Módulo Diretoria & Governança (C-Level)
-  { id: "torre-controle", label: "Torre de Controle", icon: "⎈", module: "executive" }
+  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
@@ -121,10 +128,10 @@ export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
   {
     id: "tit-104",
     documentNumber: "NF-4583",
-    customerName: "Mercado Regional Lauro de Freitas",
-    amount: 5000.0,
-    dueDate: "2026-04-20",
-    bankAccount: "Itaú Unibanco",
+    customerName: "Mercado e Açougue Bom Preço",
+    amount: 2100.0,
+    dueDate: "2026-04-18",
+    bankAccount: "XP Investimentos",
     status: "pendente"
   },
   {
@@ -132,7 +139,7 @@ export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
     documentNumber: "NF-4584",
     customerName: "Cantina Sabor Central",
     amount: 2400.0,
-    dueDate: "2026-04-22",
+    dueDate: "2026-04-20",
     bankAccount: "Itaú Unibanco",
     status: "pendente"
   }
@@ -142,49 +149,49 @@ export const INITIAL_SAMPLE_PROOFS: DeliveryProof[] = [
   {
     id: "prf-4580",
     nfeNumber: "4580",
-    nfeKey: "29260401234567000199550010000045801000000010",
+    nfeKey: "29260400000000000191550010000045801000045801",
     customerName: "Supermercado Real Salvador",
     nfeAmount: 1500.0,
     issueDate: "2026-04-01",
-    deliveryDate: "2026-04-03",
+    deliveryDate: "2026-04-02",
     status: "comprovado",
-    driverName: "Carlos Rota Litoral",
-    receiverName: "Marcos Souza (Doca 2)",
-    receiverDocument: "RG 12.345.678-BA",
-    proofFileUrl: "canhoto_nf_4580_assinado.pdf"
+    receiverName: "Marcos Vinicius Santos",
+    receiverDocument: "RG 12.345.678-SSP/BA",
+    driverName: "Carlos Eduardo Frota 1",
+    notes: "Canhoto digitalizado e conferido na doca."
   },
   {
     id: "prf-4581",
     nfeNumber: "4581",
     customerName: "Distribuidora Alimentos Bahia",
     nfeAmount: 3200.5,
-    issueDate: "2026-04-02",
-    status: "recusa_devolucao",
-    driverName: "Carlos Rota Litoral",
-    notes: "Recusa parcial registrada: 4 caixas avariadas na descarga."
+    issueDate: "2026-04-03",
+    deliveryDate: "2026-04-04",
+    status: "comprovado",
+    receiverName: "Ana Paula Ribeiro (Doca 2)",
+    receiverDocument: "CPF 012.345.678-99",
+    driverName: "Carlos Eduardo Frota 1",
+    notes: "Assinatura e carimbo da empresa conferidos."
   },
   {
     id: "prf-4582",
     nfeNumber: "4582",
     customerName: "Padaria e Lanchonete Estrela",
     nfeAmount: 850.0,
-    issueDate: "2026-04-03",
+    issueDate: "2026-04-05",
     status: "pendente_entrega",
-    driverName: "Raimundo Entregas",
-    notes: "Carga em trânsito com previsão hoje às 17h."
+    driverName: "Roberto Lima Frota 2",
+    notes: "Mercadoria em rota de entrega no caminhão HR."
   },
   {
     id: "prf-4583",
     nfeNumber: "4583",
-    customerName: "Mercado Regional Lauro de Freitas",
-    nfeAmount: 5000.0,
-    issueDate: "2026-04-04",
-    deliveryDate: "2026-04-05",
-    status: "comprovado",
-    driverName: "Raimundo Entregas",
-    receiverName: "Sueli Alcântara (Financeiro)",
-    receiverDocument: "CPF 012.345.678-99",
-    proofFileUrl: "canhoto_nf_4583_carimbado.jpg"
+    customerName: "Mercado e Açougue Bom Preço",
+    nfeAmount: 2100.0,
+    issueDate: "2026-03-20",
+    status: "recusa_devolucao",
+    driverName: "Roberto Lima Frota 2",
+    notes: "Mercadoria recusada por divergência de pedido (Avaria)."
   },
   {
     id: "prf-4584",
@@ -283,4 +290,3 @@ export const INITIAL_SAMPLE_HA_ORDERS: ParsedWhatsAppOrder[] = [
     status: "confirmado"
   }
 ];
-

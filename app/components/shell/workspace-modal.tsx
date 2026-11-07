@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
 
 interface WorkspaceModalProps {
@@ -31,6 +31,14 @@ export function WorkspaceModal({
   const [typedName, setTypedName] = useState<string>(companyName);
   const [activeModulesState, setActiveModulesState] = useState<EnabledModulesConfig>(enabledModules);
 
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedOrg(currentOrgId);
+      setTypedName(companyName);
+      setActiveModulesState(enabledModules);
+    }
+  }, [isOpen, currentOrgId, companyName, enabledModules]);
+
   if (!isOpen) return null;
 
   function handleSelectPreset(preset: OrganizationPreset) {
@@ -58,7 +66,7 @@ export function WorkspaceModal({
         </div>
 
         <p className="workspace-modal-desc">
-          Personalize o nome corporativo e a marca exibidos no cabeçalho e na barra lateral do ambiente.
+          Personalize a razão social, o logotipo e a parametrização dos módulos do ambiente operacional.
         </p>
 
         {/* Seletor Multi-Tenant Restrito ao Superadmin */}
@@ -66,14 +74,14 @@ export function WorkspaceModal({
           <div style={{ marginBottom: "16px", border: "1px solid var(--line)", borderRadius: "8px", padding: "12px", background: "var(--surface)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
               <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "1px", color: "var(--rsbuild-terracotta)", fontFamily: "var(--font-brand)" }}>
-                AMBIENTES HOMOLOGADOS (EXCLUSIVO SUPERADMIN)
+                EMPRESAS HOMOLOGADAS (EXCLUSIVO SUPERADMIN)
               </span>
               <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
                 🔒 Alçada Symbeon
               </span>
             </div>
             <p style={{ fontSize: "11px", color: "var(--muted)", margin: "0 0 10px" }}>
-              Selecione o tenant de demonstração para carregar os dados e regras operacionais homologadas:
+              Selecione uma das 3 empresas homologadas para carregar seus dados e parametrização operacional:
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
               {ORGANIZATION_PRESETS.map((preset) => {
@@ -129,12 +137,10 @@ export function WorkspaceModal({
             const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
             const modFinanceInput = form.elements.namedItem("modFinance") as HTMLInputElement;
             const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
-            const modExecutiveInput = form.elements.namedItem("modExecutive") as HTMLInputElement;
             
             const nextModules: EnabledModulesConfig = {
               finance: modFinanceInput ? modFinanceInput.checked : activeModulesState.finance,
-              logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics,
-              executive: modExecutiveInput ? modExecutiveInput.checked : activeModulesState.executive
+              logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics
             };
 
             onSave(nameInput.value, urlInput.value || companyLogoUrl, nextModules, selectedOrg);
@@ -238,16 +244,6 @@ export function WorkspaceModal({
                     style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
                   />
                   <span>🚚 Módulo Logística & Expedição (WhatsApp, Canhotos & Cargas)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
-                  <input
-                    type="checkbox"
-                    name="modExecutive"
-                    checked={activeModulesState.executive}
-                    onChange={(e) => setActiveModulesState((curr) => ({ ...curr, executive: e.target.checked }))}
-                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
-                  />
-                  <span>🏛️ Módulo Diretoria & Governança (Torre de Controle, Agente RS & BI)</span>
                 </label>
               </div>
             </div>
