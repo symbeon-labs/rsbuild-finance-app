@@ -2,7 +2,15 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BankMetadata, FinancialRecord, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
+import {
+  BankMetadata,
+  FinancialRecord,
+  generateOmieOfx,
+  parseCsv,
+  parseOfx,
+  filterRecordsByPeriodOption,
+  type PeriodOption
+} from "@/lib/finance";
 import {
   ReceivableTitle,
   ReconciliationMatch,
@@ -72,7 +80,24 @@ export default function EnterpriseWorkspace() {
   const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
-  const [period, setPeriod] = useState("30");
+
+  // Filtro de Período Contábil e Customizado
+  const [period, setPeriod] = useState<PeriodOption>("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+
+  function handlePeriodChange(nextPeriod: string, start?: string, end?: string) {
+    const p = nextPeriod as PeriodOption;
+    setPeriod(p);
+    if (start !== undefined) setCustomStartDate(start);
+    if (end !== undefined) setCustomEndDate(end);
+    try {
+      localStorage.setItem("rsbuild_period_option", p);
+      if (start !== undefined) localStorage.setItem("rsbuild_period_start", start);
+      if (end !== undefined) localStorage.setItem("rsbuild_period_end", end);
+    } catch {}
+  }
+
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -136,6 +161,14 @@ export default function EnterpriseWorkspace() {
         setTheme(savedTheme);
         document.documentElement.setAttribute("data-theme", savedTheme);
       }
+
+      // Persistência de Período
+      const savedPeriod = localStorage.getItem("rsbuild_period_option") as PeriodOption | null;
+      if (savedPeriod) setPeriod(savedPeriod);
+      const savedStart = localStorage.getItem("rsbuild_period_start");
+      if (savedStart) setCustomStartDate(savedStart);
+      const savedEnd = localStorage.getItem("rsbuild_period_end");
+      if (savedEnd) setCustomEndDate(savedEnd);
 
       // Persistência de Dados Operacionais
       const savedRecords = localStorage.getItem("rsbuild_session_records");
@@ -232,6 +265,15 @@ export default function EnterpriseWorkspace() {
     setNotice("Sessão reiniciada com dados de demonstração.");
   }
 
+  // Filtragem Reativa de Registros por Período
+  const filteredRecords = useMemo(() => {
+    return filterRecordsByPeriodOption(records, {
+      option: period,
+      startDate: customStartDate,
+      endDate: customEndDate
+    });
+  }, [records, period, customStartDate, customEndDate]);
+
   // Cálculos Logística
   const deliveryMetrics = useMemo(() => computeDeliveryMetrics(proofs), [proofs]);
 
@@ -251,12 +293,12 @@ export default function EnterpriseWorkspace() {
     return { totalOrders, totalBoxes, totalRevenue, hrOccupancy };
   }, [orders]);
 
-  // Cálculos Financeiros
+  // Cálculos Financeiros (Baseados no Período Selecionado)
   const totals = useMemo(() => {
-    const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
-    const outgoing = records.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
+    const incoming = filteredRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
+    const outgoing = filteredRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
     return { incoming, outgoing, balance: incoming - outgoing };
-  }, [records]);
+  }, [filteredRecords]);
 
   const matches = useMemo(() => {
     return matchTitlesWithRecords(titles, records);
@@ -303,7 +345,7 @@ export default function EnterpriseWorkspace() {
   }
 
   function handleExportOmie(targetRecords?: FinancialRecord[]) {
-    const list = targetRecords && targetRecords.length ? targetRecords : records.length ? records : pendingImport;
+    const list = targetRecords && targetRecords.length ? targetRecords : filteredRecords.length ? filteredRecords : records;
     if (!list.length) return;
     const ofxContent = generateOmieOfx(list, pendingMetadata || undefined);
     const blob = new Blob([ofxContent], { type: "application/x-ofx;charset=windows-1252" });
@@ -465,8 +507,10 @@ export default function EnterpriseWorkspace() {
           companyName={companyName}
           section={section}
           period={period}
+          startDate={customStartDate}
+          endDate={customEndDate}
           theme={theme}
-          onPeriodChange={setPeriod}
+          onPeriodChange={handlePeriodChange}
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}
           onOpenConfig={() => setIsConfigOpen(true)}
@@ -480,7 +524,7 @@ export default function EnterpriseWorkspace() {
           )}
           {section === "visao-geral" && (
             <VisaoGeralView
-              records={records}
+              records={filteredRecords}
               totals={totals}
               onNavigateToMovimentacoes={() => navigateTo("movimentacoes")}
               onOpenImport={() => inputRef.current?.click()}
@@ -488,7 +532,7 @@ export default function EnterpriseWorkspace() {
           )}
           {section === "movimentacoes" && (
             <MovimentacoesView
-              records={records}
+              records={filteredRecords}
               onOpenImport={() => inputRef.current?.click()}
               onExportOmie={handleExportOmie}
             />

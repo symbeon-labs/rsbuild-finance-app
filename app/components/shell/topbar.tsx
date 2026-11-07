@@ -6,8 +6,10 @@ interface TopbarProps {
   companyName: string;
   section: NavSection;
   period: string;
+  startDate?: string;
+  endDate?: string;
   theme: "sand" | "dark";
-  onPeriodChange: (period: string) => void;
+  onPeriodChange: (period: string, startDate?: string, endDate?: string) => void;
   onToggleTheme: () => void;
   onResetSession: () => void;
   onOpenConfig: () => void;
@@ -17,6 +19,8 @@ export function Topbar({
   companyName,
   section,
   period,
+  startDate,
+  endDate,
   theme,
   onPeriodChange,
   onToggleTheme,
@@ -32,11 +36,40 @@ export function Topbar({
       </div>
       <div className="topbar-right">
         <span className="period-label">PERÍODO</span>
-        <select value={period} onChange={(e) => onPeriodChange(e.target.value)} aria-label="Período">
+        <select
+          value={period}
+          onChange={(e) => onPeriodChange(e.target.value, startDate, endDate)}
+          aria-label="Período"
+        >
+          <option value="all">Todo o histórico</option>
+          <option value="current_month">Mês atual</option>
+          <option value="last_month">Mês anterior</option>
           <option value="30">Últimos 30 dias</option>
           <option value="90">Últimos 90 dias</option>
           <option value="365">Últimos 12 meses</option>
+          <option value="year">Este ano</option>
+          <option value="custom">Personalizado (De / Até)...</option>
         </select>
+
+        {period === "custom" && (
+          <div className="date-range-container">
+            <input
+              type="date"
+              value={startDate || ""}
+              onChange={(e) => onPeriodChange("custom", e.target.value, endDate)}
+              title="Data inicial"
+              aria-label="Data inicial"
+            />
+            <span style={{ fontSize: "11px", color: "var(--muted)" }}>até</span>
+            <input
+              type="date"
+              value={endDate || ""}
+              onChange={(e) => onPeriodChange("custom", startDate, e.target.value)}
+              title="Data final"
+              aria-label="Data final"
+            />
+          </div>
+        )}
 
         {/* Botão de Alternância de Tema */}
         <button
@@ -97,4 +130,3 @@ export function Topbar({
     </header>
   );
 }
-

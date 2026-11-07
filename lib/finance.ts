@@ -442,6 +442,81 @@ export function filterRecordsByPeriod<T extends { date: string }>(records: T[], 
   const to = today.getFullYear().toString().padStart(4, "0") + "-" + (today.getMonth() + 1).toString().padStart(2, "0") + "-" + today.getDate().toString().padStart(2, "0");
   return records.filter((record) => record.date >= from && record.date <= to);
 }
+
+export type PeriodOption =
+  | "all"
+  | "current_month"
+  | "last_month"
+  | "30"
+  | "90"
+  | "365"
+  | "year"
+  | "custom";
+
+export interface PeriodFilterState {
+  option: PeriodOption;
+  startDate?: string;
+  endDate?: string;
+}
+
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear().toString().padStart(4, "0");
+  const m = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function filterRecordsByPeriodOption<T extends { date: string }>(
+  records: T[],
+  filter: PeriodFilterState,
+  referenceDate: Date = new Date()
+): T[] {
+  if (!filter || filter.option === "all") return records;
+
+  const now = referenceDate;
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  if (filter.option === "current_month") {
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const from = toIsoDate(firstDay);
+    const to = toIsoDate(lastDay);
+    return records.filter((r) => r.date >= from && r.date <= to);
+  }
+
+  if (filter.option === "last_month") {
+    const firstDay = new Date(currentYear, currentMonth - 1, 1);
+    const lastDay = new Date(currentYear, currentMonth, 0);
+    const from = toIsoDate(firstDay);
+    const to = toIsoDate(lastDay);
+    return records.filter((r) => r.date >= from && r.date <= to);
+  }
+
+  if (filter.option === "year") {
+    const firstDay = new Date(currentYear, 0, 1);
+    const lastDay = new Date(currentYear, 11, 31);
+    const from = toIsoDate(firstDay);
+    const to = toIsoDate(lastDay);
+    return records.filter((r) => r.date >= from && r.date <= to);
+  }
+
+  if (filter.option === "30" || filter.option === "90" || filter.option === "365") {
+    return filterRecordsByPeriod(records, parseInt(filter.option, 10), referenceDate);
+  }
+
+  if (filter.option === "custom") {
+    const from = filter.startDate?.trim() || "";
+    const to = filter.endDate?.trim() || "";
+    return records.filter((r) => {
+      if (from && r.date < from) return false;
+      if (to && r.date > to) return false;
+      return true;
+    });
+  }
+
+  return records;
+}
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }

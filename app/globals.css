@@ -1720,3 +1720,27 @@ tbody tr:hover td:last-child {
   color: var(--red);
   background: var(--red-soft);
 }
+
+.date-range-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar input[type="date"] {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  padding: 6px 8px;
+  color: var(--ink);
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+}
+
+[data-theme="dark"] .topbar input[type="date"] {
+  background: #222428;
+  color: #F4F1EA;
+  border-color: #383A42;
+  color-scheme: dark;
+}

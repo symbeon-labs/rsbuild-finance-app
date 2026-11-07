@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod } from "../lib/finance";
+import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
 
 const csv = [
   "Data;Descrição;Valor;Tipo;Categoria",
@@ -341,4 +341,38 @@ test("DASH-01: período de 30 dias inclui hoje e os 29 dias anteriores", () => {
   const records = [{ date: "2026-04-01", value: 1 }, { date: "2026-04-02", value: 2 }, { date: "2026-05-01", value: 3 }, { date: "2026-05-02", value: 4 }];
   const result = filterRecordsByPeriod(records, 30, new Date(2026, 4, 2, 12));
   assert.deepEqual(result.map((record) => record.value), [3, 4]);
+});
+
+test("DASH-02: filterRecordsByPeriodOption filtra por opções contábeis e customizadas", () => {
+  const records = [
+    { date: "2026-03-15", value: "marco" },
+    { date: "2026-04-05", value: "abril-inicio" },
+    { date: "2026-04-20", value: "abril-fim" },
+    { date: "2026-05-02", value: "maio" }
+  ];
+  const refDate = new Date(2026, 3, 25); // 25 de abril de 2026 (mês 3 zero-indexed)
+
+  // Mês atual (Abril/2026)
+  const currentMonth = filterRecordsByPeriodOption(records, { option: "current_month" }, refDate);
+  assert.deepEqual(currentMonth.map((r) => r.value), ["abril-inicio", "abril-fim"]);
+
+  // Mês anterior (Março/2026)
+  const lastMonth = filterRecordsByPeriodOption(records, { option: "last_month" }, refDate);
+  assert.deepEqual(lastMonth.map((r) => r.value), ["marco"]);
+
+  // Ano atual (2026)
+  const yearRecords = filterRecordsByPeriodOption(records, { option: "year" }, refDate);
+  assert.equal(yearRecords.length, 4);
+
+  // Todo o histórico
+  const allRecords = filterRecordsByPeriodOption(records, { option: "all" }, refDate);
+  assert.equal(allRecords.length, 4);
+
+  // Período customizado (De / Até)
+  const custom = filterRecordsByPeriodOption(
+    records,
+    { option: "custom", startDate: "2026-04-01", endDate: "2026-04-10" },
+    refDate
+  );
+  assert.deepEqual(custom.map((r) => r.value), ["abril-inicio"]);
 });
