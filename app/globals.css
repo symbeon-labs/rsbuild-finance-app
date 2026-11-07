@@ -206,7 +206,7 @@ button { cursor: pointer; }
 .topbar {
   height: 68px;
   border-bottom: 1px solid var(--line);
-  background: #FFF;
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -221,7 +221,7 @@ button { cursor: pointer; }
 .topbar select {
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #FFF;
+  background: var(--surface);
   padding: 8px 28px 8px 10px;
   color: var(--ink);
   font-size: 11px;
@@ -496,13 +496,13 @@ th {
 
 td {
   font-size: 11px;
-  color: #4D4945;
+  color: var(--ink);
   padding: 13px 12px;
-  border-bottom: 1px solid #F0ECE4;
+  border-bottom: 1px solid var(--line);
 }
 
 tbody tr:last-child td { border-bottom: 0; }
-.description-cell { color: #2B2C2E; font-weight: 600; }
+.description-cell { color: var(--ink); font-weight: 600; }
 .align-right { text-align: right; }
 .positive { color: var(--green) !important; }
 .negative { color: var(--red) !important; }
@@ -1460,4 +1460,134 @@ tbody tr:last-child td { border-bottom: 0; }
   color: #6E6860;
   line-height: 1.5;
   margin: 0 0 20px;
+}
+
+/* ==========================================================================
+   THEME TOGGLE BUTTON & DARK MODE (OBSIDIAN / RSBUILD OS)
+   ========================================================================== */
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 33px;
+  padding: 0 11px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--rsbuild-terracotta);
+  color: var(--rsbuild-terracotta);
+  background: var(--rsbuild-terracotta-soft);
+}
+
+.theme-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* Modo Escuro (Obsidian) */
+[data-theme="dark"] {
+  --bg: #141517;
+  --surface: #1E2024;
+  --surface-hover: #26292E;
+  --ink: #F4F1EA;
+  --muted: #9E988E;
+  --line: #2E3036;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --rsbuild-terracotta-soft: rgba(181, 88, 60, 0.18);
+  --green-soft: rgba(22, 132, 92, 0.2);
+  --red-soft: rgba(193, 91, 91, 0.2);
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .topbar {
+  background: #18191C;
+  border-bottom-color: #2E3036;
+}
+
+[data-theme="dark"] .topbar select {
+  background: #222428;
+  color: #F4F1EA;
+  border-color: #383A42;
+}
+
+[data-theme="dark"] .metric-card,
+[data-theme="dark"] .panel {
+  background: #1E2024;
+  border-color: #2E3036;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.38);
+}
+
+[data-theme="dark"] .metric-card:hover {
+  border-color: #3D4048;
+}
+
+[data-theme="dark"] th {
+  color: #9E988E;
+  border-bottom-color: #2E3036;
+}
+
+[data-theme="dark"] td {
+  color: #D6D0C5;
+  border-bottom-color: #282A2F;
+}
+
+[data-theme="dark"] .description-cell {
+  color: #F4F1EA;
+}
+
+[data-theme="dark"] .table-toolbar input {
+  background: #161719;
+  color: #F4F1EA;
+  border-color: #2E3036;
+}
+
+[data-theme="dark"] .upload-zone {
+  background: #18191C;
+  border-color: #383B42;
+}
+
+[data-theme="dark"] .upload-zone h2 {
+  color: #F4F1EA;
+}
+
+[data-theme="dark"] .import-file strong {
+  color: #F4F1EA;
+}
+
+[data-theme="dark"] .workspace-modal-card {
+  background: #1E2024;
+  border-color: #34373E;
+  color: #F4F1EA;
+}
+
+[data-theme="dark"] .workspace-modal-header h3 {
+  color: #F4F1EA;
+}
+
+[data-theme="dark"] .workspace-modal-desc {
+  color: #9E988E;
+}
+
+[data-theme="dark"] .workspace-modal-close:hover {
+  background: #2D3036;
+  color: #FFF;
 }

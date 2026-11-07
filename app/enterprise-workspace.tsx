@@ -267,6 +267,22 @@ export default function EnterpriseWorkspace() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  // Tema Visual: 'sand' (Modo Claro / Editorial RSBUILD) ou 'dark' (Modo Escuro / Obsidian)
+  const [theme, setTheme] = useState<"sand" | "dark">("sand");
+
+  function toggleTheme() {
+    const next = theme === "sand" ? "dark" : "sand";
+    setTheme(next);
+    try {
+      localStorage.setItem("rsbuild_theme", next);
+    } catch {
+      // noop
+    }
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", next);
+    }
+  }
+
   // Controle de Módulos Habilitados pelo Dono da Plataforma (Feature Flags)
   const [enabledModules, setEnabledModules] = useState<{ finance: boolean; logistics: boolean }>({
     finance: true,
@@ -293,6 +309,11 @@ export default function EnterpriseWorkspace() {
           setActiveModule("logistics");
           setSection("pedidos-ha");
         }
+      }
+      const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
+      if (savedTheme === "dark" || savedTheme === "sand") {
+        setTheme(savedTheme);
+        document.documentElement.setAttribute("data-theme", savedTheme);
       }
     } catch {
       // Ignora falhas de localStorage em SSR / sandbox restrito
@@ -726,6 +747,37 @@ export default function EnterpriseWorkspace() {
               <option value="90">Últimos 90 dias</option>
               <option value="365">Últimos 12 meses</option>
             </select>
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Alternar para Modo Sand (Claro)" : "Alternar para Modo Dark (Escuro)"}
+              aria-label="Alternar tema visual"
+            >
+              {theme === "dark" ? (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                  </svg>
+                  <span>Sand</span>
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                  <span>Dark</span>
+                </>
+              )}
+            </button>
             <button
               className="avatar"
               onClick={() => setIsConfigOpen(true)}
@@ -1487,7 +1539,8 @@ export default function EnterpriseWorkspace() {
                     borderRadius: "6px",
                     padding: "0 12px",
                     fontSize: "13px",
-                    background: "#fff"
+                    background: "var(--bg)",
+                    color: "var(--ink)"
                   }}
                 />
               </label>
@@ -1517,7 +1570,7 @@ export default function EnterpriseWorkspace() {
                   )}
                 </div>
                 {companyLogoUrl && (
-                  <div style={{ background: "#F5F1EB", padding: "10px", borderRadius: "6px", display: "inline-block", marginTop: "4px" }}>
+                  <div style={{ background: "var(--bg)", padding: "10px", borderRadius: "6px", display: "inline-block", marginTop: "4px" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={companyLogoUrl} alt="Preview" style={{ maxHeight: "36px", maxWidth: "180px", objectFit: "contain" }} />
                   </div>
@@ -1532,7 +1585,8 @@ export default function EnterpriseWorkspace() {
                     borderRadius: "6px",
                     padding: "0 12px",
                     fontSize: "12px",
-                    background: "#fff"
+                    background: "var(--bg)",
+                    color: "var(--ink)"
                   }}
                 />
               </div>
@@ -1548,7 +1602,7 @@ export default function EnterpriseWorkspace() {
                       🔒 Acesso Symbeon
                     </span>
                   </div>
-                  <div style={{ display: "grid", gap: "10px", background: "#FAF8F5", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)" }}>
+                  <div style={{ display: "grid", gap: "10px", background: "var(--bg)", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
                       <input
                         type="checkbox"
