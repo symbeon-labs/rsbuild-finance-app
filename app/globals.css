@@ -1642,3 +1642,81 @@ tbody tr:last-child td { border-bottom: 0; }
 [data-theme="dark"] .quality-row {
   border-bottom: 1px solid #2E3036 !important;
 }
+/* ==========================================================================
+   STICKY TABLE ACTIONS & RESPONSIVE ERGONOMICS
+   ========================================================================== */
+
+.table-wrap {
+  overflow-x: auto;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+  border-radius: 8px;
+}
+
+.table-wrap table {
+  min-width: 720px;
+}
+
+/* Coluna de Ações Fixa (Sticky Action Column) */
+.sticky-actions th:last-child,
+.sticky-actions td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+  box-shadow: -8px 0 16px rgba(0, 0, 0, 0.05);
+  z-index: 2;
+  text-align: right;
+}
+
+[data-theme="dark"] .sticky-actions th:last-child,
+[data-theme="dark"] .sticky-actions td:last-child {
+  background: #1E2024;
+  box-shadow: -8px 0 18px rgba(0, 0, 0, 0.45);
+}
+
+tbody tr {
+  transition: background 0.15s ease;
+}
+
+tbody tr:hover td {
+  background: rgba(181, 88, 60, 0.035);
+}
+
+[data-theme="dark"] tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+tbody tr:hover td:last-child {
+  background: var(--surface);
+}
+
+[data-theme="dark"] tbody tr:hover td:last-child {
+  background: #1E2024;
+}
+
+/* Botão de Reset de Sessão no Topbar */
+.reset-session-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 33px;
+  padding: 0 9px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-brand);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.reset-session-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-soft);
+}
