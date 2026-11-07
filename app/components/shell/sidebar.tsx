@@ -51,7 +51,7 @@ export function Sidebar({
           <span title={companyName}>
             {companyName.length > 18 ? companyName.slice(0, 18) + "…" : companyName.toUpperCase()}
           </span>
-          <b>v0.1</b>
+          <b>v1.0.0</b>
         </div>
       </div>
 
