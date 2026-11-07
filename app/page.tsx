@@ -1,5 +1,5 @@
-import FinanceWorkspace from "./finance-workspace";
+import EnterpriseWorkspace from "./enterprise-workspace";
 
 export default function Home() {
-  return <FinanceWorkspace />;
+  return <EnterpriseWorkspace />;
 }

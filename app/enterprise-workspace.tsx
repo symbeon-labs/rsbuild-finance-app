@@ -26,16 +26,27 @@ import {
   parseWhatsAppOrderMessage
 } from "@/lib/orders";
 
+type ModuleType = "finance" | "logistics";
 type Section = "visao-geral" | "movimentacoes" | "importacoes" | "baixas" | "canhotos" | "pedidos-ha" | "relatorios";
 
-const navigation: { id: Section; label: string; icon: string }[] = [
-  { id: "visao-geral", label: "Visão geral", icon: "◫" },
-  { id: "movimentacoes", label: "Movimentações", icon: "⇄" },
-  { id: "importacoes", label: "Importações", icon: "⇧" },
-  { id: "baixas", label: "Baixas & Liquidações", icon: "✓" },
-  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦" },
-  { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱" },
-  { id: "relatorios", label: "Relatórios", icon: "▥" }
+interface NavItem {
+  id: Section;
+  label: string;
+  icon: string;
+  module: ModuleType | "all";
+}
+
+const allNavItems: NavItem[] = [
+  // Módulo Financeiro
+  { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "all" },
+  { id: "movimentacoes", label: "Movimentações", icon: "⇄", module: "finance" },
+  { id: "importacoes", label: "Importações", icon: "⇧", module: "finance" },
+  { id: "baixas", label: "Baixas & Liquidações", icon: "✓", module: "finance" },
+  { id: "relatorios", label: "Relatórios DRE", icon: "▥", module: "finance" },
+
+  // Módulo Logística & Expedição
+  { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱", module: "logistics" },
+  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" }
 ];
 
 const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
@@ -233,7 +244,8 @@ const INITIAL_SAMPLE_HA_ORDERS: ParsedWhatsAppOrder[] = [
   }
 ];
 
-export default function FinanceWorkspace() {
+export default function EnterpriseWorkspace() {
+  const [activeModule, setActiveModule] = useState<ModuleType>("finance");
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
@@ -251,20 +263,50 @@ export default function FinanceWorkspace() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  // Controle de Módulos Habilitados pelo Dono da Plataforma (Feature Flags)
+  const [enabledModules, setEnabledModules] = useState<{ finance: boolean; logistics: boolean }>({
+    finance: true,
+    logistics: true
+  });
+
   useEffect(() => {
     try {
       const savedName = localStorage.getItem("rsbuild_workspace_company");
       if (savedName) setCompanyName(savedName);
       const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
       if (savedLogo) setCompanyLogoUrl(savedLogo);
+      const savedModules = localStorage.getItem("rsbuild_workspace_modules");
+      if (savedModules) {
+        const parsed = JSON.parse(savedModules);
+        setEnabledModules(parsed);
+        if (!parsed.finance && parsed.logistics) {
+          setActiveModule("logistics");
+          setSection("pedidos-ha");
+        }
+      }
     } catch {
       // Ignora falhas de localStorage em SSR / sandbox restrito
     }
   }, []);
 
-  function handleSaveCompanyConfig(name: string, logo: string) {
+  function handleSaveCompanyConfig(name: string, logo: string, modules?: { finance: boolean; logistics: boolean }) {
     setCompanyName(name);
     setCompanyLogoUrl(logo);
+    if (modules) {
+      setEnabledModules(modules);
+      try {
+        localStorage.setItem("rsbuild_workspace_modules", JSON.stringify(modules));
+      } catch {
+        // noop
+      }
+      if (!modules.finance && modules.logistics && activeModule === "finance") {
+        setActiveModule("logistics");
+        setSection("pedidos-ha");
+      } else if (modules.finance && !modules.logistics && activeModule === "logistics") {
+        setActiveModule("finance");
+        setSection("visao-geral");
+      }
+    }
     try {
       localStorage.setItem("rsbuild_workspace_company", name);
       if (logo) {
@@ -558,13 +600,55 @@ export default function FinanceWorkspace() {
             <b>v0.1</b>
           </div>
         </div>
-        <div className="workspace-label">ESPAÇO DE TRABALHO</div>
-        <nav className="nav-list" aria-label="Navegação principal">
-          {navigation.map((item) => (
-            <button key={item.id} className={section === item.id ? "nav-item active" : "nav-item"} onClick={() => setSection(item.id)}>
-              <span className="nav-icon">{item.icon}</span>{item.label}
+        {/* Seletor de Módulos (Visível se ambos os módulos estiverem contratados/ativos) */}
+        {enabledModules.finance && enabledModules.logistics ? (
+          <div className="module-switcher-container">
+            <button
+              type="button"
+              className={activeModule === "finance" ? "module-tab active" : "module-tab"}
+              onClick={() => {
+                setActiveModule("finance");
+                setSection("visao-geral");
+              }}
+            >
+              <span>💼</span> Finanças
             </button>
-          ))}
+            <button
+              type="button"
+              className={activeModule === "logistics" ? "module-tab active" : "module-tab"}
+              onClick={() => {
+                setActiveModule("logistics");
+                setSection("pedidos-ha");
+              }}
+            >
+              <span>🚚</span> Logística
+            </button>
+          </div>
+        ) : (
+          <div className="module-badge-single">
+            <span>{enabledModules.logistics ? "🚚 MÓDULO LOGÍSTICA" : "💼 MÓDULO FINANCEIRO"}</span>
+          </div>
+        )}
+
+        <div className="workspace-label">
+          {activeModule === "finance" ? "MÓDULO FINANCEIRO" : "MÓDULO LOGÍSTICA & EXPEDIÇÃO"}
+        </div>
+
+        <nav className="nav-list" aria-label="Navegação principal">
+          {allNavItems
+            .filter((item) => {
+              if (item.module === "all") return true;
+              return item.module === activeModule;
+            })
+            .map((item) => (
+              <button
+                key={item.id}
+                className={section === item.id ? "nav-item active" : "nav-item"}
+                onClick={() => setSection(item.id)}
+              >
+                <span className="nav-icon">{item.icon}</span>{item.label}
+              </button>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-user-row" style={{ cursor: "pointer" }} onClick={() => setIsConfigOpen(true)} title="Clique para personalizar empresa e logotipo">
@@ -595,7 +679,7 @@ export default function FinanceWorkspace() {
       <section className="main-area">
         <header className="topbar">
           <div className="breadcrumb">
-            <strong>{companyName}</strong> <span>/</span> {navigation.find((item) => item.id === section)?.label}
+            <strong>{companyName}</strong> <span>/</span> {allNavItems.find((item) => item.id === section)?.label}
           </div>
           <div className="topbar-right">
             <span className="period-label">PERÍODO</span>
@@ -1343,7 +1427,12 @@ export default function FinanceWorkspace() {
                 const form = e.currentTarget;
                 const nameInput = form.elements.namedItem("companyName") as HTMLInputElement;
                 const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
-                handleSaveCompanyConfig(nameInput.value, urlInput.value || companyLogoUrl);
+                const modFinanceInput = form.elements.namedItem("modFinance") as HTMLInputElement;
+                const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
+                handleSaveCompanyConfig(nameInput.value, urlInput.value || companyLogoUrl, {
+                  finance: modFinanceInput ? modFinanceInput.checked : true,
+                  logistics: modLogisticsInput ? modLogisticsInput.checked : true
+                });
               }}
               style={{ display: "grid", gap: "16px", marginTop: "16px" }}
             >
@@ -1382,7 +1471,7 @@ export default function FinanceWorkspace() {
                     <button
                       type="button"
                       className="secondary-button"
-                      onClick={() => handleSaveCompanyConfig(companyName, "")}
+                      onClick={() => handleSaveCompanyConfig(companyName, "", enabledModules)}
                       style={{ fontSize: "11px", color: "var(--red)" }}
                     >
                       Remover logo
@@ -1408,6 +1497,36 @@ export default function FinanceWorkspace() {
                     background: "#fff"
                   }}
                 />
+              </div>
+
+              {/* Controle de Módulos Contratados / Ativos (Superadmin / Gestão) */}
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: "14px", display: "grid", gap: "8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
+                    MÓDULOS CONTRATADOS DO WORKSPACE
+                  </span>
+                  <span style={{ fontSize: "10px", color: "var(--muted)" }}>Controle de Acesso</span>
+                </div>
+                <div style={{ display: "grid", gap: "10px", background: "#FAF8F5", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
+                    <input
+                      type="checkbox"
+                      name="modFinance"
+                      defaultChecked={enabledModules.finance}
+                      style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                    />
+                    <span>💼 Módulo Financeiro (Conciliação, Extratos & Baixas ERP)</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
+                    <input
+                      type="checkbox"
+                      name="modLogistics"
+                      defaultChecked={enabledModules.logistics}
+                      style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                    />
+                    <span>🚚 Módulo Logística & Expedição (WhatsApp, Canhotos & Cargas)</span>
+                  </label>
+                </div>
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
