@@ -1,7 +1,7 @@
 # Plano de Implementação — RSBUILD Finance
 
 **Versão:** 0.6  
-**Status:** D02 integrada na linha candidata #19/#20; homologação remota, validação operacional e aceite comercial permanecem pendentes.
+**Status:** D02 integrada na candidata #21 sobre a main atual; CI e pgTAP aprovados no HEAD registrado, homologação remota, validação operacional e aceite comercial permanecem pendentes.
 
 ## Objetivo
 Evoluir a aplicação de uma sessão de importação transitória para uma plataforma multiempresa com persistência, rastreabilidade e integrações controladas.
@@ -9,7 +9,7 @@ Evoluir a aplicação de uma sessão de importação transitória para uma plata
 ## Estado identificado
 - Next.js App Router e interface responsiva.
 - Importação CSV/OFX com parsing autoritativo no servidor a partir do arquivo original.
-- Base D02 de persistência gerenciada e migrations versionadas; confirmar histórico remoto antes de declarar cada migration aplicada.
+- Base D02 de persistência gerenciada e migrations versionadas; CI e pgTAP aprovados na candidata #21. Confirmar histórico remoto antes de declarar cada migration aplicada.
 - Auth SSR implementado com cookies, login, callback PKCE e logout.
 - Provisionamento administrativo por fluxo protegido; homologação com convite real permanece pendente.
 - Endpoints tenant-scoped para provisionamento, organizações, leitura paginada e importações.
