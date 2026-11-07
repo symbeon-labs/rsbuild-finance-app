@@ -4,11 +4,11 @@ export type FinancialRecord = {
   id: string;
   date: string;
   description: string;
-  amount: number;
+  amountMinor: number;
   direction: Direction;
   category: string;
   source: string;
-  status: "conciliado" | "pendente";
+  status: "conciliado" | "pendente" | "ignorado";
   sourceRecordId?: string;
   importBatchId?: string;
   bankCode?: string;
@@ -219,7 +219,7 @@ export function parseCsv(text: string): ImportResult {
     }
     records.push({
       id: `csv-${importBatchId}-${row.line}`, date, description,
-      amount: amount.cents / 100, direction,
+      amountMinor: amount.cents, direction,
       category: categoryIndex >= 0 ? (row.cells[categoryIndex] || "Não classificado") : "Não classificado",
       source: "Importação CSV", status: "pendente", importBatchId
     });
@@ -294,7 +294,7 @@ export function parseOfx(text: string): ImportResult {
       id: "ofx-" + importBatchId + "-" + (index + 1),
       date,
       description: get(block, "NAME") || get(block, "MEMO") || "Movimento bancário",
-      amount: Math.abs(Math.round(signedAmount * 100) / 100),
+      amountMinor: Math.round(Math.abs(signedAmount) * 100),
       direction,
       category: "Não classificado",
       source: sourceLabel,
@@ -350,7 +350,7 @@ export function generateOmieOfx(records: FinancialRecord[], metadata?: BankMetad
   const transactions = sorted.map((r, i) => {
     const trnType = r.direction === "entrada" ? "CREDIT" : "DEBIT";
     const sign = r.direction === "saída" ? "-" : "";
-    const amtStr = `${sign}${r.amount.toFixed(2)}`;
+    const amtStr = `${sign}${(r.amountMinor / 100).toFixed(2)}`;
     const dtPosted = r.date.replace(/-/g, "") + "120000[-03:EST]";
     const fitid = r.sourceRecordId || `OMIE-${r.id || i + 1}`;
     // Higienizar texto para evitar quebras no leitor XML/SGML do Omie
@@ -442,11 +442,34 @@ export function filterRecordsByPeriod<T extends { date: string }>(records: T[], 
   const to = today.getFullYear().toString().padStart(4, "0") + "-" + (today.getMonth() + 1).toString().padStart(2, "0") + "-" + today.getDate().toString().padStart(2, "0");
   return records.filter((record) => record.date >= from && record.date <= to);
 }
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+export function formatCurrency(amountMinor: number): string {
+  if (!Number.isSafeInteger(amountMinor)) throw new Error("Valor monetário fora do intervalo seguro.");
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amountMinor / 100);
 }
 
 export function formatDate(value: string): string {
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
+}
+
+/**
+ * Stable source identity for imported rows. OFX FITID is scoped to a bank account
+ * and combined with transaction attributes to avoid both file-order dependence
+ * and accidental collisions when providers reuse FITIDs. CSV rows without a
+ * source identifier remain scoped to their immutable source file and row index.
+ */
+export function buildImportIdentity(record: Pick<FinancialRecord, "sourceRecordId" | "bankCode" | "bankName" | "accountId" | "date" | "amountMinor" | "direction" | "description">, fileHash: string, rowIndex: number): string {
+  if (record.sourceRecordId) {
+    return [
+      "ofx",
+      record.bankCode || record.bankName || "unknown-bank",
+      record.accountId || "unknown-account",
+      record.sourceRecordId,
+      record.date,
+      record.amountMinor,
+      record.direction,
+      record.description.trim().toLocaleLowerCase("pt-BR"),
+    ].join("|");
+  }
+  return ["file", fileHash, rowIndex].join("|");
 }

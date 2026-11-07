@@ -3,6 +3,8 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BankMetadata, FinancialRecord, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
+import { validateImportFile } from "@/lib/import-validation";
+import { signOut } from "@/app/auth/actions";
 import {
   ReceivableTitle,
   ReconciliationMatch,
@@ -32,9 +34,9 @@ const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "visao-geral", label: "Visão geral", icon: "◫" },
   { id: "movimentacoes", label: "Movimentações", icon: "⇄" },
   { id: "importacoes", label: "Importações", icon: "⇧" },
-  { id: "baixas", label: "Baixas & Liquidações", icon: "✓" },
-  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦" },
-  { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱" },
+  { id: "baixas", label: "Baixas Omie (ENG-02)", icon: "✓" },
+  { id: "canhotos", label: "Canhotos (ENG-03)", icon: "📦" },
+  { id: "pedidos-ha", label: "Pedidos Hub Açaí (HA-01)", icon: "📱" },
   { id: "relatorios", label: "Relatórios", icon: "▥" }
 ];
 
@@ -233,9 +235,14 @@ const INITIAL_SAMPLE_HA_ORDERS: ParsedWhatsAppOrder[] = [
   }
 ];
 
-export default function FinanceWorkspace() {
+export default function FinanceWorkspace({ organizationId }: { organizationId: string }) {
   const [section, setSection] = useState<Section>("visao-geral");
   const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [hasMoreRecords, setHasMoreRecords] = useState(false);
+  const [nextRecordsOffset, setNextRecordsOffset] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
   const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
@@ -245,7 +252,7 @@ export default function FinanceWorkspace() {
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Customização de Marca do Workspace (White-label)
+  // Customização de marca do workspace, preservada da versão atual da main.
   const [companyName, setCompanyName] = useState("RSBUILD Inovação");
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -258,39 +265,72 @@ export default function FinanceWorkspace() {
       const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
       if (savedLogo) setCompanyLogoUrl(savedLogo);
     } catch {
-      // Ignora falhas de localStorage em SSR / sandbox restrito
+      // A personalização local não deve impedir o carregamento do workspace.
     }
   }, []);
 
   function handleSaveCompanyConfig(name: string, logo: string) {
-    setCompanyName(name);
+    const normalizedName = name.trim().slice(0, 80) || "RSBUILD Inovação";
+    setCompanyName(normalizedName);
     setCompanyLogoUrl(logo);
     try {
-      localStorage.setItem("rsbuild_workspace_company", name);
-      if (logo) {
-        localStorage.setItem("rsbuild_workspace_logo", logo);
-      } else {
-        localStorage.removeItem("rsbuild_workspace_logo");
-      }
+      localStorage.setItem("rsbuild_workspace_company", normalizedName);
+      if (logo) localStorage.setItem("rsbuild_workspace_logo", logo);
+      else localStorage.removeItem("rsbuild_workspace_logo");
     } catch {
-      // noop
+      setNotice("Não foi possível salvar a personalização neste dispositivo.");
     }
-    setNotice("Configuração do Workspace atualizada com sucesso!");
     setIsConfigOpen(false);
   }
 
-  function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  function handleLogoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith("image/") || file.size > 2 * 1024 * 1024) {
+      setNotice("Escolha uma imagem de até 2 MiB.");
+      event.target.value = "";
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const res = event.target?.result as string;
-      if (res) {
-        handleSaveCompanyConfig(companyName, res);
-      }
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result;
+      if (typeof dataUrl === "string") handleSaveCompanyConfig(companyName, dataUrl);
     };
     reader.readAsDataURL(file);
+    event.target.value = "";
   }
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const accumulated: FinancialRecord[] = [];
+        let offset = 0;
+        let hasMore = true;
+        const pageSize = 200;
+        // Load every page needed by financial totals and reconciliation; the table
+        // must not silently calculate on only the first 100 rows.
+        while (hasMore && accumulated.length < 10000) {
+          const response = await fetch(`/api/finance/records?organizationId=${organizationId}&limit=${pageSize}&offset=${offset}`, { cache: "no-store" });
+          if (!response.ok) throw new Error("Não foi possível carregar os registros.");
+          const payload = await response.json();
+          accumulated.push(...(payload.records ?? []));
+          hasMore = Boolean(payload.pagination?.hasMore);
+          offset = payload.pagination?.nextOffset ?? offset + (payload.records?.length ?? 0);
+          if (!payload.records?.length) break;
+        }
+        if (active) {
+          setRecords(accumulated);
+          setHasMoreRecords(hasMore);
+          setNextRecordsOffset(offset);
+          if (hasMore) setNotice("Exibindo os primeiros 10.000 registros. Carregue os demais para completar a análise.");
+        }
+      } catch {
+        if (active) setNotice("Não foi possível carregar os dados persistidos.");
+      }
+    })();
+    return () => { active = false; };
+  }, [organizationId]);
 
   // Estado para Contas a Receber e Baixas em Lote (ENG-MS-02)
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
@@ -323,58 +363,100 @@ export default function FinanceWorkspace() {
     return { totalOrders, totalBoxes, totalRevenue, hrOccupancy };
   }, [orders]);
 
-  const totals = useMemo(() => {
-    const incoming = records.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amount, 0);
-    const outgoing = records.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amount, 0);
-    return { incoming, outgoing, balance: incoming - outgoing };
-  }, [records]);
+  const periodRecords = useMemo(() => {
+    const days = Number(period);
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - Math.max(1, days) + 1);
+    const formatLocalDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const startDate = formatLocalDate(start);
+    const endDate = formatLocalDate(new Date());
+    return records.filter((item) => item.date >= startDate && item.date <= endDate);
+  }, [records, period]);
 
-  const filteredRecords = useMemo(() => records.filter((item) =>
+  const totals = useMemo(() => {
+    const incoming = periodRecords.filter((item) => item.direction === "entrada").reduce((sum, item) => sum + item.amountMinor, 0);
+    const outgoing = periodRecords.filter((item) => item.direction === "saída").reduce((sum, item) => sum + item.amountMinor, 0);
+    return { incoming, outgoing, balance: incoming - outgoing };
+  }, [periodRecords]);
+
+  const filteredRecords = useMemo(() => periodRecords.filter((item) =>
     `${item.description} ${item.category} ${item.source} ${item.bankName || ""}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))
-  ), [records, query]);
+  ), [periodRecords, query]);
 
   // Casamento algorítmico entre títulos a receber e extratos importados
   const matches = useMemo(() => {
-    return matchTitlesWithRecords(titles, records);
-  }, [titles, records]);
+    return matchTitlesWithRecords(titles, periodRecords);
+  }, [titles, periodRecords]);
 
   const matchStats = useMemo(() => {
     const ready = matches.filter((m) => m.suggestedStatus === "pronto_para_baixa");
     const divergent = matches.filter((m) => m.suggestedStatus === "divergente");
     const pending = matches.filter((m) => m.suggestedStatus === "nao_identificado");
-    const totalReadyAmount = ready.reduce((sum, m) => sum + (m.statementRecord?.amount || 0), 0);
+    const totalReadyAmount = ready.reduce((sum, m) => sum + (m.statementRecord?.amountMinor || 0), 0);
     return { ready, divergent, pending, totalReadyAmount };
   }, [matches]);
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    setFileName(file.name);
-    setNotice("");
+    const fileError = validateImportFile(file);
+    if (fileError) {
+      setFileName(file.name); setSourceFile(null); setPendingImport([]); setImportErrors([fileError]); setSection("importacoes"); event.target.value = ""; return;
+    }
+    setFileName(file.name); setSourceFile(file); setNotice("");
     const text = await file.text();
     const result = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(text) : parseCsv(text);
-    setPendingImport(result.records);
-    setImportErrors(result.errors);
-    setPendingMetadata(result.metadata || null);
-    setSection("importacoes");
-    event.target.value = "";
+    setPendingImport(result.records); setImportErrors(result.errors); setPendingMetadata(result.metadata || null);
+    setSection("importacoes"); event.target.value = "";
   }
 
-  function confirmImport() {
-    setRecords((current) => [...pendingImport, ...current]);
-    setNotice(`${pendingImport.length} movimentação(ões) adicionada(s) à sessão atual.`);
-    setPendingImport([]);
-    setPendingMetadata(null);
-    setImportErrors([]);
-    setFileName("");
+  async function confirmImport() {
+    if (!sourceFile || !pendingImport.length || importErrors.length || isSaving) return;
+    setIsSaving(true); setNotice("");
+    try {
+      const form = new FormData(); form.set("organizationId", organizationId); form.set("file", sourceFile);
+      form.set("records", JSON.stringify(pendingImport));
+      const response = await fetch("/api/imports", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Falha ao persistir a importação.");
+      const accumulated: FinancialRecord[] = [];
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore && accumulated.length < 10000) {
+        const refreshed = await fetch(`/api/finance/records?organizationId=${organizationId}&limit=200&offset=${offset}`, { cache: "no-store" });
+        if (!refreshed.ok) throw new Error("Importação salva, mas não foi possível atualizar a listagem.");
+        const data = await refreshed.json();
+        accumulated.push(...(data.records ?? []));
+        hasMore = Boolean(data.pagination?.hasMore);
+        offset = data.pagination?.nextOffset ?? offset + (data.records?.length ?? 0);
+        if (!data.records?.length) break;
+      }
+      setRecords(accumulated);
+      setHasMoreRecords(hasMore);
+      setNextRecordsOffset(offset);
+      if (hasMore) setNotice("Importação salva. Exibindo os primeiros 10.000 registros; carregue os demais para completar a análise.");
+      setNotice((payload.result?.inserted_count ?? 0) + " movimentação(ões) persistida(s); " + (payload.result?.duplicate_count ?? 0) + " duplicada(s).");
+      setPendingImport([]); setPendingMetadata(null); setImportErrors([]); setFileName(""); setSourceFile(null);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Falha ao persistir a importação."); }
+    finally { setIsSaving(false); }
+  }
+
+  async function loadMoreRecords() {
+    if (isLoadingMore || !hasMoreRecords) return;
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(`/api/finance/records?organizationId=${organizationId}&limit=100&offset=${nextRecordsOffset}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Não foi possível carregar mais registros.");
+      const payload = await response.json(); setRecords((current) => [...current, ...(payload.records ?? [])]);
+      setHasMoreRecords(Boolean(payload.pagination?.hasMore)); setNextRecordsOffset(payload.pagination?.nextOffset ?? nextRecordsOffset);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Falha ao carregar registros."); }
+    finally { setIsLoadingMore(false); }
   }
 
   function resetSession() {
-    setRecords([]);
-    setPendingImport([]);
-    setPendingMetadata(null);
-    setImportErrors([]);
-    setNotice("A sessão foi limpa.");
+    setPendingImport([]); setPendingMetadata(null); setImportErrors([]); setFileName(""); setSourceFile(null); setQuery("");
+    setNotice("Prévia e filtros limpos. Os registros persistidos continuam salvos na organização.");
   }
 
   function handleExportOmie(targetRecords?: FinancialRecord[]) {
@@ -505,7 +587,7 @@ export default function FinanceWorkspace() {
   function handleConfirmParsedOrder() {
     if (!parsedPreview) return;
     setOrders((curr) => [parsedPreview, ...curr]);
-    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à esteira de expedição com sucesso!`);
+    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à esteira de expedição do Hub Açaí!`);
     setParsedPreview(null);
     setWhatsAppText("");
   }
@@ -536,21 +618,9 @@ export default function FinanceWorkspace() {
           <div className="brand-logo-card">
             {companyLogoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={companyLogoUrl}
-                alt={companyName}
-                className="brand-logo-img"
-                style={{ maxHeight: "44px", width: "auto", objectFit: "contain" }}
-              />
+              <img src={companyLogoUrl} alt={companyName} className="brand-logo-img" style={{ maxHeight: "44px", width: "auto", objectFit: "contain" }} />
             ) : (
-              <Image
-                src="/brand/rsbuild-logo-primary.svg"
-                alt="RSBUILD Inovação Corporativa"
-                width={200}
-                height={64}
-                priority
-                className="brand-logo-img"
-              />
+              <Image src="/brand/rsbuild-logo-primary.svg" alt="RSBUILD Inovação Corporativa" width={200} height={64} priority className="brand-logo-img" />
             )}
           </div>
           <div className="brand-tagline">
@@ -567,7 +637,7 @@ export default function FinanceWorkspace() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-user-row" style={{ cursor: "pointer" }} onClick={() => setIsConfigOpen(true)} title="Clique para personalizar empresa e logotipo">
+          <div className="sidebar-user-row" style={{ cursor: "pointer" }} onClick={() => setIsConfigOpen(true)} title="Personalizar empresa e logotipo">
             <div className="connection-dot" />
             <div>
               <strong>{companyName}</strong>
@@ -577,40 +647,20 @@ export default function FinanceWorkspace() {
               </span>
             </div>
           </div>
-          <button
-            className="signout-btn"
-            onClick={() => { window.location.href = "/login"; }}
-            title="Sair da sessão"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Sair
-          </button>
         </div>
       </aside>
 
       <section className="main-area">
         <header className="topbar">
-          <div className="breadcrumb">
-            <strong>{companyName}</strong> <span>/</span> {navigation.find((item) => item.id === section)?.label}
-          </div>
+          <div className="breadcrumb"><strong>{companyName}</strong> <span>/</span> {navigation.find((item) => item.id === section)?.label}</div>
           <div className="topbar-right">
             <span className="period-label">PERÍODO</span>
             <select value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Período">
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="365">Últimos 12 meses</option>
+              <option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Últimos 12 meses</option>
             </select>
-            <button
-              className="avatar"
-              onClick={() => setIsConfigOpen(true)}
-              title={`Personalizar Workspace (${companyName})`}
-              style={{ border: "none", cursor: "pointer" }}
-            >
-              {companyName ? companyName.trim().charAt(0).toUpperCase() : "R"}
+            <form action={signOut}><button className="secondary-button" type="submit">Sair</button></form>
+            <button className="avatar" onClick={() => setIsConfigOpen(true)} title={`Personalizar Workspace (${companyName})`} style={{ border: "none", cursor: "pointer" }}>
+              {companyName.trim().charAt(0).toUpperCase() || "R"}
             </button>
           </div>
         </header>
@@ -624,9 +674,9 @@ export default function FinanceWorkspace() {
               <button className="primary-button" onClick={() => inputRef.current?.click()}><span>＋</span> Importar movimentações</button>
             </div>
             <div className="metric-grid">
-              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↙" />
-              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={records.length ? "Registros importados nesta sessão" : "Aguardando dados"} icon="↗" />
-              <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail="Entradas menos saídas" icon="＝" />
+              <Metric label="Entradas no período" value={formatCurrency(totals.incoming)} tone="positive" detail={`${periodRecords.length} registros persistidos no período`} icon="↙" />
+              <Metric label="Saídas no período" value={formatCurrency(totals.outgoing)} tone="negative" detail={`${periodRecords.length} registros persistidos no período`} icon="↗" />
+              <Metric label="Resultado do período" value={formatCurrency(totals.balance)} tone="neutral" detail={`Entradas menos saídas · ${period} dias`} icon="＝" />
               <Metric label="Movimentações" value={String(records.length)} tone="neutral" detail={records.filter((item) => item.status === "pendente").length + " pendentes de revisão"} icon="▤" />
             </div>
             <div className="dashboard-grid">
@@ -665,6 +715,7 @@ export default function FinanceWorkspace() {
               </div>
             </div>
             <section className="panel"><div className="table-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por descrição, categoria ou origem..." aria-label="Buscar movimentações" /><span>{filteredRecords.length} registro(s)</span></div>{filteredRecords.length ? <RecordTable records={[...filteredRecords].sort((a,b) => b.date.localeCompare(a.date))} /> : <EmptyState icon="⇄" title="Nenhuma movimentação encontrada" text="Carregue um extrato CSV ou OFX para consultar os lançamentos." action="Importar arquivo" onAction={() => inputRef.current?.click()} />}</section>
+            {hasMoreRecords && <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}><button className="secondary-button" onClick={loadMoreRecords} disabled={isLoadingMore}>{isLoadingMore ? "Carregando..." : "Carregar mais registros"}</button></div>}
           </>}
 
           {section === "importacoes" && <>
@@ -681,7 +732,7 @@ export default function FinanceWorkspace() {
                       <span style={{ display: "block", fontSize: "12px", color: "#0284c7", marginTop: "3px" }}>
                         🏦 {pendingMetadata.bankName}
                         {pendingMetadata.accountId ? ` · Conta: ${pendingMetadata.accountId}` : ""}
-                        {pendingMetadata.balance !== undefined ? ` · Saldo: ${formatCurrency(pendingMetadata.balance)}` : ""}
+                        {pendingMetadata.balance !== undefined ? ` · Saldo: ${formatCurrency(Math.round(pendingMetadata.balance * 100))}` : ""}
                       </span>
                     )}
                   </div>
@@ -696,7 +747,7 @@ export default function FinanceWorkspace() {
                   <button className="secondary-button" onClick={() => handleExportOmie(pendingImport)} title="Exportar lote normalizado pronto para Omie">
                     ⚡ Exportar OFX (Omie)
                   </button>
-                  <button className="primary-button" onClick={confirmImport}>Confirmar importação</button>
+                  <button className="primary-button" onClick={confirmImport} disabled={isSaving || importErrors.length > 0}>{isSaving ? "Salvando..." : "Confirmar importação"}</button>
                 </div>
               </>}
             </section>
@@ -706,13 +757,13 @@ export default function FinanceWorkspace() {
           {section === "baixas" && <>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">INTEGRAÇÃO ERP · LIQUIDAÇÃO</div>
-                <h1>Baixas & Conciliação de Títulos</h1>
+                <div className="eyebrow">BRIDGE OMIE · ENG-MS-02</div>
+                <h1>Baixas Automatizadas de Títulos</h1>
                 <p>Conciliação inteligente e liquidação de contas a receber sem arrastar cards manuais no ERP.</p>
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button className="secondary-button" onClick={() => setTitles(INITIAL_SAMPLE_TITLES)} title="Recarregar títulos exemplo para teste">
-                  ⚡ Carregar Exemplo
+                <button className="secondary-button" onClick={() => setTitles(INITIAL_SAMPLE_TITLES)} title="Recarregar títulos exemplo da Mundo do Sabor">
+                  ⚡ Amostra Mundo do Sabor
                 </button>
                 <button className="secondary-button" onClick={() => titlesInputRef.current?.click()}>
                   ＋ Importar Títulos (CSV)
@@ -801,12 +852,12 @@ export default function FinanceWorkspace() {
                               <span style={{ fontSize: "11px", color: "#64748B" }}>{m.title.bankAccount || "Conta Geral"}</span>
                             </td>
                             <td>{formatDate(m.title.dueDate)}</td>
-                            <td className="align-right">{formatCurrency(m.title.amount)}</td>
+                            <td className="align-right">{formatCurrency(Math.round(m.title.amount * 100))}</td>
                             <td>
                               {m.statementRecord ? (
                                 <div>
                                   <strong style={{ fontSize: "12px", color: "#0F172A" }}>
-                                    {formatCurrency(m.statementRecord.amount)} em {formatDate(m.statementRecord.date)}
+                                    {formatCurrency(m.statementRecord.amountMinor)} em {formatDate(m.statementRecord.date)}
                                   </strong>
                                   <span style={{ display: "block", fontSize: "11px", color: "#64748B" }}>
                                     {m.statementRecord.source} · {m.statementRecord.sourceRecordId ? `FITID: ${m.statementRecord.sourceRecordId}` : ""}
@@ -831,7 +882,7 @@ export default function FinanceWorkspace() {
                             <td>
                               {m.amountDifference !== 0 ? (
                                 <span style={{ color: m.amountDifference > 0 ? "#DC2626" : "#2563EB", fontWeight: 600, fontSize: "12px" }}>
-                                  {m.amountDifference > 0 ? `+ ${formatCurrency(m.amountDifference)} (Juros)` : `- ${formatCurrency(Math.abs(m.amountDifference))} (Desc.)`}
+                                  {m.amountDifference > 0 ? `+ ${formatCurrency(Math.round(m.amountDifference * 100))} (Juros)` : `- ${formatCurrency(Math.round(Math.abs(m.amountDifference) * 100))} (Desc.)`}
                                 </span>
                               ) : (
                                 <span style={{ color: "#64748B", fontSize: "12px" }}>—</span>
@@ -865,15 +916,15 @@ export default function FinanceWorkspace() {
               )}
             </section>
             <div className="inline-note" style={{ marginTop: "16px" }}>
-              <strong>Diretriz de Liquidação Assistida:</strong> O motor de conciliação assistida gera o lote de liquidação e o arquivo de importação oficial para o ERP sem intervenção manual de arraste de cards, preservando a alçada de aprovação do operador financeiro antes da efetivação bancária.
+              <strong>Diretriz Omie Blueprint (ENG-MS-02):</strong> O motor de conciliação assistida gera o lote de liquidação e o arquivo de importação oficial para o Omie sem intervenção manual de arraste de cards, preservando a alçada de aprovação do operador financeiro antes da efetivação bancária.
             </div>
           </>}
 
           {section === "canhotos" && <>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">RASTREABILIDADE DE ENTREGA & CONFORMIDADE</div>
-                <h1>Protocolo Digital de Comprovantes & Canhotos</h1>
+                <div className="eyebrow">RASTREABILIDADE DE ENTREGA & JURÍDICO (ENG-MS-03)</div>
+                <h1>Protocolo Digital de Canhotos</h1>
                 <p>Indexação de comprovantes de entrega da expedição e blindagem jurídica preventiva contra protestos indevidos (Lei nº 5.474/1968).</p>
               </div>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -896,14 +947,14 @@ export default function FinanceWorkspace() {
               />
               <Metric
                 label="Faturamento Blindado"
-                value={formatCurrency(deliveryMetrics.provenAmount)}
+                value={formatCurrency(Math.round(deliveryMetrics.provenAmount * 100))}
                 tone="positive"
                 detail="Canhoto assinado / Apto a protesto"
                 icon="🛡"
               />
               <Metric
                 label="Risco de Protesto / Sem Canhoto"
-                value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
+                value={formatCurrency(Math.round(deliveryMetrics.atRiskProtestAmount * 100))}
                 tone="negative"
                 detail="Bloqueio preventivo ativo"
                 icon="⚠"
@@ -912,7 +963,7 @@ export default function FinanceWorkspace() {
                 label="Em Trânsito / Expedição"
                 value={`${deliveryMetrics.pendingDeliveryCount} faturas`}
                 tone="neutral"
-                detail={formatCurrency(deliveryMetrics.pendingDeliveryAmount)}
+                detail={formatCurrency(Math.round(deliveryMetrics.pendingDeliveryAmount * 100))}
                 icon="🚚"
               />
             </div>
@@ -970,7 +1021,7 @@ export default function FinanceWorkspace() {
                                 </span>
                               )}
                             </td>
-                            <td className="align-right font-semibold">{formatCurrency(p.nfeAmount)}</td>
+                            <td className="align-right font-semibold">{formatCurrency(Math.round(p.nfeAmount * 100))}</td>
                             <td>
                               <span style={{ fontSize: "11px", color: "#475569" }}>
                                 {p.driverName || "Expedição Interna"}
@@ -1053,20 +1104,20 @@ export default function FinanceWorkspace() {
             </section>
 
             <div className="inline-note" style={{ marginTop: "16px" }}>
-              <strong>Fundamentação Jurídica (Lei nº 5.474/1968, Art. 15):</strong> A duplicata mercantil não aceita só é legalmente passível de protesto e execução judicial mediante comprovação da entrega e recebimento efetivo das mercadorias (canhoto assinado pelo sacado). O protocolo digital impede que títulos com canhotos pendentes, extraviados ou em devolução sigam para cobrança coercitiva, eliminando riscos de litígios e processos por protesto indevido.
+              <strong>Fundamentação Jurídica (Lei nº 5.474/1968, Art. 15):</strong> A duplicata mercantil não aceita só é legalmente passível de protesto e execução judicial mediante comprovação da entrega e recebimento efetivo das mercadorias (canhoto assinado pelo sacado). O protocolo digital impede que títulos com canhotos pendentes, extraviados ou em devolução sigam para cobrança coercitiva, eliminando riscos de litígios e processos por protesto indevido contra a Mundo do Sabor.
             </div>
           </>}
 
           {section === "pedidos-ha" && <>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">OPERAÇÃO DE VENDAS & EXPEDIÇÃO</div>
-                <h1>Padronizador Inteligente de Pedidos WhatsApp</h1>
-                <p>Conversão automática de texto livre em pedidos estruturados com grade de produtos, quantidades e contagem de volumes para expedição.</p>
+                <div className="eyebrow">OPERAÇÃO DE VENDAS & EXPEDIÇÃO (ENG-HA-01)</div>
+                <h1>Padronizador de Pedidos WhatsApp</h1>
+                <p>Conversão automática de texto livre em pedidos estruturados com grade de sabores e contagem de caixas (Hub Açaí Salvador).</p>
               </div>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <button className="primary-button" onClick={handleExportOmieSalesOrders}>
-                  <span>⤓</span> Exportar Pedidos para ERP (CSV)
+                  <span>⤓</span> Exportar Pedidos Omie (CSV)
                 </button>
               </div>
             </div>
@@ -1081,7 +1132,7 @@ export default function FinanceWorkspace() {
               />
               <Metric
                 label="Faturamento do Dia"
-                value={formatCurrency(hubAcaiMetrics.totalRevenue)}
+                value={formatCurrency(Math.round(hubAcaiMetrics.totalRevenue * 100))}
                 tone="positive"
                 detail="Receita bruta dos pedidos decifrados"
                 icon="💰"
@@ -1146,7 +1197,7 @@ export default function FinanceWorkspace() {
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
                   <button className="secondary-button" onClick={() => setWhatsAppText("")}>Limpar</button>
                   <button className="primary-button" onClick={handleParseWhatsApp}>
-                    <span>⚡</span> Decifrar Mensagem de Pedido
+                    <span>⚡</span> Decifrar Pedido (ENG-HA-01)
                   </button>
                 </div>
               </section>
@@ -1176,7 +1227,7 @@ export default function FinanceWorkspace() {
                     <div style={{ marginBottom: "12px", fontSize: "12px" }}>
                       <strong>Cliente:</strong> {parsedPreview.customerName}
                       <span style={{ display: "block", color: "#64748B", fontSize: "11px", marginTop: "2px" }}>
-                        Condição: {parsedPreview.paymentMethod.replace("_", " ").toUpperCase()} · Total: {parsedPreview.totalBoxes} caixas · {formatCurrency(parsedPreview.totalAmount)}
+                        Condição: {parsedPreview.paymentMethod.replace("_", " ").toUpperCase()} · Total: {parsedPreview.totalBoxes} caixas · {formatCurrency(Math.round(parsedPreview.totalAmount * 100))}
                       </span>
                     </div>
 
@@ -1196,7 +1247,7 @@ export default function FinanceWorkspace() {
                               <td><strong>{it.flavor}</strong> <span style={{ fontSize: "10px", color: "#64748B" }}>({it.productName})</span></td>
                               <td className="align-right">{it.quantity}</td>
                               <td className="align-right font-semibold">{it.boxesTotal} cx</td>
-                              <td className="align-right font-semibold">{formatCurrency(it.totalAmount)}</td>
+                              <td className="align-right font-semibold">{formatCurrency(Math.round(it.totalAmount * 100))}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1223,10 +1274,10 @@ export default function FinanceWorkspace() {
               <div className="panel-heading">
                 <div>
                   <h2>Fila de Pedidos do Dia (Expedição & Carregamento)</h2>
-                  <p>Consolidação da carga para os veículos de entrega e expedição logística.</p>
+                  <p>Consolidação da carga para os veículos refrigerados e HR do Hub Açaí.</p>
                 </div>
                 <button className="secondary-button" onClick={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}>
-                  Restaurar Amostra de Demonstração
+                  Restaurar Amostra do Hub Açaí
                 </button>
               </div>
 
@@ -1278,7 +1329,7 @@ export default function FinanceWorkspace() {
                               {ord.paymentMethod.replace("_", " ").toUpperCase()}
                             </span>
                           </td>
-                          <td className="align-right font-semibold">{formatCurrency(ord.totalAmount)}</td>
+                          <td className="align-right font-semibold">{formatCurrency(Math.round(ord.totalAmount * 100))}</td>
                           <td>
                             <span className="status-pill" style={{ background: "#DCFCE7", color: "#15803D" }}>
                               {ord.status.toUpperCase()}
@@ -1294,14 +1345,14 @@ export default function FinanceWorkspace() {
                   icon="📱"
                   title="Nenhum pedido na esteira"
                   text="Decifre novas mensagens do WhatsApp para montar a carga de expedição."
-                  action="Carregar Pedidos de Exemplo"
+                  action="Carregar Amostra Hub Açaí"
                   onAction={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}
                 />
               )}
             </section>
 
             <div className="inline-note" style={{ marginTop: "16px" }}>
-              <strong>Automação de Entrada de Pedidos:</strong> Pedidos recebidos via mensagem de WhatsApp de clientes são interpretados em lote, decodificando produtos, quantidades e totalizando volumes físicos automaticamente para capacidade dos veículos de entrega e geração dos pedidos de venda integrados ao ERP.
+              <strong>Constatação Operacional RS2BUILD (Laudo Hub Açaí - C1 / IA1):</strong> Os pedidos chegavam por mensagem livre no WhatsApp e eram redigitados no sistema item a item por duas atendentes, com as caixas contadas à mão. O padronizador automatiza a decodificação dos sabores, computa o volume físico exato para a capacidade do veículo HR (300 a 350 caixas) e prepara o arquivo de integração com o Omie ERP, permitindo que os caminhões saiam no horário e os motoristas não retornem de madrugada.
             </div>
           </>}
 
@@ -1312,118 +1363,39 @@ export default function FinanceWorkspace() {
       <input ref={titlesInputRef} className="hidden-input" type="file" accept=".csv,text/csv" onChange={handleImportTitlesFile} />
       <input ref={proofsInputRef} className="hidden-input" type="file" accept=".csv,text/csv" onChange={handleImportProofsFile} />
       <input ref={logoInputRef} className="hidden-input" type="file" accept="image/*" onChange={handleLogoUpload} />
-      <button className="session-reset" onClick={resetSession} title="Limpar os registros da sessão">Limpar sessão</button>
+      <button className="session-reset" onClick={resetSession} title="Limpar prévia e filtros">Limpar sessão</button>
 
-      {/* Modal de Personalização do Workspace */}
       {isConfigOpen && (
         <div className="workspace-modal-backdrop" onClick={() => setIsConfigOpen(false)}>
-          <div className="workspace-modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="workspace-modal-card" onClick={(event) => event.stopPropagation()}>
             <div className="workspace-modal-header">
-              <div>
-                <span className="eyebrow">CUSTOMIZAÇÃO DA EMPRESA</span>
-                <h3>Identidade do Workspace</h3>
-              </div>
-              <button
-                type="button"
-                className="workspace-modal-close"
-                onClick={() => setIsConfigOpen(false)}
-                aria-label="Fechar"
-              >
-                ✕
-              </button>
+              <div><span className="eyebrow">CUSTOMIZAÇÃO DA EMPRESA</span><h3>Identidade do Workspace</h3></div>
+              <button type="button" className="workspace-modal-close" onClick={() => setIsConfigOpen(false)} aria-label="Fechar">✕</button>
             </div>
-
-            <p className="workspace-modal-desc">
-              Personalize o nome corporativo e a marca exibidos no cabeçalho e na barra lateral do ambiente.
-            </p>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const nameInput = form.elements.namedItem("companyName") as HTMLInputElement;
-                const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
-                handleSaveCompanyConfig(nameInput.value, urlInput.value || companyLogoUrl);
-              }}
-              style={{ display: "grid", gap: "16px", marginTop: "16px" }}
-            >
+            <p className="workspace-modal-desc">Personalize o nome corporativo e a marca exibidos no cabeçalho e na barra lateral do ambiente.</p>
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              const form = event.currentTarget;
+              const nameInput = form.elements.namedItem("companyName") as HTMLInputElement;
+              const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
+              handleSaveCompanyConfig(nameInput.value, urlInput.value || companyLogoUrl);
+            }} style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
               <label className="login-field" style={{ fontSize: "11px" }}>
                 <span>NOME DA EMPRESA OU WORKSPACE</span>
-                <input
-                  name="companyName"
-                  defaultValue={companyName}
-                  required
-                  placeholder="Ex: Mundo do Sabor Alimentos, Distribuidora Salvador..."
-                  style={{
-                    height: "46px",
-                    border: "1px solid var(--line)",
-                    borderRadius: "6px",
-                    padding: "0 12px",
-                    fontSize: "13px",
-                    background: "#fff"
-                  }}
-                />
+                <input name="companyName" defaultValue={companyName} required maxLength={80} placeholder="Nome da empresa" style={{ height: "46px", border: "1px solid var(--line)", borderRadius: "6px", padding: "0 12px", fontSize: "13px", background: "#fff" }} />
               </label>
-
               <div style={{ display: "grid", gap: "8px" }}>
-                <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink)", fontFamily: "var(--font-brand)" }}>
-                  LOGOTIPO DA EMPRESA (OPCIONAL)
-                </span>
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink)" }}>LOGOTIPO DA EMPRESA (OPCIONAL)</span>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => logoInputRef.current?.click()}
-                    style={{ fontSize: "11px", padding: "8px 14px" }}
-                  >
-                    <span>📷</span> Fazer upload de imagem
-                  </button>
-                  {companyLogoUrl && (
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => handleSaveCompanyConfig(companyName, "")}
-                      style={{ fontSize: "11px", color: "var(--red)" }}
-                    >
-                      Remover logo
-                    </button>
-                  )}
+                  <button type="button" className="secondary-button" onClick={() => logoInputRef.current?.click()}>📷 Fazer upload de imagem</button>
+                  {companyLogoUrl && <button type="button" className="secondary-button" onClick={() => handleSaveCompanyConfig(companyName, "")}>Remover logo</button>}
                 </div>
-                {companyLogoUrl && (
-                  <div style={{ background: "#F5F1EB", padding: "10px", borderRadius: "6px", display: "inline-block", marginTop: "4px" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={companyLogoUrl} alt="Preview" style={{ maxHeight: "36px", maxWidth: "180px", objectFit: "contain" }} />
-                  </div>
-                )}
-                <input
-                  name="companyLogoUrl"
-                  defaultValue={companyLogoUrl.startsWith("data:") ? "" : companyLogoUrl}
-                  placeholder="Ou cole a URL direta de uma imagem (https://...)"
-                  style={{
-                    height: "42px",
-                    border: "1px solid var(--line)",
-                    borderRadius: "6px",
-                    padding: "0 12px",
-                    fontSize: "12px",
-                    background: "#fff"
-                  }}
-                />
+                {companyLogoUrl && <img src={companyLogoUrl} alt="Prévia do logotipo" style={{ maxHeight: "36px", maxWidth: "180px", objectFit: "contain" }} />}
+                <input name="companyLogoUrl" defaultValue={companyLogoUrl.startsWith("data:") ? "" : companyLogoUrl} placeholder="URL direta de imagem (https://...)" style={{ height: "42px", border: "1px solid var(--line)", borderRadius: "6px", padding: "0 12px", fontSize: "12px", background: "#fff" }} />
               </div>
-
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => setIsConfigOpen(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="primary-button"
-                >
-                  Salvar Alterações
-                </button>
+                <button type="button" className="secondary-button" onClick={() => setIsConfigOpen(false)}>Cancelar</button>
+                <button type="submit" className="primary-button">Salvar alterações</button>
               </div>
             </form>
           </div>
@@ -1475,7 +1447,7 @@ function RecordTable({ records }: { records: FinancialRecord[] }) {
               </td>
               <td><span className="status-pill">{record.status}</span></td>
               <td className={record.direction === "entrada" ? "align-right positive" : "align-right negative"}>
-                {record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amount)}
+                {record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amountMinor)}
               </td>
             </tr>
           ))}

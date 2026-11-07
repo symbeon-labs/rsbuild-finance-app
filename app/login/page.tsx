@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { signIn } from "@/app/auth/actions";
 import { useState } from "react";
 
 function MailIcon() {
@@ -49,16 +50,7 @@ function ArrowIcon() {
 }
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 500);
-  }
 
   return (
     <main className="login-page">
@@ -136,7 +128,7 @@ export default function LoginPage() {
             <p>Entre com suas credenciais para continuar.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="login-form">
+          <form action={signIn} className="login-form">
             <label className="login-field">
               <span>E-mail corporativo</span>
               <span className="login-input-wrap">
@@ -179,8 +171,8 @@ export default function LoginPage() {
               </span>
             </label>
 
-            <button className="login-submit" type="submit" disabled={loading}>
-              <span>{loading ? "Entrando…" : "Entrar no RSBUILD Finance"}</span>
+            <button className="login-submit" type="submit">
+              <span>Entrar no RSBUILD Finance</span>
               <ArrowIcon />
             </button>
           </form>

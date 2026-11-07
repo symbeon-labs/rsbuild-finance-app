@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod } from "../lib/finance";
+import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, buildImportIdentity } from "../lib/finance";
 
 const csv = [
   "Data;Descrição;Valor;Tipo;Categoria",
@@ -14,10 +14,10 @@ test("CSV brasileiro: detecta ponto e vírgula, datas e valores com agrupamento"
   assert.deepEqual(result.errors, []);
   assert.equal(result.records[0].date, "2026-02-01");
   assert.equal(result.records[0].description, "Venda, balcão");
-  assert.equal(result.records[0].amount, 1234.56);
+  assert.equal(result.records[0].amountMinor, 123456);
   assert.equal(result.records[0].direction, "entrada");
   assert.equal(result.records[0].category, "Vendas");
-  assert.equal(result.records[1].amount, 250);
+  assert.equal(result.records[1].amountMinor, 25000);
   assert.equal(result.records[1].direction, "saída");
 });
 
@@ -55,7 +55,7 @@ test("CSV com BOM, delimitador vírgula e aspas escapadas", () => {
   const result = parseCsv(input);
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].description, 'Peças "premium"');
-  assert.equal(result.records[0].amount, 99.9);
+  assert.equal(result.records[0].amountMinor, 9990);
 });
 
 test("CSV aceita data ISO e rejeita datas impossíveis e valores ambíguos", () => {
@@ -103,10 +103,10 @@ test("OFX extrai crédito, débito, data, descrição e FITID", () => {
   assert.equal(result.records.length, 2);
   assert.deepEqual(result.errors, []);
   assert.equal(result.records[0].date, "2026-04-01");
-  assert.equal(result.records[0].amount, 1250.75);
+  assert.equal(result.records[0].amountMinor, 125075);
   assert.equal(result.records[0].direction, "entrada");
   assert.equal(result.records[0].sourceRecordId, "FIT-001");
-  assert.equal(result.records[1].amount, 89.9);
+  assert.equal(result.records[1].amountMinor, 8990);
   assert.equal(result.records[1].direction, "saída");
   assert.equal(result.records[1].description, "Tarifa bancária");
   assert.equal(result.records[1].sourceRecordId, "FIT-002");
@@ -125,13 +125,13 @@ test("OFX rejeita movimentos com data ou valor inválido sem perder os válidos"
 </BANKTRANLIST></OFX>`;
   const result = parseOfx(input);
   assert.equal(result.records.length, 1);
-  assert.equal(result.records[0].amount, 0.1);
+  assert.equal(result.records[0].amountMinor, 10);
   // Invalid records are rejected
   assert.ok(result.errors.length > 0);
 });
 
 test("formatação monetária e de data usa padrão brasileiro", () => {
-  assert.equal(formatCurrency(1234.5), "R$ 1.234,50");
+  assert.equal(formatCurrency(123450), "R$ 1.234,50");
   assert.equal(formatDate("2026-04-09"), "09/04/2026");
 });
 
@@ -147,7 +147,7 @@ ENCODING:1252
 </BANKTRANLIST></OFX>`;
   const result = parseOfx(input);
   assert.equal(result.records.length, 1);
-  assert.equal(result.records[0].amount, 100);
+  assert.equal(result.records[0].amountMinor, 10000);
   assert.deepEqual(result.errors, []);
 });
 
@@ -159,7 +159,7 @@ test("OFX: preserva movimentos PIX distintos mesmo com prefixo FITID compartilha
     "</BANKTRANLIST></OFX>";
   const result = parseOfx(input);
   assert.equal(result.records.length, 3);
-  assert.deepEqual(result.records.map((record) => record.amount), [50, 75.5, 25]);
+  assert.deepEqual(result.records.map((record) => record.amountMinor), [5000, 7550, 2500]);
 });
 
 test("OFX: FITID repetido não autoriza fundir transações", () => {
@@ -169,7 +169,7 @@ test("OFX: FITID repetido não autoriza fundir transações", () => {
     "</BANKTRANLIST></OFX>";
   const result = parseOfx(input);
   assert.equal(result.records.length, 2);
-  assert.deepEqual(result.records.map((record) => record.amount), [10, 20]);
+  assert.deepEqual(result.records.map((record) => record.amountMinor), [1000, 2000]);
 });
 
 test("OFX: rejeita TRNTYPE CREDIT com valor negativo", () => {
@@ -254,7 +254,7 @@ test("ENG-MS-01: identifica extrato BNB Banco do Nordeste (0004)", () => {
   assert.equal(result.records.length, 1);
   assert.equal(result.metadata?.bankId, "0004");
   assert.equal(result.metadata?.bankName, "Banco do Nordeste (BNB)");
-  assert.equal(result.records[0].amount, 12500);
+  assert.equal(result.records[0].amountMinor, 1250000);
   assert.equal(result.records[0].direction, "saída");
 });
 
@@ -270,7 +270,7 @@ test("ENG-MS-01: identifica extrato XP Investimentos (0102)", () => {
   assert.equal(result.records.length, 1);
   assert.equal(result.metadata?.bankId, "0102");
   assert.equal(result.metadata?.bankName, "XP Investimentos");
-  assert.equal(result.records[0].amount, 3420.15);
+  assert.equal(result.records[0].amountMinor, 342015);
 });
 
 test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e pronto para Omie", () => {
@@ -279,7 +279,7 @@ test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e
       id: "rec-2",
       date: "2026-04-15",
       description: "Pagamento Fornecedor Farinha <Lote 10>",
-      amount: 4500.5,
+      amountMinor: 450050,
       direction: "saída" as const,
       category: "Insumos",
       source: "Itaú",
@@ -290,7 +290,7 @@ test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e
       id: "rec-1",
       date: "2026-04-10",
       description: "Recebimento Cliente Supermercado & Cia",
-      amount: 8200,
+      amountMinor: 820000,
       direction: "entrada" as const,
       category: "Vendas",
       source: "Itaú",
@@ -325,7 +325,7 @@ test("ENG-MS-01: generateOmieOfx gera OFX canônico, ordenado cronologicamente e
 });
 
 test("ENG-MS-01: bloqueia exportação de contas misturadas ou sem identidade bancária", () => {
-  const sample = { id: "x", date: "2026-04-10", description: "X", amount: 10, direction: "entrada" as const, category: "X", source: "CSV", status: "pendente" as const };
+  const sample = { id: "x", date: "2026-04-10", description: "X", amountMinor: 1000, direction: "entrada" as const, category: "X", source: "CSV", status: "pendente" as const };
   assert.throws(() => generateOmieOfx([sample]), /instituição e conta bancária/);
   const one = { ...sample, bankCode: "0341", accountId: "111", accountType: "CHECKING" };
   const two = { ...sample, id: "y", bankCode: "0341", accountId: "222", accountType: "CHECKING" };
@@ -341,4 +341,21 @@ test("DASH-01: período de 30 dias inclui hoje e os 29 dias anteriores", () => {
   const records = [{ date: "2026-04-01", value: 1 }, { date: "2026-04-02", value: 2 }, { date: "2026-05-01", value: 3 }, { date: "2026-05-02", value: 4 }];
   const result = filterRecordsByPeriod(records, 30, new Date(2026, 4, 2, 12));
   assert.deepEqual(result.map((record) => record.value), [3, 4]);
+});
+test("import identity: OFX remains stable across reordered files and separates reused FITIDs", () => {
+  const first = {
+    sourceRecordId: "FIT-001", bankCode: "0341", accountId: "56789-0",
+    date: "2026-04-01", amountMinor: 125075, direction: "entrada" as const,
+    description: "Recebimento Cliente"
+  };
+  const regenerated = { ...first };
+  const distinctReuse = { ...first, amountMinor: 7550, description: "Outro movimento" };
+  assert.equal(buildImportIdentity(first, "hash-a", 0), buildImportIdentity(regenerated, "hash-b", 9));
+  assert.notEqual(buildImportIdentity(first, "hash-a", 0), buildImportIdentity(distinctReuse, "hash-a", 1));
+});
+
+test("import identity: CSV rows remain scoped to file and row", () => {
+  const row = { date: "2026-04-01", amountMinor: 1000, direction: "entrada" as const, description: "Venda" };
+  assert.equal(buildImportIdentity(row, "file-a", 0), "file|file-a|0");
+  assert.notEqual(buildImportIdentity(row, "file-a", 0), buildImportIdentity(row, "file-a", 1));
 });
