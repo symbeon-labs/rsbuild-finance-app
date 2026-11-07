@@ -4,6 +4,52 @@ import { ParsedWhatsAppOrder } from "@/lib/orders";
 
 export type ModuleType = "finance" | "logistics" | "executive";
 
+export type OrganizationId = "rsbuild" | "hub_acai" | "mundo_sabor";
+
+export interface OrganizationPreset {
+  id: OrganizationId;
+  name: string;
+  tagline: string;
+  logoUrl: string;
+  badge: string;
+  defaultModule: ModuleType;
+  enabledModules: EnabledModulesConfig;
+  description: string;
+}
+
+export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
+  {
+    id: "rsbuild",
+    name: "RSBUILD Inovação",
+    tagline: "Holding & Engenharia de Sistemas",
+    logoUrl: "",
+    badge: "🏢 HOLDING",
+    defaultModule: "finance",
+    enabledModules: { finance: true, logistics: true, executive: true },
+    description: "Ambiente master corporativo com acesso irrestrito a todos os módulos e esteiras analíticas."
+  },
+  {
+    id: "hub_acai",
+    name: "Hub Açaí Salvador",
+    tagline: "Distribuidora de Polpas & Sorvetes",
+    logoUrl: "",
+    badge: "🍨 DISTRIBUIÇÃO",
+    defaultModule: "logistics",
+    enabledModules: { finance: false, logistics: true, executive: true },
+    description: "Operação B2B de congelados com pedidos WhatsApp, cubagem do caminhão HR (350 cx) e governança executiva."
+  },
+  {
+    id: "mundo_sabor",
+    name: "Mundo do Sabor Alimentos",
+    tagline: "Indústria & Atacado de Alimentos",
+    logoUrl: "",
+    badge: "🏭 INDÚSTRIA",
+    defaultModule: "finance",
+    enabledModules: { finance: true, logistics: true, executive: true },
+    description: "Operação com conciliação multibanco (Itaú/BNB/Inter), liquidação Omie e blindagem de canhotos SEFAZ."
+  }
+];
+
 export interface EnabledModulesConfig {
   finance: boolean;
   logistics: boolean;
