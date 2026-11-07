@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Franklin:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Franklin:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
   --rsbuild-charcoal: #2B2C2E;
@@ -200,7 +200,7 @@ button { cursor: pointer; }
   opacity: 0.65;
 }
 
-/* Ãrea principal */
+/* ÃƒÂrea principal */
 .main-area { min-width: 0; flex: 1; }
 
 .topbar {
@@ -275,7 +275,7 @@ button { cursor: pointer; }
   margin: 8px 0 0;
 }
 
-/* BotÃµes com identidade RSBUILD */
+/* BotÃƒÂµes com identidade RSBUILD */
 .primary-button, .secondary-button {
   border: 0;
   border-radius: 7px;
@@ -313,7 +313,7 @@ button { cursor: pointer; }
   border-color: #E2C4BA;
 }
 
-/* Cards e MÃ©tricas */
+/* Cards e MÃƒÂ©tricas */
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -539,7 +539,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .table-toolbar input:focus { border-color: var(--rsbuild-terracotta); }
 .table-toolbar span { font-size: 10px; color: var(--muted); }
 
-/* ImportaÃ§Ãµes e uploads */
+/* ImportaÃƒÂ§ÃƒÂµes e uploads */
 .import-panel { max-width: 940px; }
 
 .upload-zone {
@@ -712,9 +712,9 @@ tbody tr:last-child td { border-bottom: 0; }
 
 
 /* ============================================================
-   RSBUILD Login — Responsive Hybrid System
+   RSBUILD Login â€” Responsive Hybrid System
    Desktop: Split-screen (Banner escuro animado + Form refinado)
-   Mobile: Surface única (Hexágonos nos cantos + Glow alaranjado)
+   Mobile: Surface Ãºnica (HexÃ¡gonos nos cantos + Glow alaranjado)
    ============================================================ */
 
 .login-page {
@@ -781,7 +781,7 @@ tbody tr:last-child td { border-bottom: 0; }
   }
 }
 
-/* Padrão de conexões com animação sutil */
+/* PadrÃ£o de conexÃµes com animaÃ§Ã£o sutil */
 .login-brand-pattern {
   position: absolute;
   z-index: -1;
@@ -891,7 +891,7 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 /* ------------------------------------------------------------
-   PAINEL DE FORMULÁRIO (Desktop à direita / Mobile centralizado)
+   PAINEL DE FORMULÃRIO (Desktop Ã  direita / Mobile centralizado)
    ------------------------------------------------------------ */
 .login-form-panel {
   position: relative;
@@ -958,7 +958,7 @@ tbody tr:last-child td { border-bottom: 0; }
   letter-spacing: 0.015em;
 }
 
-/* Container do input com ícone */
+/* Container do input com Ã­cone */
 .login-input-wrap {
   position: relative;
   display: flex;
@@ -1032,7 +1032,7 @@ tbody tr:last-child td { border-bottom: 0; }
   height: 20px;
 }
 
-/* Botão principal com gradiente marrom RSBUILD */
+/* BotÃ£o principal com gradiente marrom RSBUILD */
 .login-submit {
   height: 58px;
   border: 0;
@@ -1102,7 +1102,7 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 /* ------------------------------------------------------------
-   TABLET / TELAS MÉDIAS (851px - 1024px)
+   TABLET / TELAS MÃ‰DIAS (851px - 1024px)
    ------------------------------------------------------------ */
 @media (max-width: 1024px) and (min-width: 851px) {
   .login-page {
@@ -1121,9 +1121,9 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 /* ------------------------------------------------------------
-   MOBILE (até 850px) — Identidade da FOTO 1
-   Surface única, logo centralizado no topo,
-   hexágonos apenas nas quinas (sem cobrir texto),
+   MOBILE (atÃ© 850px) â€” Identidade da FOTO 1
+   Surface Ãºnica, logo centralizado no topo,
+   hexÃ¡gonos apenas nas quinas (sem cobrir texto),
    glow alaranjado difuso nos cantos.
    ------------------------------------------------------------ */
 @media (max-width: 850px) {
@@ -1165,7 +1165,7 @@ tbody tr:last-child td { border-bottom: 0; }
       radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.7) 0%, transparent 50%);
   }
 
-  /* Hexágonos do SVG de ambient honeycomb posicionados nos cantos superior direito e inferior esquerdo */
+  /* HexÃ¡gonos do SVG de ambient honeycomb posicionados nos cantos superior direito e inferior esquerdo */
   .login-mobile-pattern {
     display: block;
     position: fixed;
@@ -1306,3 +1306,4 @@ tbody tr:last-child td { border-bottom: 0; }
     transition: none;
   }
 }
+

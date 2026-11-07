@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BankMetadata, FinancialRecord, formatCurrency, formatDate, generateOmieOfx, parseCsv, parseOfx } from "@/lib/finance";
 import {
@@ -32,9 +32,9 @@ const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "visao-geral", label: "Visão geral", icon: "◫" },
   { id: "movimentacoes", label: "Movimentações", icon: "⇄" },
   { id: "importacoes", label: "Importações", icon: "⇧" },
-  { id: "baixas", label: "Baixas Omie (ENG-02)", icon: "✓" },
-  { id: "canhotos", label: "Canhotos (ENG-03)", icon: "📦" },
-  { id: "pedidos-ha", label: "Pedidos Hub Açaí (HA-01)", icon: "📱" },
+  { id: "baixas", label: "Baixas & Liquidações", icon: "✓" },
+  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦" },
+  { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱" },
   { id: "relatorios", label: "Relatórios", icon: "▥" }
 ];
 
@@ -244,6 +244,53 @@ export default function FinanceWorkspace() {
   const [period, setPeriod] = useState("30");
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Customização de Marca do Workspace (White-label)
+  const [companyName, setCompanyName] = useState("RSBUILD Inovação");
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const savedName = localStorage.getItem("rsbuild_workspace_company");
+      if (savedName) setCompanyName(savedName);
+      const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
+      if (savedLogo) setCompanyLogoUrl(savedLogo);
+    } catch {
+      // Ignora falhas de localStorage em SSR / sandbox restrito
+    }
+  }, []);
+
+  function handleSaveCompanyConfig(name: string, logo: string) {
+    setCompanyName(name);
+    setCompanyLogoUrl(logo);
+    try {
+      localStorage.setItem("rsbuild_workspace_company", name);
+      if (logo) {
+        localStorage.setItem("rsbuild_workspace_logo", logo);
+      } else {
+        localStorage.removeItem("rsbuild_workspace_logo");
+      }
+    } catch {
+      // noop
+    }
+    setNotice("Configuração do Workspace atualizada com sucesso!");
+    setIsConfigOpen(false);
+  }
+
+  function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const res = event.target?.result as string;
+      if (res) {
+        handleSaveCompanyConfig(companyName, res);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 
   // Estado para Contas a Receber e Baixas em Lote (ENG-MS-02)
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
@@ -458,7 +505,7 @@ export default function FinanceWorkspace() {
   function handleConfirmParsedOrder() {
     if (!parsedPreview) return;
     setOrders((curr) => [parsedPreview, ...curr]);
-    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à esteira de expedição do Hub Açaí!`);
+    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à esteira de expedição com sucesso!`);
     setParsedPreview(null);
     setWhatsAppText("");
   }
@@ -487,17 +534,27 @@ export default function FinanceWorkspace() {
       <aside className="sidebar">
         <div className="brand-header">
           <div className="brand-logo-card">
-            <Image
-              src="/brand/rsbuild-logo-primary.svg"
-              alt="RSBUILD Inovação Corporativa"
-              width={200}
-              height={64}
-              priority
-              className="brand-logo-img"
-            />
+            {companyLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={companyLogoUrl}
+                alt={companyName}
+                className="brand-logo-img"
+                style={{ maxHeight: "44px", width: "auto", objectFit: "contain" }}
+              />
+            ) : (
+              <Image
+                src="/brand/rsbuild-logo-primary.svg"
+                alt="RSBUILD Inovação Corporativa"
+                width={200}
+                height={64}
+                priority
+                className="brand-logo-img"
+              />
+            )}
           </div>
           <div className="brand-tagline">
-            <span>FINANCEIRO</span>
+            <span title={companyName}>{companyName.length > 18 ? companyName.slice(0, 18) + "…" : companyName.toUpperCase()}</span>
             <b>v0.1</b>
           </div>
         </div>
@@ -510,9 +567,15 @@ export default function FinanceWorkspace() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-user-row">
+          <div className="sidebar-user-row" style={{ cursor: "pointer" }} onClick={() => setIsConfigOpen(true)} title="Clique para personalizar empresa e logotipo">
             <div className="connection-dot" />
-            <div><strong>Ambiente de trabalho</strong><span>Configuração inicial</span></div>
+            <div>
+              <strong>{companyName}</strong>
+              <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <span>Personalizar workspace</span>
+                <span style={{ fontSize: "10px", color: "var(--rsbuild-terracotta)" }}>✎</span>
+              </span>
+            </div>
           </div>
           <button
             className="signout-btn"
@@ -531,8 +594,25 @@ export default function FinanceWorkspace() {
 
       <section className="main-area">
         <header className="topbar">
-          <div className="breadcrumb">RSBUILD <span>/</span> {navigation.find((item) => item.id === section)?.label}</div>
-          <div className="topbar-right"><span className="period-label">PERÍODO</span><select value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Período"><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Últimos 12 meses</option></select><div className="avatar">R</div></div>
+          <div className="breadcrumb">
+            <strong>{companyName}</strong> <span>/</span> {navigation.find((item) => item.id === section)?.label}
+          </div>
+          <div className="topbar-right">
+            <span className="period-label">PERÍODO</span>
+            <select value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Período">
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="365">Últimos 12 meses</option>
+            </select>
+            <button
+              className="avatar"
+              onClick={() => setIsConfigOpen(true)}
+              title={`Personalizar Workspace (${companyName})`}
+              style={{ border: "none", cursor: "pointer" }}
+            >
+              {companyName ? companyName.trim().charAt(0).toUpperCase() : "R"}
+            </button>
+          </div>
         </header>
 
         <div className="content">
@@ -626,13 +706,13 @@ export default function FinanceWorkspace() {
           {section === "baixas" && <>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">BRIDGE OMIE · ENG-MS-02</div>
-                <h1>Baixas Automatizadas de Títulos</h1>
+                <div className="eyebrow">INTEGRAÇÃO ERP · LIQUIDAÇÃO</div>
+                <h1>Baixas & Conciliação de Títulos</h1>
                 <p>Conciliação inteligente e liquidação de contas a receber sem arrastar cards manuais no ERP.</p>
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button className="secondary-button" onClick={() => setTitles(INITIAL_SAMPLE_TITLES)} title="Recarregar títulos exemplo da Mundo do Sabor">
-                  ⚡ Amostra Mundo do Sabor
+                <button className="secondary-button" onClick={() => setTitles(INITIAL_SAMPLE_TITLES)} title="Recarregar títulos exemplo para teste">
+                  ⚡ Carregar Exemplo
                 </button>
                 <button className="secondary-button" onClick={() => titlesInputRef.current?.click()}>
                   ＋ Importar Títulos (CSV)
@@ -785,15 +865,15 @@ export default function FinanceWorkspace() {
               )}
             </section>
             <div className="inline-note" style={{ marginTop: "16px" }}>
-              <strong>Diretriz Omie Blueprint (ENG-MS-02):</strong> O motor de conciliação assistida gera o lote de liquidação e o arquivo de importação oficial para o Omie sem intervenção manual de arraste de cards, preservando a alçada de aprovação do operador financeiro antes da efetivação bancária.
+              <strong>Diretriz de Liquidação Assistida:</strong> O motor de conciliação assistida gera o lote de liquidação e o arquivo de importação oficial para o ERP sem intervenção manual de arraste de cards, preservando a alçada de aprovação do operador financeiro antes da efetivação bancária.
             </div>
           </>}
 
           {section === "canhotos" && <>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">RASTREABILIDADE DE ENTREGA & JURÍDICO (ENG-MS-03)</div>
-                <h1>Protocolo Digital de Canhotos</h1>
+                <div className="eyebrow">RASTREABILIDADE DE ENTREGA & CONFORMIDADE</div>
+                <h1>Protocolo Digital de Comprovantes & Canhotos</h1>
                 <p>Indexação de comprovantes de entrega da expedição e blindagem jurídica preventiva contra protestos indevidos (Lei nº 5.474/1968).</p>
               </div>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -973,20 +1053,20 @@ export default function FinanceWorkspace() {
             </section>
 
             <div className="inline-note" style={{ marginTop: "16px" }}>
-              <strong>Fundamentação Jurídica (Lei nº 5.474/1968, Art. 15):</strong> A duplicata mercantil não aceita só é legalmente passível de protesto e execução judicial mediante comprovação da entrega e recebimento efetivo das mercadorias (canhoto assinado pelo sacado). O protocolo digital impede que títulos com canhotos pendentes, extraviados ou em devolução sigam para cobrança coercitiva, eliminando riscos de litígios e processos por protesto indevido contra a Mundo do Sabor.
+              <strong>Fundamentação Jurídica (Lei nº 5.474/1968, Art. 15):</strong> A duplicata mercantil não aceita só é legalmente passível de protesto e execução judicial mediante comprovação da entrega e recebimento efetivo das mercadorias (canhoto assinado pelo sacado). O protocolo digital impede que títulos com canhotos pendentes, extraviados ou em devolução sigam para cobrança coercitiva, eliminando riscos de litígios e processos por protesto indevido.
             </div>
           </>}
 
           {section === "pedidos-ha" && <>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">OPERAÇÃO DE VENDAS & EXPEDIÇÃO (ENG-HA-01)</div>
-                <h1>Padronizador de Pedidos WhatsApp</h1>
-                <p>Conversão automática de texto livre em pedidos estruturados com grade de sabores e contagem de caixas (Hub Açaí Salvador).</p>
+                <div className="eyebrow">OPERAÇÃO DE VENDAS & EXPEDIÇÃO</div>
+                <h1>Padronizador Inteligente de Pedidos WhatsApp</h1>
+                <p>Conversão automática de texto livre em pedidos estruturados com grade de produtos, quantidades e contagem de volumes para expedição.</p>
               </div>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <button className="primary-button" onClick={handleExportOmieSalesOrders}>
-                  <span>⤓</span> Exportar Pedidos Omie (CSV)
+                  <span>⤓</span> Exportar Pedidos para ERP (CSV)
                 </button>
               </div>
             </div>
@@ -1066,7 +1146,7 @@ export default function FinanceWorkspace() {
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
                   <button className="secondary-button" onClick={() => setWhatsAppText("")}>Limpar</button>
                   <button className="primary-button" onClick={handleParseWhatsApp}>
-                    <span>⚡</span> Decifrar Pedido (ENG-HA-01)
+                    <span>⚡</span> Decifrar Mensagem de Pedido
                   </button>
                 </div>
               </section>
@@ -1143,10 +1223,10 @@ export default function FinanceWorkspace() {
               <div className="panel-heading">
                 <div>
                   <h2>Fila de Pedidos do Dia (Expedição & Carregamento)</h2>
-                  <p>Consolidação da carga para os veículos refrigerados e HR do Hub Açaí.</p>
+                  <p>Consolidação da carga para os veículos de entrega e expedição logística.</p>
                 </div>
                 <button className="secondary-button" onClick={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}>
-                  Restaurar Amostra do Hub Açaí
+                  Restaurar Amostra de Demonstração
                 </button>
               </div>
 
@@ -1214,14 +1294,14 @@ export default function FinanceWorkspace() {
                   icon="📱"
                   title="Nenhum pedido na esteira"
                   text="Decifre novas mensagens do WhatsApp para montar a carga de expedição."
-                  action="Carregar Amostra Hub Açaí"
+                  action="Carregar Pedidos de Exemplo"
                   onAction={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}
                 />
               )}
             </section>
 
             <div className="inline-note" style={{ marginTop: "16px" }}>
-              <strong>Constatação Operacional RS2BUILD (Laudo Hub Açaí - C1 / IA1):</strong> Os pedidos chegavam por mensagem livre no WhatsApp e eram redigitados no sistema item a item por duas atendentes, com as caixas contadas à mão. O padronizador automatiza a decodificação dos sabores, computa o volume físico exato para a capacidade do veículo HR (300 a 350 caixas) e prepara o arquivo de integração com o Omie ERP, permitindo que os caminhões saiam no horário e os motoristas não retornem de madrugada.
+              <strong>Automação de Entrada de Pedidos:</strong> Pedidos recebidos via mensagem de WhatsApp de clientes são interpretados em lote, decodificando produtos, quantidades e totalizando volumes físicos automaticamente para capacidade dos veículos de entrega e geração dos pedidos de venda integrados ao ERP.
             </div>
           </>}
 
@@ -1231,7 +1311,124 @@ export default function FinanceWorkspace() {
       <input ref={inputRef} className="hidden-input" type="file" accept=".csv,.ofx,text/csv,application/x-ofx" onChange={handleFile} />
       <input ref={titlesInputRef} className="hidden-input" type="file" accept=".csv,text/csv" onChange={handleImportTitlesFile} />
       <input ref={proofsInputRef} className="hidden-input" type="file" accept=".csv,text/csv" onChange={handleImportProofsFile} />
+      <input ref={logoInputRef} className="hidden-input" type="file" accept="image/*" onChange={handleLogoUpload} />
       <button className="session-reset" onClick={resetSession} title="Limpar os registros da sessão">Limpar sessão</button>
+
+      {/* Modal de Personalização do Workspace */}
+      {isConfigOpen && (
+        <div className="workspace-modal-backdrop" onClick={() => setIsConfigOpen(false)}>
+          <div className="workspace-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="workspace-modal-header">
+              <div>
+                <span className="eyebrow">CUSTOMIZAÇÃO DA EMPRESA</span>
+                <h3>Identidade do Workspace</h3>
+              </div>
+              <button
+                type="button"
+                className="workspace-modal-close"
+                onClick={() => setIsConfigOpen(false)}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="workspace-modal-desc">
+              Personalize o nome corporativo e a marca exibidos no cabeçalho e na barra lateral do ambiente.
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const nameInput = form.elements.namedItem("companyName") as HTMLInputElement;
+                const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
+                handleSaveCompanyConfig(nameInput.value, urlInput.value || companyLogoUrl);
+              }}
+              style={{ display: "grid", gap: "16px", marginTop: "16px" }}
+            >
+              <label className="login-field" style={{ fontSize: "11px" }}>
+                <span>NOME DA EMPRESA OU WORKSPACE</span>
+                <input
+                  name="companyName"
+                  defaultValue={companyName}
+                  required
+                  placeholder="Ex: Mundo do Sabor Alimentos, Distribuidora Salvador..."
+                  style={{
+                    height: "46px",
+                    border: "1px solid var(--line)",
+                    borderRadius: "6px",
+                    padding: "0 12px",
+                    fontSize: "13px",
+                    background: "#fff"
+                  }}
+                />
+              </label>
+
+              <div style={{ display: "grid", gap: "8px" }}>
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink)", fontFamily: "var(--font-brand)" }}>
+                  LOGOTIPO DA EMPRESA (OPCIONAL)
+                </span>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => logoInputRef.current?.click()}
+                    style={{ fontSize: "11px", padding: "8px 14px" }}
+                  >
+                    <span>📷</span> Fazer upload de imagem
+                  </button>
+                  {companyLogoUrl && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => handleSaveCompanyConfig(companyName, "")}
+                      style={{ fontSize: "11px", color: "var(--red)" }}
+                    >
+                      Remover logo
+                    </button>
+                  )}
+                </div>
+                {companyLogoUrl && (
+                  <div style={{ background: "#F5F1EB", padding: "10px", borderRadius: "6px", display: "inline-block", marginTop: "4px" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={companyLogoUrl} alt="Preview" style={{ maxHeight: "36px", maxWidth: "180px", objectFit: "contain" }} />
+                  </div>
+                )}
+                <input
+                  name="companyLogoUrl"
+                  defaultValue={companyLogoUrl.startsWith("data:") ? "" : companyLogoUrl}
+                  placeholder="Ou cole a URL direta de uma imagem (https://...)"
+                  style={{
+                    height: "42px",
+                    border: "1px solid var(--line)",
+                    borderRadius: "6px",
+                    padding: "0 12px",
+                    fontSize: "12px",
+                    background: "#fff"
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsConfigOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="primary-button"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
