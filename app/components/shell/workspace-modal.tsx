@@ -1,15 +1,17 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
 
 interface WorkspaceModalProps {
   isOpen: boolean;
   companyName: string;
   companyLogoUrl: string;
+  currentOrgId?: OrganizationId;
   isSuperAdmin: boolean;
-  enabledModules: { finance: boolean; logistics: boolean };
+  enabledModules: EnabledModulesConfig;
   onClose: () => void;
-  onSave: (name: string, logoUrl: string, modules?: { finance: boolean; logistics: boolean }) => void;
+  onSave: (name: string, logoUrl: string, modules?: EnabledModulesConfig, orgId?: OrganizationId) => void;
   onUploadLogo: (file: File) => void;
 }
 
@@ -17,6 +19,7 @@ export function WorkspaceModal({
   isOpen,
   companyName,
   companyLogoUrl,
+  currentOrgId = "rsbuild",
   isSuperAdmin,
   enabledModules,
   onClose,
@@ -24,12 +27,29 @@ export function WorkspaceModal({
   onUploadLogo
 }: WorkspaceModalProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [selectedOrg, setSelectedOrg] = useState<OrganizationId>(currentOrgId);
+  const [typedName, setTypedName] = useState<string>(companyName);
+  const [activeModulesState, setActiveModulesState] = useState<EnabledModulesConfig>(enabledModules);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedOrg(currentOrgId);
+      setTypedName(companyName);
+      setActiveModulesState(enabledModules);
+    }
+  }, [isOpen, currentOrgId, companyName, enabledModules]);
 
   if (!isOpen) return null;
 
+  function handleSelectPreset(preset: OrganizationPreset) {
+    setSelectedOrg(preset.id);
+    setTypedName(preset.name);
+    setActiveModulesState(preset.enabledModules);
+  }
+
   return (
     <div className="workspace-modal-backdrop" onClick={onClose}>
-      <div className="workspace-modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="workspace-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
         <div className="workspace-modal-header">
           <div>
             <span className="eyebrow">CUSTOMIZAÇÃO DA EMPRESA</span>
@@ -46,8 +66,56 @@ export function WorkspaceModal({
         </div>
 
         <p className="workspace-modal-desc">
-          Personalize o nome corporativo e a marca exibidos no cabeçalho e na barra lateral do ambiente.
+          Personalize a razão social, o logotipo e a parametrização dos módulos do ambiente operacional.
         </p>
+
+        {/* Seletor Multi-Tenant Restrito ao Superadmin */}
+        {isSuperAdmin && (
+          <div style={{ marginBottom: "16px", border: "1px solid var(--line)", borderRadius: "8px", padding: "12px", background: "var(--surface)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "1px", color: "var(--rsbuild-terracotta)", fontFamily: "var(--font-brand)" }}>
+                EMPRESAS HOMOLOGADAS (EXCLUSIVO SUPERADMIN)
+              </span>
+              <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
+                🔒 Alçada Symbeon
+              </span>
+            </div>
+            <p style={{ fontSize: "11px", color: "var(--muted)", margin: "0 0 10px" }}>
+              Selecione uma das 3 empresas homologadas para carregar seus dados e parametrização operacional:
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+              {ORGANIZATION_PRESETS.map((preset) => {
+                const isCurrent = selectedOrg === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset)}
+                    style={{
+                      border: isCurrent ? "2px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
+                      background: isCurrent ? "var(--surface-raised, rgba(255,255,255,0.06))" : "transparent",
+                      borderRadius: "6px",
+                      padding: "8px 6px",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    <span style={{ fontSize: "9px", fontWeight: 700, color: "var(--rsbuild-terracotta)", display: "block" }}>
+                      {preset.badge}
+                    </span>
+                    <strong style={{ fontSize: "11.5px", color: "var(--ink)", display: "block", marginTop: "2px" }}>
+                      {preset.id === "rsbuild" ? "RSBUILD" : preset.id === "hub_acai" ? "Hub Açaí" : "Mundo do Sabor"}
+                    </strong>
+                    <span style={{ fontSize: "9.5px", color: "var(--muted)", display: "block", marginTop: "2px" }}>
+                      {preset.tagline}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Hidden File Input for Logo */}
         <input
@@ -69,22 +137,26 @@ export function WorkspaceModal({
             const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
             const modFinanceInput = form.elements.namedItem("modFinance") as HTMLInputElement;
             const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
-            onSave(nameInput.value, urlInput.value || companyLogoUrl, {
-              finance: modFinanceInput ? modFinanceInput.checked : true,
-              logistics: modLogisticsInput ? modLogisticsInput.checked : true
-            });
+            
+            const nextModules: EnabledModulesConfig = {
+              finance: modFinanceInput ? modFinanceInput.checked : activeModulesState.finance,
+              logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics
+            };
+
+            onSave(nameInput.value, urlInput.value || companyLogoUrl, nextModules, selectedOrg);
           }}
-          style={{ display: "grid", gap: "16px", marginTop: "16px" }}
+          style={{ display: "grid", gap: "16px" }}
         >
           <label className="login-field" style={{ fontSize: "11px" }}>
             <span>NOME DA EMPRESA OU WORKSPACE</span>
             <input
               name="companyName"
-              defaultValue={companyName}
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
               required
               placeholder="Ex: Mundo do Sabor Alimentos, Distribuidora Salvador..."
               style={{
-                height: "46px",
+                height: "44px",
                 border: "1px solid var(--line)",
                 borderRadius: "6px",
                 padding: "0 12px",
@@ -112,7 +184,7 @@ export function WorkspaceModal({
                 <button
                   type="button"
                   className="secondary-button"
-                  onClick={() => onSave(companyName, "", enabledModules)}
+                  onClick={() => onSave(typedName, "", enabledModules, selectedOrg)}
                   style={{ fontSize: "11px", color: "var(--red)" }}
                 >
                   Remover logo
@@ -130,7 +202,7 @@ export function WorkspaceModal({
               defaultValue={companyLogoUrl.startsWith("data:") ? "" : companyLogoUrl}
               placeholder="Ou cole a URL direta de uma imagem (https://...)"
               style={{
-                height: "42px",
+                height: "40px",
                 border: "1px solid var(--line)",
                 borderRadius: "6px",
                 padding: "0 12px",
@@ -153,20 +225,22 @@ export function WorkspaceModal({
                 </span>
               </div>
               <div style={{ display: "grid", gap: "10px", background: "var(--bg)", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
                   <input
                     type="checkbox"
                     name="modFinance"
-                    defaultChecked={enabledModules.finance}
+                    checked={activeModulesState.finance}
+                    onChange={(e) => setActiveModulesState((curr) => ({ ...curr, finance: e.target.checked }))}
                     style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
                   />
                   <span>💼 Módulo Financeiro (Conciliação, Extratos & Baixas ERP)</span>
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
                   <input
                     type="checkbox"
                     name="modLogistics"
-                    defaultChecked={enabledModules.logistics}
+                    checked={activeModulesState.logistics}
+                    onChange={(e) => setActiveModulesState((curr) => ({ ...curr, logistics: e.target.checked }))}
                     style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
                   />
                   <span>🚚 Módulo Logística & Expedição (WhatsApp, Canhotos & Cargas)</span>
@@ -200,4 +274,3 @@ export function WorkspaceModal({
     </div>
   );
 }
-

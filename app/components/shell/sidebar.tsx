@@ -1,14 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { ALL_NAV_ITEMS, ModuleType, NavSection } from "@/app/types/workspace";
+import {
+  ALL_NAV_ITEMS,
+  EnabledModulesConfig,
+  ModuleType,
+  NavSection,
+  OrganizationId,
+  orgHasExecutiveTower
+} from "@/app/types/workspace";
 
 interface SidebarProps {
   companyName: string;
   companyLogoUrl: string;
   activeModule: ModuleType;
   section: NavSection;
-  enabledModules: { finance: boolean; logistics: boolean };
+  enabledModules: EnabledModulesConfig;
+  currentOrgId?: OrganizationId;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
@@ -20,6 +28,7 @@ export function Sidebar({
   activeModule,
   section,
   enabledModules,
+  currentOrgId = "rsbuild",
   onSelectModule,
   onSelectSection,
   onOpenConfig
@@ -51,17 +60,18 @@ export function Sidebar({
           <span title={companyName}>
             {companyName.length > 18 ? companyName.slice(0, 18) + "…" : companyName.toUpperCase()}
           </span>
-          <b>v1.0.0</b>
+          <b>v1.1.0</b>
         </div>
       </div>
 
-      {/* Seletor de Módulos (Visível se ambos os módulos estiverem contratados/ativos) */}
+      {/* Seletor de Módulos Operacionais (Finanças vs Logística) */}
       {enabledModules.finance && enabledModules.logistics ? (
         <div className="module-switcher-container">
           <button
             type="button"
             className={activeModule === "finance" ? "module-tab active" : "module-tab"}
             onClick={() => onSelectModule("finance")}
+            title="Módulo Financeiro & Controladoria"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
@@ -73,6 +83,7 @@ export function Sidebar({
             type="button"
             className={activeModule === "logistics" ? "module-tab active" : "module-tab"}
             onClick={() => onSelectModule("logistics")}
+            title="Módulo Logística & Expedição"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="3" width="15" height="13" />
@@ -135,7 +146,7 @@ export function Sidebar({
                   color: "var(--rsbuild-terracotta)"
                 }}
               >
-                DIRETORIA
+                AGENTE RS
               </span>
             )}
           </button>
@@ -186,4 +197,3 @@ export function Sidebar({
     </aside>
   );
 }
-
