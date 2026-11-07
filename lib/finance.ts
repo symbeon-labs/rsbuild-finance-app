@@ -451,3 +451,25 @@ export function formatDate(value: string): string {
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
 }
+
+/**
+ * Stable source identity for imported rows. OFX FITID is scoped to a bank account
+ * and combined with transaction attributes to avoid both file-order dependence
+ * and accidental collisions when providers reuse FITIDs. CSV rows without a
+ * source identifier remain scoped to their immutable source file and row index.
+ */
+export function buildImportIdentity(record: Pick<FinancialRecord, "sourceRecordId" | "bankCode" | "bankName" | "accountId" | "date" | "amountMinor" | "direction" | "description">, fileHash: string, rowIndex: number): string {
+  if (record.sourceRecordId) {
+    return [
+      "ofx",
+      record.bankCode || record.bankName || "unknown-bank",
+      record.accountId || "unknown-account",
+      record.sourceRecordId,
+      record.date,
+      record.amountMinor,
+      record.direction,
+      record.description.trim().toLocaleLowerCase("pt-BR"),
+    ].join("|");
+  }
+  return ["file", fileHash, rowIndex].join("|");
+}

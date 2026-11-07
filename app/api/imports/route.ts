@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseCsv, parseOfx } from "@/lib/finance";
+import { buildImportIdentity, parseCsv, parseOfx } from "@/lib/finance";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 
 export const runtime = "nodejs";
@@ -61,13 +61,15 @@ export async function POST(request: Request) {
         !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !row.description.trim()) {
       return NextResponse.json({ error: "server_parser_invalid_record" }, { status: 422 });
     }
-    const keySource = `${fileHash}|${rowIndex}`;
+    // Stable OFX identity survives statement regeneration and row reordering.
+    const keySource = buildImportIdentity(row, fileHash, rowIndex);
     normalized.push({
       transaction_date: row.date,
       description: row.description.trim().slice(0, 500),
       amount_minor: String(row.amountMinor),
       direction: row.direction,
       category: row.category.slice(0, 120) || "Não classificado",
+      currency: "BRL",
       deduplication_key: createHash("sha256").update(keySource).digest("hex"),
       raw_payload: {
         source_record_id: row.sourceRecordId ?? null,
