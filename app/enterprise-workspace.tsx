@@ -79,13 +79,6 @@ export default function EnterpriseWorkspace() {
   );
 
   function navigateTo(nextSection: NavSection) {
-    if (nextSection === "torre-controle" && !orgHasExecutiveTower(currentOrgId)) {
-      setNotice("A Torre de Controle está disponível exclusivamente no workspace Hub Açaí Salvador.");
-      setSection("visao-geral");
-      setActiveModule("finance");
-      router.push(`/?tab=visao-geral`, { scroll: false });
-      return;
-    }
     setSection(nextSection);
     if (nextSection === "canhotos" || nextSection === "pedidos-ha") {
       setActiveModule("logistics");
@@ -152,15 +145,6 @@ export default function EnterpriseWorkspace() {
   const isSuperAdmin = useMemo(() => {
     return Boolean(currentUserEmail && SUPERADMIN_EMAILS.includes(currentUserEmail.trim().toLowerCase()));
   }, [currentUserEmail]);
-
-  // Blindagem de Governança: Torre de Controle não existe em RSBUILD nem Mundo do Sabor
-  useEffect(() => {
-    if (section === "torre-controle" && !orgHasExecutiveTower(currentOrgId)) {
-      setSection("visao-geral");
-      setActiveModule("finance");
-      router.push(`/?tab=visao-geral`, { scroll: false });
-    }
-  }, [section, currentOrgId, router]);
 
   // Contas a Receber e Baixas em Lote
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
@@ -577,6 +561,7 @@ export default function EnterpriseWorkspace() {
           )}
           {section === "torre-controle" && (
             <TorreControleView
+              companyName={companyName}
               isDirector={isSuperAdmin}
               currentUserEmail={currentUserEmail}
               records={records}

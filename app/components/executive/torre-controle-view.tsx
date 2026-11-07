@@ -8,8 +8,9 @@ import { ParsedWhatsAppOrder } from "@/lib/orders";
 import { Metric } from "@/app/components/finance/common";
 
 interface TorreControleViewProps {
-  isDirector: boolean;
-  currentUserEmail: string;
+  companyName?: string;
+  isDirector?: boolean;
+  currentUserEmail?: string;
   records: FinancialRecord[];
   totals: { incoming: number; outgoing: number; balance: number };
   titles: ReceivableTitle[];
@@ -30,7 +31,7 @@ interface TorreControleViewProps {
 type TorreSubTab = "estrategia" | "auditoria" | "sincronizacao";
 
 export function TorreControleView({
-  isDirector,
+  companyName = "RSBUILD Inovação",
   currentUserEmail,
   records,
   totals,
@@ -128,8 +129,8 @@ export function TorreControleView({
   }, [healthScore, hubAcaiMetrics, deliveryMetrics, atRiskProtestCount, flavorsBreakdown, matches]);
 
   function handleCopyMemo() {
-    const memoText = `*MEMORANDO EXECUTIVO · AGENTE RS*\n` +
-      `Plataforma: RSBUILD OS\n` +
+    const memoText = `*MEMORANDO ESTRATÉGICO · AGENTE RS*\n` +
+      `Workspace: ${companyName}\n` +
       `Data: ${new Date().toLocaleDateString("pt-BR")}\n` +
       `Score Operacional: ${healthScore}%\n` +
       `Faturamento do Dia: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
@@ -149,24 +150,6 @@ export function TorreControleView({
       setSyncStatus("Lote de pedidos e conciliações conferido com sucesso pelo Agente RS! Arquivos gerados para auditoria.");
       setTimeout(() => setSyncStatus(null), 5000);
     }, 1200);
-  }
-
-  // Se o usuário não for diretor/superadmin autorizado:
-  if (!isDirector) {
-    return (
-      <div className="panel" style={{ padding: "48px 32px", textAlign: "center", maxWidth: "600px", margin: "40px auto" }}>
-        <div style={{ fontSize: "40px", marginBottom: "16px" }}>🔒</div>
-        <div className="eyebrow" style={{ color: "var(--red-text, #EF4444)" }}>GOVERNANÇA & ALÇADA EXECUTIVA</div>
-        <h2 style={{ fontSize: "20px", marginTop: "8px", marginBottom: "12px" }}>Acesso Restrito à Diretoria</h2>
-        <p style={{ color: "var(--muted)", fontSize: "13px", lineHeight: "1.6", marginBottom: "24px" }}>
-          Esta visão consolida métricas estratégicas de faturamento, capacidade de carga e pareceres do Agente RS. 
-          O usuário <code>{currentUserEmail || "Operador"}</code> não possui permissão de conselho/diretoria.
-        </p>
-        <button className="primary-button" onClick={() => onNavigateToTab("visao-geral")}>
-          Voltar para Visão Geral Operacional
-        </button>
-      </div>
-    );
   }
 
   return (
@@ -190,12 +173,12 @@ export function TorreControleView({
                 padding: "2px 8px"
               }}
             >
-              C-LEVEL & CONTROLADORIA
+              CENTRAL DE COMANDO
             </span>
           </div>
           <h1>Torre de Controle Operacional</h1>
           <p>
-            Governança central orientada a dados: visão cruzada entre pedidos, expedição e contas a receber assistida pelo Agente RS.
+            Governança central orientada a dados do workspace <strong>{companyName}</strong>: visão cruzada entre pedidos, expedição e contas a receber assistida pelo Agente RS.
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>

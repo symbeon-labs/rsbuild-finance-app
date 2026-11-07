@@ -124,10 +124,6 @@ export function Sidebar({
 
       <nav className="nav-list" aria-label="Navegação principal">
         {ALL_NAV_ITEMS.filter((item) => {
-          // Torre de Controle existe exclusivamente no Hub Açaí Salvador (não há diretoria no rsbuild nem no mundo do sabor)
-          if (item.id === "torre-controle") {
-            return orgHasExecutiveTower(currentOrgId);
-          }
           if (item.module === "all") return true;
           return item.module === activeModule;
         }).map((item) => (
@@ -150,7 +146,7 @@ export function Sidebar({
                   color: "var(--rsbuild-terracotta)"
                 }}
               >
-                HUB AÇAÍ
+                AGENTE RS
               </span>
             )}
           </button>

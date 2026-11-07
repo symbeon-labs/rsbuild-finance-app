@@ -23,8 +23,8 @@ export interface OrganizationPreset {
   description: string;
 }
 
-export function orgHasExecutiveTower(orgId?: OrganizationId): boolean {
-  return orgId === "hub_acai";
+export function orgHasExecutiveTower(_orgId?: OrganizationId): boolean {
+  return true;
 }
 
 export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
@@ -36,8 +36,8 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     badge: "🏢 HOLDING",
     defaultModule: "finance",
     enabledModules: { finance: true, logistics: false },
-    hasExecutiveTower: false,
-    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter) e fluxo de caixa."
+    hasExecutiveTower: true,
+    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter), fluxo de caixa e Torre de Controle."
   },
   {
     id: "hub_acai",
@@ -48,7 +48,7 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     defaultModule: "logistics",
     enabledModules: { finance: true, logistics: true },
     hasExecutiveTower: true,
-    description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), cruzamento de canhotos e Torre de Controle de Operações."
+    description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), cruzamento de canhotos e Torre de Controle."
   },
   {
     id: "mundo_sabor",
@@ -58,8 +58,8 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     badge: "🏭 INDÚSTRIA",
     defaultModule: "finance",
     enabledModules: { finance: true, logistics: true },
-    hasExecutiveTower: false,
-    description: "Indústria alimentícia com conciliação multibanco, liquidação de recebíveis Omie e canhotos SEFAZ."
+    hasExecutiveTower: true,
+    description: "Indústria alimentícia com conciliação multibanco, liquidação de recebíveis Omie, canhotos SEFAZ e Torre de Controle."
   }
 ];
 
