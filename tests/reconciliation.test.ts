@@ -55,7 +55,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-1",
     date: "2026-04-11",
     description: "TED 0341999888 Supermercado Bahia",
-    amount: 1500.0,
+    amountMinor: 150000,
     direction: "entrada",
     category: "Recebimentos",
     source: "Itaú Unibanco",
@@ -67,7 +67,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-2",
     date: "2026-04-12",
     description: "PIX Recebido NF-4581",
-    amount: 3250.5, // 50 reais de juros de mora
+    amountMinor: 325050, // 50 reais de juros de mora
     direction: "entrada",
     category: "Recebimentos",
     source: "Banco do Nordeste (BNB)",
@@ -79,7 +79,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-3",
     date: "2026-04-15",
     description: "Depósito identificado",
-    amount: 850.0, // Valor exato na data de vencimento
+    amountMinor: 85000, // Valor exato na data de vencimento
     direction: "entrada",
     category: "Recebimentos",
     source: "Banco Inter",
@@ -91,7 +91,7 @@ const sampleRecords: FinancialRecord[] = [
     id: "rec-4",
     date: "2026-04-10",
     description: "Pagamento de Fornecedor Farinha",
-    amount: 1500.0, // Mesmo valor de tit-001, mas é SAÍDA bancária!
+    amountMinor: 150000, // Mesmo valor de tit-001, mas é SAÍDA bancária!
     direction: "saída",
     category: "Fornecedores",
     source: "Itaú Unibanco",

@@ -1,0 +1,36 @@
+name: Database tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/database-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/database-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  database-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: v2.stable
+
+      - name: Start local Supabase stack
+        run: supabase start -x studio,edge-runtime,logflare,vector
+
+      - name: Apply migrations and run pgTAP tests
+        run: supabase test db
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop --no-backup
