@@ -621,7 +621,11 @@ export default function EnterpriseWorkspace() {
                 setSection("visao-geral");
               }}
             >
-              <span>💼</span> Finanças
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+              <span>Finanças</span>
             </button>
             <button
               type="button"
@@ -631,17 +635,41 @@ export default function EnterpriseWorkspace() {
                 setSection("pedidos-ha");
               }}
             >
-              <span>🚚</span> Logística
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="3" width="15" height="13" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+              <span>Logística</span>
             </button>
           </div>
         ) : (
           <div className="module-badge-single">
-            <span>{enabledModules.logistics ? "🚚 MÓDULO LOGÍSTICA" : "💼 MÓDULO FINANCEIRO"}</span>
+            {enabledModules.logistics ? (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="3" width="15" height="13" />
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                  <circle cx="5.5" cy="18.5" r="2.5" />
+                  <circle cx="18.5" cy="18.5" r="2.5" />
+                </svg>
+                <span>MÓDULO LOGÍSTICA</span>
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+                <span>MÓDULO FINANCEIRO</span>
+              </>
+            )}
           </div>
         )}
 
         <div className="workspace-label">
-          {activeModule === "finance" ? "MÓDULO FINANCEIRO" : "MÓDULO LOGÍSTICA & EXPEDIÇÃO"}
+          {activeModule === "finance" ? "MENU FINANCEIRO" : "MENU LOGÍSTICA"}
         </div>
 
         <nav className="nav-list" aria-label="Navegação principal">
