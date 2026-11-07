@@ -979,10 +979,10 @@ export default function EnterpriseWorkspace() {
                             <td>
                               {m.statementRecord ? (
                                 <div>
-                                  <strong style={{ fontSize: "12px", color: "#0F172A" }}>
+                                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>
                                     {formatCurrency(m.statementRecord.amount)} em {formatDate(m.statementRecord.date)}
                                   </strong>
-                                  <span style={{ display: "block", fontSize: "11px", color: "#64748B" }}>
+                                  <span style={{ display: "block", fontSize: "11px", color: "var(--muted)" }}>
                                     {m.statementRecord.source} · {m.statementRecord.sourceRecordId ? `FITID: ${m.statementRecord.sourceRecordId}` : ""}
                                   </span>
                                 </div>
@@ -1186,8 +1186,8 @@ export default function EnterpriseWorkspace() {
                             <td>
                               {p.receiverName ? (
                                 <div>
-                                  <strong style={{ fontSize: "11px", color: "#1E293B" }}>{p.receiverName}</strong>
-                                  <span style={{ display: "block", fontSize: "10px", color: "#64748B" }}>
+                                  <strong style={{ fontSize: "11px", color: "var(--ink)" }}>{p.receiverName}</strong>
+                                  <span style={{ display: "block", fontSize: "10px", color: "var(--muted)" }}>
                                     {p.deliveryDate ? formatDate(p.deliveryDate) : "Data não informada"} {p.receiverDocument ? `· ${p.receiverDocument}` : ""}
                                   </span>
                                 </div>
