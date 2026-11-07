@@ -122,7 +122,22 @@ export function Sidebar({
             onClick={() => onSelectSection(item.id)}
           >
             <span className="nav-icon">{item.icon}</span>
-            {item.label}
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {item.id === "torre-controle" && (
+              <span
+                style={{
+                  fontSize: "8.5px",
+                  fontWeight: 700,
+                  letterSpacing: "0.5px",
+                  padding: "2px 5px",
+                  borderRadius: "4px",
+                  background: "var(--rsbuild-terracotta-soft)",
+                  color: "var(--rsbuild-terracotta)"
+                }}
+              >
+                DIRETORIA
+              </span>
+            )}
           </button>
         ))}
       </nav>

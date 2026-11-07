@@ -6,6 +6,7 @@ export type ModuleType = "finance" | "logistics";
 
 export type NavSection =
   | "visao-geral"
+  | "torre-controle"
   | "movimentacoes"
   | "importacoes"
   | "baixas"
@@ -21,8 +22,11 @@ export interface NavItem {
 }
 
 export const ALL_NAV_ITEMS: NavItem[] = [
-  // Módulo Financeiro
+  // Visões Transversais
   { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "all" },
+  { id: "torre-controle", label: "Torre de Controle", icon: "⎈", module: "all" },
+
+  // Módulo Financeiro
   { id: "movimentacoes", label: "Movimentações", icon: "⇄", module: "finance" },
   { id: "importacoes", label: "Importações", icon: "⇧", module: "finance" },
   { id: "baixas", label: "Baixas & Liquidações", icon: "✓", module: "finance" },

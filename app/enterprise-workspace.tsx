@@ -48,6 +48,7 @@ import { BaixasView } from "@/app/components/finance/baixas-view";
 import { RelatoriosDreView } from "@/app/components/finance/relatorios-dre-view";
 import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
+import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 
 const SUPERADMIN_EMAILS = ["neo.sh1w4@gmail.com"];
 
@@ -58,7 +59,7 @@ export default function EnterpriseWorkspace() {
   // URL Sync para Seção e Módulo
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "movimentacoes", "importacoes", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
+    urlTab && ["visao-geral", "torre-controle", "movimentacoes", "importacoes", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -528,6 +529,22 @@ export default function EnterpriseWorkspace() {
               totals={totals}
               onNavigateToMovimentacoes={() => navigateTo("movimentacoes")}
               onOpenImport={() => inputRef.current?.click()}
+            />
+          )}
+          {section === "torre-controle" && (
+            <TorreControleView
+              isDirector={isSuperAdmin}
+              currentUserEmail={currentUserEmail}
+              records={records}
+              totals={totals}
+              titles={titles}
+              matches={matches}
+              proofs={proofs}
+              deliveryMetrics={deliveryMetrics}
+              evaluations={evaluations}
+              orders={orders}
+              hubAcaiMetrics={hubAcaiMetrics}
+              onNavigateToTab={navigateTo}
             />
           )}
           {section === "movimentacoes" && (
