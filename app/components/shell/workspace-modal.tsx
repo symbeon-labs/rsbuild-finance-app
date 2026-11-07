@@ -1,15 +1,16 @@
 "use client";
 
 import { useRef } from "react";
+import { EnabledModulesConfig } from "@/app/types/workspace";
 
 interface WorkspaceModalProps {
   isOpen: boolean;
   companyName: string;
   companyLogoUrl: string;
   isSuperAdmin: boolean;
-  enabledModules: { finance: boolean; logistics: boolean };
+  enabledModules: EnabledModulesConfig;
   onClose: () => void;
-  onSave: (name: string, logoUrl: string, modules?: { finance: boolean; logistics: boolean }) => void;
+  onSave: (name: string, logoUrl: string, modules?: EnabledModulesConfig) => void;
   onUploadLogo: (file: File) => void;
 }
 
@@ -69,9 +70,11 @@ export function WorkspaceModal({
             const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
             const modFinanceInput = form.elements.namedItem("modFinance") as HTMLInputElement;
             const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
+            const modExecutiveInput = form.elements.namedItem("modExecutive") as HTMLInputElement;
             onSave(nameInput.value, urlInput.value || companyLogoUrl, {
               finance: modFinanceInput ? modFinanceInput.checked : true,
-              logistics: modLogisticsInput ? modLogisticsInput.checked : true
+              logistics: modLogisticsInput ? modLogisticsInput.checked : true,
+              executive: modExecutiveInput ? modExecutiveInput.checked : true
             });
           }}
           style={{ display: "grid", gap: "16px", marginTop: "16px" }}
@@ -170,6 +173,15 @@ export function WorkspaceModal({
                     style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
                   />
                   <span>🚚 Módulo Logística & Expedição (WhatsApp, Canhotos & Cargas)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", cursor: "pointer", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    name="modExecutive"
+                    defaultChecked={enabledModules.executive}
+                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                  />
+                  <span>🏛️ Módulo Diretoria & Governança (Torre de Controle, Agente RS & BI)</span>
                 </label>
               </div>
             </div>

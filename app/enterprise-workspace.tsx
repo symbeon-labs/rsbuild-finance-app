@@ -36,7 +36,8 @@ import {
   INITIAL_SAMPLE_PROOFS,
   INITIAL_SAMPLE_HA_ORDERS,
   type ModuleType,
-  type NavSection
+  type NavSection,
+  type EnabledModulesConfig
 } from "@/app/types/workspace";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
@@ -65,12 +66,21 @@ export default function EnterpriseWorkspace() {
 
   const [section, setSection] = useState<NavSection>(initialSection);
   const [activeModule, setActiveModule] = useState<ModuleType>(
-    initialSection === "canhotos" || initialSection === "pedidos-ha" ? "logistics" : "finance"
+    initialSection === "torre-controle"
+      ? "executive"
+      : initialSection === "canhotos" || initialSection === "pedidos-ha"
+      ? "logistics"
+      : "finance"
   );
 
   function navigateTo(nextSection: NavSection) {
     setSection(nextSection);
-    const mod = nextSection === "canhotos" || nextSection === "pedidos-ha" ? "logistics" : "finance";
+    const mod: ModuleType =
+      nextSection === "torre-controle"
+        ? "executive"
+        : nextSection === "canhotos" || nextSection === "pedidos-ha"
+        ? "logistics"
+        : "finance";
     setActiveModule(mod);
     router.push(`/?tab=${nextSection}`, { scroll: false });
   }
@@ -123,9 +133,10 @@ export default function EnterpriseWorkspace() {
   }
 
   // Controle de Módulos Habilitados
-  const [enabledModules, setEnabledModules] = useState<{ finance: boolean; logistics: boolean }>({
+  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({
     finance: true,
-    logistics: true
+    logistics: true,
+    executive: true
   });
 
   const isSuperAdmin = useMemo(() => {
@@ -210,7 +221,7 @@ export default function EnterpriseWorkspace() {
     } catch {}
   }, [orders]);
 
-  function handleSaveCompanyConfig(name: string, logo: string, modules?: { finance: boolean; logistics: boolean }) {
+  function handleSaveCompanyConfig(name: string, logo: string, modules?: EnabledModulesConfig) {
     setCompanyName(name);
     setCompanyLogoUrl(logo);
     if (modules) {
@@ -220,8 +231,10 @@ export default function EnterpriseWorkspace() {
       } catch {}
       if (!modules.finance && modules.logistics && activeModule === "finance") {
         navigateTo("pedidos-ha");
-      } else if (modules.finance && !modules.logistics && activeModule === "logistics") {
+      } else if (!modules.logistics && modules.finance && activeModule === "logistics") {
         navigateTo("visao-geral");
+      } else if (modules.executive && !modules.finance && !modules.logistics) {
+        navigateTo("torre-controle");
       }
     }
     try {
@@ -498,7 +511,9 @@ export default function EnterpriseWorkspace() {
         enabledModules={enabledModules}
         onSelectModule={(mod) => {
           setActiveModule(mod);
-          navigateTo(mod === "finance" ? "visao-geral" : "pedidos-ha");
+          const defaultSection: NavSection =
+            mod === "executive" ? "torre-controle" : mod === "logistics" ? "pedidos-ha" : "visao-geral";
+          navigateTo(defaultSection);
         }}
         onSelectSection={navigateTo}
         onOpenConfig={() => setIsConfigOpen(true)}

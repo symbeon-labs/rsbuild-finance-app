@@ -1,14 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { ALL_NAV_ITEMS, ModuleType, NavSection } from "@/app/types/workspace";
+import { ALL_NAV_ITEMS, EnabledModulesConfig, ModuleType, NavSection } from "@/app/types/workspace";
 
 interface SidebarProps {
   companyName: string;
   companyLogoUrl: string;
   activeModule: ModuleType;
   section: NavSection;
-  enabledModules: { finance: boolean; logistics: boolean };
+  enabledModules: EnabledModulesConfig;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
@@ -55,37 +55,71 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Seletor de Módulos (Visível se ambos os módulos estiverem contratados/ativos) */}
-      {enabledModules.finance && enabledModules.logistics ? (
+      {/* Seletor de Módulos (Visível se mais de 1 módulo estiver ativo) */}
+      {[enabledModules.finance, enabledModules.logistics, enabledModules.executive].filter(Boolean).length > 1 ? (
         <div className="module-switcher-container">
-          <button
-            type="button"
-            className={activeModule === "finance" ? "module-tab active" : "module-tab"}
-            onClick={() => onSelectModule("finance")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-            </svg>
-            <span>Finanças</span>
-          </button>
-          <button
-            type="button"
-            className={activeModule === "logistics" ? "module-tab active" : "module-tab"}
-            onClick={() => onSelectModule("logistics")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="3" width="15" height="13" />
-              <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
-              <circle cx="5.5" cy="18.5" r="2.5" />
-              <circle cx="18.5" cy="18.5" r="2.5" />
-            </svg>
-            <span>Logística</span>
-          </button>
+          {enabledModules.finance && (
+            <button
+              type="button"
+              className={activeModule === "finance" ? "module-tab active" : "module-tab"}
+              onClick={() => onSelectModule("finance")}
+              title="Módulo Financeiro & Controladoria"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+              <span>Finanças</span>
+            </button>
+          )}
+
+          {enabledModules.logistics && (
+            <button
+              type="button"
+              className={activeModule === "logistics" ? "module-tab active" : "module-tab"}
+              onClick={() => onSelectModule("logistics")}
+              title="Módulo Logística & Expedição"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="3" width="15" height="13" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+              <span>Logística</span>
+            </button>
+          )}
+
+          {enabledModules.executive && (
+            <button
+              type="button"
+              className={activeModule === "executive" ? "module-tab active" : "module-tab"}
+              onClick={() => onSelectModule("executive")}
+              title="Módulo Diretoria & Governança"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <line x1="12" y1="3" x2="12" y2="21" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Diretoria</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="module-badge-single">
-          {enabledModules.logistics ? (
+          {enabledModules.executive ? (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <line x1="12" y1="3" x2="12" y2="21" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>MÓDULO DIRETORIA</span>
+            </>
+          ) : enabledModules.logistics ? (
             <>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="1" y="3" width="15" height="13" />
@@ -108,7 +142,11 @@ export function Sidebar({
       )}
 
       <div className="workspace-label">
-        {activeModule === "finance" ? "MENU FINANCEIRO" : "MENU LOGÍSTICA"}
+        {activeModule === "finance"
+          ? "MENU FINANCEIRO"
+          : activeModule === "logistics"
+          ? "MENU LOGÍSTICA"
+          : "MENU DIRETORIA & GOVERNANÇA"}
       </div>
 
       <nav className="nav-list" aria-label="Navegação principal">

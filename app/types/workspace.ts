@@ -2,7 +2,13 @@ import { ReceivableTitle } from "@/lib/reconciliation";
 import { DeliveryProof } from "@/lib/delivery";
 import { ParsedWhatsAppOrder } from "@/lib/orders";
 
-export type ModuleType = "finance" | "logistics";
+export type ModuleType = "finance" | "logistics" | "executive";
+
+export interface EnabledModulesConfig {
+  finance: boolean;
+  logistics: boolean;
+  executive: boolean;
+}
 
 export type NavSection =
   | "visao-geral"
@@ -22,11 +28,8 @@ export interface NavItem {
 }
 
 export const ALL_NAV_ITEMS: NavItem[] = [
-  // Visões Transversais
-  { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "all" },
-  { id: "torre-controle", label: "Torre de Controle", icon: "⎈", module: "all" },
-
   // Módulo Financeiro
+  { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "finance" },
   { id: "movimentacoes", label: "Movimentações", icon: "⇄", module: "finance" },
   { id: "importacoes", label: "Importações", icon: "⇧", module: "finance" },
   { id: "baixas", label: "Baixas & Liquidações", icon: "✓", module: "finance" },
@@ -34,7 +37,10 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 
   // Módulo Logística & Expedição
   { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱", module: "logistics" },
-  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" }
+  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" },
+
+  // Módulo Diretoria & Governança (C-Level)
+  { id: "torre-controle", label: "Torre de Controle", icon: "⎈", module: "executive" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
