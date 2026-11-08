@@ -1,45 +1,50 @@
-# RSBUILD Finance App
+# RSBUILD OS
 
-Aplicação financeira desenvolvida para apoiar os processos e as operações da RSBUILD.
+**Enterprise operating platform — Finance is the first structured domain.**
 
-## Visão geral
+RSBUILD OS is the evolving application platform for organizing validated business domains, workflows and data under shared foundations for identity, authorization, governance, auditability and controlled integration.
 
-A aplicação oferece uma área de trabalho para acompanhamento de movimentações financeiras, importação de extratos e consulta de informações operacionais.
+This repository, historically named `rsbuild-finance-app`, is the application base for RSBUILD OS. Its existing history and Finance implementation are preserved. The repository slug remains unchanged during the transition to avoid breaking deployment and integration references.
 
-## Funcionalidades em desenvolvimento
+## Product scope
 
-- Painel de visão geral com indicadores financeiros.
-- Consulta e pesquisa de movimentações.
-- Importação e pré-visualização de arquivos CSV e OFX.
-- Organização de contas, fontes e relatórios.
-- Evolução progressiva das integrações e rotinas financeiras.
+- **Platform:** workspace, identity integration, organization membership, authorization enforcement, application workflows and shared operational capabilities.
+- **Finance:** first structured domain, evolving from the existing financial application.
+- **Other domains:** Purchasing, Inventory, Production, Commercial, Logistics and Corporate Services are discovery candidates. They are not represented as implemented or committed capabilities.
+- **Integration Layer:** controlled, versioned adapters and mappings between application domains and approved external/provider contracts.
+- **Symbeon Financial Core:** independent provider-owned financial infrastructure. RSBUILD OS consumes only approved versioned interfaces; Core internals and methodology remain outside this repository.
 
-## Desenvolvimento
+## Current implementation status
 
-Requisitos: Node.js 22 ou superior.
+This repository remains an evolving prototype/application foundation. Existing Finance capabilities and their limitations are documented in the Finance-domain implementation and MVP handoff documents. The RSBUILD OS product decision does not imply platform-wide completion, production readiness, tenant isolation, or live ERP/Core integration.
+
+## Architecture and migration
+
+- [RSBUILD OS Architecture & Repository Migration v1.0](docs/RSBUILD_OS_ARCHITECTURE_MIGRATION_v1.0.md)
+- [Original Finance Architecture Baseline v1.0](docs/ARCHITECTURE_BASELINE_v1.0.md) — retained as the initial technical baseline; product scope is superseded by the migration document.
+- [Finance-domain implementation plan](docs/IMPLEMENTATION_PLAN.md)
+- [Finance-domain roadmap](docs/ROADMAP.md)
+- [Application integration guidelines](docs/INTEGRATION_CONTRACT.md)
+- [MVP readiness handoff](docs/MVP_READINESS_HANDOFF.md)
+- [RSBUILD product brand assets](docs/BRAND_ASSETS.md)
+- [Reusable brand kit and product export](docs/BRAND_KIT_EXPORT.md)
+
+**Architecture status:** proposed and subject to review. Documentation does not authorize runtime, schema, infrastructure, Core-contract or production changes.
+
+## Development
+
+Requirements: Node.js 22 or newer.
 
 ```bash
 npm install
 npm run dev
 ```
 
-A aplicação estará disponível em http://localhost:3000.
+The application is available at http://localhost:3000.
 
-## Validação
+## Validation
 
 ```bash
 npm run typecheck
 npm run build
 ```
-
-## Documentação
-
-- [Architecture Baseline v1.0](docs/ARCHITECTURE_BASELINE_v1.0.md)
-- [Contrato de integração](docs/INTEGRATION_CONTRACT.md)
-- [Plano de implementação](docs/IMPLEMENTATION_PLAN.md)
-- [Roadmap](docs/ROADMAP.md)
-- [MVP readiness handoff](docs/MVP_READINESS_HANDOFF.md)
-- [RSBUILD product brand assets](docs/BRAND_ASSETS.md)
-- [Reusable brand kit and product export](docs/BRAND_KIT_EXPORT.md)
-
-**Architecture status:** Proposed. The architecture document is a review baseline, not an implementation or production-readiness claim.
