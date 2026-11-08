@@ -30,12 +30,14 @@ export function WorkspaceModal({
   const [selectedOrg, setSelectedOrg] = useState<OrganizationId>(currentOrgId);
   const [typedName, setTypedName] = useState<string>(companyName);
   const [activeModulesState, setActiveModulesState] = useState<EnabledModulesConfig>(enabledModules);
+  const [showTenantSelector, setShowTenantSelector] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedOrg(currentOrgId);
       setTypedName(companyName);
       setActiveModulesState(enabledModules);
+      setShowTenantSelector(false); // Garante que começa recolhido para reuniões
     }
   }, [isOpen, currentOrgId, companyName, enabledModules]);
 
@@ -49,10 +51,10 @@ export function WorkspaceModal({
 
   return (
     <div className="workspace-modal-backdrop" onClick={onClose}>
-      <div className="workspace-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
+      <div className="workspace-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "620px" }}>
         <div className="workspace-modal-header">
           <div>
-            <span className="eyebrow">CUSTOMIZAÇÃO DA EMPRESA</span>
+            <span className="eyebrow">CUSTOMIZAÇÃO CORPORATIVA</span>
             <h3>Identidade do Workspace</h3>
           </div>
           <button
@@ -66,54 +68,82 @@ export function WorkspaceModal({
         </div>
 
         <p className="workspace-modal-desc">
-          Personalize a razão social, o logotipo e a parametrização dos módulos do ambiente operacional.
+          Personalize a razão social, logotipo institucional e o portfólio de produtos ativos neste ambiente.
         </p>
 
-        {/* Seletor Multi-Tenant Restrito ao Superadmin */}
+        {/* Trava de Blindagem Multi-Tenant / Seletor Restrito com Modo Apresentação */}
         {isSuperAdmin && (
           <div style={{ marginBottom: "16px", border: "1px solid var(--line)", borderRadius: "8px", padding: "12px", background: "var(--surface)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "1px", color: "var(--rsbuild-terracotta)", fontFamily: "var(--font-brand)" }}>
-                EMPRESAS HOMOLOGADAS (EXCLUSIVO SUPERADMIN)
-              </span>
-              <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                🔒 Alçada Symbeon
-              </span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "var(--green-text, #10B981)" }} />
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-brand)", letterSpacing: "0.5px" }}>
+                  NÚCLEO ATIVO: {selectedOrg === "rsbuild" ? "RSBUILD INOVAÇÃO" : selectedOrg === "hub_acai" ? "HUB AÇAÍ SALVADOR" : "MUNDO DO SABOR"}
+                </span>
+                <span style={{ fontSize: "9px", background: "rgba(16, 185, 129, 0.12)", color: "var(--green-text, #10B981)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
+                  Blindado
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTenantSelector(!showTenantSelector)}
+                style={{
+                  fontSize: "10px",
+                  background: "transparent",
+                  border: "1px solid var(--line)",
+                  color: "var(--muted)",
+                  padding: "3px 8px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                {showTenantSelector ? "▲ Ocultar Núcleos" : "⚙️ Alternar Núcleo"}
+              </button>
             </div>
-            <p style={{ fontSize: "11px", color: "var(--muted)", margin: "0 0 10px" }}>
-              Selecione uma das 3 empresas homologadas para carregar seus dados e parametrização operacional:
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-              {ORGANIZATION_PRESETS.map((preset) => {
-                const isCurrent = selectedOrg === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => handleSelectPreset(preset)}
-                    style={{
-                      border: isCurrent ? "2px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
-                      background: isCurrent ? "var(--surface-raised, rgba(255,255,255,0.06))" : "transparent",
-                      borderRadius: "6px",
-                      padding: "8px 6px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    <span style={{ fontSize: "9px", fontWeight: 700, color: "var(--rsbuild-terracotta)", display: "block" }}>
-                      {preset.badge}
-                    </span>
-                    <strong style={{ fontSize: "11.5px", color: "var(--ink)", display: "block", marginTop: "2px" }}>
-                      {preset.id === "rsbuild" ? "RSBUILD" : preset.id === "hub_acai" ? "Hub Açaí" : "Mundo do Sabor"}
-                    </strong>
-                    <span style={{ fontSize: "9.5px", color: "var(--muted)", display: "block", marginTop: "2px" }}>
-                      {preset.tagline}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+
+            {/* Painel de seleção de empresas (oculto por padrão durante reuniões) */}
+            {showTenantSelector && (
+              <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed var(--line)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--rsbuild-terracotta)", letterSpacing: "0.8px" }}>
+                    ALÇADA SYMBEON · NÚCLEOS HOMOLOGADOS
+                  </span>
+                  <span style={{ fontSize: "9px", color: "var(--muted)" }}>Confidencial</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  {ORGANIZATION_PRESETS.map((preset) => {
+                    const isCurrent = selectedOrg === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleSelectPreset(preset)}
+                        style={{
+                          border: isCurrent ? "2px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
+                          background: isCurrent ? "var(--surface-raised, rgba(255,255,255,0.06))" : "transparent",
+                          borderRadius: "6px",
+                          padding: "8px 6px",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        <span style={{ fontSize: "9px", fontWeight: 700, color: "var(--rsbuild-terracotta)", display: "block" }}>
+                          {preset.badge}
+                        </span>
+                        <strong style={{ fontSize: "11px", color: "var(--ink)", display: "block", marginTop: "2px" }}>
+                          {preset.id === "rsbuild" ? "RSBUILD" : preset.id === "hub_acai" ? "Hub Açaí" : "Mundo do Sabor"}
+                        </strong>
+                        <span style={{ fontSize: "9px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.3" }}>
+                          {preset.tagline}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -228,46 +258,141 @@ export function WorkspaceModal({
                   🔒 Acesso Symbeon
                 </span>
               </div>
-              <div style={{ display: "grid", gap: "10px", background: "var(--bg)", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "10px" }}>
+                {/* 1. Finanças */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: activeModulesState.finance ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
+                    background: activeModulesState.finance ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}
+                >
                   <input
                     type="checkbox"
                     name="modFinance"
                     checked={activeModulesState.finance}
                     onChange={(e) => setActiveModulesState((curr) => ({ ...curr, finance: e.target.checked }))}
-                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
                   />
-                  <span>💼 1. Módulo Financeiro (Extratos Bancários, Movimentações & DRE)</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: "12px", color: "var(--ink)" }}>💼 1. Finanças & Caixa</strong>
+                      <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.finance ? "var(--green-text, #10B981)" : "var(--muted)" }}>
+                        {activeModulesState.finance ? "● ATIVO" : "○ INATIVO"}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "10.5px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.3" }}>
+                      Extratos bancários multibanco (OFX/CSV), lançamentos e DRE.
+                    </span>
+                  </div>
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
+
+                {/* 2. Reconciliação */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: activeModulesState.reconciliation ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
+                    background: activeModulesState.reconciliation ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}
+                >
                   <input
                     type="checkbox"
                     name="modReconciliation"
                     checked={activeModulesState.reconciliation}
                     onChange={(e) => setActiveModulesState((curr) => ({ ...curr, reconciliation: e.target.checked }))}
-                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
                   />
-                  <span>⚡ 2. Módulo Reconciliação ERP (Matching Inteligente & Baixas em Lote Omie)</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: "12px", color: "var(--ink)" }}>⚡ 2. Reconciliação ERP</strong>
+                      <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.reconciliation ? "var(--green-text, #10B981)" : "var(--muted)" }}>
+                        {activeModulesState.reconciliation ? "● ATIVO" : "○ INATIVO"}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "10.5px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.3" }}>
+                      Matching autônomo de títulos x extratos e liquidações em lote no Omie.
+                    </span>
+                  </div>
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
+
+                {/* 3. Logística */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: activeModulesState.logistics ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
+                    background: activeModulesState.logistics ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}
+                >
                   <input
                     type="checkbox"
                     name="modLogistics"
                     checked={activeModulesState.logistics}
                     onChange={(e) => setActiveModulesState((curr) => ({ ...curr, logistics: e.target.checked }))}
-                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
                   />
-                  <span>🚚 3. Módulo Logística & Expedição (WhatsApp, Cubagem HR & Canhotos Doca)</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: "12px", color: "var(--ink)" }}>🚚 3. Logística & Expedição</strong>
+                      <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.logistics ? "var(--green-text, #10B981)" : "var(--muted)" }}>
+                        {activeModulesState.logistics ? "● ATIVO" : "○ INATIVO"}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "10.5px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.3" }}>
+                      Decodificação WhatsApp B2B, cubagem de frota e canhotos de entrega.
+                    </span>
+                  </div>
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
+
+                {/* 4. Auditoria */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: activeModulesState.audit ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
+                    background: activeModulesState.audit ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}
+                >
                   <input
                     type="checkbox"
                     name="modAudit"
                     checked={activeModulesState.audit}
                     onChange={(e) => setActiveModulesState((curr) => ({ ...curr, audit: e.target.checked }))}
-                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
                   />
-                  <span>⚖️ 4. Módulo Auditoria & Compliance Jurídico (Agente RS · Blindagem & Laudos)</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: "12px", color: "var(--ink)" }}>⚖️ 4. Auditoria & Agente RS</strong>
+                      <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.audit ? "var(--green-text, #10B981)" : "var(--muted)" }}>
+                        {activeModulesState.audit ? "● ATIVO" : "○ INATIVO"}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "10.5px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.3" }}>
+                      Blindagem jurídica (Lei 5.474/68), laudos periciais e integração RS Advogados.
+                    </span>
+                  </div>
                 </label>
               </div>
             </div>

@@ -82,11 +82,34 @@ export function TorreControleView({
       .sort((a, b) => b.boxes - a.boxes);
   }, [orders]);
 
-  // Diagnóstico Narrativo Gerado pelo Agente RS
-  const rsAgentDiagnosis = useMemo(() => {
-    const revenueFormatted = formatCurrency(hubAcaiMetrics.totalRevenue);
-    const riskAmountFormatted = formatCurrency(deliveryMetrics.atRiskProtestAmount);
+  // Verificação de contexto operacional (Hub Açaí vs RSBUILD / Indústria)
+  const isHubAcai = useMemo(
+    () => companyName.toLowerCase().includes("açaí") || companyName.toLowerCase().includes("acai"),
+    [companyName]
+  );
 
+  // Títulos prontos para baixa
+  const readySettlements = useMemo(
+    () => matches.filter((m) => m.suggestedStatus === "pronto_para_baixa").length,
+    [matches]
+  );
+
+  // Distribuição de Títulos por Banco (para RSBUILD e Indústria)
+  const bankDistribution = useMemo(() => {
+    const counts: Record<string, { count: number; total: number }> = {};
+    titles.forEach((t) => {
+      const b = t.bankAccount || "Outros Bancos";
+      if (!counts[b]) counts[b] = { count: 0, total: 0 };
+      counts[b].count += 1;
+      counts[b].total += t.amount;
+    });
+    return Object.entries(counts)
+      .map(([bank, data]) => ({ bank, ...data }))
+      .sort((a, b) => b.total - a.total);
+  }, [titles]);
+
+  // Diagnóstico Narrativo Gerado pelo Agente RS Adaptativo
+  const rsAgentDiagnosis = useMemo(() => {
     let healthStatus = "Operação Estável";
     let statusTone = "positive";
     if (healthScore < 50) {
@@ -97,36 +120,77 @@ export function TorreControleView({
       statusTone = "neutral";
     }
 
-    const topFlavor = flavorsBreakdown[0]?.flavor || "Tradicional";
-    const topFlavorShare = hubAcaiMetrics.totalBoxes > 0
-      ? Math.round(((flavorsBreakdown[0]?.boxes || 0) / hubAcaiMetrics.totalBoxes) * 100)
-      : 0;
+    if (isHubAcai) {
+      const revenueFormatted = formatCurrency(hubAcaiMetrics.totalRevenue);
+      const riskAmountFormatted = formatCurrency(deliveryMetrics.atRiskProtestAmount);
+      const topFlavor = flavorsBreakdown[0]?.flavor || "Tradicional";
+      const topFlavorShare = hubAcaiMetrics.totalBoxes > 0
+        ? Math.round(((flavorsBreakdown[0]?.boxes || 0) / hubAcaiMetrics.totalBoxes) * 100)
+        : 0;
+
+      return {
+        status: healthStatus,
+        statusTone,
+        summary: `Diagnóstico executivo Hub Açaí: O índice de governança global é de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} sob risco preventivo de protesto devido a ${atRiskProtestCount} nota(s) sem canhoto na doca.`,
+        recommendations: [
+          {
+            priority: "Alta",
+            action: "Blindagem de Cobrança",
+            detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Bloqueio preventivo ativo para evitar protesto indevido (Lei nº 5.474/1968).`
+          },
+          {
+            priority: "Média",
+            action: "Ocupação da Frota HR",
+            detail: hubAcaiMetrics.hrOccupancy > 85
+              ? "Caminhão HR operando próximo da lotação (350 cx). Avaliar suporte de veículo auxiliar na rota."
+              : "Capacidade da frota favorável. Margem livre para acolher novos pedidos sem custo extra de frete."
+          },
+          {
+            priority: "Estratégica",
+            action: "Sincronização Assistida",
+            detail: `${readySettlements} títulos com correspondência bancária exata prontos para liquidação contábil no Omie.`
+          }
+        ]
+      };
+    }
+
+    // Diagnóstico sob medida para RSBUILD e Holding
+    const totalIncomingFormatted = formatCurrency(totals.incoming);
+    const balanceFormatted = formatCurrency(totals.balance);
 
     return {
       status: healthStatus,
       statusTone,
-      summary: `Diagnóstico executivo: O índice de governança global é de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} com bloqueio preventivo de protesto devido a ${atRiskProtestCount} nota(s) sem canhoto na doca. Recomenda-se executar a sincronização assistida para liquidar os títulos conciliados e reter os títulos expostos.`,
+      summary: `Diagnóstico de Auditoria Corporativa · ${companyName}: O índice de governança é de ${healthScore}%. Foram consolidadas ${totalIncomingFormatted} em entradas operacionais, resultando em saldo líquido em caixa de ${balanceFormatted}. Na esteira de reconciliação de ERP (Omie), há ${readySettlements} título(s) com correspondência bancária exata prontos para liquidação em lote sem divergência contábil. Recomenda-se acionar a sincronização assistida para emitir os relatórios de fechamento contábil.`,
       recommendations: [
         {
           priority: "Alta",
-          action: "Blindagem de Cobrança",
-          detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Bloqueio preventivo ativo para evitar protesto indevido (Lei nº 5.474/1968).`
+          action: "Reconciliação ERP & Baixas",
+          detail: `${readySettlements} título(s) identificados com correspondência bancária exata (valor e data) prontos para remessa de baixa no Omie.`
         },
         {
           priority: "Média",
-          action: "Ocupação da Frota",
-          detail: hubAcaiMetrics.hrOccupancy > 85
-            ? "Caminhão HR operando próximo da lotação (350 cx). Avaliar suporte de veículo auxiliar na rota."
-            : "Capacidade da frota favorável. Margem livre para acolher novos pedidos sem custo extra de frete."
+          action: "Governança de Caixa",
+          detail: `Saldo operacional mantido em ${balanceFormatted} distribuído entre as contas homologadas com cobertura de liquidez positiva.`
         },
         {
           priority: "Estratégica",
-          action: "Sincronização Assistida",
-          detail: `${matches.filter((m) => m.suggestedStatus === "pronto_para_baixa").length} títulos com correspondência bancária exata prontos para liquidação contábil no Omie.`
+          action: "Auditoria & DRE",
+          detail: "Demonstrativo contábil e livro razão auditados e sincronizados com os lançamentos de extrato multibanco."
         }
       ]
     };
-  }, [healthScore, hubAcaiMetrics, deliveryMetrics, atRiskProtestCount, flavorsBreakdown, matches]);
+  }, [
+    isHubAcai,
+    healthScore,
+    companyName,
+    hubAcaiMetrics,
+    deliveryMetrics,
+    atRiskProtestCount,
+    flavorsBreakdown,
+    totals,
+    readySettlements
+  ]);
 
   function handleCopyMemo() {
     const memoText = `*MEMORANDO ESTRATÉGICO · AGENTE RS*\n` +
@@ -269,36 +333,64 @@ export function TorreControleView({
       {/* ABA 1: VISÃO ESTRATÉGICA & PARECER DO AGENTE RS */}
       {activeSubTab === "estrategia" && (
         <>
-          {/* Grid de KPIs Macro */}
+          {/* Grid de KPIs Macro Adaptativo ao Workspace */}
           <div className="metric-grid">
             <Metric
-              label="Índice de Saúde Global"
+              label="Índice de Governança"
               value={`${healthScore}%`}
               tone={healthScore >= 75 ? "positive" : healthScore >= 50 ? "neutral" : "negative"}
               detail={`Status operacional: ${rsAgentDiagnosis.status}`}
               icon="⎈"
             />
-            <Metric
-              label="Faturamento do Dia"
-              value={formatCurrency(hubAcaiMetrics.totalRevenue)}
-              tone="positive"
-              detail={`${hubAcaiMetrics.totalBoxes} caixas em ${hubAcaiMetrics.totalOrders} pedidos`}
-              icon="💰"
-            />
-            <Metric
-              label="Ocupação Frota HR"
-              value={`${hubAcaiMetrics.hrOccupancy}%`}
-              tone={hubAcaiMetrics.hrOccupancy > 90 ? "negative" : "positive"}
-              detail={`${hubAcaiMetrics.totalBoxes} / 350 caixas de capacidade`}
-              icon="🚚"
-            />
-            <Metric
-              label="Exposição sob Risco"
-              value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
-              tone={deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "positive"}
-              detail={`${atRiskProtestCount} fatura(s) sem canhoto na doca`}
-              icon="🛡"
-            />
+            {isHubAcai ? (
+              <>
+                <Metric
+                  label="Faturamento do Dia"
+                  value={formatCurrency(hubAcaiMetrics.totalRevenue)}
+                  tone="positive"
+                  detail={`${hubAcaiMetrics.totalBoxes} caixas em ${hubAcaiMetrics.totalOrders} pedidos`}
+                  icon="💰"
+                />
+                <Metric
+                  label="Ocupação Frota HR"
+                  value={`${hubAcaiMetrics.hrOccupancy}%`}
+                  tone={hubAcaiMetrics.hrOccupancy > 90 ? "negative" : "positive"}
+                  detail={`${hubAcaiMetrics.totalBoxes} / 350 caixas de capacidade`}
+                  icon="🚚"
+                />
+                <Metric
+                  label="Exposição sob Risco"
+                  value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
+                  tone={deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "positive"}
+                  detail={`${atRiskProtestCount} fatura(s) sem canhoto na doca`}
+                  icon="🛡"
+                />
+              </>
+            ) : (
+              <>
+                <Metric
+                  label="Entradas Consolidadas"
+                  value={formatCurrency(totals.incoming)}
+                  tone="positive"
+                  detail={`${records.filter((r) => r.direction === "entrada").length} crédito(s) no período`}
+                  icon="↗"
+                />
+                <Metric
+                  label="Saldo Líquido em Caixa"
+                  value={formatCurrency(totals.balance)}
+                  tone={totals.balance >= 0 ? "positive" : "negative"}
+                  detail="Posição consolidada multibanco"
+                  icon="🏦"
+                />
+                <Metric
+                  label="Reconciliação Omie"
+                  value={`${readySettlements} títulos`}
+                  tone="positive"
+                  detail="Prontos para liquidação contábil"
+                  icon="✓"
+                />
+              </>
+            )}
           </div>
 
           {/* Painel do Agente RS */}
@@ -399,46 +491,92 @@ export function TorreControleView({
 
           {/* Gráficos Estratégicos Cruzados */}
           <div className="dashboard-grid" style={{ marginBottom: "24px" }}>
-            {/* Curva de Giro por Sabor */}
+            {/* Gráfico Adaptativo: Curva ABC no Hub Açaí vs Carteiras Bancárias na RSBUILD */}
             <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h2>Distribuição de Demanda por Sabor (Curva ABC)</h2>
-                  <p>Volumes físicos consolidados a partir das mensagens do WhatsApp.</p>
-                </div>
-                <span className="subtle-tag">CAIXAS FÍSICAS</span>
-              </div>
+              {isHubAcai ? (
+                <>
+                  <div className="panel-heading">
+                    <div>
+                      <h2>Distribuição de Demanda por Sabor (Curva ABC)</h2>
+                      <p>Volumes físicos consolidados a partir das mensagens do WhatsApp.</p>
+                    </div>
+                    <span className="subtle-tag">CAIXAS FÍSICAS</span>
+                  </div>
 
-              {flavorsBreakdown.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
-                  {flavorsBreakdown.map((item, idx) => {
-                    const total = hubAcaiMetrics.totalBoxes || 1;
-                    const percentage = Math.round((item.boxes / total) * 100);
-                    return (
-                      <div key={idx}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                          <strong>{item.flavor}</strong>
-                          <span style={{ color: "var(--muted)" }}>
-                            {item.boxes} cx ({percentage}%) · {formatCurrency(item.revenue)}
-                          </span>
-                        </div>
-                        <div style={{ width: "100%", height: "8px", background: "var(--surface-raised, rgba(255,255,255,0.06))", borderRadius: "4px", overflow: "hidden" }}>
-                          <div
-                            style={{
-                              width: `${percentage}%`,
-                              height: "100%",
-                              background: idx === 0 ? "var(--rsbuild-terracotta)" : "var(--ink)",
-                              borderRadius: "4px",
-                              transition: "width 0.4s ease"
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                  {flavorsBreakdown.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                      {flavorsBreakdown.map((item, idx) => {
+                        const total = hubAcaiMetrics.totalBoxes || 1;
+                        const percentage = Math.round((item.boxes / total) * 100);
+                        return (
+                          <div key={idx}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                              <strong>{item.flavor}</strong>
+                              <span style={{ color: "var(--muted)" }}>
+                                {item.boxes} cx ({percentage}%) · {formatCurrency(item.revenue)}
+                              </span>
+                            </div>
+                            <div style={{ width: "100%", height: "8px", background: "var(--surface-raised, rgba(255,255,255,0.06))", borderRadius: "4px", overflow: "hidden" }}>
+                              <div
+                                style={{
+                                  width: `${percentage}%`,
+                                  height: "100%",
+                                  background: idx === 0 ? "var(--rsbuild-terracotta)" : "var(--ink)",
+                                  borderRadius: "4px",
+                                  transition: "width 0.4s ease"
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p style={{ color: "var(--muted)", fontSize: "12px" }}>Nenhum pedido processado para gerar a curva de demanda.</p>
+                  )}
+                </>
               ) : (
-                <p style={{ color: "var(--muted)", fontSize: "12px" }}>Nenhum pedido processado para gerar a curva de demanda.</p>
+                <>
+                  <div className="panel-heading">
+                    <div>
+                      <h2>Distribuição de Títulos por Carteira Bancária</h2>
+                      <p>Concentração de faturamento a receber por instituição financeira.</p>
+                    </div>
+                    <span className="subtle-tag">MULTIBANCO</span>
+                  </div>
+
+                  {bankDistribution.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                      {bankDistribution.map((item, idx) => {
+                        const totalOverall = bankDistribution.reduce((acc, curr) => acc + curr.total, 0) || 1;
+                        const percentage = Math.round((item.total / totalOverall) * 100);
+                        return (
+                          <div key={idx}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                              <strong>{item.bank}</strong>
+                              <span style={{ color: "var(--muted)" }}>
+                                {item.count} título(s) ({percentage}%) · {formatCurrency(item.total)}
+                              </span>
+                            </div>
+                            <div style={{ width: "100%", height: "8px", background: "var(--surface-raised, rgba(255,255,255,0.06))", borderRadius: "4px", overflow: "hidden" }}>
+                              <div
+                                style={{
+                                  width: `${percentage}%`,
+                                  height: "100%",
+                                  background: idx === 0 ? "var(--rsbuild-terracotta)" : "var(--ink)",
+                                  borderRadius: "4px",
+                                  transition: "width 0.4s ease"
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p style={{ color: "var(--muted)", fontSize: "12px" }}>Nenhum título pendente cadastrado para distribuição bancária.</p>
+                  )}
+                </>
               )}
             </section>
 
