@@ -73,17 +73,20 @@ export default function EnterpriseWorkspace() {
       ? urlTab
       : "visao-geral";
 
+  function getModuleForSection(s: NavSection): ModuleType {
+    if (s === "baixas") return "reconciliation";
+    if (s === "pedidos-ha" || s === "canhotos") return "logistics";
+    if (s === "torre-controle") return "audit";
+    return "finance";
+  }
+
   const [section, setSection] = useState<NavSection>(initialSection);
-  const [activeModule, setActiveModule] = useState<ModuleType>(
-    initialSection === "canhotos" || initialSection === "pedidos-ha" ? "logistics" : "finance"
-  );
+  const [activeModule, setActiveModule] = useState<ModuleType>(getModuleForSection(initialSection));
 
   function navigateTo(nextSection: NavSection) {
     setSection(nextSection);
-    if (nextSection === "canhotos" || nextSection === "pedidos-ha") {
-      setActiveModule("logistics");
-    } else if (nextSection !== "torre-controle") {
-      setActiveModule("finance");
+    if (nextSection !== "visao-geral") {
+      setActiveModule(getModuleForSection(nextSection));
     }
     router.push(`/?tab=${nextSection}`, { scroll: false });
   }
@@ -136,10 +139,12 @@ export default function EnterpriseWorkspace() {
     }
   }
 
-  // Controle de Módulos Habilitados
+  // Controle de Módulos Habilitados (4 Produtos Desacoplados)
   const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({
     finance: true,
-    logistics: true
+    reconciliation: true,
+    logistics: true,
+    audit: true
   });
 
   const isSuperAdmin = useMemo(() => {
@@ -171,7 +176,12 @@ export default function EnterpriseWorkspace() {
       const savedModules = localStorage.getItem("rsbuild_workspace_modules");
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
-        setEnabledModules(parsed);
+        setEnabledModules({
+          finance: parsed.finance !== false,
+          reconciliation: parsed.reconciliation !== false,
+          logistics: parsed.logistics !== false,
+          audit: parsed.audit !== false
+        });
       }
       const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "sand") {
@@ -526,7 +536,10 @@ export default function EnterpriseWorkspace() {
         currentOrgId={currentOrgId}
         onSelectModule={(mod) => {
           setActiveModule(mod);
-          navigateTo(mod === "finance" ? "visao-geral" : "pedidos-ha");
+          if (mod === "finance") navigateTo("visao-geral");
+          else if (mod === "reconciliation") navigateTo("baixas");
+          else if (mod === "logistics") navigateTo("pedidos-ha");
+          else if (mod === "audit") navigateTo("torre-controle");
         }}
         onSelectSection={navigateTo}
         onOpenConfig={() => setIsConfigOpen(true)}

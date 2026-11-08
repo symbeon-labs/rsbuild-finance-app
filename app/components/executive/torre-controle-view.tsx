@@ -160,7 +160,7 @@ export function TorreControleView({
           <div className="eyebrow" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
               <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "var(--green-text, #10B981)" }} />
-              <strong>AGENTE RS</strong> · AUDITORIA OPERACIONAL ATIVA
+              <strong>AGENTE RS</strong> · AUDITORIA & BLINDAGEM JURÍDICA
             </span>
             <span
               className="status-pill"
@@ -173,12 +173,12 @@ export function TorreControleView({
                 padding: "2px 8px"
               }}
             >
-              CENTRAL DE COMANDO
+              MÓDULO DE AUDITORIA & COMPLIANCE
             </span>
           </div>
-          <h1>Torre de Controle Operacional</h1>
+          <h1>Torre de Auditoria & Inteligência</h1>
           <p>
-            Governança central orientada a dados do workspace <strong>{companyName}</strong>: visão cruzada entre pedidos, expedição e contas a receber assistida pelo Agente RS.
+            Governança central do workspace <strong>{companyName}</strong>: cruzamento contábil x fiscal, blindagem contra protesto indevido (Lei Federal nº 5.474/1968) e pareceres periciais integráveis à <strong>RS Advogados</strong>.
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>

@@ -136,11 +136,15 @@ export function WorkspaceModal({
             const nameInput = form.elements.namedItem("companyName") as HTMLInputElement;
             const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
             const modFinanceInput = form.elements.namedItem("modFinance") as HTMLInputElement;
+            const modReconciliationInput = form.elements.namedItem("modReconciliation") as HTMLInputElement;
             const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
-            
+            const modAuditInput = form.elements.namedItem("modAudit") as HTMLInputElement;
+
             const nextModules: EnabledModulesConfig = {
               finance: modFinanceInput ? modFinanceInput.checked : activeModulesState.finance,
-              logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics
+              reconciliation: modReconciliationInput ? modReconciliationInput.checked : activeModulesState.reconciliation,
+              logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics,
+              audit: modAuditInput ? modAuditInput.checked : activeModulesState.audit
             };
 
             onSave(nameInput.value, urlInput.value || companyLogoUrl, nextModules, selectedOrg);
@@ -233,7 +237,17 @@ export function WorkspaceModal({
                     onChange={(e) => setActiveModulesState((curr) => ({ ...curr, finance: e.target.checked }))}
                     style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
                   />
-                  <span>💼 Módulo Financeiro (Conciliação, Extratos & Baixas ERP)</span>
+                  <span>💼 1. Módulo Financeiro (Extratos Bancários, Movimentações & DRE)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    name="modReconciliation"
+                    checked={activeModulesState.reconciliation}
+                    onChange={(e) => setActiveModulesState((curr) => ({ ...curr, reconciliation: e.target.checked }))}
+                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                  />
+                  <span>⚡ 2. Módulo Reconciliação ERP (Matching Inteligente & Baixas em Lote Omie)</span>
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
                   <input
@@ -243,7 +257,17 @@ export function WorkspaceModal({
                     onChange={(e) => setActiveModulesState((curr) => ({ ...curr, logistics: e.target.checked }))}
                     style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
                   />
-                  <span>🚚 Módulo Logística & Expedição (WhatsApp, Canhotos & Cargas)</span>
+                  <span>🚚 3. Módulo Logística & Expedição (WhatsApp, Cubagem HR & Canhotos Doca)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", cursor: "pointer", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    name="modAudit"
+                    checked={activeModulesState.audit}
+                    onChange={(e) => setActiveModulesState((curr) => ({ ...curr, audit: e.target.checked }))}
+                    style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px" }}
+                  />
+                  <span>⚖️ 4. Módulo Auditoria & Compliance Jurídico (Agente RS · Blindagem & Laudos)</span>
                 </label>
               </div>
             </div>

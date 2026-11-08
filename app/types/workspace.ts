@@ -2,13 +2,15 @@ import { ReceivableTitle } from "../../lib/reconciliation";
 import { DeliveryProof } from "../../lib/delivery";
 import { ParsedWhatsAppOrder } from "../../lib/orders";
 
-export type ModuleType = "finance" | "logistics";
+export type ModuleType = "finance" | "reconciliation" | "logistics" | "audit";
 
 export type OrganizationId = "rsbuild" | "hub_acai" | "mundo_sabor";
 
 export interface EnabledModulesConfig {
   finance: boolean;
+  reconciliation: boolean;
   logistics: boolean;
+  audit: boolean;
 }
 
 export interface OrganizationPreset {
@@ -35,9 +37,14 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     logoUrl: "",
     badge: "🏢 HOLDING",
     defaultModule: "finance",
-    enabledModules: { finance: true, logistics: false },
+    enabledModules: {
+      finance: true,
+      reconciliation: true,
+      logistics: false,
+      audit: true
+    },
     hasExecutiveTower: true,
-    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter), fluxo de caixa e Torre de Controle."
+    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter), reconciliação de títulos e auditoria contínua."
   },
   {
     id: "hub_acai",
@@ -46,9 +53,14 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     logoUrl: "",
     badge: "🍨 DISTRIBUIÇÃO",
     defaultModule: "logistics",
-    enabledModules: { finance: true, logistics: true },
+    enabledModules: {
+      finance: false,
+      reconciliation: true,
+      logistics: true,
+      audit: true
+    },
     hasExecutiveTower: true,
-    description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), cruzamento de canhotos e Torre de Controle."
+    description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), reconciliação Omie e auditoria de canhotos com inteligência jurídica."
   },
   {
     id: "mundo_sabor",
@@ -57,9 +69,14 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     logoUrl: "",
     badge: "🏭 INDÚSTRIA",
     defaultModule: "finance",
-    enabledModules: { finance: true, logistics: true },
+    enabledModules: {
+      finance: true,
+      reconciliation: true,
+      logistics: true,
+      audit: true
+    },
     hasExecutiveTower: true,
-    description: "Indústria alimentícia com conciliação multibanco, liquidação de recebíveis Omie, canhotos SEFAZ e Torre de Controle."
+    description: "Indústria alimentícia com conciliação multibanco, motor de reconciliação Omie, canhotos SEFAZ e auditoria de conformidade."
   }
 ];
 
@@ -81,19 +98,23 @@ export interface NavItem {
 }
 
 export const ALL_NAV_ITEMS: NavItem[] = [
-  // Visões Globais da Empresa
+  // Visão Global
   { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "all" },
-  { id: "torre-controle", label: "Torre de Controle", icon: "⎈", module: "all" },
 
-  // Módulo Financeiro
+  // 1. Módulo Financeiro
   { id: "movimentacoes", label: "Movimentações", icon: "⇄", module: "finance" },
-  { id: "importacoes", label: "Importações", icon: "⇧", module: "finance" },
-  { id: "baixas", label: "Baixas & Liquidações", icon: "✓", module: "finance" },
+  { id: "importacoes", label: "Importações Extratos", icon: "⇧", module: "finance" },
   { id: "relatorios", label: "Relatórios DRE", icon: "▥", module: "finance" },
 
-  // Módulo Logística & Expedição
+  // 2. Módulo Reconciliação ERP (Independente)
+  { id: "baixas", label: "Reconciliação & Baixas", icon: "✓", module: "reconciliation" },
+
+  // 3. Módulo Logística & Expedição
   { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱", module: "logistics" },
-  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" }
+  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" },
+
+  // 4. Módulo Auditoria & Inteligência Jurídica (Agente RS / JEV)
+  { id: "torre-controle", label: "Auditoria & Torre RS", icon: "⎈", module: "audit" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [

@@ -3,17 +3,12 @@ import assert from "node:assert/strict";
 import {
   ALL_NAV_ITEMS,
   ORGANIZATION_PRESETS,
-  orgHasExecutiveTower,
-  OrganizationId
+  EnabledModulesConfig,
+  ModuleType,
+  NavItem
 } from "../app/types/workspace.js";
 
-test("GOV-01: orgHasExecutiveTower e Torre de Controle estão disponíveis para todos os workspaces", () => {
-  assert.equal(orgHasExecutiveTower("hub_acai"), true, "Hub Açaí Salvador possui Torre de Controle");
-  assert.equal(orgHasExecutiveTower("rsbuild"), true, "RSBUILD possui Torre de Controle");
-  assert.equal(orgHasExecutiveTower("mundo_sabor"), true, "Mundo do Sabor possui Torre de Controle");
-});
-
-test("GOV-02: ORGANIZATION_PRESETS parametriza os 3 workspaces homologados com Torre de Controle ativa", () => {
+test("GOV-01: Os 4 produtos do portfólio estão definidos e tipados nos presets das organizações", () => {
   const rsbuild = ORGANIZATION_PRESETS.find((p) => p.id === "rsbuild");
   const hubAcai = ORGANIZATION_PRESETS.find((p) => p.id === "hub_acai");
   const mundoSabor = ORGANIZATION_PRESETS.find((p) => p.id === "mundo_sabor");
@@ -22,38 +17,82 @@ test("GOV-02: ORGANIZATION_PRESETS parametriza os 3 workspaces homologados com T
   assert.ok(hubAcai, "Hub Açaí deve estar cadastrado");
   assert.ok(mundoSabor, "Mundo do Sabor deve estar cadastrado");
 
-  // Torre de Controle ativa para todos os workspaces
-  assert.equal(rsbuild.hasExecutiveTower, true, "RSBUILD tem Torre de Controle ativa");
-  assert.equal(hubAcai.hasExecutiveTower, true, "Hub Açaí tem Torre de Controle ativa");
-  assert.equal(mundoSabor.hasExecutiveTower, true, "Mundo do Sabor tem Torre de Controle ativa");
+  // RSBUILD: 1-Finanças, 2-Reconciliação e 4-Auditoria
+  assert.equal(rsbuild.enabledModules.finance, true);
+  assert.equal(rsbuild.enabledModules.reconciliation, true);
+  assert.equal(rsbuild.enabledModules.logistics, false);
+  assert.equal(rsbuild.enabledModules.audit, true);
 
-  // Módulos operacionais
-  assert.equal(rsbuild.enabledModules.finance, true, "RSBUILD opera finanças");
-  assert.equal(hubAcai.enabledModules.logistics, true, "Hub Açaí opera logística");
-  assert.equal(mundoSabor.enabledModules.finance, true, "Mundo do Sabor opera finanças");
-  assert.equal(mundoSabor.enabledModules.logistics, true, "Mundo do Sabor opera logística");
+  // Hub Açaí: 2-Reconciliação, 3-Logística e 4-Auditoria
+  assert.equal(hubAcai.enabledModules.finance, false);
+  assert.equal(hubAcai.enabledModules.reconciliation, true);
+  assert.equal(hubAcai.enabledModules.logistics, true);
+  assert.equal(hubAcai.enabledModules.audit, true);
+
+  // Mundo do Sabor: Suíte completa (1, 2, 3 e 4)
+  assert.equal(mundoSabor.enabledModules.finance, true);
+  assert.equal(mundoSabor.enabledModules.reconciliation, true);
+  assert.equal(mundoSabor.enabledModules.logistics, true);
+  assert.equal(mundoSabor.enabledModules.audit, true);
 });
 
-test("GOV-03: Filtragem de menu exibe Torre de Controle para todos os workspaces", () => {
-  function getVisibleNavItems(orgId: OrganizationId, activeModule: "finance" | "logistics") {
+test("GOV-02: Produto 2 (Reconciliação ERP) opera de forma 100% independente dos módulos de nível 1", () => {
+  // Cenário: Cliente que contrata APENAS Reconciliação ERP
+  const standaloneReconciliation: EnabledModulesConfig = {
+    finance: false,
+    reconciliation: true,
+    logistics: false,
+    audit: false
+  };
+
+  const visibleItems = ALL_NAV_ITEMS.filter((item) => {
+    if (item.module === "all") return true;
+    if (!standaloneReconciliation[item.module]) return false;
+    return item.module === "reconciliation";
+  });
+
+  // Deve ter Visão Geral e a tela de Baixas & Reconciliação ERP
+  assert.ok(visibleItems.some((i) => i.id === "visao-geral"), "Visão Geral deve estar acessível");
+  assert.ok(visibleItems.some((i) => i.id === "baixas"), "Baixas & Reconciliação deve estar acessível");
+  assert.ok(!visibleItems.some((i) => i.id === "movimentacoes"), "Movimentações de finanças não devem aparecer");
+  assert.ok(!visibleItems.some((i) => i.id === "pedidos-ha"), "Pedidos de logística não devem aparecer");
+});
+
+test("GOV-03: Produto 4 (Auditoria / Agente RS) isola itens periciais e de compliance jurídico", () => {
+  const auditItems = ALL_NAV_ITEMS.filter((i) => i.module === "audit");
+  assert.equal(auditItems.length, 1);
+  assert.equal(auditItems[0].id, "torre-controle");
+  assert.equal(auditItems[0].label, "Auditoria & Torre RS");
+});
+
+test("GOV-04: Filtragem de menu respeita estritamente o módulo ativo e os produtos contratados", () => {
+  function getItems(activeModule: ModuleType, enabledModules: EnabledModulesConfig): NavItem[] {
     return ALL_NAV_ITEMS.filter((item) => {
-      if (item.id === "torre-controle") {
-        return orgHasExecutiveTower(orgId);
-      }
       if (item.module === "all") return true;
+      if (!enabledModules[item.module]) return false;
       return item.module === activeModule;
     });
   }
 
-  // RSBUILD: deve exibir torre-controle
-  const rsNavFinance = getVisibleNavItems("rsbuild", "finance");
-  assert.ok(rsNavFinance.some((i) => i.id === "torre-controle"), "RSBUILD deve exibir torre-controle");
+  const allActive: EnabledModulesConfig = {
+    finance: true,
+    reconciliation: true,
+    logistics: true,
+    audit: true
+  };
 
-  // Mundo do Sabor: deve exibir torre-controle
-  const msNavFinance = getVisibleNavItems("mundo_sabor", "finance");
-  assert.ok(msNavFinance.some((i) => i.id === "torre-controle"), "Mundo do Sabor deve exibir torre-controle");
+  const finItems = getItems("finance", allActive);
+  assert.ok(finItems.some((i) => i.id === "movimentacoes"));
+  assert.ok(finItems.some((i) => i.id === "importacoes"));
+  assert.ok(finItems.some((i) => i.id === "relatorios"));
 
-  // Hub Açaí: deve exibir torre-controle
-  const haNavLogistics = getVisibleNavItems("hub_acai", "logistics");
-  assert.ok(haNavLogistics.some((i) => i.id === "torre-controle"), "Hub Açaí deve exibir torre-controle");
+  const recItems = getItems("reconciliation", allActive);
+  assert.ok(recItems.some((i) => i.id === "baixas"));
+
+  const logItems = getItems("logistics", allActive);
+  assert.ok(logItems.some((i) => i.id === "pedidos-ha"));
+  assert.ok(logItems.some((i) => i.id === "canhotos"));
+
+  const audItems = getItems("audit", allActive);
+  assert.ok(audItems.some((i) => i.id === "torre-controle"));
 });
