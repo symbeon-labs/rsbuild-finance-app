@@ -36,7 +36,11 @@ import {
   INITIAL_SAMPLE_PROOFS,
   INITIAL_SAMPLE_HA_ORDERS,
   type ModuleType,
-  type NavSection
+  type NavSection,
+  type EnabledModulesConfig,
+  type OrganizationId,
+  ORGANIZATION_PRESETS,
+  orgHasExecutiveTower
 } from "@/app/types/workspace";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
@@ -50,7 +54,13 @@ import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 
-const SUPERADMIN_EMAILS = ["neo.sh1w4@gmail.com"];
+const SUPERADMIN_EMAILS = [
+  "neo.sh1w4@gmail.com",
+  "admin@rsbuild.com.br",
+  "diretoria@rsbuild.com.br",
+  "admin@symbeon.com.br",
+  "contato@symbeon.com.br"
+];
 
 export default function EnterpriseWorkspace() {
   const router = useRouter();
@@ -63,15 +73,21 @@ export default function EnterpriseWorkspace() {
       ? urlTab
       : "visao-geral";
 
+  function getModuleForSection(s: NavSection): ModuleType {
+    if (s === "baixas") return "reconciliation";
+    if (s === "pedidos-ha" || s === "canhotos") return "logistics";
+    if (s === "torre-controle") return "audit";
+    return "finance";
+  }
+
   const [section, setSection] = useState<NavSection>(initialSection);
-  const [activeModule, setActiveModule] = useState<ModuleType>(
-    initialSection === "canhotos" || initialSection === "pedidos-ha" ? "logistics" : "finance"
-  );
+  const [activeModule, setActiveModule] = useState<ModuleType>(getModuleForSection(initialSection));
 
   function navigateTo(nextSection: NavSection) {
     setSection(nextSection);
-    const mod = nextSection === "canhotos" || nextSection === "pedidos-ha" ? "logistics" : "finance";
-    setActiveModule(mod);
+    if (nextSection !== "visao-geral") {
+      setActiveModule(getModuleForSection(nextSection));
+    }
     router.push(`/?tab=${nextSection}`, { scroll: false });
   }
 
@@ -102,7 +118,8 @@ export default function EnterpriseWorkspace() {
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Customização de Marca do Workspace (White-label)
+  // Customização de Marca do Workspace (White-label & Multi-Tenant)
+  const [currentOrgId, setCurrentOrgId] = useState<OrganizationId>("rsbuild");
   const [companyName, setCompanyName] = useState("RSBUILD Inovação");
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [currentUserEmail, setCurrentUserEmail] = useState<string>("neo.sh1w4@gmail.com");
@@ -122,10 +139,12 @@ export default function EnterpriseWorkspace() {
     }
   }
 
-  // Controle de Módulos Habilitados
-  const [enabledModules, setEnabledModules] = useState<{ finance: boolean; logistics: boolean }>({
+  // Controle de Módulos Habilitados (4 Produtos Desacoplados)
+  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({
     finance: true,
-    logistics: true
+    reconciliation: true,
+    logistics: true,
+    audit: true
   });
 
   const isSuperAdmin = useMemo(() => {
@@ -148,6 +167,8 @@ export default function EnterpriseWorkspace() {
     try {
       const savedName = localStorage.getItem("rsbuild_workspace_company");
       if (savedName) setCompanyName(savedName);
+      const savedOrgId = localStorage.getItem("rsbuild_workspace_org_id") as OrganizationId | null;
+      if (savedOrgId) setCurrentOrgId(savedOrgId);
       const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
       if (savedLogo) setCompanyLogoUrl(savedLogo);
       const savedUser = localStorage.getItem("rsbuild_auth_email");
@@ -155,7 +176,12 @@ export default function EnterpriseWorkspace() {
       const savedModules = localStorage.getItem("rsbuild_workspace_modules");
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
-        setEnabledModules(parsed);
+        setEnabledModules({
+          finance: parsed.finance !== false,
+          reconciliation: parsed.reconciliation !== false,
+          logistics: parsed.logistics !== false,
+          audit: parsed.audit !== false
+        });
       }
       const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "sand") {
@@ -210,9 +236,20 @@ export default function EnterpriseWorkspace() {
     } catch {}
   }, [orders]);
 
-  function handleSaveCompanyConfig(name: string, logo: string, modules?: { finance: boolean; logistics: boolean }) {
+  function handleSaveCompanyConfig(
+    name: string,
+    logo: string,
+    modules?: EnabledModulesConfig,
+    orgId?: OrganizationId
+  ) {
     setCompanyName(name);
     setCompanyLogoUrl(logo);
+    if (orgId) {
+      setCurrentOrgId(orgId);
+      try {
+        localStorage.setItem("rsbuild_workspace_org_id", orgId);
+      } catch {}
+    }
     if (modules) {
       setEnabledModules(modules);
       try {
@@ -220,7 +257,7 @@ export default function EnterpriseWorkspace() {
       } catch {}
       if (!modules.finance && modules.logistics && activeModule === "finance") {
         navigateTo("pedidos-ha");
-      } else if (modules.finance && !modules.logistics && activeModule === "logistics") {
+      } else if (!modules.logistics && modules.finance && activeModule === "logistics") {
         navigateTo("visao-geral");
       }
     }
@@ -232,7 +269,7 @@ export default function EnterpriseWorkspace() {
         localStorage.removeItem("rsbuild_workspace_logo");
       }
     } catch {}
-    setNotice("Configuração do Workspace atualizada com sucesso!");
+    setNotice(`Workspace configurado com sucesso para ${name}!`);
     setIsConfigOpen(false);
   }
 
@@ -496,9 +533,13 @@ export default function EnterpriseWorkspace() {
         activeModule={activeModule}
         section={section}
         enabledModules={enabledModules}
+        currentOrgId={currentOrgId}
         onSelectModule={(mod) => {
           setActiveModule(mod);
-          navigateTo(mod === "finance" ? "visao-geral" : "pedidos-ha");
+          if (mod === "finance") navigateTo("visao-geral");
+          else if (mod === "reconciliation") navigateTo("baixas");
+          else if (mod === "logistics") navigateTo("pedidos-ha");
+          else if (mod === "audit") navigateTo("torre-controle");
         }}
         onSelectSection={navigateTo}
         onOpenConfig={() => setIsConfigOpen(true)}
@@ -533,6 +574,7 @@ export default function EnterpriseWorkspace() {
           )}
           {section === "torre-controle" && (
             <TorreControleView
+              companyName={companyName}
               isDirector={isSuperAdmin}
               currentUserEmail={currentUserEmail}
               records={records}
@@ -627,6 +669,7 @@ export default function EnterpriseWorkspace() {
         isOpen={isConfigOpen}
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
+        currentOrgId={currentOrgId}
         isSuperAdmin={isSuperAdmin}
         enabledModules={enabledModules}
         onClose={() => setIsConfigOpen(false)}

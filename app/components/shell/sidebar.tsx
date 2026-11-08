@@ -1,18 +1,91 @@
 "use client";
 
 import Image from "next/image";
-import { ALL_NAV_ITEMS, ModuleType, NavSection } from "@/app/types/workspace";
+import {
+  ALL_NAV_ITEMS,
+  EnabledModulesConfig,
+  ModuleType,
+  NavSection,
+  OrganizationId,
+  orgHasExecutiveTower
+} from "@/app/types/workspace";
 
 interface SidebarProps {
   companyName: string;
   companyLogoUrl: string;
   activeModule: ModuleType;
   section: NavSection;
-  enabledModules: { finance: boolean; logistics: boolean };
+  enabledModules: EnabledModulesConfig;
+  currentOrgId?: OrganizationId;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
 }
+
+const MODULE_CONFIGS: {
+  id: ModuleType;
+  label: string;
+  shortLabel: string;
+  icon: React.ReactNode;
+  title: string;
+  menuLabel: string;
+}[] = [
+  {
+    id: "finance",
+    label: "Finanças",
+    shortLabel: "Finanças",
+    title: "Módulo Financeiro & Livro Caixa",
+    menuLabel: "MENU FINANCEIRO",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+      </svg>
+    )
+  },
+  {
+    id: "reconciliation",
+    label: "Reconciliação",
+    shortLabel: "Reconcil.",
+    title: "Módulo Reconciliação ERP (Omie/SAP/Totvs)",
+    menuLabel: "MENU RECONCILIAÇÃO ERP",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+        <path d="M16 21h5v-5" />
+      </svg>
+    )
+  },
+  {
+    id: "logistics",
+    label: "Logística",
+    shortLabel: "Logística",
+    title: "Módulo Logística & Expedição",
+    menuLabel: "MENU LOGÍSTICA & EXPEDIÇÃO",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="3" width="15" height="13" />
+        <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
+        <circle cx="5.5" cy="18.5" r="2.5" />
+        <circle cx="18.5" cy="18.5" r="2.5" />
+      </svg>
+    )
+  },
+  {
+    id: "audit",
+    label: "Auditoria",
+    shortLabel: "Auditoria",
+    title: "Módulo Auditoria & Compliance (Agente RS / JEV)",
+    menuLabel: "MENU AUDITORIA JURÍDICA",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    )
+  }
+];
 
 export function Sidebar({
   companyName,
@@ -20,10 +93,15 @@ export function Sidebar({
   activeModule,
   section,
   enabledModules,
+  currentOrgId = "rsbuild",
   onSelectModule,
   onSelectSection,
   onOpenConfig
 }: SidebarProps) {
+  const availableModules = MODULE_CONFIGS.filter((m) => enabledModules[m.id]);
+  const currentModuleConfig =
+    MODULE_CONFIGS.find((m) => m.id === activeModule) || availableModules[0] || MODULE_CONFIGS[0];
+
   return (
     <aside className="sidebar">
       <div className="brand-header">
@@ -51,69 +129,58 @@ export function Sidebar({
           <span title={companyName}>
             {companyName.length > 18 ? companyName.slice(0, 18) + "…" : companyName.toUpperCase()}
           </span>
-          <b>v1.0.0</b>
+          <b>v2.0.0</b>
         </div>
       </div>
 
-      {/* Seletor de Módulos (Visível se ambos os módulos estiverem contratados/ativos) */}
-      {enabledModules.finance && enabledModules.logistics ? (
-        <div className="module-switcher-container">
-          <button
-            type="button"
-            className={activeModule === "finance" ? "module-tab active" : "module-tab"}
-            onClick={() => onSelectModule("finance")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-            </svg>
-            <span>Finanças</span>
-          </button>
-          <button
-            type="button"
-            className={activeModule === "logistics" ? "module-tab active" : "module-tab"}
-            onClick={() => onSelectModule("logistics")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="3" width="15" height="13" />
-              <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
-              <circle cx="5.5" cy="18.5" r="2.5" />
-              <circle cx="18.5" cy="18.5" r="2.5" />
-            </svg>
-            <span>Logística</span>
-          </button>
+      {/* Seletor Dinâmico de Módulos (Finanças · Reconciliação · Logística · Auditoria) */}
+      {availableModules.length > 1 ? (
+        <div
+          className="module-switcher-container"
+          style={{
+            display: "grid",
+            gridTemplateColumns: availableModules.length > 2 ? "repeat(2, 1fr)" : `repeat(${availableModules.length}, 1fr)`,
+            gap: "4px"
+          }}
+        >
+          {availableModules.map((mod) => {
+            const isActive = activeModule === mod.id;
+            return (
+              <button
+                key={mod.id}
+                type="button"
+                className={isActive ? "module-tab active" : "module-tab"}
+                onClick={() => onSelectModule(mod.id)}
+                title={mod.title}
+                style={{
+                  height: "32px",
+                  padding: "0 6px",
+                  fontSize: "10px",
+                  letterSpacing: "0.5px"
+                }}
+              >
+                {mod.icon}
+                <span>{availableModules.length > 2 ? mod.shortLabel : mod.label}</span>
+              </button>
+            );
+          })}
         </div>
-      ) : (
+      ) : availableModules.length === 1 ? (
         <div className="module-badge-single">
-          {enabledModules.logistics ? (
-            <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="1" y="3" width="15" height="13" />
-                <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
-                <circle cx="5.5" cy="18.5" r="2.5" />
-                <circle cx="18.5" cy="18.5" r="2.5" />
-              </svg>
-              <span>MÓDULO LOGÍSTICA</span>
-            </>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-              </svg>
-              <span>MÓDULO FINANCEIRO</span>
-            </>
-          )}
+          {availableModules[0].icon}
+          <span>MÓDULO {availableModules[0].label.toUpperCase()}</span>
         </div>
-      )}
+      ) : null}
 
       <div className="workspace-label">
-        {activeModule === "finance" ? "MENU FINANCEIRO" : "MENU LOGÍSTICA"}
+        {currentModuleConfig.menuLabel}
       </div>
 
       <nav className="nav-list" aria-label="Navegação principal">
         {ALL_NAV_ITEMS.filter((item) => {
           if (item.module === "all") return true;
+          // Verifica se o módulo do item está contratado
+          if (!enabledModules[item.module]) return false;
           return item.module === activeModule;
         }).map((item) => (
           <button
@@ -135,7 +202,7 @@ export function Sidebar({
                   color: "var(--rsbuild-terracotta)"
                 }}
               >
-                DIRETORIA
+                AGENTE RS
               </span>
             )}
           </button>
@@ -186,4 +253,3 @@ export function Sidebar({
     </aside>
   );
 }
-
