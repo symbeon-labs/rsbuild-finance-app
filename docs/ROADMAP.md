@@ -1,14 +1,16 @@
-# RSBUILD Finance — Roadmap de Evolução
+# RSBUILD OS — Roadmap do Domínio Finance
 
-**Versão:** 0.1  
-**Status:** Direção de produto  
+**Versão:** 0.2  
+**Status:** Direção de evolução do primeiro domínio  
 **Contexto inicial:** operação de duas empresas
 
-## Objetivo
+## Relação com o produto
 
-Desenvolver uma solução de gestão financeira capaz de acompanhar a realidade operacional das empresas, consolidar informações de diferentes fontes e ampliar progressivamente sua capacidade de controle, análise e integração.
+RSBUILD OS é a plataforma operacional empresarial. Finance é seu primeiro domínio estruturado. Este roadmap descreve somente a evolução de Finance; não é um roadmap de todos os domínios da plataforma.
 
-Este documento apresenta a direção de evolução do produto. A presença de uma capacidade no roadmap não significa que ela já esteja implementada, contratada ou disponível. Cada entrega depende de definição de escopo, acesso às fontes, validação dos dados e aceite.
+A visão de domínios e a migração arquitetural estão registradas em [RSBUILD OS Architecture & Repository Migration v1.0](RSBUILD_OS_ARCHITECTURE_MIGRATION_v1.0.md).
+
+A presença de uma capacidade neste roadmap não significa que ela já esteja implementada, contratada ou disponível. Cada entrega depende de definição de escopo, acesso às fontes, validação dos dados e aceite.
 
 ## Princípios de evolução
 
@@ -16,8 +18,9 @@ Este documento apresenta a direção de evolução do produto. A presença de um
 - **Rastreabilidade:** permitir identificar a origem das informações e os tratamentos aplicados.
 - **Confiabilidade:** manter cálculos financeiros verificáveis e reproduzíveis.
 - **Integração responsável:** conectar sistemas somente após autorização e validação técnica.
-- **Adaptação operacional:** incorporar novas unidades, fontes, regras e módulos sem impor um modelo único a todas as empresas.
+- **Adaptação operacional:** incorporar novas unidades, fontes e regras sem impor um modelo único a todas as empresas.
 - **Transparência de estado:** distinguir capacidades planejadas, em desenvolvimento, disponíveis para teste e liberadas.
+- **Fronteira de domínio:** preservar Finance como contexto próprio, sem absorver Purchasing, Inventory, Production ou Logistics.
 
 ## Etapas de evolução
 
@@ -47,9 +50,9 @@ Capacidades previstas:
 
 **Resultado esperado:** maior previsibilidade e organização da rotina financeira.
 
-### 03 — Integração operacional
+### 03 — Integração operacional do domínio Finance
 
-**Objetivo:** reduzir a fragmentação de informações entre os sistemas utilizados pelas empresas.
+**Objetivo:** reduzir a fragmentação de informações entre sistemas utilizados pelas empresas.
 
 Capacidades previstas:
 - Integração inicial com ERP, começando por consulta e validação de dados do Omie.
@@ -85,18 +88,24 @@ Capacidades previstas:
 
 **Resultado esperado:** apoio mais consistente ao planejamento e à tomada de decisão.
 
-### 06 — Expansão adaptativa
+### 06 — Expansão adaptativa do domínio
 
-**Objetivo:** permitir que a solução acompanhe a evolução das operações.
+**Objetivo:** permitir que Finance acompanhe a evolução das operações.
 
 Possibilidades de expansão:
 - Novas empresas, unidades e estruturas operacionais.
 - Novas fontes, formatos e integrações.
 - Regras específicas por operação.
-- Novos módulos e visões gerenciais.
+- Novas capacidades financeiras.
 - Ampliação da capacidade de processamento e acompanhamento conforme volume e complexidade.
 
-**Resultado esperado:** evolução contínua da solução sem impor um modelo operacional único a todas as empresas.
+**Resultado esperado:** evolução do domínio sem impor um modelo financeiro único a todas as empresas.
+
+## Domínios adjacentes — fora deste roadmap
+
+A descoberta operacional identificou oportunidades em Purchasing, Receiving, Inventory, Production, Quality, Commercial, Stores, E-commerce, Logistics, Corporate Services e outras áreas.
+
+Essas oportunidades serão avaliadas no nível do RSBUILD OS e não devem ser adicionadas automaticamente ao escopo de Finance. Cada domínio requer descoberta, ownership, contratos, critérios de aceite, dependências e condições comerciais próprios.
 
 ## Critérios de disponibilização
 
@@ -121,7 +130,7 @@ A evolução pode depender de:
 
 ## Gestão da evolução
 
-Novas necessidades identificadas durante a operação devem ser registradas, avaliadas e priorizadas. A inclusão de uma necessidade no roadmap não constitui, por si só, compromisso de prazo, preço ou entrega.
+Novas necessidades devem ser registradas, avaliadas e priorizadas no domínio responsável. A inclusão de uma necessidade no roadmap não constitui, por si só, compromisso de prazo, preço ou entrega.
 
 Cada evolução será detalhada conforme seu escopo, dependências, critérios de aceite e condições comerciais aplicáveis.
 
@@ -145,6 +154,4 @@ As metas quantitativas serão definidas após estabelecer uma linha de base oper
 - Reprodutibilidade dos relatórios.
 - Aceite dos responsáveis pela operação.
 
----
-
-**Nota:** este documento expressa a direção de evolução do produto. Não representa declaração de que todas as capacidades descritas já estejam implementadas ou incluídas em uma contratação vigente.
+**Nota:** este roadmap expressa a direção do domínio Finance. Não representa declaração de que todas as capacidades descritas já estejam implementadas ou incluídas em uma contratação vigente.
