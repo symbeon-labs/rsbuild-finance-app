@@ -42,6 +42,7 @@ import {
   ORGANIZATION_PRESETS,
   orgHasExecutiveTower
 } from "@/app/types/workspace";
+import { applyBrandColor } from "@/app/lib/brand-color";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
 import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
@@ -139,6 +140,9 @@ export default function EnterpriseWorkspace() {
     }
   }
 
+  // Cor de Marca do Workspace (Brand Color Picker) — substitui --rsbuild-terracotta dinamicamente
+  const [brandColor, setBrandColor] = useState<string>("#B5583C");
+
   // Controle de Módulos Habilitados (4 Produtos Desacoplados)
   const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({
     finance: true,
@@ -187,6 +191,15 @@ export default function EnterpriseWorkspace() {
       if (savedTheme === "dark" || savedTheme === "sand") {
         setTheme(savedTheme);
         document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+
+      // Hidratação da Cor de Marca (Brand Color Picker)
+      {
+        const restoredOrgId = (localStorage.getItem("rsbuild_workspace_org_id") || "rsbuild") as OrganizationId;
+        const savedBrandColor = localStorage.getItem("rsbuild_workspace_brand_color");
+        const colorToApply = savedBrandColor || ORGANIZATION_PRESETS.find((p) => p.id === restoredOrgId)?.brandColor || "#B5583C";
+        setBrandColor(colorToApply);
+        applyBrandColor(colorToApply);
       }
 
       // Persistência de Período
@@ -240,14 +253,21 @@ export default function EnterpriseWorkspace() {
     name: string,
     logo: string,
     modules?: EnabledModulesConfig,
-    orgId?: OrganizationId
+    orgId?: OrganizationId,
+    newBrandColor?: string
   ) {
     setCompanyName(name);
     setCompanyLogoUrl(logo);
     if (orgId) {
       setCurrentOrgId(orgId);
+      // Aplica cor de marca do preset selecionado (ou customizada)
+      const preset = ORGANIZATION_PRESETS.find((p) => p.id === orgId);
+      const colorToApply = newBrandColor || preset?.brandColor || "#B5583C";
+      setBrandColor(colorToApply);
+      applyBrandColor(colorToApply);
       try {
         localStorage.setItem("rsbuild_workspace_org_id", orgId);
+        localStorage.setItem("rsbuild_workspace_brand_color", colorToApply);
       } catch {}
     }
     if (modules) {
@@ -672,6 +692,7 @@ export default function EnterpriseWorkspace() {
         currentOrgId={currentOrgId}
         isSuperAdmin={isSuperAdmin}
         enabledModules={enabledModules}
+        brandColor={brandColor}
         onClose={() => setIsConfigOpen(false)}
         onSave={handleSaveCompanyConfig}
         onUploadLogo={handleLogoUploadFile}

@@ -10,8 +10,9 @@ interface WorkspaceModalProps {
   currentOrgId?: OrganizationId;
   isSuperAdmin: boolean;
   enabledModules: EnabledModulesConfig;
+  brandColor?: string;
   onClose: () => void;
-  onSave: (name: string, logoUrl: string, modules?: EnabledModulesConfig, orgId?: OrganizationId) => void;
+  onSave: (name: string, logoUrl: string, modules?: EnabledModulesConfig, orgId?: OrganizationId, brandColor?: string) => void;
   onUploadLogo: (file: File) => void;
 }
 
@@ -22,6 +23,7 @@ export function WorkspaceModal({
   currentOrgId = "rsbuild",
   isSuperAdmin,
   enabledModules,
+  brandColor = "#B5583C",
   onClose,
   onSave,
   onUploadLogo
@@ -30,6 +32,7 @@ export function WorkspaceModal({
   const [selectedOrg, setSelectedOrg] = useState<OrganizationId>(currentOrgId);
   const [typedName, setTypedName] = useState<string>(companyName);
   const [activeModulesState, setActiveModulesState] = useState<EnabledModulesConfig>(enabledModules);
+  const [currentColor, setCurrentColor] = useState<string>(brandColor);
   const [showTenantSelector, setShowTenantSelector] = useState(false);
 
   useEffect(() => {
@@ -37,9 +40,10 @@ export function WorkspaceModal({
       setSelectedOrg(currentOrgId);
       setTypedName(companyName);
       setActiveModulesState(enabledModules);
+      setCurrentColor(brandColor);
       setShowTenantSelector(false); // Garante que começa recolhido para reuniões
     }
-  }, [isOpen, currentOrgId, companyName, enabledModules]);
+  }, [isOpen, currentOrgId, companyName, enabledModules, brandColor]);
 
   if (!isOpen) return null;
 
@@ -47,7 +51,12 @@ export function WorkspaceModal({
     setSelectedOrg(preset.id);
     setTypedName(preset.name);
     setActiveModulesState(preset.enabledModules);
+    if (preset.brandColor) {
+      setCurrentColor(preset.brandColor);
+    }
   }
+
+  const currentPreset = ORGANIZATION_PRESETS.find((p) => p.id === selectedOrg);
 
   return (
     <div className="workspace-modal-backdrop" onClick={onClose}>
@@ -177,7 +186,7 @@ export function WorkspaceModal({
               audit: modAuditInput ? modAuditInput.checked : activeModulesState.audit
             };
 
-            onSave(nameInput.value, urlInput.value || companyLogoUrl, nextModules, selectedOrg);
+            onSave(nameInput.value, urlInput.value || companyLogoUrl, nextModules, selectedOrg, currentColor);
           }}
           style={{ display: "grid", gap: "16px" }}
         >
@@ -245,6 +254,67 @@ export function WorkspaceModal({
                 color: "var(--ink)"
               }}
             />
+          </div>
+
+          {/* Seletor de Paleta / Identidade Visual da Marca */}
+          <div style={{ display: "grid", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink)", fontFamily: "var(--font-brand)" }}>
+                PALETA DE CORES / IDENTIDADE VISUAL
+              </span>
+              <span style={{ fontSize: "10px", color: "var(--muted)" }}>
+                Padrão: Laranja RSBUILD (#B5583C)
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              {[
+                { name: "Laranja RSBUILD (Padrão)", color: "#B5583C" },
+                { name: "Roxo Hub Açaí", color: "#7C3AED" },
+                { name: "Azul Mundo do Sabor", color: "#2563EB" },
+                { name: "Verde Esmeralda", color: "#059669" },
+                { name: "Grafite Corporativo", color: "#374151" }
+              ].map((swatch) => {
+                const isSelected = currentColor.toLowerCase() === swatch.color.toLowerCase();
+                return (
+                  <button
+                    key={swatch.color}
+                    type="button"
+                    onClick={() => setCurrentColor(swatch.color)}
+                    title={swatch.name}
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      backgroundColor: swatch.color,
+                      border: isSelected ? "3px solid var(--ink)" : "2px solid #ffffff",
+                      outline: isSelected ? "2px solid " + swatch.color : "none",
+                      cursor: "pointer",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                      transition: "transform 0.15s ease"
+                    }}
+                  />
+                );
+              })}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "4px" }}>
+                <input
+                  type="color"
+                  value={currentColor}
+                  onChange={(e) => setCurrentColor(e.target.value)}
+                  style={{
+                    width: "36px",
+                    height: "32px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--line)",
+                    cursor: "pointer",
+                    padding: "0"
+                  }}
+                  title="Selecionar cor personalizada"
+                />
+                <span style={{ fontSize: "11px", fontFamily: "monospace", color: "var(--muted)" }}>
+                  {currentColor.toUpperCase()}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Controle de Módulos Contratados / Ativos (Exclusivo Superadmin / Symbeon) */}
@@ -395,6 +465,58 @@ export function WorkspaceModal({
                   </div>
                 </label>
               </div>
+
+              {/* Diretório de Clientes e Fornecedores Pré-cadastrados da Empresa */}
+              {currentPreset?.contacts && currentPreset.contacts.length > 0 && (
+                <div style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", background: "var(--bg)", border: "1px dashed var(--line)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "10.5px", fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-brand)" }}>
+                      📇 CADASTRO BASE DE CLIENTES & FORNECEDORES ({currentPreset.contacts.length})
+                    </span>
+                    <span style={{ fontSize: "9px", color: "var(--green-text, #10B981)", fontWeight: 600 }}>
+                      ● Integrado
+                    </span>
+                  </div>
+                  <div style={{ maxHeight: "110px", overflowY: "auto", fontSize: "10px", display: "grid", gap: "4px" }}>
+                    {currentPreset.contacts.map((contact) => (
+                      <div
+                        key={contact.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          background: "var(--surface)",
+                          border: "1px solid var(--line)"
+                        }}
+                      >
+                        <div>
+                          <span
+                            style={{
+                              fontSize: "8.5px",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              padding: "1px 4px",
+                              borderRadius: "3px",
+                              marginRight: "6px",
+                              background: contact.type === "cliente" ? "rgba(16, 185, 129, 0.12)" : "rgba(59, 130, 246, 0.12)",
+                              color: contact.type === "cliente" ? "var(--green-text, #10B981)" : "#2563EB"
+                            }}
+                          >
+                            {contact.type}
+                          </span>
+                          <strong style={{ color: "var(--ink)" }}>{contact.name}</strong>
+                          {contact.city && <span style={{ color: "var(--muted)", marginLeft: "4px" }}>· {contact.city}</span>}
+                        </div>
+                        <span style={{ fontFamily: "monospace", color: "var(--muted)", fontSize: "9px" }}>
+                          {contact.document}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ borderTop: "1px solid var(--line)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", color: "var(--muted)" }}>

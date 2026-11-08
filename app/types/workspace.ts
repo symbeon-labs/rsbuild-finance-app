@@ -13,6 +13,17 @@ export interface EnabledModulesConfig {
   audit: boolean;
 }
 
+/** Contato de cliente ou fornecedor vinculado ao workspace */
+export interface WorkspaceContact {
+  id: string;
+  type: "cliente" | "fornecedor";
+  name: string;
+  document: string; // CNPJ ou CPF formatado
+  phone?: string;
+  email?: string;
+  city?: string;
+}
+
 export interface OrganizationPreset {
   id: OrganizationId;
   name: string;
@@ -23,11 +34,32 @@ export interface OrganizationPreset {
   enabledModules: EnabledModulesConfig;
   hasExecutiveTower: boolean;
   description: string;
+  /** Cor de acento de marca do workspace (hex). Padrão global: #B5583C (terracotta) */
+  brandColor?: string;
+  /** Variante hover da brand color (~15% mais escura) */
+  brandColorHover?: string;
+  /** Variante soft da brand color (8% opacidade sobre branco — fundo de badge) */
+  brandColorSoft?: string;
+  /** Contatos pré-cadastrados (clientes e fornecedores) do workspace */
+  contacts?: WorkspaceContact[];
 }
 
 export function orgHasExecutiveTower(_orgId?: OrganizationId): boolean {
   return true;
 }
+
+/** Contatos pré-cadastrados para o workspace Hub Açaí Salvador */
+export const HUB_ACAI_CONTACTS: WorkspaceContact[] = [
+  { id: "c-001", type: "cliente", name: "Supermercado Real Salvador", document: "12.345.678/0001-90", phone: "(71) 99999-0001", city: "Salvador - BA" },
+  { id: "c-002", type: "cliente", name: "Distribuidora Alimentos Bahia", document: "23.456.789/0001-01", phone: "(71) 99999-0002", city: "Salvador - BA" },
+  { id: "c-003", type: "cliente", name: "Padaria e Lanchonete Estrela", document: "34.567.890/0001-02", phone: "(71) 99999-0003", city: "Lauro de Freitas - BA" },
+  { id: "c-004", type: "cliente", name: "Mercado e Açougue Bom Preço", document: "45.678.901/0001-03", phone: "(71) 99999-0004", city: "Camaçari - BA" },
+  { id: "c-005", type: "cliente", name: "Cantina Sabor Central", document: "56.789.012/0001-04", phone: "(71) 99999-0005", city: "Simões Filho - BA" },
+  { id: "c-006", type: "cliente", name: "Marcos do Açaí do Parque Salvador", document: "67.890.123/0001-05", phone: "(71) 99999-0006", city: "Salvador - BA" },
+  { id: "c-007", type: "cliente", name: "Quiosque Orla Pituba", document: "78.901.234/0001-06", phone: "(71) 99999-0007", city: "Salvador - BA" },
+  { id: "f-001", type: "fornecedor", name: "Polpas do Pará Ltda", document: "11.222.333/0001-11", phone: "(91) 98888-1111", city: "Belém - PA" },
+  { id: "f-002", type: "fornecedor", name: "Distribuidora Frios Nordeste", document: "22.333.444/0001-22", phone: "(71) 97777-2222", city: "Feira de Santana - BA" }
+];
 
 export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
   {
@@ -44,7 +76,11 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
       audit: true
     },
     hasExecutiveTower: true,
-    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter), reconciliação de títulos e auditoria contínua."
+    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter), reconciliação de títulos e auditoria contínua.",
+    // Cor padrão RSBUILD: terracotta laranja — cor global do sistema
+    brandColor: "#B5583C",
+    brandColorHover: "#9A4B33",
+    brandColorSoft: "#F9F3F1"
   },
   {
     id: "hub_acai",
@@ -60,7 +96,12 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
       audit: true
     },
     hasExecutiveTower: true,
-    description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), reconciliação Omie e auditoria de canhotos com inteligência jurídica."
+    description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), reconciliação Omie e auditoria de canhotos com inteligência jurídica.",
+    // Cor Hub Açaí: roxo vibrante
+    brandColor: "#7C3AED",
+    brandColorHover: "#6D28D9",
+    brandColorSoft: "#F5F3FF",
+    contacts: HUB_ACAI_CONTACTS
   },
   {
     id: "mundo_sabor",
@@ -76,7 +117,11 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
       audit: true
     },
     hasExecutiveTower: true,
-    description: "Indústria alimentícia com conciliação multibanco, motor de reconciliação Omie, canhotos SEFAZ e auditoria de conformidade."
+    description: "Indústria alimentícia com conciliação multibanco, motor de reconciliação Omie, canhotos SEFAZ e auditoria de conformidade.",
+    // Cor Mundo do Sabor: azul corporate
+    brandColor: "#2563EB",
+    brandColorHover: "#1D4ED8",
+    brandColorSoft: "#EFF6FF"
   }
 ];
 
