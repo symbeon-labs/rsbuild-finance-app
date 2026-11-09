@@ -68,3 +68,18 @@ Não registrar conteúdo de extratos, credenciais, tokens, e-mails completos ou 
 ## 5. Limites
 
 Este runbook reduz o risco de órfãos silenciosos, mas ainda não implementa uma fila durável nem um reconciliador automático. A operação continua pendente de monitoramento e execução manual. Uma futura automação exige ledger de compensação persistente, idempotência, retenção, alertas e testes de segurança próprios.
+
+## 6. Homologação automatizada após reconciliação da migration
+
+A migration transacional aplicada ao projeto remoto deve existir uma única vez no histórico do repositório, com o mesmo timestamp/versionamento registrado no Supabase. O workflow de banco executa as migrations em uma instância local descartável e roda os testes pgTAP; ele não substitui a homologação ponta a ponta no projeto remoto.
+
+Gates de validação:
+- `supabase test db` com todos os testes pgTAP;
+- `npm test`, `npm run typecheck` e `npm run build`;
+- upload real seguido de commit RPC e leitura paginada;
+- repetição do mesmo arquivo/registro com contagem idempotente;
+- tentativa negativa de importação por usuário de outro tenant;
+- verificação de autorização Storage por tenant;
+- confirmação de que a trilha de auditoria foi gravada.
+
+Não registrar D02 como homologada até que os gates aplicáveis estejam verdes e a evidência seja associada ao SHA testado.
