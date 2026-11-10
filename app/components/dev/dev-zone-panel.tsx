@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MemberRole, ROLE_HIERARCHY } from "@/lib/permissions";
+import { MemberRole, ROLE_HIERARCHY, isDeveloperEmail } from "@/lib/permissions";
 import {
   OrganizationId,
   ORGANIZATION_PRESETS,
@@ -48,15 +48,7 @@ const TENANT_UUIDS: Record<OrganizationId, string> = {
 
 // Whitelist de e-mails de engenharia autorizados automaticamente
 function isDevWhitelisted(email: string): boolean {
-  if (!email) return false;
-  const lower = email.toLowerCase().trim();
-  return (
-    lower.includes("symbeon") ||
-    lower.includes("joao") ||
-    lower.includes("joão") ||
-    lower.startsWith("dev@") ||
-    lower.startsWith("admin@rsbuild")
-  );
+  return isDeveloperEmail(email);
 }
 
 export function DevZonePanel({

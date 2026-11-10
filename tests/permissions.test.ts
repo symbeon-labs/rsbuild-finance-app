@@ -9,7 +9,9 @@ import {
   canPerformManualMatch,
   canDeleteOrCancelOrder,
   canConfirmImport,
-  canAccessSprintZone
+  canAccessSprintZone,
+  isDeveloperEmail,
+  DEV_AUTHORIZED_EMAILS
 } from "../lib/permissions";
 
 test("RBAC: normalizeRole converte com segurança e adota 'viewer' como fallback", () => {
@@ -87,5 +89,17 @@ test("RBAC / Governança: canAccessSprintZone restringe Torre de Sprints à RSBU
   assert.equal(canAccessSprintZone("owner", "hub_acai"), false);
   assert.equal(canAccessSprintZone("admin", "rsbuild"), false);
   assert.equal(canAccessSprintZone("operator", "rsbuild"), false);
+});
+
+test("RBAC / Zona Dev: isDeveloperEmail autoriza neo.sh1w4@gmail.com e equipe técnica", () => {
+  assert.equal(isDeveloperEmail("neo.sh1w4@gmail.com"), true);
+  assert.equal(isDeveloperEmail("NEO.SH1W4@GMAIL.COM"), true);
+  assert.equal(isDeveloperEmail("dev@rsbuild.com"), true);
+  assert.equal(isDeveloperEmail("joao@symbeon.com"), true);
+  assert.equal(isDeveloperEmail("flavio@rsbuild.com"), false);
+  assert.equal(isDeveloperEmail("vitor@hubacai.com"), false);
+  assert.equal(isDeveloperEmail(""), false);
+  assert.equal(isDeveloperEmail(null), false);
+  assert.ok(DEV_AUTHORIZED_EMAILS.includes("neo.sh1w4@gmail.com"));
 });
 

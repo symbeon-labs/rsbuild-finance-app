@@ -121,10 +121,35 @@ export function canManageMembers(role?: string | null): boolean {
 }
 
 /**
- * Verifica se o usuário tem acesso à Zona das Sprints na Torre de Controle
- * Exclusivo para o Owner na organização RSBUILD
+ * Lista de e-mails autorizados para a Zona Dev / Modo Engenharia
  */
-export function canAccessSprintZone(role?: string | null, orgSlug?: string | null): boolean {
+export const DEV_AUTHORIZED_EMAILS: readonly string[] = [
+  "neo.sh1w4@gmail.com",
+  "admin@rsbuild.com"
+];
+
+/**
+ * Verifica se um e-mail pertence à equipe de engenharia e possui autorização para a Zona Dev
+ */
+export function isDeveloperEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const lower = email.toLowerCase().trim();
+  if (DEV_AUTHORIZED_EMAILS.includes(lower)) return true;
+  return (
+    lower.includes("symbeon") ||
+    lower.includes("joao") ||
+    lower.includes("joão") ||
+    lower.startsWith("dev@") ||
+    lower.startsWith("admin@rsbuild")
+  );
+}
+
+/**
+ * Verifica se o usuário tem acesso à Zona das Sprints na Torre de Controle
+ * Exclusivo para o Owner na organização RSBUILD ou Engenheiro Autorizado
+ */
+export function canAccessSprintZone(role?: string | null, orgSlug?: string | null, email?: string | null): boolean {
+  if (isDeveloperEmail(email)) return true;
   const norm = normalizeRole(role);
   return norm === "owner" && orgSlug === "rsbuild";
 }
