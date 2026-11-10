@@ -7,7 +7,7 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, e
 values ('77777777-7777-4777-8777-777777777777','00000000-0000-0000-0000-000000000000','authenticated','authenticated','brand-owner@test.invalid','',now(),now(),now())
 on conflict (id) do nothing;
 insert into public.organizations (id,legal_name,display_name,slug)
-values ('88888888-8888-4888-8888-888888888888','Brand Tenant Ltda','Brand Tenant','brand-tenant')
+values ('88888888-8888-4888-8888-888888888888','Brand Tenant Ltda','Brand Tenant','brand_tenant')
 on conflict (id) do nothing;
 insert into public.organization_memberships (organization_id,user_id,role)
 values ('88888888-8888-4888-8888-888888888888','77777777-7777-4777-8777-777777777777','owner')
