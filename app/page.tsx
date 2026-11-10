@@ -8,6 +8,7 @@ import type { OrganizationId } from "@/app/types/workspace";
 
 export const dynamic = "force-dynamic";
 
+// The selection action redirects with ?error=organization when membership validation fails.
 type Props = { searchParams: Promise<{ organizationId?: string; error?: string }> };
 
 export default async function Home({ searchParams }: Props) {
