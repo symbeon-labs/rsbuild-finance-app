@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { signIn } from "@/app/auth/actions";
 
 function MailIcon() {
   return (
@@ -49,25 +50,8 @@ function ArrowIcon() {
 }
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const emailInput = form.elements.namedItem("email") as HTMLInputElement;
-    if (emailInput?.value) {
-      try {
-        localStorage.setItem("rsbuild_auth_email", emailInput.value.trim().toLowerCase());
-      } catch {
-        // noop
-      }
-    }
-    setLoading(true);
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 500);
-  }
 
   return (
     <main className="login-page">
@@ -145,7 +129,7 @@ export default function LoginPage() {
             <p>Entre com suas credenciais para continuar.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="login-form">
+          <form action={signIn} className="login-form">
             <label className="login-field">
               <span>E-mail corporativo</span>
               <span className="login-input-wrap">
@@ -188,8 +172,8 @@ export default function LoginPage() {
               </span>
             </label>
 
-            <button className="login-submit" type="submit" disabled={loading}>
-              <span>{loading ? "Entrando…" : "Entrar no RSBUILD OS"}</span>
+            <button className="login-submit" type="submit">
+              <span>Entrar no RSBUILD OS</span>
               <ArrowIcon />
             </button>
           </form>

@@ -54,16 +54,17 @@ import { RelatoriosDreView } from "@/app/components/finance/relatorios-dre-view"
 import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
+import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
+import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 
-const SUPERADMIN_EMAILS = [
-  "neo.sh1w4@gmail.com",
-  "admin@rsbuild.com.br",
-  "diretoria@rsbuild.com.br",
-  "admin@symbeon.com.br",
-  "contato@symbeon.com.br"
-];
+type EnterpriseWorkspaceProps = {
+  organizationId: string;
+  organizationName: string;
+  membershipRole: string;
+  userEmail: string;
+};
 
-export default function EnterpriseWorkspace() {
+export default function EnterpriseWorkspace({ organizationId, organizationName, membershipRole, userEmail }: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -120,10 +121,14 @@ export default function EnterpriseWorkspace() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Customização de Marca do Workspace (White-label & Multi-Tenant)
-  const [currentOrgId, setCurrentOrgId] = useState<OrganizationId>("rsbuild");
-  const [companyName, setCompanyName] = useState("RSBUILD Inovação");
+  const [currentOrgId, setCurrentOrgId] = useState<OrganizationId>(
+    organizationName.toLowerCase().includes("hub açaí") ? "hub_acai" :
+    organizationName.toLowerCase().includes("mundo do sabor") ? "mundo_sabor" : "rsbuild"
+  );
+  const [companyName, setCompanyName] = useState(organizationName);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
-  const [currentUserEmail, setCurrentUserEmail] = useState<string>("neo.sh1w4@gmail.com");
+  const [currentUserEmail] = useState<string>(userEmail);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   // Tema Visual: 'sand' ou 'dark'
@@ -151,9 +156,7 @@ export default function EnterpriseWorkspace() {
     audit: true
   });
 
-  const isSuperAdmin = useMemo(() => {
-    return Boolean(currentUserEmail && SUPERADMIN_EMAILS.includes(currentUserEmail.trim().toLowerCase()));
-  }, [currentUserEmail]);
+  const isSuperAdmin = membershipRole === "owner";
 
   // Contas a Receber e Baixas em Lote
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
@@ -169,14 +172,8 @@ export default function EnterpriseWorkspace() {
   // Hidratação inicial do localStorage (Configurações e Persistência de Sessão)
   useEffect(() => {
     try {
-      const savedName = localStorage.getItem("rsbuild_workspace_company");
-      if (savedName) setCompanyName(savedName);
-      const savedOrgId = localStorage.getItem("rsbuild_workspace_org_id") as OrganizationId | null;
-      if (savedOrgId) setCurrentOrgId(savedOrgId);
       const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedUser = localStorage.getItem("rsbuild_auth_email");
-      if (savedUser) setCurrentUserEmail(savedUser);
       const savedModules = localStorage.getItem("rsbuild_workspace_modules");
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
@@ -195,9 +192,8 @@ export default function EnterpriseWorkspace() {
 
       // Hidratação da Cor de Marca (Brand Color Picker)
       {
-        const restoredOrgId = (localStorage.getItem("rsbuild_workspace_org_id") || "rsbuild") as OrganizationId;
         const savedBrandColor = localStorage.getItem("rsbuild_workspace_brand_color");
-        const colorToApply = savedBrandColor || ORGANIZATION_PRESETS.find((p) => p.id === restoredOrgId)?.brandColor || "#B5583C";
+        const colorToApply = ORGANIZATION_PRESETS.find((p) => p.id === currentOrgId)?.brandColor || savedBrandColor || "#B5583C";
         setBrandColor(colorToApply);
         applyBrandColor(colorToApply);
       }
@@ -259,14 +255,13 @@ export default function EnterpriseWorkspace() {
     setCompanyName(name);
     setCompanyLogoUrl(logo);
     if (orgId) {
-      setCurrentOrgId(orgId);
-      // Aplica cor de marca do preset selecionado (ou customizada)
+      // O tenant ativo é definido no servidor; o seletor visual não pode trocar a organização autenticada.
+      // Aplica apenas a paleta visual local do preset correspondente.
       const preset = ORGANIZATION_PRESETS.find((p) => p.id === orgId);
       const colorToApply = newBrandColor || preset?.brandColor || "#B5583C";
       setBrandColor(colorToApply);
       applyBrandColor(colorToApply);
       try {
-        localStorage.setItem("rsbuild_workspace_org_id", orgId);
         localStorage.setItem("rsbuild_workspace_brand_color", colorToApply);
       } catch {}
     }
@@ -282,7 +277,6 @@ export default function EnterpriseWorkspace() {
       }
     }
     try {
-      localStorage.setItem("rsbuild_workspace_company", name);
       if (logo) {
         localStorage.setItem("rsbuild_workspace_logo", logo);
       } else {
@@ -578,6 +572,11 @@ export default function EnterpriseWorkspace() {
           onOpenConfig={() => setIsConfigOpen(true)}
         />
         <div className="content">
+          <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+            <button className="secondary-button" type="button" onClick={() => setIsAdminPanelOpen((open) => !open)}>{isAdminPanelOpen ? "Fechar administração" : "Equipe e identidade"}</button>
+          </div>
+          {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={membershipRole} />}
           {notice && (
             <div className="notice" role="status">
               {notice}
