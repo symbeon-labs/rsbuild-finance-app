@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(21);
+select plan(22);
 
 -- Deterministic fixtures: two tenants, two operators and one viewer.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
@@ -156,6 +156,15 @@ select throws_ok(
 );
 
 reset role;
+
+select ok(
+  not exists (
+    select 1 from pg_policies
+    where schemaname='storage' and tablename='objects'
+      and cmd='DELETE' and policyname='tenant operators delete source files'
+  ),
+  'client Storage delete policy is absent'
+);
 
 select ok(
   not has_table_privilege('authenticated','public.financial_records','DELETE'),
