@@ -1,25 +1,13 @@
--- Security hardening: remove unsafe default grants from client roles.
+-- Security hardening: remove unsafe grants from client roles.
 -- RLS does not protect TRUNCATE; table-level TRUNCATE bypasses row policies.
--- Anonymous clients must not have direct privileges on application tables.
+-- Anonymous clients must not access application tables directly.
 revoke all privileges on all tables in schema public from anon;
 
--- Authenticated users access data through narrowly scoped DML grants + RLS.
--- They must never be able to truncate tables or create triggers / foreign keys.
+-- Keep existing authenticated DML grants where required by RLS policies,
+-- but prohibit table-wide destructive and schema-shaping privileges.
 revoke truncate, trigger, references on all tables in schema public from authenticated;
 
--- Prevent the same unsafe grants from returning on future tables created by
--- either owner role used by migrations and Supabase-managed workflows.
-alter default privileges for role postgres in schema public
-  revoke all privileges on tables from anon;
-alter default privileges for role supabase_admin in schema public
-  revoke all privileges on tables from anon;
-
-alter default privileges for role postgres in schema public
-  revoke truncate, trigger, references on tables from authenticated;
-alter default privileges for role supabase_admin in schema public
-  revoke truncate, trigger, references on tables from authenticated;
-
--- Defense-in-depth: verify no client role retains TRUNCATE on app tables.
+-- Defense-in-depth: fail if any current application table still exposes TRUNCATE.
 do $$
 declare
   unsafe_table text;
