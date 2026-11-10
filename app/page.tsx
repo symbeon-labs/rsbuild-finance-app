@@ -68,6 +68,7 @@ export default async function Home({ searchParams }: Props) {
           <div className="eyebrow">RSBUILD OS</div>
           <h1 style={{ marginTop: 12 }}>Selecione a organização</h1>
           <p>Escolha o espaço de trabalho vinculado à sua conta.</p>
+          {params.error === "organization" && <p role="alert" style={{ color: "var(--danger, #B42318)" }}>Não foi possível selecionar essa organização. Verifique seu vínculo de acesso e tente novamente.</p>}
           <form action={selectOrganization} style={{ display: "grid", gap: 16, marginTop: 20 }}>
             <label style={{ display: "grid", gap: 6 }}>Organização
               <select name="organizationId" required defaultValue="">
@@ -103,6 +104,7 @@ export default async function Home({ searchParams }: Props) {
   }
   const organizationSlug = selected.slug as OrganizationId;
   return <Suspense fallback={null}><EnterpriseWorkspace
+    key={selected.id}
     organizationId={selected.id}
     availableOrganizations={organizations.map((organization) => ({ id: organization.id, name: organization.display_name }))}
     organizationSlug={organizationSlug}
