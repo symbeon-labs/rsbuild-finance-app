@@ -2,7 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signOut } from "@/app/auth/actions";
+import { selectOrganization, signOut } from "@/app/auth/actions";
 import {
   BankMetadata,
   FinancialRecord,
@@ -68,6 +68,7 @@ import { OrganizationBrandBanner } from "@/app/components/admin/organization-bra
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
+  availableOrganizations: Array<{ id: string; name: string }>;
   organizationSlug: OrganizationId;
   organizationName: string;
   membershipRole: string;
@@ -75,7 +76,7 @@ type EnterpriseWorkspaceProps = {
   isDeveloperAuthorized: boolean;
 };
 
-export default function EnterpriseWorkspace({ organizationId, organizationSlug, organizationName, membershipRole, userEmail, isDeveloperAuthorized }: EnterpriseWorkspaceProps) {
+export default function EnterpriseWorkspace({ organizationId, availableOrganizations, organizationSlug, organizationName, membershipRole, userEmail, isDeveloperAuthorized }: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
@@ -597,6 +598,9 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
       <section className="main-area">
         <Topbar
           companyName={companyName}
+          organizationId={organizationId}
+          availableOrganizations={availableOrganizations}
+          onSwitchOrganization={selectOrganization}
           section={section}
           period={period}
           startDate={customStartDate}
