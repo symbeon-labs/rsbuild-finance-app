@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(8);
+select plan(10);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -27,11 +27,13 @@ values
  ('rsbuild-source-artifacts','55555555-5555-4555-8555-555555555555/imports/sample-again.csv','{"mimetype":"text/csv"}'),
  ('rsbuild-source-artifacts','55555555-5555-4555-8555-555555555555/imports/invalid.csv','{"mimetype":"text/csv"}');
 
-set local role authenticated;
+set local role service_role;
+select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claim.sub','dddddddd-dddd-4ddd-8ddd-dddddddddddd',true);
 
 select is(
- (select inserted_count from public.commit_financial_import(
+ (select inserted_count from public.commit_financial_import_trusted(
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '55555555-5555-4555-8555-555555555555',
   'sample.csv',repeat('a',64),10,
   '55555555-5555-4555-8555-555555555555/imports/sample.csv',
@@ -50,7 +52,8 @@ select is(
 );
 
 select is(
- (select duplicate_count from public.commit_financial_import(
+ (select duplicate_count from public.commit_financial_import_trusted(
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '55555555-5555-4555-8555-555555555555',
   'sample-again.csv',repeat('b',64),10,
   '55555555-5555-4555-8555-555555555555/imports/sample-again.csv',
@@ -69,7 +72,8 @@ select is(
 );
 
 select throws_ok(
- $$select * from public.commit_financial_import(
+ $$select * from public.commit_financial_import_trusted(
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '55555555-5555-4555-8555-555555555555',
   'invalid.csv',repeat('d',64),10,
   '55555555-5555-4555-8555-555555555555/imports/invalid.csv',
@@ -81,7 +85,8 @@ select throws_ok(
 );
 
 select throws_ok(
- $$select * from public.commit_financial_import(
+ $$select * from public.commit_financial_import_trusted(
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '66666666-6666-4666-8666-666666666666',
   'foreign.csv',repeat('c',64),10,
   '66666666-6666-4666-8666-666666666666/imports/foreign.csv',
@@ -93,12 +98,20 @@ select throws_ok(
 );
 
 select ok(
-  not has_function_privilege(
-    'anon',
-    'private.commit_financial_import(uuid,text,text,bigint,text,jsonb)',
-    'EXECUTE'
-  ),
-  'anonymous role cannot execute the private privileged import implementation'
+  not has_function_privilege('anon','private.commit_financial_import(uuid,text,text,bigint,text,jsonb)','EXECUTE')
+  and not has_function_privilege('authenticated','private.commit_financial_import(uuid,text,text,bigint,text,jsonb)','EXECUTE'),
+  'browser roles cannot execute the private privileged import implementation'
+);
+
+select ok(
+  not has_function_privilege('anon','public.commit_financial_import(uuid,text,text,bigint,text,jsonb)','EXECUTE')
+  and not has_function_privilege('authenticated','public.commit_financial_import(uuid,text,text,bigint,text,jsonb)','EXECUTE'),
+  'browser roles cannot invoke the legacy public import RPC'
+);
+
+select ok(
+  has_function_privilege('service_role','public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb)','EXECUTE'),
+  'trusted backend role can execute the trusted import entrypoint'
 );
 
 select ok(
@@ -109,7 +122,7 @@ select ok(
     where n.nspname = 'public'
       and p.proname = 'commit_financial_import'
   ),
-  'public RPC entrypoint is an invoker wrapper, not SECURITY DEFINER'
+  'legacy public RPC entrypoint is an invoker wrapper, not SECURITY DEFINER'
 );
 
 select * from finish();
