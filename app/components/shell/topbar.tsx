@@ -1,6 +1,7 @@
 "use client";
 
 import { ALL_NAV_ITEMS, NavSection } from "@/app/types/workspace";
+import { getRoleMetadata } from "@/lib/permissions";
 
 interface TopbarProps {
   companyName: string;
@@ -9,6 +10,8 @@ interface TopbarProps {
   startDate?: string;
   endDate?: string;
   theme: "sand" | "dark";
+  userRole?: string;
+  userEmail?: string;
   onPeriodChange: (period: string, startDate?: string, endDate?: string) => void;
   onToggleTheme: () => void;
   onResetSession: () => void;
@@ -22,12 +25,15 @@ export function Topbar({
   startDate,
   endDate,
   theme,
+  userRole,
+  userEmail,
   onPeriodChange,
   onToggleTheme,
   onResetSession,
   onOpenConfig
 }: TopbarProps) {
   const currentLabel = ALL_NAV_ITEMS.find((item) => item.id === section)?.label || "Visão Geral";
+  const roleMeta = getRoleMetadata(userRole);
 
   return (
     <header className="topbar">
@@ -35,6 +41,31 @@ export function Topbar({
         <strong>{companyName}</strong> <span>/</span> {currentLabel}
       </div>
       <div className="topbar-right">
+        {/* Badge de Nível de Alçada do Integrante */}
+        {userRole && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 10px",
+              background: "var(--surface-raised, rgba(255,255,255,0.06))",
+              borderRadius: "4px",
+              border: "1px solid var(--line)",
+              fontSize: "11px"
+            }}
+            title={`${userEmail ? userEmail + ' — ' : ''}${roleMeta.description}`}
+          >
+            <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--rsbuild-terracotta)" }}>
+              {roleMeta.badge}
+            </span>
+            {userEmail && (
+              <span style={{ color: "var(--muted)", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {userEmail}
+              </span>
+            )}
+          </div>
+        )}
         <span className="period-label">PERÍODO</span>
         <select
           value={period}

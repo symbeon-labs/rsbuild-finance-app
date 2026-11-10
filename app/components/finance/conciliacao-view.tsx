@@ -10,11 +10,17 @@ import {
   formatCurrency,
   MatchResult
 } from "@/lib/finance";
+import {
+  canPerformManualMatch,
+  canApproveDiscrepantMatch,
+  getRoleMetadata
+} from "@/lib/permissions";
 
 interface ConciliacaoViewProps {
   bankRecords: FinancialRecord[];
   omieRecords: OmieRecord[];
   author: string;
+  role?: string;
   onRecordsUpdated: (records: FinancialRecord[]) => void;
 }
 
@@ -22,12 +28,16 @@ export function ConciliacaoView({
   bankRecords,
   omieRecords,
   author,
+  role,
   onRecordsUpdated
 }: ConciliacaoViewProps) {
   const [selectedTab, setSelectedTab] = useState<"summary" | "matched" | "unmatched">("summary");
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
   const [selectedOmieId, setSelectedOmieId] = useState<string | null>(null);
   const [manualJustification, setManualJustification] = useState("");
+  const canMatch = canPerformManualMatch(role);
+  const canApproveDiscrepancy = canApproveDiscrepantMatch(role);
+  const roleMeta = getRoleMetadata(role);
 
   const matchResults = useMemo(() => {
     return matchRecords(bankRecords, omieRecords, author);
@@ -66,6 +76,15 @@ export function ConciliacaoView({
 
     if (!bankRecord || !omieRecord) {
       alert("Registros não encontrados na base.");
+      return;
+    }
+
+    // Trava de Alçada: Divergência de valores exige perfil executivo (Diretoria/Owner)
+    const isDiscrepant = Math.abs(bankRecord.amount - omieRecord.amount) > 0.01;
+    if (isDiscrepant && !canApproveDiscrepancy) {
+      alert(
+        `Alçada de Diretoria Necessária: O valor do extrato (${formatCurrency(bankRecord.amount)}) difere do lançamento Omie (${formatCurrency(omieRecord.amount)}).\n\nConciliações manuais com divergência financeira exigem autorização expressa de perfil Diretoria (Owner ou Admin).`
+      );
       return;
     }
 
@@ -320,14 +339,19 @@ export function ConciliacaoView({
 
           {selectedBankId && selectedOmieId && (
             <div style={{ padding: "16px", background: "var(--surface-raised, rgba(255,255,255,0.05))", border: "1px solid var(--rsbuild-terracotta)", borderRadius: "8px" }}>
-              <h3 style={{ fontSize: "13px", color: "var(--ink)", marginBottom: "8px" }}>Conciliação Manual com Trilha de Auditoria</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <h3 style={{ fontSize: "13px", color: "var(--ink)", margin: 0 }}>Conciliação Manual com Trilha de Auditoria</h3>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--rsbuild-terracotta)", background: "var(--rsbuild-terracotta-soft)", padding: "2px 8px", borderRadius: "4px" }}>
+                  {roleMeta.badge}
+                </span>
+              </div>
               <p style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px" }}>
-                Identificação do Responsável: <strong>{author}</strong>. Esta ação registrará autor, carimbo de data/hora e justificativa pericial imutável.
+                Identificação do Responsável: <strong>{author}</strong> ({roleMeta.label}). Esta ação registrará autor, carimbo de data/hora e justificativa pericial imutável.
               </p>
               <textarea
                 value={manualJustification}
                 onChange={(e) => setManualJustification(e.target.value)}
-                placeholder="Insira a justificativa formal para o casamento manual (ex: 'Compensação de duplicata com divergência de tarifa de R$ 1,50 aprovada pela diretoria')..."
+                placeholder="Insira a justificativa formal para o casamento manual (ex: 'Compensação de duplicata com divergência de tarifa aprovada pela diretoria')..."
                 rows={3}
                 style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", marginBottom: "12px", fontSize: "12px" }}
               />

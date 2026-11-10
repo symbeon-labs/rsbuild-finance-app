@@ -573,6 +573,8 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
           startDate={customStartDate}
           endDate={customEndDate}
           theme={theme}
+          userRole={membershipRole}
+          userEmail={currentUserEmail}
           onPeriodChange={handlePeriodChange}
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}
@@ -639,6 +641,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
               bankRecords={filteredRecords}
               omieRecords={omieRecords}
               author={currentUserEmail}
+              role={membershipRole}
               onRecordsUpdated={setRecords}
             />
           )}
@@ -647,6 +650,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
               titles={titles}
               matches={matches}
               matchStats={matchStats}
+              role={membershipRole}
               onReloadSample={() => setTitles(INITIAL_SAMPLE_TITLES)}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/finance";
 import { ReceivableTitle, ReconciliationMatch } from "@/lib/reconciliation";
+import { canApproveBatchSettlement, getRoleMetadata } from "@/lib/permissions";
 import { Metric, EmptyState } from "./common";
 
 interface BaixasViewProps {
@@ -14,6 +15,7 @@ interface BaixasViewProps {
     pending: ReconciliationMatch[];
     totalReadyAmount: number;
   };
+  role?: string;
   onReloadSample: () => void;
   onImportTitlesFile: (file: File) => void;
   onConfirmSettlementInSession: () => void;
@@ -24,12 +26,15 @@ export function BaixasView({
   titles,
   matches,
   matchStats,
+  role,
   onReloadSample,
   onImportTitlesFile,
   onConfirmSettlementInSession,
   onExportBatchSettlement
 }: BaixasViewProps) {
   const titlesInputRef = useRef<HTMLInputElement>(null);
+  const hasSettlementAuth = canApproveBatchSettlement(role);
+  const roleMeta = getRoleMetadata(role);
 
   return (
     <>
@@ -63,9 +68,20 @@ export function BaixasView({
             ＋ Importar Títulos (CSV)
           </button>
           {matchStats.ready.length > 0 && (
-            <button className="primary-button" onClick={onExportBatchSettlement}>
-              📥 Gerar Lote de Baixas (.CSV)
-            </button>
+            hasSettlementAuth ? (
+              <button className="primary-button" onClick={onExportBatchSettlement}>
+                📥 Gerar Lote de Baixas (.CSV)
+              </button>
+            ) : (
+              <button
+                className="secondary-button"
+                disabled
+                title="Alçada Restrita: Exige aprovação de perfil Diretoria (Owner ou Admin) para emitir baixas financeiras no ERP."
+                style={{ opacity: 0.6, cursor: "not-allowed", borderStyle: "dashed" }}
+              >
+                🔒 Baixa Restrita à Diretoria
+              </button>
+            )
           )}
         </div>
       </div>
