@@ -2,7 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signOut } from "@/app/auth/actions";
+import { selectOrganization, signOut } from "@/app/auth/actions";
 import {
   BankMetadata,
   FinancialRecord,
@@ -66,8 +66,11 @@ import { TorreControleView } from "@/app/components/executive/torre-controle-vie
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 
+const workspaceStorageKey = (organizationId: string, key: string) => `rsbuild:${organizationId}:${key}`;
+
 type EnterpriseWorkspaceProps = {
   organizationId: string;
+  availableOrganizations: Array<{ id: string; name: string }>;
   organizationSlug: OrganizationId;
   organizationName: string;
   membershipRole: string;
@@ -75,7 +78,7 @@ type EnterpriseWorkspaceProps = {
   isDeveloperAuthorized: boolean;
 };
 
-export default function EnterpriseWorkspace({ organizationId, organizationSlug, organizationName, membershipRole, userEmail, isDeveloperAuthorized }: EnterpriseWorkspaceProps) {
+export default function EnterpriseWorkspace({ organizationId, availableOrganizations, organizationSlug, organizationName, membershipRole, userEmail, isDeveloperAuthorized }: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
@@ -107,6 +110,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
 
   // Estados Financeiros & Sessão
   const [records, setRecords] = useState<FinancialRecord[]>(INITIAL_SAMPLE_RECORDS);
+  const [storageHydrated, setStorageHydrated] = useState(false);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
   const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
@@ -131,9 +135,9 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
     if (start !== undefined) setCustomStartDate(start);
     if (end !== undefined) setCustomEndDate(end);
     try {
-      localStorage.setItem("rsbuild_period_option", p);
-      if (start !== undefined) localStorage.setItem("rsbuild_period_start", start);
-      if (end !== undefined) localStorage.setItem("rsbuild_period_end", end);
+      localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_period_option"), p);
+      if (start !== undefined) localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_period_start"), start);
+      if (end !== undefined) localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_period_end"), end);
     } catch {}
   }
 
@@ -155,7 +159,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
     const next = theme === "sand" ? "dark" : "sand";
     setTheme(next);
     try {
-      localStorage.setItem("rsbuild_theme", next);
+      localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_theme"), next);
     } catch {}
     if (typeof document !== "undefined") {
       document.documentElement.setAttribute("data-theme", next);
@@ -189,9 +193,9 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
   // Hidratação inicial do localStorage (Configurações e Persistência de Sessão)
   useEffect(() => {
     try {
-      const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
+      const savedLogo = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_workspace_logo"));
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedModules = localStorage.getItem("rsbuild_workspace_modules");
+      const savedModules = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_workspace_modules"));
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
         setEnabledModules({
@@ -201,7 +205,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
           audit: parsed.audit !== false
         });
       }
-      const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
+      const savedTheme = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_theme")) as "sand" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "sand") {
         setTheme(savedTheme);
         document.documentElement.setAttribute("data-theme", savedTheme);
@@ -209,58 +213,64 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
 
       // Hidratação da Cor de Marca (Brand Color Picker)
       {
-        const savedBrandColor = localStorage.getItem("rsbuild_workspace_brand_color");
+        const savedBrandColor = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_workspace_brand_color"));
         const colorToApply = ORGANIZATION_PRESETS.find((p) => p.id === currentOrgId)?.brandColor || savedBrandColor || "#B5583C";
         setBrandColor(colorToApply);
         applyBrandColor(colorToApply);
       }
 
       // Persistência de Período
-      const savedPeriod = localStorage.getItem("rsbuild_period_option") as PeriodOption | null;
+      const savedPeriod = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_period_option")) as PeriodOption | null;
       if (savedPeriod) setPeriod(savedPeriod);
-      const savedStart = localStorage.getItem("rsbuild_period_start");
+      const savedStart = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_period_start"));
       if (savedStart) setCustomStartDate(savedStart);
-      const savedEnd = localStorage.getItem("rsbuild_period_end");
+      const savedEnd = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_period_end"));
       if (savedEnd) setCustomEndDate(savedEnd);
 
       // Persistência de Dados Operacionais
-      const savedRecords = localStorage.getItem("rsbuild_session_records");
+      const savedRecords = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_session_records"));
       if (savedRecords) setRecords(JSON.parse(savedRecords));
-      const savedTitles = localStorage.getItem("rsbuild_session_titles");
+      const savedTitles = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_session_titles"));
       if (savedTitles) setTitles(JSON.parse(savedTitles));
-      const savedProofs = localStorage.getItem("rsbuild_session_proofs");
+      const savedProofs = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_session_proofs"));
       if (savedProofs) setProofs(JSON.parse(savedProofs));
-      const savedOrders = localStorage.getItem("rsbuild_session_orders");
+      const savedOrders = localStorage.getItem(workspaceStorageKey(organizationId, "rsbuild_session_orders"));
       if (savedOrders) setOrders(JSON.parse(savedOrders));
     } catch {
       // Ignora falhas em sandbox restrito / SSR
+    } finally {
+      setStorageHydrated(true);
     }
-  }, []);
+  }, [organizationId]);
 
   // Watchers de auto-save de dados no localStorage
   useEffect(() => {
+    if (!storageHydrated) return;
     try {
-      localStorage.setItem("rsbuild_session_records", JSON.stringify(records));
+      localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_session_records"), JSON.stringify(records));
     } catch {}
-  }, [records]);
+  }, [records, organizationId, storageHydrated]);
 
   useEffect(() => {
+    if (!storageHydrated) return;
     try {
-      localStorage.setItem("rsbuild_session_titles", JSON.stringify(titles));
+      localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_session_titles"), JSON.stringify(titles));
     } catch {}
-  }, [titles]);
+  }, [titles, organizationId, storageHydrated]);
 
   useEffect(() => {
+    if (!storageHydrated) return;
     try {
-      localStorage.setItem("rsbuild_session_proofs", JSON.stringify(proofs));
+      localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_session_proofs"), JSON.stringify(proofs));
     } catch {}
-  }, [proofs]);
+  }, [proofs, organizationId, storageHydrated]);
 
   useEffect(() => {
+    if (!storageHydrated) return;
     try {
-      localStorage.setItem("rsbuild_session_orders", JSON.stringify(orders));
+      localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_session_orders"), JSON.stringify(orders));
     } catch {}
-  }, [orders]);
+  }, [orders, organizationId, storageHydrated]);
 
   function handleSaveCompanyConfig(
     name: string,
@@ -279,13 +289,13 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
       setBrandColor(colorToApply);
       applyBrandColor(colorToApply);
       try {
-        localStorage.setItem("rsbuild_workspace_brand_color", colorToApply);
+        localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_workspace_brand_color"), colorToApply);
       } catch {}
     }
     if (modules) {
       setEnabledModules(modules);
       try {
-        localStorage.setItem("rsbuild_workspace_modules", JSON.stringify(modules));
+        localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_workspace_modules"), JSON.stringify(modules));
       } catch {}
       if (!modules.finance && modules.logistics && activeModule === "finance") {
         navigateTo("pedidos-ha");
@@ -295,9 +305,9 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
     }
     try {
       if (logo) {
-        localStorage.setItem("rsbuild_workspace_logo", logo);
+        localStorage.setItem(workspaceStorageKey(organizationId, "rsbuild_workspace_logo"), logo);
       } else {
-        localStorage.removeItem("rsbuild_workspace_logo");
+        localStorage.removeItem(workspaceStorageKey(organizationId, "rsbuild_workspace_logo"));
       }
     } catch {}
     setNotice(`Workspace configurado com sucesso para ${name}!`);
@@ -327,10 +337,10 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
     setImportErrors([]);
     setFileName("");
     try {
-      localStorage.removeItem("rsbuild_session_records");
-      localStorage.removeItem("rsbuild_session_titles");
-      localStorage.removeItem("rsbuild_session_proofs");
-      localStorage.removeItem("rsbuild_session_orders");
+      localStorage.removeItem(workspaceStorageKey(organizationId, "rsbuild_session_records"));
+      localStorage.removeItem(workspaceStorageKey(organizationId, "rsbuild_session_titles"));
+      localStorage.removeItem(workspaceStorageKey(organizationId, "rsbuild_session_proofs"));
+      localStorage.removeItem(workspaceStorageKey(organizationId, "rsbuild_session_orders"));
     } catch {}
     setNotice("Sessão reiniciada com dados de demonstração.");
   }
@@ -597,6 +607,9 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
       <section className="main-area">
         <Topbar
           companyName={companyName}
+          organizationId={organizationId}
+          availableOrganizations={availableOrganizations}
+          onSwitchOrganization={selectOrganization}
           section={section}
           period={period}
           startDate={customStartDate}
