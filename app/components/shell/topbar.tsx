@@ -2,9 +2,13 @@
 
 import { ALL_NAV_ITEMS, NavSection } from "@/app/types/workspace";
 import { getRoleMetadata } from "@/lib/permissions";
+import { selectOrganization } from "@/app/auth/actions";
 
 interface TopbarProps {
   companyName: string;
+  organizationId: string;
+  availableOrganizations: Array<{ id: string; name: string }>;
+  onSwitchOrganization: (formData: FormData) => Promise<void>;
   section: NavSection;
   period: string;
   startDate?: string;
@@ -20,6 +24,9 @@ interface TopbarProps {
 
 export function Topbar({
   companyName,
+  organizationId,
+  availableOrganizations,
+  onSwitchOrganization,
   section,
   period,
   startDate,
@@ -65,6 +72,14 @@ export function Topbar({
               </span>
             )}
           </div>
+        )}
+        {availableOrganizations.length > 1 && (
+          <form action={onSwitchOrganization} className="topbar-organization-switch">
+            <label className="sr-only" htmlFor="active-organization">Organização ativa</label>
+            <select id="active-organization" name="organizationId" value={organizationId} onChange={(event) => event.currentTarget.form?.requestSubmit()} aria-label="Trocar organização">
+              {availableOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
+            </select>
+          </form>
         )}
         <span className="period-label">PERÍODO</span>
         <select
