@@ -65,6 +65,7 @@ import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
+import { canApproveBatchSettlement, canAccessSprintZone } from "@/lib/permissions";
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
@@ -72,9 +73,10 @@ type EnterpriseWorkspaceProps = {
   organizationName: string;
   membershipRole: string;
   userEmail: string;
+  isDeveloperAuthorized: boolean;
 };
 
-export default function EnterpriseWorkspace({ organizationId, organizationSlug, organizationName, membershipRole, userEmail }: EnterpriseWorkspaceProps) {
+export default function EnterpriseWorkspace({ organizationId, organizationSlug, organizationName, membershipRole, userEmail, isDeveloperAuthorized }: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
@@ -444,6 +446,10 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
   }
 
   function handleExportBatchSettlement(customMatches?: ReconciliationMatch[]) {
+    if (!canApproveBatchSettlement(membershipRole)) {
+      setNotice("Ação bloqueada: somente Owner ou Admin pode gerar o lote oficial de baixas.");
+      return;
+    }
     const target = customMatches && customMatches.length ? customMatches : matchStats.ready;
     if (!target.length) {
       setNotice("Não há títulos com correspondência bancária pronta para baixa.");
@@ -465,6 +471,10 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
   }
 
   function handleConfirmSettlementInSession() {
+    if (!canApproveBatchSettlement(membershipRole)) {
+      setNotice("Ação bloqueada: somente Owner ou Admin pode confirmar baixas.");
+      return;
+    }
     const matchedTitleIds = new Set(matchStats.ready.map((m) => m.title.id));
     setTitles((curr) =>
       curr.map((t) => (matchedTitleIds.has(t.id) ? { ...t, status: "baixado" as const } : t))
@@ -634,7 +644,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
               evaluations={evaluations}
               orders={orders}
               hubAcaiMetrics={hubAcaiMetrics}
-              hasSprintZone={canAccessSprintZone(effectiveRole, organizationSlug)}
+              hasSprintZone={canAccessSprintZone(effectiveRole, organizationSlug) || isDeveloperAuthorized}
               onNavigateToTab={navigateTo}
             />
           )}
@@ -737,6 +747,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
         onUploadLogo={handleLogoUploadFile}
       />
       <DevZonePanel
+        developerAccessAllowed={isDeveloperAuthorized || canAccessSprintZone(membershipRole, organizationSlug)}
         currentOrgId={organizationId}
         currentOrgSlug={organizationSlug}
         realUserEmail={currentUserEmail}

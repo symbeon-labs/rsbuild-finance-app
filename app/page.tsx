@@ -79,6 +79,11 @@ export default async function Home({ searchParams }: Props) {
   }
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
+  const devAllowlist = (process.env.RSBUILD_DEV_AUTHORIZED_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  const isDeveloperAuthorized = Boolean(user.email && devAllowlist.includes(user.email.toLowerCase()));
   const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor"];
   if (!validOrganizationSlugs.includes(selected.slug as OrganizationId)) {
     return (
@@ -98,5 +103,6 @@ export default async function Home({ searchParams }: Props) {
     organizationName={selected.display_name}
     membershipRole={selectedMembership?.role ?? "viewer"}
     userEmail={user.email ?? ""}
+    isDeveloperAuthorized={isDeveloperAuthorized}
   /></Suspense>;
 }

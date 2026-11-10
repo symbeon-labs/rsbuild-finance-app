@@ -118,11 +118,11 @@ export function BaixasView({
           </div>
           {matchStats.ready.length > 0 && (
             <div style={{ display: "flex", gap: "8px" }}>
-              <button className="secondary-button" onClick={onConfirmSettlementInSession}>
-                Marcar Baixados na Sessão
+              <button className="secondary-button" onClick={onConfirmSettlementInSession} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Marcar títulos como baixados nesta sessão de demonstração."}>
+                {hasSettlementAuth ? "Marcar Baixados na Sessão" : "🔒 Baixa Restrita à Diretoria"}
               </button>
-              <button className="primary-button" onClick={onExportBatchSettlement}>
-                ⚡ Baixar Lote Oficial Omie (.CSV)
+              <button className={hasSettlementAuth ? "primary-button" : "secondary-button"} onClick={onExportBatchSettlement} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Gerar arquivo de baixa para importação no Omie."}>
+                {hasSettlementAuth ? "⚡ Baixar Lote Oficial Omie (.CSV)" : "🔒 Baixa Restrita à Diretoria"}
               </button>
             </div>
           )}
