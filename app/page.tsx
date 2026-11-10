@@ -1,8 +1,9 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import EnterpriseWorkspace from "./enterprise-workspace";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "@/app/auth/actions";
+import { selectOrganization, signOut } from "@/app/auth/actions";
 import type { OrganizationId } from "@/app/types/workspace";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,8 @@ type Props = { searchParams: Promise<{ organizationId?: string }> };
 
 export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
+  const cookieStore = await cookies();
+  const rememberedOrganizationId = cookieStore.get("rsbuild_active_organization")?.value;
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) redirect("/login");
@@ -53,7 +56,9 @@ export default async function Home({ searchParams }: Props) {
     );
   }
 
-  const selected = organizations.find((organization) => organization.id === params.organizationId)
+  const requestedOrganizationId = params.organizationId;
+  const selected = organizations.find((organization) => organization.id === requestedOrganizationId)
+    ?? organizations.find((organization) => organization.id === rememberedOrganizationId)
     ?? (organizations.length === 1 ? organizations[0] : null);
 
   if (!selected) {
@@ -63,7 +68,7 @@ export default async function Home({ searchParams }: Props) {
           <div className="eyebrow">RSBUILD OS</div>
           <h1 style={{ marginTop: 12 }}>Selecione a organização</h1>
           <p>Escolha o espaço de trabalho vinculado à sua conta.</p>
-          <form action="/" method="get" style={{ display: "grid", gap: 16, marginTop: 20 }}>
+          <form action={selectOrganization} style={{ display: "grid", gap: 16, marginTop: 20 }}>
             <label style={{ display: "grid", gap: 6 }}>Organização
               <select name="organizationId" required defaultValue="">
                 <option value="" disabled>Selecione...</option>
