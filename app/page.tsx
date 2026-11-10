@@ -104,6 +104,7 @@ export default async function Home({ searchParams }: Props) {
   const organizationSlug = selected.slug as OrganizationId;
   return <Suspense fallback={null}><EnterpriseWorkspace
     organizationId={selected.id}
+    availableOrganizations={organizations.map((organization) => ({ id: organization.id, name: organization.display_name }))}
     organizationSlug={organizationSlug}
     organizationName={selected.display_name}
     membershipRole={selectedMembership?.role ?? "viewer"}
