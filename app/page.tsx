@@ -79,6 +79,18 @@ export default async function Home({ searchParams }: Props) {
   }
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
+  const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor"];
+  if (!validOrganizationSlugs.includes(selected.slug as OrganizationId)) {
+    return (
+      <main className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+        <section className="panel" style={{ width: "min(100%, 560px)", padding: 32 }}>
+          <h1>Organização sem identificador configurado</h1>
+          <p>O espaço de trabalho existe, mas seu identificador canônico ainda não está disponível. Solicite ao administrador a validação da configuração do tenant.</p>
+          <form action={signOut}><button className="secondary-button" type="submit">Sair</button></form>
+        </section>
+      </main>
+    );
+  }
   const organizationSlug = selected.slug as OrganizationId;
   return <Suspense fallback={null}><EnterpriseWorkspace
     organizationId={selected.id}
