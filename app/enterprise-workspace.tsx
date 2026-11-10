@@ -1,7 +1,8 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signOut } from "@/app/auth/actions";
 import {
   BankMetadata,
   FinancialRecord,
@@ -76,6 +77,7 @@ type EnterpriseWorkspaceProps = {
 export default function EnterpriseWorkspace({ organizationId, organizationSlug, organizationName, membershipRole, userEmail }: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startSignOutTransition] = useTransition();
 
   // URL Sync para Seção e Módulo
   const urlTab = searchParams.get("tab") as NavSection | null;
@@ -574,6 +576,14 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
         }}
         onSelectSection={navigateTo}
         onOpenConfig={() => setIsConfigOpen(true)}
+        onSignOut={() =>
+          new Promise<void>((resolve) => {
+            startSignOutTransition(async () => {
+              await signOut();
+              resolve();
+            });
+          })
+        }
       />
       <section className="main-area">
         <Topbar

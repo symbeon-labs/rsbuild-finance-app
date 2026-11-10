@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTransition } from "react";
 import {
   ALL_NAV_ITEMS,
   EnabledModulesConfig,
@@ -20,6 +21,8 @@ interface SidebarProps {
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
+  /** Server action de logout — invalida a sessão Supabase antes de redirecionar */
+  onSignOut: () => Promise<void>;
 }
 
 const MODULE_CONFIGS: {
@@ -96,8 +99,10 @@ export function Sidebar({
   currentOrgId = "rsbuild",
   onSelectModule,
   onSelectSection,
-  onOpenConfig
+  onOpenConfig,
+  onSignOut
 }: SidebarProps) {
+  const [isPending, startTransition] = useTransition();
   const availableModules = MODULE_CONFIGS.filter((m) => enabledModules[m.id]);
   const currentModuleConfig =
     MODULE_CONFIGS.find((m) => m.id === activeModule) || availableModules[0] || MODULE_CONFIGS[0];
@@ -228,8 +233,11 @@ export function Sidebar({
         <button
           className="signout-btn"
           onClick={() => {
-            window.location.href = "/login";
+            startTransition(async () => {
+              await onSignOut();
+            });
           }}
+          disabled={isPending}
           title="Sair da sessão"
         >
           <svg

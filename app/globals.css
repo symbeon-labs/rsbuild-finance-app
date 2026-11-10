@@ -1077,6 +1077,25 @@ tbody tr:last-child td { border-bottom: 0; }
   flex: 0 0 auto;
 }
 
+/* Link de recuperação de senha / suporte na tela de login */
+.login-forgot-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.login-forgot-link {
+  font-size: 12px;
+  color: #7a6e65;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.login-forgot-link:hover {
+  color: var(--rsbuild-terracotta, #b5583c);
+  text-decoration: underline;
+}
+
 .login-security-note {
   display: flex;
   align-items: center;

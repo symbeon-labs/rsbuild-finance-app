@@ -176,6 +176,12 @@ export default function LoginPage() {
               <span>Entrar no RSBUILD OS</span>
               <ArrowIcon />
             </button>
+
+            <div className="login-forgot-wrap">
+              <a href="mailto:suporte@rsbuild.com.br?subject=Recuperação%20de%20Acesso%20RSBUILD%20OS" className="login-forgot-link">
+                Esqueceu sua senha? Contate o administrador →
+              </a>
+            </div>
           </form>
 
           <p className="login-security-note">
