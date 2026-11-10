@@ -37,3 +37,22 @@ D02 persistence must be introduced as an infrastructure/data layer beneath the c
 ## Current verification limits
 
 This record documents source inspection only. It is not evidence that the application has been built, that migrations have been applied, that pgTAP or end-to-end tests pass, or that remote Supabase configuration has been verified. No production migration, merge, or deployment is authorized by this record.
+
+
+## Implemented slice on the integration branch
+
+- Supabase SSR client, server-only service client, sign-in/sign-out actions and an authenticated organization-membership gate are now present.
+- The main `EnterpriseWorkspace` and its modules remain in place; the D02 replacement workspace was not copied over.
+- `POST /api/imports` parses CSV/OFX on the server, checks membership using the user's session, stores the original artifact using the server secret, and calls a service-role-only trusted RPC.
+- The trusted RPC sets transaction-local actor attribution only after validating the service-role claim and rechecking the actor's tenant role. The legacy RPCs and private schema are revoked from browser roles.
+- Storage client-side DELETE policy is removed.
+- `lib/finance-persistence.ts` is the explicit major-unit/centavo boundary.
+- Node CI passed at commit `337a0c0` and earlier at `ecccd23`: `npm ci`, `npm audit --audit-level=high`, `npm test`, typecheck and production build.
+- pgTAP found and corrected a test-plan count mismatch. A rerun is in progress on the current head; do not treat database tests as passed until that run completes.
+
+## Remaining integration work
+
+- Pass the verified organization UUID and authenticated user context into the existing workspace modules; remove reliance on localStorage identity and simulated superadmin email lists.
+- Connect the existing import UI to `POST /api/imports` and hydrate persisted records through tenant-filtered queries.
+- Migrate reconciliation, receipts/proofs, orders and operational datasets from localStorage to tenant-scoped persistence without changing their business behavior.
+- Add two-tenant end-to-end coverage and verify remote migration history/configuration before any deployment.
