@@ -57,23 +57,14 @@ import { TorreControleView } from "@/app/components/executive/torre-controle-vie
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 
-const SUPERADMIN_EMAILS = [
-  "neo.sh1w4@gmail.com",
-  "admin@rsbuild.com.br",
-  "diretoria@rsbuild.com.br",
-  "admin@symbeon.com.br",
-  "contato@symbeon.com.br"
-];
-
 type EnterpriseWorkspaceProps = {
   organizationId: string;
   organizationName: string;
   membershipRole: string;
-  userId: string;
   userEmail: string;
 };
 
-export default function EnterpriseWorkspace({ organizationId, organizationName, membershipRole, userId, userEmail }: EnterpriseWorkspaceProps) {
+export default function EnterpriseWorkspace({ organizationId, organizationName, membershipRole, userEmail }: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -585,7 +576,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationName, 
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button className="secondary-button" type="button" onClick={() => setIsAdminPanelOpen((open) => !open)}>{isAdminPanelOpen ? "Fechar administração" : "Equipe e identidade"}</button>
           </div>
-          {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={membershipRole} />
+          {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={membershipRole} />}
           {notice && (
             <div className="notice" role="status">
               {notice}
