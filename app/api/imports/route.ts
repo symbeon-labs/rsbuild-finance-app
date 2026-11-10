@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseCsv, parseOfx } from "@/lib/finance";
+import { majorToMinor } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 
 export const runtime = "nodejs";
@@ -60,13 +61,15 @@ export async function POST(request: Request) {
 
   const normalized = [];
   for (const [index, row] of parsed.records.entries()) {
-    const amountMinor = Math.round(row.amount * 100);
+    let amountMinor: number;
+    try { amountMinor = majorToMinor(row.amount); }
+    catch { return NextResponse.json({ error: "server_parser_invalid_record" }, { status: 422 }); }
     if (!Number.isSafeInteger(amountMinor) || amountMinor < 0 || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !row.description.trim()) {
       return NextResponse.json({ error: "server_parser_invalid_record" }, { status: 422 });
     }
     const identity = row.sourceRecordId
       ? `ofx:${row.sourceRecordId}`
-      : `${row.date}| ${row.description.trim().toLocaleLowerCase("pt-BR")}| ${amountMinor}| ${row.direction}`;
+      : `csv:${fileHash}:${index}:${row.date}|${row.description.trim().toLocaleLowerCase("pt-BR")}|${amountMinor}|${row.direction}`;
     const deduplicationKey = createHash("sha256").update(identity).digest("hex");
     normalized.push({
       transaction_date: row.date,
