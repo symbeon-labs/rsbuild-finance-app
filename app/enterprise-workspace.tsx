@@ -38,6 +38,8 @@ import {
   INITIAL_SAMPLE_TITLES,
   INITIAL_SAMPLE_PROOFS,
   INITIAL_SAMPLE_HA_ORDERS,
+  INITIAL_SAMPLE_RECORDS,
+  INITIAL_SAMPLE_OMIE_RECORDS,
   type ModuleType,
   type NavSection,
   type EnabledModulesConfig,
@@ -45,10 +47,12 @@ import {
   ORGANIZATION_PRESETS,
   orgHasExecutiveTower
 } from "@/app/types/workspace";
+import { MemberRole, canAccessSprintZone } from "@/lib/permissions";
 import { applyBrandColor } from "@/app/lib/brand-color";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
 import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
+import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
 import { VisaoGeralView } from "@/app/components/finance/visao-geral-view";
 import { MovimentacoesView } from "@/app/components/finance/movimentacoes-view";
 import { ImportacoesView } from "@/app/components/finance/importacoes-view";
@@ -99,14 +103,19 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
   }
 
   // Estados Financeiros & Sessão
-  const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [records, setRecords] = useState<FinancialRecord[]>(INITIAL_SAMPLE_RECORDS);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
   const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
 
   // Registros Omie para conciliação
-  const [omieRecords, setOmieRecords] = useState<OmieRecord[]>([]);
+  const [omieRecords, setOmieRecords] = useState<OmieRecord[]>(INITIAL_SAMPLE_OMIE_RECORDS);
+
+  // Simulação de Papéis na Zona Dev (Modo Engenharia)
+  const [simulatedRole, setSimulatedRole] = useState<MemberRole | null>(null);
+  const effectiveRole = simulatedRole || (membershipRole as MemberRole);
+  const isSuperAdmin = effectiveRole === "owner";
 
   // Filtro de Período Contábil e Customizado
   const [period, setPeriod] = useState<PeriodOption>("all");
@@ -161,7 +170,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
     audit: true
   });
 
-  const isSuperAdmin = membershipRole === "owner";
+  // isSuperAdmin calculado reativamente com base em effectiveRole
 
   // Contas a Receber e Baixas em Lote
   const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
@@ -305,7 +314,8 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
     if (typeof window !== "undefined" && !window.confirm("Reiniciar todos os dados operacionais da sessão atual?")) {
       return;
     }
-    setRecords([]);
+    setRecords(INITIAL_SAMPLE_RECORDS);
+    setOmieRecords(INITIAL_SAMPLE_OMIE_RECORDS);
     setTitles(INITIAL_SAMPLE_TITLES);
     setProofs(INITIAL_SAMPLE_PROOFS);
     setOrders(INITIAL_SAMPLE_HA_ORDERS);
@@ -573,7 +583,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
           startDate={customStartDate}
           endDate={customEndDate}
           theme={theme}
-          userRole={membershipRole}
+          userRole={effectiveRole}
           userEmail={currentUserEmail}
           onPeriodChange={handlePeriodChange}
           onToggleTheme={toggleTheme}
@@ -585,7 +595,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button className="secondary-button" type="button" onClick={() => setIsAdminPanelOpen((open) => !open)}>{isAdminPanelOpen ? "Fechar administração" : "Equipe e identidade"}</button>
           </div>
-          {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={membershipRole} />}
+          {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={effectiveRole} />}
           {notice && (
             <div className="notice" role="status">
               {notice}
@@ -614,6 +624,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
               evaluations={evaluations}
               orders={orders}
               hubAcaiMetrics={hubAcaiMetrics}
+              hasSprintZone={canAccessSprintZone(effectiveRole, organizationSlug)}
               onNavigateToTab={navigateTo}
             />
           )}
@@ -641,7 +652,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
               bankRecords={filteredRecords}
               omieRecords={omieRecords}
               author={currentUserEmail}
-              role={membershipRole}
+              role={effectiveRole}
               onRecordsUpdated={setRecords}
             />
           )}
@@ -650,7 +661,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
               titles={titles}
               matches={matches}
               matchStats={matchStats}
-              role={membershipRole}
+              role={effectiveRole}
               onReloadSample={() => setTitles(INITIAL_SAMPLE_TITLES)}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}
@@ -714,6 +725,24 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
         onClose={() => setIsConfigOpen(false)}
         onSave={handleSaveCompanyConfig}
         onUploadLogo={handleLogoUploadFile}
+      />
+      <DevZonePanel
+        currentOrgId={organizationId}
+        currentOrgSlug={organizationSlug}
+        realUserEmail={currentUserEmail}
+        realRole={membershipRole}
+        simulatedRole={simulatedRole}
+        onSimulateRole={setSimulatedRole}
+        recordsCount={records.length}
+        titlesCount={titles.length}
+        proofsCount={proofs.length}
+        ordersCount={orders.length}
+        onInjectBankRecords={(newRecords) => setRecords(newRecords)}
+        onInjectOmieRecords={(newOmie) => setOmieRecords(newOmie)}
+        onInjectTitles={(newTitles) => setTitles(newTitles)}
+        onInjectProofs={(newProofs) => setProofs(newProofs)}
+        onInjectOrders={(newOrders) => setOrders(newOrders)}
+        onResetAllData={resetSession}
       />
     </main>
   );

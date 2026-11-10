@@ -1,6 +1,7 @@
 import { ReceivableTitle } from "../../lib/reconciliation";
 import { DeliveryProof } from "../../lib/delivery";
 import { ParsedWhatsAppOrder } from "../../lib/orders";
+import { FinancialRecord, OmieRecord } from "../../lib/finance";
 
 export type ModuleType = "finance" | "reconciliation" | "logistics" | "audit";
 
@@ -358,5 +359,134 @@ export const INITIAL_SAMPLE_HA_ORDERS: ParsedWhatsAppOrder[] = [
     unrecognizedLines: [],
     createdAt: new Date().toISOString(),
     status: "confirmado"
+  }
+];
+
+export const INITIAL_SAMPLE_RECORDS: FinancialRecord[] = [
+  {
+    id: "rec-001",
+    date: "2026-04-10",
+    description: "TED/PIX REC SUPERMERCADO REAL NF 4580",
+    amount: 1500.0,
+    direction: "entrada",
+    category: "Recebimento Clientes",
+    source: "Extrato Itaú 0341",
+    bankName: "Itaú Unibanco",
+    bankCode: "0341",
+    accountId: "12345-6",
+    status: "pendente"
+  },
+  {
+    id: "rec-002",
+    date: "2026-04-12",
+    description: "PIX DISTR ALIMENTOS BAHIA",
+    amount: 3200.5,
+    direction: "entrada",
+    category: "Recebimento Clientes",
+    source: "Extrato BNB 0004",
+    bankName: "Banco do Nordeste (BNB)",
+    bankCode: "0004",
+    accountId: "98765-4",
+    status: "pendente"
+  },
+  {
+    id: "rec-003",
+    date: "2026-04-15",
+    description: "PAGTO PADARIA ESTRELA NF 4582 DESC",
+    amount: 840.0,
+    direction: "entrada",
+    category: "Recebimento Clientes",
+    source: "Extrato Banco Inter 0077",
+    bankName: "Banco Inter",
+    bankCode: "0077",
+    accountId: "54321-0",
+    status: "pendente"
+  },
+  {
+    id: "rec-004",
+    date: "2026-04-18",
+    description: "PIX RECEBIDO SORVETERIA BARRA VENTO",
+    amount: 2400.0,
+    direction: "entrada",
+    category: "Recebimento Clientes",
+    source: "Extrato Itaú 0341",
+    bankName: "Itaú Unibanco",
+    bankCode: "0341",
+    accountId: "12345-6",
+    status: "pendente"
+  },
+  {
+    id: "rec-005",
+    date: "2026-04-05",
+    description: "PGTO FORNECEDOR POLPAS BRASIL",
+    amount: 4850.0,
+    direction: "saída",
+    category: "Fornecedores e Matéria Prima",
+    source: "Extrato Itaú 0341",
+    bankName: "Itaú Unibanco",
+    bankCode: "0341",
+    accountId: "12345-6",
+    status: "pendente"
+  },
+  {
+    id: "rec-006",
+    date: "2026-04-08",
+    description: "TARIFA BANCARIA PACOTE MENSAL",
+    amount: 89.9,
+    direction: "saída",
+    category: "Despesas Bancárias",
+    source: "Extrato Itaú 0341",
+    bankName: "Itaú Unibanco",
+    bankCode: "0341",
+    accountId: "12345-6",
+    status: "pendente"
+  }
+];
+
+export const INITIAL_SAMPLE_OMIE_RECORDS: OmieRecord[] = [
+  {
+    id: "omie-001",
+    date: "2026-04-10",
+    description: "Venda NF-4580 Supermercado Real Salvador",
+    amount: 1500.0,
+    direction: "entrada",
+    documentNumber: "NF-4580",
+    category: "Vendas de Mercadoria"
+  },
+  {
+    id: "omie-002",
+    date: "2026-04-12",
+    description: "Venda NF-4581 Distribuidora Alimentos Bahia",
+    amount: 3200.5,
+    direction: "entrada",
+    documentNumber: "NF-4581",
+    category: "Vendas Atacado"
+  },
+  {
+    id: "omie-003",
+    date: "2026-04-15",
+    description: "Venda NF-4582 Padaria e Lanchonete Estrela",
+    amount: 850.0,
+    direction: "entrada",
+    documentNumber: "NF-4582",
+    category: "Vendas Balcão"
+  },
+  {
+    id: "omie-004",
+    date: "2026-04-18",
+    description: "Venda NF-4583 Sorveteria Barra Vento",
+    amount: 2400.0,
+    direction: "entrada",
+    documentNumber: "NF-4583",
+    category: "Vendas Distribuição"
+  },
+  {
+    id: "omie-005",
+    date: "2026-04-05",
+    description: "Compra CP-1029 Polpas Brasil Indústria Ltda",
+    amount: 4850.0,
+    direction: "saída",
+    documentNumber: "CP-1029",
+    category: "Matéria Prima"
   }
 ];
