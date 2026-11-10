@@ -86,7 +86,7 @@ select throws_ok(
     (organization_id,storage_bucket,storage_path,file_sha256,file_size_bytes)
     values ('11111111-1111-4111-8111-111111111111',
             'rsbuild-source-artifacts',
-            '22222222-2222-2222-8222-222222222222/foreign/file.csv',
+            '22222222-2222-4222-8222-222222222222/foreign/file.csv',
             repeat('a',64),10)$query$,
   '23514',
   null,
