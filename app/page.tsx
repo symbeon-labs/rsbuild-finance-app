@@ -77,5 +77,12 @@ export default async function Home({ searchParams }: Props) {
     );
   }
 
-  return <Suspense fallback={null}><EnterpriseWorkspace /></Suspense>;
+  const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
+  return <Suspense fallback={null}><EnterpriseWorkspace
+    organizationId={selected.id}
+    organizationName={selected.display_name}
+    membershipRole={selectedMembership?.role ?? "viewer"}
+    userId={user.id}
+    userEmail={user.email ?? ""}
+  /></Suspense>;
 }
