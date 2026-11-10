@@ -57,10 +57,10 @@ jobs:
                   sub(/^refs\/(heads|tags)\//, "", ref)
                   if (tolower(ref) == tolower(wanted)) {
                     if (ref == wanted) exact=ref
-                    else if (!match) { match=ref }
+                    else if (fallback == "") { fallback=ref }
                   }
                 }
-                END { if (exact != "") print exact; else if (match != "") print match }
+                END { if (exact != "") print exact; else if (fallback != "") print fallback }
               ')"
               if [[ -z "$resolved" ]]; then
                 echo "::error::Could not resolve '$requested' to an existing branch or tag."
@@ -121,10 +121,10 @@ jobs:
                   sub(/^refs\/(heads|tags)\//, "", ref)
                   if (tolower(ref) == tolower(wanted)) {
                     if (ref == wanted) exact=ref
-                    else if (!match) { match=ref }
+                    else if (fallback == "") { fallback=ref }
                   }
                 }
-                END { if (exact != "") print exact; else if (match != "") print match }
+                END { if (exact != "") print exact; else if (fallback != "") print fallback }
               ')"
               if [[ -z "$resolved" ]]; then
                 echo "::error::Could not resolve '$requested' to an existing branch or tag."
