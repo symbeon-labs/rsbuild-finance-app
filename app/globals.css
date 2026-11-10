@@ -1400,7 +1400,7 @@ tbody tr:last-child td { border-bottom: 0; }
   stroke: #D9826A;
 }
 
-/* Modal de PersonalizaÁ„o do Workspace / White-Label */
+/* Modal de PersonalizaÔøΩÔøΩo do Workspace / White-Label */
 .workspace-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1592,7 +1592,7 @@ tbody tr:last-child td { border-bottom: 0; }
   color: #FFF;
 }
 
-/* REGRAS REFOR«ADAS DE TIPOGRAFIA NO MODO DARK */
+/* REGRAS REFORÔøΩADAS DE TIPOGRAFIA NO MODO DARK */
 [data-theme="dark"] {
   --ink: #FFFFFF;
   --muted: #A8A298;
@@ -1658,7 +1658,7 @@ tbody tr:last-child td { border-bottom: 0; }
   min-width: 720px;
 }
 
-/* Coluna de AÁıes Fixa (Sticky Action Column) */
+/* Coluna de AÔøΩÔøΩes Fixa (Sticky Action Column) */
 .sticky-actions th:last-child,
 .sticky-actions td:last-child {
   position: sticky;
@@ -1695,7 +1695,7 @@ tbody tr:hover td:last-child {
   background: #1E2024;
 }
 
-/* Bot„o de Reset de Sess„o no Topbar */
+/* BotÔøΩo de Reset de SessÔøΩo no Topbar */
 .reset-session-btn {
   display: inline-flex;
   align-items: center;
@@ -1743,4 +1743,158 @@ tbody tr:hover td:last-child {
   color: #F4F1EA;
   border-color: #383A42;
   color-scheme: dark;
+}
+
+/* ==========================================================================
+   CONCILIA√á√ÉO BANC√ÅRIA - Sprint A1
+   ========================================================================== */
+
+/* Tabs para concilia√ß√£o */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+.tab, .tab-active {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-active {
+  color: var(--rsbuild-terracotta);
+  border-bottom-color: var(--rsbuild-terracotta);
+  font-weight: 600;
+}
+
+.tab:hover:not(.tab-active) {
+  color: var(--ink);
+  background: var(--rsbuild-terracotta-soft);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.badge-green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.badge-blue {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.badge-orange {
+  background: var(--rsbuild-terracotta-soft);
+  color: var(--rsbuild-terracotta);
+}
+
+/* Celula de justificativa com texto truncado */
+.cell-justify {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.cell-justify:hover {
+  overflow: visible;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* Unmatched sections */
+.unmatched-section {
+  margin-bottom: 24px;
+}
+
+.unmatched-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 12px 0;
+}
+
+/* Manual match panel */
+.manual-match-panel {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--rsbuild-terracotta-soft);
+  border: 1px solid var(--rsbuild-terracotta-light);
+  border-radius: 6px;
+}
+
+.manual-match-panel h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rsbuild-terracotta);
+  margin: 0 0 12px 0;
+}
+
+.manual-match-panel textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.manual-match-panel textarea:focus {
+  outline: none;
+  border-color: var(--rsbuild-terracotta);
+  box-shadow: 0 0 0 2px var(--rsbuild-terracotta-soft);
+}
+
+/* Dark mode para concilia√ß√£o */
+[data-theme="dark"] .manual-match-panel {
+  background: rgba(181, 88, 60, 0.15);
+  border-color: rgba(181, 88, 60, 0.4);
+}
+
+[data-theme="dark"] .manual-match-panel h3 {
+  color: #F4F1EA;
+}
+
+[data-theme="dark"] .manual-match-panel textarea {
+  background: #161719;
+  border-color: #2E3036;
+  color: #F4F1EA;
+}
+
+[data-theme="dark"] .manual-match-panel textarea:focus {
+  border-color: var(--rsbuild-terracotta);
+  box-shadow: 0 0 0 2px rgba(181, 88, 60, 0.2);
+}
+
+[data-theme="dark"] .tab-active {
+  color: #F4F1EA;
+  border-bottom-color: var(--rsbuild-terracotta);
+}
+
+[data-theme="dark"] .tab:hover:not(.tab-active) {
+  color: #F4F1EA;
+  background: rgba(255, 255, 255, 0.05);
 }

@@ -5,10 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   BankMetadata,
   FinancialRecord,
+  OmieRecord,
   generateOmieOfx,
   parseCsv,
   parseOfx,
   filterRecordsByPeriodOption,
+  addAuditTrail,
+  updateAuditTrail,
   type PeriodOption
 } from "@/lib/finance";
 import {
@@ -49,6 +52,7 @@ import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
 import { VisaoGeralView } from "@/app/components/finance/visao-geral-view";
 import { MovimentacoesView } from "@/app/components/finance/movimentacoes-view";
 import { ImportacoesView } from "@/app/components/finance/importacoes-view";
+import { ConciliacaoView } from "@/app/components/finance/conciliacao-view";
 import { BaixasView } from "@/app/components/finance/baixas-view";
 import { RelatoriosDreView } from "@/app/components/finance/relatorios-dre-view";
 import { CanhotosView } from "@/app/components/logistics/canhotos-view";
@@ -71,12 +75,12 @@ export default function EnterpriseWorkspace({ organizationId, organizationName, 
   // URL Sync para Seção e Módulo
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "torre-controle", "movimentacoes", "importacoes", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
+    urlTab && ["visao-geral", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
   function getModuleForSection(s: NavSection): ModuleType {
-    if (s === "baixas") return "reconciliation";
+    if (s === "baixas" || s === "conciliacao") return "reconciliation";
     if (s === "pedidos-ha" || s === "canhotos") return "logistics";
     if (s === "torre-controle") return "audit";
     return "finance";
@@ -99,6 +103,9 @@ export default function EnterpriseWorkspace({ organizationId, organizationName, 
   const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
+
+  // Registros Omie para conciliação
+  const [omieRecords, setOmieRecords] = useState<OmieRecord[]>([]);
 
   // Filtro de Período Contábil e Customizado
   const [period, setPeriod] = useState<PeriodOption>("all");
@@ -380,8 +387,10 @@ export default function EnterpriseWorkspace({ organizationId, organizationName, 
   }
 
   function confirmImport() {
-    setRecords((current) => [...pendingImport, ...current]);
-    setNotice(`${pendingImport.length} movimentação(ões) adicionada(s) à sessão atual.`);
+    // Adiciona trilha de auditoria em todos os registros importados
+    const recordsWithAudit = pendingImport.map(r => addAuditTrail(r, currentUserEmail));
+    setRecords((current) => [...recordsWithAudit, ...current]);
+    setNotice(`${pendingImport.length} movimentação(ões) adicionada(s) à sessão atual com trilha de auditoria.`);
     setPendingImport([]);
     setPendingMetadata(null);
     setImportErrors([]);
@@ -625,6 +634,14 @@ export default function EnterpriseWorkspace({ organizationId, organizationName, 
               onCancelImport={cancelImport}
               onExportOmieOfx={() => handleExportOmie(pendingImport)}
               onConfirmImport={confirmImport}
+            />
+          )}
+          {section === "conciliacao" && (
+            <ConciliacaoView
+              bankRecords={filteredRecords}
+              omieRecords={omieRecords}
+              author={currentUserEmail}
+              onRecordsUpdated={setRecords}
             />
           )}
           {section === "baixas" && (

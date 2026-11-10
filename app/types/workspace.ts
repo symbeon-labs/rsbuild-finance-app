@@ -33,6 +33,7 @@ export interface OrganizationPreset {
   defaultModule: ModuleType;
   enabledModules: EnabledModulesConfig;
   hasExecutiveTower: boolean;
+  hasSprintZone?: boolean; // Zona das Sprints apenas para RSBUILD
   description: string;
   /** Cor de acento de marca do workspace (hex). Padrão global: #B5583C (terracotta) */
   brandColor?: string;
@@ -76,6 +77,7 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
       audit: true
     },
     hasExecutiveTower: true,
+    hasSprintZone: true, // Zona das Sprints apenas para RSBUILD
     description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter), reconciliação de títulos e auditoria contínua.",
     // Cor padrão RSBUILD: terracotta laranja — cor global do sistema
     brandColor: "#B5583C",
@@ -130,6 +132,7 @@ export type NavSection =
   | "torre-controle"
   | "movimentacoes"
   | "importacoes"
+  | "conciliacao"
   | "baixas"
   | "canhotos"
   | "pedidos-ha"
@@ -152,6 +155,7 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   { id: "relatorios", label: "Relatórios DRE", icon: "▥", module: "finance" },
 
   // 2. Módulo Reconciliação ERP (Independente)
+  { id: "conciliacao", label: "Conciliação Bancária", icon: "⚖", module: "reconciliation" },
   { id: "baixas", label: "Reconciliação & Baixas", icon: "✓", module: "reconciliation" },
 
   // 3. Módulo Logística & Expedição

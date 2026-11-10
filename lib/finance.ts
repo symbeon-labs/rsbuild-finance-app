@@ -16,6 +16,17 @@ export type FinancialRecord = {
   accountId?: string;
   branchId?: string;
   accountType?: string;
+  // Correspondência
+  matchedWith?: string; // ID do registro Omie correspondente
+  matchType?: "automatic" | "manual";
+  matchDate?: string;
+  matchAuthor?: string;
+  matchJustification?: string;
+  // Auditoria
+  createdAt?: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
 };
 
 export type BankMetadata = {
@@ -464,6 +475,208 @@ function toIsoDate(d: Date): string {
   const m = (d.getMonth() + 1).toString().padStart(2, "0");
   const day = d.getDate().toString().padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+export type OmieRecord = {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  direction: Direction;
+  documentNumber?: string;
+  category?: string;
+};
+
+export type MatchResult = {
+  bankRecord: FinancialRecord;
+  omieRecord?: OmieRecord;
+  matchType: "automatic" | "manual" | "none";
+  matchScore?: number;
+  matchReason?: string;
+};
+
+/**
+ * Motor de correspondência v1: valor, data e documento
+ * Regras:
+ * - Correspondência automática se valor, data e documento coincidem exatamente
+ * - Correspondência automática se valor e data coincidem e descrição contém documento
+ * - Tolerância de 2 dias na data para correspondência automática
+ */
+export function matchRecords(
+  bankRecords: FinancialRecord[],
+  omieRecords: OmieRecord[],
+  author: string = "sistema"
+): {
+  matched: MatchResult[];
+  unmatchedBank: FinancialRecord[];
+  unmatchedOmie: OmieRecord[];
+} {
+  const matched: MatchResult[] = [];
+  const unmatchedBank: FinancialRecord[] = [];
+  const unmatchedOmie: OmieRecord[] = [...omieRecords];
+  const now = new Date().toISOString();
+
+  for (const bankRecord of bankRecords) {
+    let bestMatch: OmieRecord | undefined;
+    let bestScore = 0;
+    let bestReason = "";
+
+    for (let i = 0; i < unmatchedOmie.length; i++) {
+      const omieRecord = unmatchedOmie[i];
+      let score = 0;
+      let reason = "";
+
+      // Direção deve ser igual
+      if (bankRecord.direction !== omieRecord.direction) continue;
+
+      // Valor deve ser exatamente igual
+      if (Math.abs(bankRecord.amount - omieRecord.amount) > 0.01) continue;
+
+      score += 50;
+      reason += "valor exato; ";
+
+      // Data exata
+      if (bankRecord.date === omieRecord.date) {
+        score += 30;
+        reason += "data exata; ";
+      } else {
+        // Tolerância de 2 dias
+        const bankDate = new Date(bankRecord.date);
+        const omieDate = new Date(omieRecord.date);
+        const diffDays = Math.abs((bankDate.getTime() - omieDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 2) {
+          score += 20;
+          reason += `data com ${diffDays} dias de diferença; `;
+        } else {
+          continue;
+        }
+      }
+
+      // Documento coincidente
+      if (bankRecord.sourceRecordId && omieRecord.documentNumber) {
+        if (bankRecord.sourceRecordId === omieRecord.documentNumber) {
+          score += 20;
+          reason += "documento coincide; ";
+        }
+      }
+
+      // Descrição contém documento
+      if (omieRecord.documentNumber && bankRecord.description.includes(omieRecord.documentNumber)) {
+        score += 15;
+        reason += "descrição contém documento; ";
+      }
+
+      // Similaridade de descrição (básica)
+      const bankDesc = bankRecord.description.toLowerCase();
+      const omieDesc = omieRecord.description.toLowerCase();
+      const commonWords = bankDesc.split(" ").filter(w => w.length > 3 && omieDesc.includes(w));
+      if (commonWords.length >= 2) {
+        score += 10;
+        reason += `${commonWords.length} palavras em comum; `;
+      }
+
+      // Threshold para correspondência automática
+      if (score >= 80 && score > bestScore) {
+        bestMatch = omieRecord;
+        bestScore = score;
+        bestReason = reason;
+      }
+    }
+
+    if (bestMatch) {
+      matched.push({
+        bankRecord: {
+          ...bankRecord,
+          matchedWith: bestMatch.id,
+          matchType: "automatic",
+          matchDate: now,
+          matchAuthor: author,
+          matchJustification: bestReason,
+          status: "conciliado"
+        },
+        omieRecord: bestMatch,
+        matchType: "automatic",
+        matchScore: bestScore,
+        matchReason: bestReason
+      });
+
+      // Remover da lista de não casados
+      const idx = unmatchedOmie.indexOf(bestMatch);
+      if (idx > -1) unmatchedOmie.splice(idx, 1);
+    } else {
+      unmatchedBank.push(bankRecord);
+    }
+  }
+
+  return { matched, unmatchedBank, unmatchedOmie };
+}
+
+/**
+ * Realiza correspondência manual entre registro bancário e registro Omie
+ * Trilha de auditoria: registra autor e horário da ação
+ */
+export function manualMatch(
+  bankRecord: FinancialRecord,
+  omieRecord: OmieRecord,
+  justification: string,
+  author: string
+): FinancialRecord {
+  const now = new Date().toISOString();
+  return {
+    ...bankRecord,
+    matchedWith: omieRecord.id,
+    matchType: "manual",
+    matchDate: now,
+    matchAuthor: author,
+    matchJustification: justification,
+    status: "conciliado",
+    updatedAt: now,
+    updatedBy: author
+  };
+}
+
+/**
+ * Remove correspondência manual
+ * Trilha de auditoria: registra autor e horário da ação
+ */
+export function unmatchRecord(bankRecord: FinancialRecord, author: string): FinancialRecord {
+  const now = new Date().toISOString();
+  return {
+    ...bankRecord,
+    matchedWith: undefined,
+    matchType: undefined,
+    matchDate: undefined,
+    matchAuthor: undefined,
+    matchJustification: undefined,
+    status: "pendente",
+    updatedAt: now,
+    updatedBy: author
+  };
+}
+
+/**
+ * Adiciona trilha de auditoria ao criar novo registro
+ */
+export function addAuditTrail(record: FinancialRecord, author: string): FinancialRecord {
+  const now = new Date().toISOString();
+  return {
+    ...record,
+    createdAt: now,
+    createdBy: author,
+    updatedAt: now,
+    updatedBy: author
+  };
+}
+
+/**
+ * Atualiza trilha de auditoria ao modificar registro
+ */
+export function updateAuditTrail(record: FinancialRecord, author: string): FinancialRecord {
+  return {
+    ...record,
+    updatedAt: new Date().toISOString(),
+    updatedBy: author
+  };
 }
 
 export function filterRecordsByPeriodOption<T extends { date: string }>(

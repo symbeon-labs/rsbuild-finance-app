@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { FinancialRecord } from "../lib/finance";
+import {
+  FinancialRecord,
+  OmieRecord,
+  matchRecords,
+  manualMatch,
+  unmatchRecord,
+  addAuditTrail
+} from "../lib/finance";
 import {
   ReceivableTitle,
   matchTitlesWithRecords,
@@ -198,4 +205,89 @@ test("ENG-MS-02: parseReceivablesCsv importa títulos a receber do Omie", () => 
   assert.equal(result.titles[0].dueDate, "2026-04-20");
   assert.equal(result.titles[1].amount, 850.0);
 });
+
+test("ENG-MS-01/A1: matchRecords realiza correspondência automática por valor e documento", () => {
+  const bankRec: FinancialRecord = {
+    id: "bank-1",
+    date: "2026-04-10",
+    description: "TED RECEBIDA NF-4580",
+    amount: 1500.0,
+    direction: "entrada",
+    status: "pendente",
+    sourceRecordId: "DOC-4580",
+    bankCode: "0341",
+    category: "Vendas",
+    source: "ofx"
+  };
+
+  const omieRec: OmieRecord = {
+    id: "omie-1",
+    date: "2026-04-10",
+    description: "Venda NF-4580 Supermercado",
+    amount: 1500.0,
+    direction: "entrada",
+    documentNumber: "DOC-4580"
+  };
+
+  const result = matchRecords([bankRec], [omieRec], "financeiro@rsbuild.com");
+  assert.equal(result.matched.length, 1);
+  assert.equal(result.unmatchedBank.length, 0);
+  assert.equal(result.unmatchedOmie.length, 0);
+  assert.equal(result.matched[0].matchType, "automatic");
+  assert.equal(result.matched[0].bankRecord.status, "conciliado");
+  assert.equal(result.matched[0].bankRecord.matchAuthor, "financeiro@rsbuild.com");
+});
+
+test("ENG-MS-01/A1: manualMatch e unmatchRecord registram trilha de auditoria", () => {
+  const bankRec: FinancialRecord = {
+    id: "bank-2",
+    date: "2026-04-12",
+    description: "PIX RECEBIDO CLIENTE X",
+    amount: 800.0,
+    direction: "entrada",
+    status: "pendente",
+    category: "Receita",
+    source: "csv"
+  };
+
+  const omieRec: OmieRecord = {
+    id: "omie-2",
+    date: "2026-04-11",
+    description: "Venda Cliente X",
+    amount: 800.0,
+    direction: "entrada"
+  };
+
+  const matched = manualMatch(bankRec, omieRec, "Compensação aprovada pela diretoria", "auditor@rsbuild.com");
+  assert.equal(matched.status, "conciliado");
+  assert.equal(matched.matchType, "manual");
+  assert.equal(matched.matchedWith, "omie-2");
+  assert.equal(matched.matchAuthor, "auditor@rsbuild.com");
+  assert.equal(matched.matchJustification, "Compensação aprovada pela diretoria");
+  assert.ok(matched.updatedAt);
+
+  const reverted = unmatchRecord(matched, "auditor@rsbuild.com");
+  assert.equal(reverted.status, "pendente");
+  assert.equal(reverted.matchedWith, undefined);
+  assert.equal(reverted.matchType, undefined);
+});
+
+test("ENG-MS-01/A1: addAuditTrail anexa autor e data de criação ISO", () => {
+  const record: FinancialRecord = {
+    id: "rec-test",
+    date: "2026-04-15",
+    description: "Depósito identificado",
+    amount: 500.0,
+    direction: "entrada",
+    status: "pendente",
+    category: "Receita",
+    source: "csv"
+  };
+
+  const audited = addAuditTrail(record, "operador@rsbuild.com");
+  assert.equal(audited.createdBy, "operador@rsbuild.com");
+  assert.ok(audited.createdAt);
+  assert.equal(audited.updatedBy, "operador@rsbuild.com");
+});
+
 
