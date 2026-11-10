@@ -69,6 +69,7 @@ revoke all on function private.commit_financial_import(uuid,text,text,bigint,tex
 revoke all on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
 revoke all on function private.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
 revoke all on function public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
+revoke all on schema private from public, anon, authenticated;
 grant usage on schema private to service_role;
 grant execute on function private.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) to service_role;
 grant execute on function public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) to service_role;
