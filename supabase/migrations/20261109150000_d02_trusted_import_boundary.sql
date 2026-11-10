@@ -24,8 +24,6 @@ begin
     raise exception 'verified actor is required' using errcode = '42501';
   end if;
 
-  -- Set a transaction-local subject so existing attribution triggers record the
-  -- identity already verified by the API's user-scoped membership query.
   perform set_config('request.jwt.claim.sub', p_actor_id::text, true);
 
   if not exists (
@@ -45,10 +43,34 @@ begin
 end;
 $trusted$;
 
+-- PostgREST exposes public, not the private schema. This invoker wrapper is
+-- callable only with the service-role JWT and delegates to the private definer.
+create or replace function public.commit_financial_import_trusted(
+  p_actor_id uuid,
+  p_organization_id uuid,
+  p_original_filename text,
+  p_file_sha256 text,
+  p_file_size_bytes bigint,
+  p_storage_path text,
+  p_records jsonb
+)
+returns table(batch_id uuid, inserted_count integer, duplicate_count integer, rejected_count integer)
+language sql
+security invoker
+set search_path = pg_catalog, public, private
+as $wrapper$
+  select * from private.commit_financial_import_trusted(
+    p_actor_id, p_organization_id, p_original_filename, p_file_sha256,
+    p_file_size_bytes, p_storage_path, p_records
+  );
+$wrapper$;
+
 revoke all on function private.commit_financial_import(uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
 revoke all on function public.commit_financial_import(uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
 revoke all on function private.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
+revoke all on function public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) from public, anon, authenticated;
 grant usage on schema private to service_role;
 grant execute on function private.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) to service_role;
+grant execute on function public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb) to service_role;
 
 drop policy if exists "tenant operators delete source files" on storage.objects;
