@@ -82,7 +82,6 @@ export default async function Home({ searchParams }: Props) {
     organizationId={selected.id}
     organizationName={selected.display_name}
     membershipRole={selectedMembership?.role ?? "viewer"}
-    userId={user.id}
     userEmail={user.email ?? ""}
   /></Suspense>;
 }
