@@ -1,0 +1,93 @@
+name: RSBUILD Finance — Full Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to verify (e.g. fix/security-default-grants-hardening-2026-11-10)"
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "app/**"
+      - "lib/**"
+      - "tests/**"
+      - "supabase/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rsbuild-full-verification-${{ github.event.pull_request.number || inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: App — audit, tests, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve source ref
+        id: source
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+      - name: Unit and integration tests
+        run: npm test
+      - name: TypeScript validation
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+
+  database:
+    name: Database — migrations and pgTAP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve source ref
+        id: source
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start isolated local Supabase stack
+        run: supabase start -x studio,edge-runtime,logflare,vector
+      - name: Validate local migration application
+        run: supabase db reset
+      - name: Run pgTAP database suite
+        run: supabase test db
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop --no-backup
