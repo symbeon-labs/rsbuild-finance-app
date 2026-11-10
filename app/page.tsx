@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import EnterpriseWorkspace from "./enterprise-workspace";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
+import type { OrganizationId } from "@/app/types/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export default async function Home({ searchParams }: Props) {
   const organizationIds = memberships.map((membership) => membership.organization_id);
   const { data: organizations, error: organizationsError } = await supabase
     .from("organizations")
-    .select("id, display_name")
+    .select("id, display_name, slug")
     .in("id", organizationIds);
 
   if (organizationsError || !organizations?.length) {
@@ -78,8 +79,22 @@ export default async function Home({ searchParams }: Props) {
   }
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
+  const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor"];
+  if (!validOrganizationSlugs.includes(selected.slug as OrganizationId)) {
+    return (
+      <main className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+        <section className="panel" style={{ width: "min(100%, 560px)", padding: 32 }}>
+          <h1>Organização sem identificador configurado</h1>
+          <p>O espaço de trabalho existe, mas seu identificador canônico ainda não está disponível. Solicite ao administrador a validação da configuração do tenant.</p>
+          <form action={signOut}><button className="secondary-button" type="submit">Sair</button></form>
+        </section>
+      </main>
+    );
+  }
+  const organizationSlug = selected.slug as OrganizationId;
   return <Suspense fallback={null}><EnterpriseWorkspace
     organizationId={selected.id}
+    organizationSlug={organizationSlug}
     organizationName={selected.display_name}
     membershipRole={selectedMembership?.role ?? "viewer"}
     userEmail={user.email ?? ""}

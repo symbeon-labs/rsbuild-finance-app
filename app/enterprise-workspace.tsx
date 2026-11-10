@@ -63,12 +63,13 @@ import { OrganizationBrandBanner } from "@/app/components/admin/organization-bra
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
+  organizationSlug: OrganizationId;
   organizationName: string;
   membershipRole: string;
   userEmail: string;
 };
 
-export default function EnterpriseWorkspace({ organizationId, organizationName, membershipRole, userEmail }: EnterpriseWorkspaceProps) {
+export default function EnterpriseWorkspace({ organizationId, organizationSlug, organizationName, membershipRole, userEmail }: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -94,7 +95,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationName, 
     if (nextSection !== "visao-geral") {
       setActiveModule(getModuleForSection(nextSection));
     }
-    router.push(`/?tab=${nextSection}`, { scroll: false });
+    router.push(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${nextSection}`, { scroll: false });
   }
 
   // Estados Financeiros & Sessão
@@ -128,10 +129,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationName, 
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Customização de Marca do Workspace (White-label & Multi-Tenant)
-  const [currentOrgId, setCurrentOrgId] = useState<OrganizationId>(
-    organizationName.toLowerCase().includes("hub açaí") ? "hub_acai" :
-    organizationName.toLowerCase().includes("mundo do sabor") ? "mundo_sabor" : "rsbuild"
-  );
+  const currentOrgId = organizationSlug;
   const [companyName, setCompanyName] = useState(organizationName);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
