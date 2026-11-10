@@ -2,7 +2,6 @@
 
 import { ALL_NAV_ITEMS, NavSection } from "@/app/types/workspace";
 import { getRoleMetadata } from "@/lib/permissions";
-import { selectOrganization } from "@/app/auth/actions";
 
 interface TopbarProps {
   companyName: string;
