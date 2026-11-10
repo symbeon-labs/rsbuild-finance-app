@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import EnterpriseWorkspace from "./enterprise-workspace";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
+import type { OrganizationId } from "@/app/types/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export default async function Home({ searchParams }: Props) {
   const organizationIds = memberships.map((membership) => membership.organization_id);
   const { data: organizations, error: organizationsError } = await supabase
     .from("organizations")
-    .select("id, display_name")
+    .select("id, display_name, slug")
     .in("id", organizationIds);
 
   if (organizationsError || !organizations?.length) {
@@ -78,8 +79,10 @@ export default async function Home({ searchParams }: Props) {
   }
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
+  const organizationSlug = selected.slug as OrganizationId;
   return <Suspense fallback={null}><EnterpriseWorkspace
     organizationId={selected.id}
+    organizationSlug={organizationSlug}
     organizationName={selected.display_name}
     membershipRole={selectedMembership?.role ?? "viewer"}
     userEmail={user.email ?? ""}
