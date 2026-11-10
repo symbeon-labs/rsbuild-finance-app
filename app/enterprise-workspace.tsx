@@ -91,7 +91,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
     if (nextSection !== "visao-geral") {
       setActiveModule(getModuleForSection(nextSection));
     }
-    router.push(`/?tab=${nextSection}`, { scroll: false });
+    router.push(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${nextSection}`, { scroll: false });
   }
 
   // Estados Financeiros & Sessão
