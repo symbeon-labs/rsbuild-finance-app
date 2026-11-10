@@ -48,7 +48,7 @@ import {
   ORGANIZATION_PRESETS,
   orgHasExecutiveTower
 } from "@/app/types/workspace";
-import { MemberRole, canAccessSprintZone } from "@/lib/permissions";
+import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
 import { applyBrandColor } from "@/app/lib/brand-color";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
@@ -65,7 +65,6 @@ import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
-import { canApproveBatchSettlement, canAccessSprintZone } from "@/lib/permissions";
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
