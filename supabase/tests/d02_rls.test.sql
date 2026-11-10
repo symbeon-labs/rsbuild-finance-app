@@ -13,10 +13,10 @@ values
   ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','00000000-0000-0000-0000-000000000000','authenticated','authenticated','rsbuild-a-viewer@test.invalid','',now(),now(),now())
 on conflict (id) do nothing;
 
-insert into public.organizations (id, legal_name, display_name)
+insert into public.organizations (id, legal_name, display_name, slug)
 values
-  ('11111111-1111-4111-8111-111111111111','Tenant A Ltda','Tenant A'),
-  ('22222222-2222-4222-8222-222222222222','Tenant B Ltda','Tenant B')
+  ('11111111-1111-4111-8111-111111111111','Tenant A Ltda','Tenant A','tenant-a'),
+  ('22222222-2222-4222-8222-222222222222','Tenant B Ltda','Tenant B','tenant-b')
 on conflict (id) do nothing;
 
 insert into public.organization_memberships (organization_id,user_id,role)
@@ -86,7 +86,7 @@ select throws_ok(
     (organization_id,storage_bucket,storage_path,file_sha256,file_size_bytes)
     values ('11111111-1111-4111-8111-111111111111',
             'rsbuild-source-artifacts',
-            '22222222-2222-4222-8222-222222222222/foreign/file.csv',
+            '22222222-2222-2222-8222-222222222222/foreign/file.csv',
             repeat('a',64),10)$query$,
   '23514',
   null,
