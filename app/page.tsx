@@ -8,7 +8,7 @@ import type { OrganizationId } from "@/app/types/workspace";
 
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ organizationId?: string }> };
+type Props = { searchParams: Promise<{ organizationId?: string; error?: string }> };
 
 export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
