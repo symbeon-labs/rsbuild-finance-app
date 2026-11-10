@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { signIn } from "@/app/auth/actions";
 
 function MailIcon() {
@@ -171,8 +172,8 @@ export default function LoginPage() {
               </span>
             </label>
 
-            <button className="login-submit" type="submit" disabled={loading}>
-              <span>{loading ? "Entrando…" : "Entrar no RSBUILD OS"}</span>
+            <button className="login-submit" type="submit">
+              <span>Entrar no RSBUILD OS</span>
               <ArrowIcon />
             </button>
           </form>
