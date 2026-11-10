@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -110,8 +110,10 @@ select ok(
 );
 
 select ok(
-  has_function_privilege('service_role','public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb)','EXECUTE'),
-  'trusted backend role can execute the trusted import entrypoint'
+  has_function_privilege('service_role','public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb)','EXECUTE')
+  and not has_function_privilege('anon','public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb)','EXECUTE')
+  and not has_function_privilege('authenticated','public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb)','EXECUTE'),
+  'only trusted backend role can execute the trusted import entrypoint'
 );
 
 select ok(
