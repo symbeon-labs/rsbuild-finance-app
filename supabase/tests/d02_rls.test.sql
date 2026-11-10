@@ -15,8 +15,8 @@ on conflict (id) do nothing;
 
 insert into public.organizations (id, legal_name, display_name, slug)
 values
-  ('11111111-1111-4111-8111-111111111111','Tenant A Ltda','Tenant A','tenant-a'),
-  ('22222222-2222-4222-8222-222222222222','Tenant B Ltda','Tenant B','tenant-b')
+  ('11111111-1111-4111-8111-111111111111','Tenant A Ltda','Tenant A','tenant_a'),
+  ('22222222-2222-4222-8222-222222222222','Tenant B Ltda','Tenant B','tenant_b')
 on conflict (id) do nothing;
 
 insert into public.organization_memberships (organization_id,user_id,role)
