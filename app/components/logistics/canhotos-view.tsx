@@ -43,7 +43,7 @@ export function CanhotosView({
           <div className="eyebrow">RASTREABILIDADE DE ENTREGA & CONFORMIDADE</div>
           <h1>Protocolo Digital de Comprovantes & Canhotos</h1>
           <p>
-            Indexação de comprovantes de entrega da expedição e blindagem jurídica preventiva contra protestos indevidos (Lei nº 5.474/1968).
+            Organização de registros de entrega, metadados de recebedores e pendências para revisão humana.
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -51,7 +51,7 @@ export function CanhotosView({
             <span>⇧</span> Importar Canhotos (CSV)
           </button>
           <button className="primary-button" onClick={onExportBlindage}>
-            <span>⤓</span> Exportar Protocolo de Blindagem
+            <span>⤓</span> Exportar relatório de evidências
           </button>
         </div>
       </div>
@@ -60,24 +60,24 @@ export function CanhotosView({
 
       <div className="metric-grid">
         <Metric
-          label="Taxa de Comprovação"
+          label="Cobertura de metadados"
           value={deliveryMetrics.totalInvoices > 0 ? `${deliveryMetrics.coverageRate}%` : "—"}
           tone={deliveryMetrics.totalInvoices > 0 ? (deliveryMetrics.coverageRate >= 80 ? "positive" : "negative") : "neutral"}
-          detail={deliveryMetrics.totalInvoices > 0 ? `${deliveryMetrics.provenCount} de ${deliveryMetrics.totalInvoices} registros marcados como comprovados` : "Nenhum comprovante importado"}
+          detail={deliveryMetrics.totalInvoices > 0 ? `${deliveryMetrics.provenCount} de ${deliveryMetrics.totalInvoices} registros com metadados completos; autenticidade não verificada` : "Nenhum comprovante importado"}
           icon="✓"
         />
         <Metric
-          label="Faturamento Blindado"
+          label="Valor com metadados completos"
           value={formatCurrency(deliveryMetrics.provenAmount)}
           tone={deliveryMetrics.totalInvoices > 0 ? "positive" : "neutral"}
-          detail="Valor associado aos registros marcados como comprovados; exige validação documental"
+          detail="Valor associado a registros com metadados completos; não representa autenticação da evidência"
           icon="🛡"
         />
         <Metric
           label="Exposição documental estimada"
           value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
           tone={deliveryMetrics.totalInvoices > 0 ? "negative" : "neutral"}
-          detail={deliveryMetrics.totalInvoices > 0 ? "Estimativa baseada nos registros importados; não é bloqueio jurídico externo" : "Sem dados para avaliar risco"}
+          detail={deliveryMetrics.totalInvoices > 0 ? "Estimativa baseada nos registros importados; não é bloqueio jurídico externo" : "Sem dados para estimar pendências documentais"}
           icon="⚠"
         />
         <Metric
@@ -118,7 +118,8 @@ export function CanhotosView({
               <tbody>
                 {proofs.map((p) => {
                   const evaluation = evaluations.find((ev) => ev.proofId === p.id || ev.nfeNumber === p.nfeNumber);
-                  const isProven = p.status === "comprovado";
+                  const isMarkedProven = p.status === "comprovado";
+                  const hasCompleteEvidenceMetadata = evaluation?.risk === "metadata_complete";
                   const isRejected = p.status === "recusa_devolucao";
                   const isLost = p.status === "extraviado";
 
@@ -141,19 +142,19 @@ export function CanhotosView({
                         <span
                           className="status-pill"
                           style={{
-                            background: isProven
-                              ? "var(--green-bg, #DCFCE7)"
+                            background: hasCompleteEvidenceMetadata
+                              ? "var(--surface-raised, rgba(255,255,255,0.06))"
                               : isRejected || isLost
                               ? "var(--red-bg, #FEE2E2)"
                               : "var(--yellow-bg, #FEF3C7)",
-                            color: isProven
-                              ? "var(--green-text, #166534)"
+                            color: hasCompleteEvidenceMetadata
+                              ? "var(--ink)"
                               : isRejected || isLost
                               ? "var(--red-text, #991B1B)"
                               : "var(--yellow-text, #854D0E)"
                           }}
                         >
-                          {isProven ? "Comprovado" : isRejected ? "Recusa / Avaria" : isLost ? "Extraviado" : "Em Trânsito"}
+                          {hasCompleteEvidenceMetadata ? "Metadados completos" : isMarkedProven ? "Marcado como comprovado · dados incompletos" : isRejected ? "Recusa / Avaria" : isLost ? "Extraviado" : "Em Trânsito"}
                         </span>
                       </td>
                       <td>
@@ -162,11 +163,7 @@ export function CanhotosView({
                             className="status-pill"
                             style={{
                               background:
-                                evaluation?.risk === "liberado"
-                                  ? "var(--green-bg, #DCFCE7)"
-                                  : evaluation?.risk === "bloqueio_preventivo"
-                                  ? "var(--red-bg, #FEE2E2)"
-                                  : "var(--yellow-bg, #FEF3C7)",
+                                "var(--surface-raised, rgba(255,255,255,0.06))",
                               color:
                                 evaluation?.risk === "liberado"
                                   ? "var(--green-text, #166534)"
@@ -200,17 +197,17 @@ export function CanhotosView({
                         )}
                       </td>
                       <td>
-                        {!isProven ? (
+                        {!hasCompleteEvidenceMetadata ? (
                           <button
                             className="secondary-button"
                             style={{ fontSize: "10px", padding: "6px 10px" }}
                             onClick={() => onConfirmReceipt(p.id)}
-                            title="Registrar conferência temporária; não substitui evidência válida nem libera cobrança ou protesto"
+                            title="Marca o registro como conferido nesta sessão; não autentica arquivo ou assinatura"
                           >
-                            Conferir dados
+                            Marcar conferido na sessão
                           </button>
                         ) : (
-                          <span style={{ fontSize: "11px", color: "var(--green-text, #15803D)", fontWeight: 600 }}>Arquivado</span>
+                          <span style={{ fontSize: "11px", color: "var(--green-text, #15803D)", fontWeight: 600 }}>Metadados cadastrados</span>
                         )}
                       </td>
                     </tr>
@@ -229,7 +226,7 @@ export function CanhotosView({
       </section>
 
       <div className="inline-note" style={{ marginTop: "16px" }}>
-        <strong>Fundamentação Jurídica (Lei nº 5.474/1968, Art. 15):</strong> A duplicata mercantil não aceita só é legalmente passível de protesto e execução judicial mediante comprovação da entrega e recebimento efetivo das mercadorias (canhoto assinado pelo sacado). O protocolo digital impede que títulos com canhotos pendentes, extraviados ou em devolução sigam para cobrança coercitiva, eliminando riscos de litígios e processos por protesto indevido.
+        <strong>Limite operacional:</strong> esta tela organiza metadados e referências de evidências informadas pelos usuários. Não autentica arquivos ou assinaturas, não conclui sobre entrega efetiva e não determina, bloqueia ou autoriza cobrança ou protesto. Toda decisão depende de revisão humana e dos sistemas de origem.
       </div>
 
       <input
