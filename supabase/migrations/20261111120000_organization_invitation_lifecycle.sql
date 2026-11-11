@@ -18,13 +18,10 @@ create or replace function public.accept_organization_invitation(
   p_user_id uuid,
   p_email text
 )
-returns uuid language plpgsql security definer set search_path = ''
+returns uuid language plpgsql security invoker set search_path = ''
 as $$
 declare invitation_row record;
 begin
-  if auth.role() <> 'service_role' then
-    raise exception 'service_role_required' using errcode = '42501';
-  end if;
   if p_invitation_id is null or p_user_id is null or p_email is null or length(trim(p_email)) = 0 then
     raise exception 'invalid_invitation_identity' using errcode = '22023';
   end if;
