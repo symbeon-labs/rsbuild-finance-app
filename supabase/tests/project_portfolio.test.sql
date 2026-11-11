@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(21);
+select plan(22);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -94,7 +94,8 @@ select is((select count(*)::int from public.project_deliverables d join public.p
 select throws_ok($sql$insert into public.project_sprints (project_id,sprint_number,title) select id,9,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$sql$,'42501',null,'client viewer cannot create sprints');
 select throws_ok($sql$insert into public.project_dependencies (project_id,title) select id,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$sql$,'42501',null,'client viewer cannot create dependencies');
 select throws_ok($sql$insert into public.project_deliverables (project_id,title) select id,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$sql$,'42501',null,'client viewer cannot register deliverables');
-select throws_ok($sql$update public.project_tasks set status='done' where id=(select t.id from public.project_tasks t join public.projects p on p.id=t.project_id where p.project_key='rls-mundo-sabor' limit 1)$sql$,'42501',null,'client viewer cannot change task execution status');
+select lives_ok($sql$update public.project_tasks set status='done' where id=(select t.id from public.project_tasks t join public.projects p on p.id=t.project_id where p.project_key='rls-mundo-sabor' limit 1)$sql$,'client task status update is filtered by RLS');
+select is((select t.status from public.project_tasks t join public.projects p on p.id=t.project_id where p.project_key='rls-mundo-sabor' limit 1),'todo','client cannot change task execution status');
 reset role;
 
 set local role authenticated;
