@@ -109,16 +109,18 @@ test("ENG-MS-03: computeDeliveryMetrics calcula cobertura e exposição financei
     { id: "1", nfeNumber: "1", customerName: "A", nfeAmount: 1000, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor A", receiverDocument: "DOC-A", proofFileUrl: "/evidence/a.pdf", status: "comprovado" },
     { id: "2", nfeNumber: "2", customerName: "B", nfeAmount: 2000, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor B", receiverDocument: "DOC-B", proofFileUrl: "/evidence/b.pdf", status: "comprovado" },
     { id: "3", nfeNumber: "3", customerName: "C", nfeAmount: 1000, issueDate: "2026-04-01", status: "pendente_entrega" },
-    { id: "4", nfeNumber: "4", customerName: "D", nfeAmount: 1000, issueDate: "2026-04-01", status: "extraviado" }
+    { id: "4", nfeNumber: "4", customerName: "D", nfeAmount: 1000, issueDate: "2026-04-01", status: "extraviado" },
+    { id: "5", nfeNumber: "5", customerName: "E", nfeAmount: 500, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor E", receiverDocument: "DOC-E", status: "comprovado" }
   ];
 
   const metrics = computeDeliveryMetrics(proofs);
-  assert.equal(metrics.totalInvoices, 4);
-  assert.equal(metrics.totalAmount, 5000);
+  assert.equal(metrics.totalInvoices, 5);
+  assert.equal(metrics.totalAmount, 5500);
   assert.equal(metrics.provenCount, 2);
   assert.equal(metrics.provenAmount, 3000);
-  assert.equal(metrics.coverageRate, 50); // 2 de 4 = 50%
-  assert.equal(metrics.atRiskProtestAmount, 2000); // 5000 - 3000
+  assert.equal(metrics.pendingDeliveryCount, 2); // inclui status comprovado sem referência de evidência
+  assert.equal(metrics.coverageRate, 40); // 2 de 5 = 40%
+  assert.equal(metrics.atRiskProtestAmount, 2500); // 5500 - 3000
 });
 
 test("ENG-MS-03: parseDeliveryCsv processa CSV com separadores brasileiros e extrai status", () => {
