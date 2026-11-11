@@ -140,9 +140,9 @@ export default function EnterpriseWorkspace({
     if (start !== undefined) setCustomStartDate(start);
     if (end !== undefined) setCustomEndDate(end);
     try {
-      localStorage.setItem("rsbuild_period_option", p);
-      if (start !== undefined) localStorage.setItem("rsbuild_period_start", start);
-      if (end !== undefined) localStorage.setItem("rsbuild_period_end", end);
+      localStorage.setItem(`rsbuild_period_option_${organizationId}`, p);
+      if (start !== undefined) localStorage.setItem(`rsbuild_period_start_${organizationId}`, start);
+      if (end !== undefined) localStorage.setItem(`rsbuild_period_end_${organizationId}`, end);
     } catch {}
   }
 
@@ -175,13 +175,12 @@ export default function EnterpriseWorkspace({
   // Cor de Marca do Workspace (Brand Color Picker) — substitui --rsbuild-terracotta dinamicamente
   const [brandColor, setBrandColor] = useState<string>("#B5583C");
 
-  // Controle de Módulos Habilitados (4 Produtos Desacoplados)
-  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({
-    finance: true,
-    reconciliation: true,
-    logistics: true,
-    audit: true
-  });
+  // Módulos iniciais respeitam a configuração declarada para cada organização.
+  // Preferências locais podem personalizar apenas o workspace atual neste navegador.
+  const organizationPreset = ORGANIZATION_PRESETS.find((preset) => preset.id === currentOrgId);
+  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>(
+    organizationPreset?.enabledModules ?? { finance: true, reconciliation: false, logistics: false, audit: false }
+  );
 
   // isSuperAdmin calculado reativamente com base em effectiveRole
 
@@ -224,9 +223,9 @@ export default function EnterpriseWorkspace({
     try {
       localStorage.setItem("rsbuild_selected_organization", organizationId);
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
-      const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
+      const savedLogo = localStorage.getItem(`rsbuild_workspace_logo_${organizationId}`);
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedModules = localStorage.getItem("rsbuild_workspace_modules");
+      const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
         setEnabledModules({
@@ -244,18 +243,18 @@ export default function EnterpriseWorkspace({
 
       // Hidratação da Cor de Marca (Brand Color Picker)
       {
-        const savedBrandColor = localStorage.getItem("rsbuild_workspace_brand_color");
-        const colorToApply = ORGANIZATION_PRESETS.find((p) => p.id === currentOrgId)?.brandColor || savedBrandColor || "#B5583C";
+        const savedBrandColor = localStorage.getItem(`rsbuild_workspace_brand_color_${organizationId}`);
+        const colorToApply = organizationPreset?.brandColor || savedBrandColor || "#B5583C";
         setBrandColor(colorToApply);
         applyBrandColor(colorToApply);
       }
 
       // Persistência de Período
-      const savedPeriod = localStorage.getItem("rsbuild_period_option") as PeriodOption | null;
+      const savedPeriod = localStorage.getItem(`rsbuild_period_option_${organizationId}`) as PeriodOption | null;
       if (savedPeriod) setPeriod(savedPeriod);
-      const savedStart = localStorage.getItem("rsbuild_period_start");
+      const savedStart = localStorage.getItem(`rsbuild_period_start_${organizationId}`);
       if (savedStart) setCustomStartDate(savedStart);
-      const savedEnd = localStorage.getItem("rsbuild_period_end");
+      const savedEnd = localStorage.getItem(`rsbuild_period_end_${organizationId}`);
       if (savedEnd) setCustomEndDate(savedEnd);
 
     } catch {
@@ -281,13 +280,13 @@ export default function EnterpriseWorkspace({
       setBrandColor(colorToApply);
       applyBrandColor(colorToApply);
       try {
-        localStorage.setItem("rsbuild_workspace_brand_color", colorToApply);
+        localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
     }
     if (modules) {
       setEnabledModules(modules);
       try {
-        localStorage.setItem("rsbuild_workspace_modules", JSON.stringify(modules));
+        localStorage.setItem(`rsbuild_workspace_modules_${organizationId}`, JSON.stringify(modules));
       } catch {}
       if (!modules.finance && modules.logistics && activeModule === "finance") {
         navigateTo("pedidos-ha");
@@ -297,9 +296,9 @@ export default function EnterpriseWorkspace({
     }
     try {
       if (logo) {
-        localStorage.setItem("rsbuild_workspace_logo", logo);
+        localStorage.setItem(`rsbuild_workspace_logo_${organizationId}`, logo);
       } else {
-        localStorage.removeItem("rsbuild_workspace_logo");
+        localStorage.removeItem(`rsbuild_workspace_logo_${organizationId}`);
       }
     } catch {}
     setNotice(`Workspace configurado com sucesso para ${name}!`);
@@ -316,7 +315,7 @@ export default function EnterpriseWorkspace({
   }
 
   function resetSession() {
-    if (typeof window !== "undefined" && !window.confirm("Reiniciar todos os dados operacionais da sessão atual?")) {
+    if (typeof window !== "undefined" && !window.confirm("Limpar os dados temporários desta sessão? Os registros financeiros persistidos não serão alterados.")) {
       return;
     }
     setOmieRecords([]);
