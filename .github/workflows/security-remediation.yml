@@ -76,14 +76,14 @@ jobs:
             REVOKE ALL ON TABLES FROM anon, authenticated;
           ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
             REVOKE ALL ON SEQUENCES FROM anon, authenticated;
-          ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+          ALTER DEFAULT PRIVILEGES FOR ROLE postgres
             REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;
 
           ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
             REVOKE ALL ON TABLES FROM anon, authenticated;
           ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
             REVOKE ALL ON SEQUENCES FROM anon, authenticated;
-          ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
+          ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin
             REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;
 
           COMMIT;
@@ -119,7 +119,7 @@ jobs:
                 FROM pg_default_acl d
                 CROSS JOIN LATERAL aclexplode(d.defaclacl) x
                 WHERE d.defaclrole = owner_oid
-                  AND d.defaclnamespace = 'public'::regnamespace
+                  AND (d.defaclnamespace = 'public'::regnamespace OR d.defaclnamespace = 0)
               LOOP
                 IF (acl_item.grantee IN (
                       (SELECT oid FROM pg_roles WHERE rolname = 'anon'),
