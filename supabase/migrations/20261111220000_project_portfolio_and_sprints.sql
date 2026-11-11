@@ -44,6 +44,7 @@ create table public.project_sprints (
   sprint_number integer not null check (sprint_number > 0),
   title text not null,
   objective text not null default '',
+  completion_criteria text not null default '',
   status text not null default 'planned'
     check (status in ('planned','active','blocked','completed','cancelled')),
   start_date date,
@@ -71,16 +72,43 @@ create table public.project_tasks (
   priority text not null default 'normal'
     check (priority in ('low','normal','high','critical')),
   assignee_user_id uuid references auth.users(id) on delete set null,
+  responsible_label text not null default '',
   due_date date,
   sort_order integer not null default 0,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   foreign key (project_id, sprint_id)
-    references public.project_sprints(project_id, id) on delete cascade
+    references public.project_sprints(project_id, id) on delete cascade,
+  unique (project_id, id)
 );
 create index project_tasks_sprint_status_idx on public.project_tasks(sprint_id, status, sort_order);
 create index project_tasks_project_idx on public.project_tasks(project_id, due_date);
+
+create table public.project_dependencies (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  sprint_id uuid,
+  task_id uuid,
+  title text not null,
+  description text not null default '',
+  dependency_type text not null default 'other'
+    check (dependency_type in ('client_input','access','decision','external_service','technical','other')),
+  status text not null default 'open'
+    check (status in ('open','waiting','blocked','received','waived')),
+  responsible_label text not null default '',
+  due_date date,
+  evidence_url text,
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  foreign key (project_id, sprint_id)
+    references public.project_sprints(project_id, id) on delete cascade,
+  foreign key (project_id, task_id)
+    references public.project_tasks(project_id, id) on delete cascade
+);
+create index project_dependencies_project_status_idx
+  on public.project_dependencies(project_id, status, due_date);
 
 create table public.project_deliverables (
   id uuid primary key default gen_random_uuid(),
@@ -88,6 +116,8 @@ create table public.project_deliverables (
   sprint_id uuid,
   title text not null,
   description text not null default '',
+  acceptance_criteria text not null default '',
+  version_label text not null default '',
   resource_url text,
   status text not null default 'draft'
     check (status in ('draft','submitted','accepted','changes_requested','archived')),
@@ -105,6 +135,7 @@ alter table public.projects enable row level security;
 alter table public.project_memberships enable row level security;
 alter table public.project_sprints enable row level security;
 alter table public.project_tasks enable row level security;
+alter table public.project_dependencies enable row level security;
 alter table public.project_deliverables enable row level security;
 
 -- RSBUILD members can see the managed portfolio. Client-side access is granted per project/user.
@@ -275,6 +306,35 @@ with check (
   )
 );
 
+create policy "project readers read dependencies"
+on public.project_dependencies for select to authenticated
+using (exists (select 1 from public.projects p where p.id = project_dependencies.project_id));
+
+create policy "RSBUILD operators manage dependencies"
+on public.project_dependencies for all to authenticated
+using (
+  exists (
+    select 1 from public.projects p
+    join public.organization_memberships m on m.organization_id = p.managing_organization_id
+    join public.organizations o on o.id = m.organization_id
+    where p.id = project_dependencies.project_id
+      and o.slug = 'rsbuild'
+      and m.user_id = (select auth.uid())
+      and m.role in ('owner','admin','operator')
+  )
+)
+with check (
+  exists (
+    select 1 from public.projects p
+    join public.organization_memberships m on m.organization_id = p.managing_organization_id
+    join public.organizations o on o.id = m.organization_id
+    where p.id = project_dependencies.project_id
+      and o.slug = 'rsbuild'
+      and m.user_id = (select auth.uid())
+      and m.role in ('owner','admin','operator')
+  )
+);
+
 create policy "project readers read deliverables"
 on public.project_deliverables for select to authenticated
 using (exists (select 1 from public.projects p where p.id = project_deliverables.project_id));
@@ -306,7 +366,8 @@ with check (
 
 grant select, insert, update, delete on public.projects,
   public.project_memberships, public.project_sprints,
-  public.project_tasks, public.project_deliverables to authenticated;
+  public.project_tasks, public.project_dependencies,
+  public.project_deliverables to authenticated;
 
 -- Initial portfolio entries are keyed by canonical organization slugs, not generated UUIDs.
 insert into public.projects (
