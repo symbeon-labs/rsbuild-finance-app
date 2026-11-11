@@ -23,6 +23,9 @@ export async function POST(request: Request, context: RouteContext) {
   let body: Record<string, unknown>;
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "invalid_json" }, { status: 400 }); }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
 
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const description = typeof body.description === "string" ? body.description.trim() : "";
