@@ -80,7 +80,7 @@ select is((select count(*)::int from public.project_sprints s join public.projec
 select is((select count(*)::int from public.project_dependencies d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),2,'RSBUILD owner sees dependencies from both projects');
 select is((select count(*)::int from public.project_deliverables d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),2,'RSBUILD owner sees deliverables from both projects');
 select lives_ok($sql$insert into public.project_deliverables (project_id,title) select id,'Deliverable created by RSBUILD' from public.projects where project_key='rls-mundo-sabor'$sql$,'RSBUILD owner can register a deliverable');
-select lives_ok($insert into public.project_sprints (project_id,sprint_number,title) select id,2,'Sprint criada pela RSBUILD' from public.projects where project_key='rls-mundo-sabor'$,'RSBUILD owner can create a sprint');
+select lives_ok($sql$insert into public.project_sprints (project_id,sprint_number,title) select id,2,'Sprint criada pela RSBUILD' from public.projects where project_key='rls-mundo-sabor'$sql$,'RSBUILD owner can create a sprint');
 select lives_ok($sql$update public.project_sprints set status='active' where project_id=(select id from public.projects where project_key='rls-mundo-sabor') and sprint_number=1$sql$,'RSBUILD owner can update sprint status');
 reset role;
 
