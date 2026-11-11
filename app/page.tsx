@@ -90,8 +90,9 @@ export default async function Home({ searchParams }: Props) {
   }
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
-  const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor"];
-  if (!validOrganizationSlugs.includes(selected.slug as OrganizationId)) {
+  // Tenant slugs são definidos no banco e não devem depender de uma allowlist de empresas no frontend.
+  // Mantemos apenas a validação estrutural do identificador canônico.
+  if (!selected.slug || !/^[a-z][a-z0-9_]{1,62}$/.test(selected.slug)) {
     return (
       <main className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <section className="panel" style={{ width: "min(100%, 560px)", padding: 32 }}>

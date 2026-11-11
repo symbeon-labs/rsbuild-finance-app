@@ -8,6 +8,7 @@ interface ImportacoesViewProps {
   pendingImport: FinancialRecord[];
   pendingMetadata: BankMetadata | null;
   importErrors: string[];
+  isImporting: boolean;
   onSelectFile: () => void;
   onCancelImport: () => void;
   onExportOmieOfx: () => void;
@@ -19,6 +20,7 @@ export function ImportacoesView({
   pendingImport,
   pendingMetadata,
   importErrors,
+  isImporting,
   onSelectFile,
   onCancelImport,
   onExportOmieOfx,
@@ -92,8 +94,8 @@ export function ImportacoesView({
               >
                 ⚡ Exportar OFX (Omie)
               </button>
-              <button className="primary-button" onClick={onConfirmImport}>
-                Confirmar importação
+              <button className="primary-button" onClick={onConfirmImport} disabled={isImporting || importErrors.length > 0}>
+                {isImporting ? "Persistindo..." : "Confirmar importação"}
               </button>
             </div>
           </>
@@ -101,7 +103,7 @@ export function ImportacoesView({
       </section>
 
       <div className="inline-note">
-        Os registros desta versão permanecem disponíveis e persistidos durante sua sessão de trabalho.
+        Os movimentos confirmados são gravados no banco da organização ativa. A prévia só é persistida após a confirmação.
       </div>
     </>
   );

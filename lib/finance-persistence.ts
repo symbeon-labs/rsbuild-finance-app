@@ -13,3 +13,14 @@ export function minorToMajor(amountMinor: number): number {
   if (!Number.isSafeInteger(amountMinor)) throw new RangeError("Centavos devem ser um inteiro seguro.");
   return amountMinor / 100;
 }
+
+/** Normalize the trusted import RPC row into the API's stable camelCase response contract. */
+export function normalizeImportCounts(result: unknown): { insertedCount: number; duplicateCount: number } {
+  const row = result && typeof result === "object" ? result as Record<string, unknown> : {};
+  const inserted = Number(row.inserted_count ?? 0);
+  const duplicate = Number(row.duplicate_count ?? 0);
+  return {
+    insertedCount: Number.isSafeInteger(inserted) && inserted >= 0 ? inserted : 0,
+    duplicateCount: Number.isSafeInteger(duplicate) && duplicate >= 0 ? duplicate : 0
+  };
+}
