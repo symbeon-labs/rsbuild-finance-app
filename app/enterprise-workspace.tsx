@@ -654,7 +654,7 @@ export default function EnterpriseWorkspace({
               <button onClick={() => setNotice("")}>×</button>
             </div>
           )}
-          {section === "projetos" && <ProjectPortfolioView />}
+          {section === "projetos" && <ProjectPortfolioView canManage={organizationSlug === "rsbuild" && ["owner", "admin", "operator"].includes(membershipRole)} />}
           {section === "visao-geral" && (
             <VisaoGeralView
               records={filteredRecords}
