@@ -77,7 +77,7 @@ export function CanhotosView({
           label="Exposição documental estimada"
           value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
           tone={deliveryMetrics.totalInvoices > 0 ? "negative" : "neutral"}
-          detail={deliveryMetrics.totalInvoices > 0 ? "Estimativa baseada nos registros importados; não é bloqueio jurídico externo" : "Sem dados para estimar pendências documentais"}
+          detail={deliveryMetrics.totalInvoices > 0 ? "Estimativa baseada nos registros importados; não representa ação externa" : "Sem dados para estimar pendências documentais"}
           icon="⚠"
         />
         <Metric
@@ -150,8 +150,8 @@ export function CanhotosView({
                             color: hasCompleteEvidenceMetadata
                               ? "var(--ink)"
                               : isRejected || isLost
-                              ? "var(--red-text, #991B1B)"
-                              : "var(--yellow-text, #854D0E)"
+                              ? "var(--ink)"
+                              : "var(--ink)"
                           }}
                         >
                           {hasCompleteEvidenceMetadata ? "Metadados completos" : isMarkedProven ? "Marcado como comprovado · dados incompletos" : isRejected ? "Recusa / Avaria" : isLost ? "Extraviado" : "Em Trânsito"}
@@ -165,9 +165,9 @@ export function CanhotosView({
                               background:
                                 "var(--surface-raised, rgba(255,255,255,0.06))",
                               color:
-                                evaluation?.risk === "liberado"
-                                  ? "var(--green-text, #166534)"
-                                  : evaluation?.risk === "bloqueio_preventivo"
+                                evaluation?.risk === "metadata_complete"
+                                  ? "var(--ink)"
+                                  : evaluation?.risk === "priority_review"
                                   ? "var(--red-text, #991B1B)"
                                   : "var(--yellow-text, #854D0E)",
                               fontWeight: 700
