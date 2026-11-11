@@ -74,7 +74,7 @@ export function CanhotosView({
           icon="🛡"
         />
         <Metric
-          label="Risco de Protesto / Sem Canhoto"
+          label="Exposição documental estimada"
           value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
           tone={deliveryMetrics.totalInvoices > 0 ? "negative" : "neutral"}
           detail={deliveryMetrics.totalInvoices > 0 ? "Estimativa baseada nos registros importados; não é bloqueio jurídico externo" : "Sem dados para avaliar risco"}
