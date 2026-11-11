@@ -708,3 +708,89 @@ Do not onboard HUB and Mundo simultaneously as the first validation. Prove the i
 **Decision summary:** RSBUILD OS uses a hybrid model: source data remains under company custody; local Edge processing prepares approved outputs; RSBUILD central validates, stores and analyzes only authorized data products; dashboards consume governed read models. Central processing is complementary, tenant-scoped and purpose-bound. No full source replication or unrestricted remote control is part of the design.
 
 **Status:** Proposed for review. No production rollout, schema migration, source connection or real-data onboarding is authorized by this document.
+
+
+## 26. Reconciliation with current D02 implementation (2026-11-11)
+
+This section records the verified relationship between the target hybrid architecture and the current repository implementation. It supersedes any assumption that D02 is already reconciled or that Edge custody is implemented.
+
+### 26.1 Verified baseline
+
+The repository's current `main` contains the D02 transactional import migration `20261109130004_d02_transactional_imports.sql`, but the D02 consolidation work remains represented by open Draft PR #21. The Taskmaster issue #5 and D02.4 issue #11 retain explicit homologation/security gates.
+
+The current D02 design documented on the integration candidate uses:
+- Supabase managed PostgreSQL and private Storage;
+- one logical organization per independent company;
+- `organization_memberships` as the user-to-company relationship;
+- tenant-scoped RLS;
+- central Storage for original uploaded CSV/OFX artifacts;
+- server-side parsing and transactional persistence of normalized financial records;
+- integer minor units for money;
+- source provenance, validation, audit and import batch records.
+
+This is a valid current application persistence pattern, but it is **not the same as the target Edge-first source-custody pattern**. In the current import workflow, original source files are uploaded to the central private bucket. The hybrid target instead keeps original source files in company-controlled infrastructure by default and transmits only approved data products. These two flows must coexist as explicitly distinguished modes until a separately reviewed migration changes the import experience.
+
+### 26.2 Domain mapping — do not rename the database prematurely
+
+| Target architecture term | Current D02 term | Reconciliation rule |
+|---|---|---|
+| Tenant | `organizations` | Keep existing DB naming for now; tenant is the platform/domain concept |
+| Tenant ID | `organizations.id` / `organization_id` | Use existing UUID in current schema and bind it server-side |
+| Tenant membership | `organization_memberships` | Existing relationship; do not create parallel `tenant_memberships` without schema review |
+| Source artifact | `source_artifacts` + private Storage | Current centralized artifact path; not the default future Edge path |
+| Financial event/record | `financial_records` | Existing Finance domain entity; not a generic event envelope |
+| Import batch | `import_batches` | Existing batch semantics; not interchangeable with Edge ingestion batch |
+| Audit | `audit_events` | Existing tenant audit domain; platform audit and agent telemetry may require separate policy/table design |
+| Data product | Not yet implemented | New logical contract; do not infer it from raw_payload or financial_records |
+
+Do not rename `organizations` to `tenants`, create a second tenant table, or add Edge tables until GOV-01 maps the existing schema, Auth flows and policies.
+
+### 26.3 Current D02 security and acceptance gaps
+
+The current source files and PR/issue records establish these remaining gates:
+
+1. **D02 consolidation is not accepted:** PR #21 is Draft and its recorded state is divergent from main. A current compare reports 7 commits ahead and 97 behind for its branch; the earlier PR body recorded a different snapshot. Treat the current compare as the latest observed Git relationship, and do not merge the branch without a fresh reconciliation.
+2. **RPC execution boundary requires review:** the current transactional import migration grants `USAGE` on schema `private` and `EXECUTE` on `private.commit_financial_import` to `authenticated`. The function is SECURITY DEFINER. This conflicts with a strict claim that authenticated clients cannot invoke the privileged implementation directly. Confirm whether the schema is exposed through PostgREST and test direct invocation. Prefer revoking direct authenticated execution and exposing only a trusted server-side route or a narrowly reviewed invoker wrapper with an unbypassable boundary.
+3. **Storage deletion policy conflicts with immutability language:** the transactional migration creates a tenant-scoped DELETE policy for authenticated owner/admin/operator roles. The security-hardening migration removes broad client deletion policies, but this later migration adds one again. Decide whether source artifacts are immutable to tenant clients. If compensation is required, perform exact-object deletion through a trusted backend workflow with explicit audit, not broad client delete rights.
+4. **pgTAP coverage remains incomplete per issue #11:** owner/admin behavior, authenticated UPDATE/DELETE cross-tenant tests, full Storage upload/overwrite/list behavior, import batch initial state/authorship, composite FK positive/negative cases and a confirmed green clean-migration CI run are listed as pending.
+5. **Remote operational acceptance remains separate:** Auth/SMTP/callbacks, real two-user/two-tenant Storage tests, invite/session lifecycle and tenant isolation have not been established by the documentary evidence reviewed here. Supabase Security Advisor history also includes a leaked-password-protection warning in the D02 consolidation record; recheck current remote configuration before acceptance.
+6. **No Edge implementation is evidenced:** no reviewed source establishes an installed Edge Agent, signed egress policy, agent identity, durable outbox, ingestion gateway or central data-product store.
+
+### 26.4 Reconciled target boundary
+
+- The existing D02 central import route remains the current application workflow until changed through a separate approved implementation.
+- The future Edge path must not call the current privileged import RPC directly or reuse the browser upload flow as an agent protocol without a security review.
+- A future Edge Agent submits a versioned, minimized `C-EVENT-ENVELOPE` through a dedicated ingestion boundary. The server authenticates the agent and derives the tenant from its registered identity; a body/path tenant ID is only a consistency assertion.
+- Edge-originated data must be stored as a distinct ingestion event/data product with source lineage. It must not be silently inserted as if it were a user-uploaded original artifact.
+- Finance domain processing may map an accepted data product into `financial_records` only through a reviewed domain command that enforces existing amount, provenance, deduplication, audit and tenant constraints.
+- Do not store original files centrally for the Edge path by default. If a tenant explicitly authorizes central artifact custody for a defined use case, record that as a distinct policy and integration mode.
+- Existing `amount_minor` integer semantics are retained. The Edge event contract must align with current integer-cent representation and validate currency exponent; it must not use floating-point amounts.
+- Existing `organization_id` remains the persistence key until GOV-01 approves a schema evolution.
+- The central Operations Center consumes governed read models. It must not gain direct access to source files or raw payloads merely because the current D02 application stores them.
+
+### 26.5 Reconciliation decisions and required changes
+
+| Topic | Reconciled decision | Required action |
+|---|---|---|
+| Tenant model | One independent organization per tenant | GOV-01 maps existing `organizations` and memberships |
+| Current D02 imports | Retain as existing workflow, explicitly central-artifact mode | Finish PR #21 reconciliation and D02 gates |
+| Edge source custody | New opt-in integration path; originals local by default | Design separate ingestion API and data-product persistence |
+| Agent authorization | Dedicated service principal bound to one organization/environment/integration | Do not reuse human Auth membership as agent identity |
+| Ingestion persistence | Separate event envelope/idempotency/provenance from Finance records | Model after D02 acceptance; avoid premature migrations |
+| Privileged RPC | No direct broad client invocation of SECURITY DEFINER function | Resolve grants/schema exposure and add direct-call negative tests |
+| Artifact deletion | No broad client delete if artifacts are declared immutable | Reconcile Storage policy and compensation workflow |
+| Central analytics | Only approved data products and read models | Define field classification, purpose, retention and entitlement |
+| Security acceptance | CI/pgTAP plus remote two-tenant and Storage tests | Close issue #11 and record evidence |
+| Production pilot | Not authorized | Require D02, GOV-01, Edge security and tenant consent gates |
+
+### 26.6 Updated implementation sequence
+
+1. Reconcile and accept D02 PR #21 against the actual current `main`; preserve the workspace and existing UI changes.
+2. Resolve the SECURITY DEFINER direct-execution boundary and Storage DELETE/immutability contradiction.
+3. Complete issue #11 test coverage and confirm clean CI/pgTAP results.
+4. Complete remote Auth, membership, Storage and two-tenant isolation homologation.
+5. Approve GOV-01 using existing `organizations` and `organization_memberships` as the starting point.
+6. Define the first Finance data product and its mapping to `financial_records`.
+7. Only then implement EDGE-00 through EDGE-03 with synthetic fixtures.
+
+**Reconciliation status:** architecture-to-code mapping completed at documentary level; implementation reconciliation is **BLOCKED / NOT ACCEPTED** pending the D02 and GOV-01 gates above.
