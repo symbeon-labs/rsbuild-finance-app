@@ -20,10 +20,11 @@ export async function GET(request: Request) {
     .select(`
       id, project_key, name, client_display_name, description, status,
       start_date, target_date, created_at, updated_at,
+      project_dependencies (id, sprint_id, task_id, title, description, dependency_type, status, responsible_label, due_date, evidence_url),
       project_sprints (
-        id, sprint_number, title, objective, status, start_date, end_date, sort_order,
-        project_tasks (id, title, description, acceptance_criteria, status, priority, due_date, sort_order),
-        project_deliverables (id, title, status, resource_url, created_at)
+        id, sprint_number, title, objective, completion_criteria, status, start_date, end_date, sort_order,
+        project_tasks (id, title, description, acceptance_criteria, status, priority, due_date, responsible_label, sort_order),
+        project_deliverables (id, title, description, acceptance_criteria, version_label, status, resource_url, created_at)
       )
     `)
     .order("updated_at", { ascending: false });
