@@ -123,13 +123,13 @@ export function TorreControleView({
       };
     }
 
-    let healthStatus = "Operação Estável";
+    let healthStatus = "Faixa experimental elevada";
     let statusTone = "positive";
     if (healthScore < 50) {
-      healthStatus = "Atenção Crítica";
+      healthStatus = "Faixa experimental baixa";
       statusTone = "negative";
     } else if (healthScore < 75) {
-      healthStatus = "Gargalos Identificados";
+      healthStatus = "Faixa experimental intermediária";
       statusTone = "neutral";
     }
 
@@ -210,8 +210,8 @@ export function TorreControleView({
       `Workspace: ${companyName}\n` +
       `Data: ${new Date().toLocaleDateString("pt-BR")}\n` +
       `Score Operacional: ${healthScore === null ? "Não calculado — dados insuficientes" : `${healthScore}%`}\n` +
-      `Faturamento do Dia: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
-      `Ocupação Frota HR: ${hubAcaiMetrics.hrOccupancy}%\n` +
+      `Valor dos pedidos na sessão: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
+      `Ocupação estimada da HR: ${hubAcaiMetrics.hrOccupancy}%\n` +
       `Faturas sob Risco Jurídico: ${formatCurrency(deliveryMetrics.atRiskProtestAmount)}\n\n` +
       `*Síntese do painel:*\n${rsAgentDiagnosis.summary}\n\n` +
       `_Documento gerado a partir dos dados disponíveis no workspace; não representa aprovação ou sincronização externa._`;
@@ -343,49 +343,49 @@ export function TorreControleView({
           {/* Grid de KPIs Macro Adaptativo ao Workspace */}
           <div className="metric-grid">
             <Metric
-              label="Índice de Governança"
+              label="Indicador experimental"
               value={healthScore === null ? "—" : `${healthScore}%`}
               tone={healthScore === null ? "neutral" : healthScore >= 75 ? "positive" : healthScore >= 50 ? "neutral" : "negative"}
-              detail={`Status operacional: ${rsAgentDiagnosis.status}`}
+              detail={`Faixa provisória: ${rsAgentDiagnosis.status}. Critérios ainda não homologados.`}
               icon="⎈"
             />
             {isHubAcai ? (
               <>
                 <Metric
-                  label="Faturamento do Dia"
-                  value={formatCurrency(hubAcaiMetrics.totalRevenue)}
-                  tone="positive"
-                  detail={`${hubAcaiMetrics.totalBoxes} caixas em ${hubAcaiMetrics.totalOrders} pedidos`}
+                  label="Valor dos pedidos na sessão"
+                  value={hubAcaiMetrics.totalOrders > 0 ? formatCurrency(hubAcaiMetrics.totalRevenue) : "—"}
+                  tone={hubAcaiMetrics.totalOrders > 0 ? "neutral" : "neutral"}
+                  detail={hubAcaiMetrics.totalOrders > 0 ? `${hubAcaiMetrics.totalBoxes} caixas em ${hubAcaiMetrics.totalOrders} pedidos temporários` : "Nenhum pedido processado nesta sessão"}
                   icon="💰"
                 />
                 <Metric
-                  label="Ocupação Frota HR"
-                  value={`${hubAcaiMetrics.hrOccupancy}%`}
-                  tone={hubAcaiMetrics.hrOccupancy > 90 ? "negative" : "positive"}
-                  detail={`${hubAcaiMetrics.totalBoxes} / 350 caixas de capacidade`}
+                  label="Ocupação estimada da HR"
+                  value={hubAcaiMetrics.totalOrders > 0 ? `${hubAcaiMetrics.hrOccupancy}%` : "—"}
+                  tone={hubAcaiMetrics.totalOrders > 0 ? (hubAcaiMetrics.hrOccupancy > 90 ? "negative" : "neutral") : "neutral"}
+                  detail={hubAcaiMetrics.totalOrders > 0 ? `${hubAcaiMetrics.totalBoxes} / 350 caixas; capacidade precisa ser validada` : "Sem pedidos para estimar ocupação"}
                   icon="🚚"
                 />
                 <Metric
                   label="Exposição sob Risco"
                   value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
-                  tone={deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "positive"}
-                  detail={`${atRiskProtestCount} fatura(s) sem canhoto na doca`}
+                  tone={proofs.length > 0 ? (deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "neutral") : "neutral"}
+                  detail={proofs.length > 0 ? `${atRiskProtestCount} registro(s) com pendência documental; sem bloqueio externo` : "Sem comprovantes para avaliar exposição"}
                   icon="🛡"
                 />
               </>
             ) : (
               <>
                 <Metric
-                  label="Entradas Consolidadas"
-                  value={formatCurrency(totals.incoming)}
-                  tone="positive"
-                  detail={`${records.filter((r) => r.direction === "entrada").length} crédito(s) no período`}
+                  label="Entradas importadas"
+                  value={records.length > 0 ? formatCurrency(totals.incoming) : "—"}
+                  tone={records.length > 0 ? "neutral" : "neutral"}
+                  detail={records.length > 0 ? `${records.filter((r) => r.direction === "entrada").length} crédito(s) no período` : "Nenhum movimento importado"}
                   icon="↗"
                 />
                 <Metric
-                  label="Saldo Líquido em Caixa"
-                  value={formatCurrency(totals.balance)}
-                  tone={totals.balance >= 0 ? "positive" : "negative"}
+                  label="Saldo calculado dos registros"
+                  value={records.length > 0 ? formatCurrency(totals.balance) : "—"}
+                  tone={records.length > 0 ? (totals.balance >= 0 ? "neutral" : "negative") : "neutral"}
                   detail="Posição consolidada multibanco"
                   icon="🏦"
                 />
@@ -399,6 +399,8 @@ export function TorreControleView({
               </>
             )}
           </div>
+
+          <div className="inline-note" style={{ marginTop: "12px" }}>Indicador experimental: cálculo provisório ponderado por cobertura de comprovantes (40%), correspondências de títulos (35%) e ocupação estimada da frota (25%). Pesos e critérios ainda não foram homologados; não utilizar como KPI oficial ou evidência de governança.</div>
 
           {/* Painel de análise */}
           <section
