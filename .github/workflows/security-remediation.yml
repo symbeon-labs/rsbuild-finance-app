@@ -1,0 +1,167 @@
+name: RSBUILD Security Remediation
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Digite APPLY para autorizar a remediação dos default privileges"
+        required: true
+        type: string
+      change_reference:
+        description: "Referência da mudança (PR, issue ou ticket)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rsbuild-security-remediation-production
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    name: Apply approved default-privilege hardening
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-security
+    if: ${{ inputs.confirm == 'APPLY' }}
+    steps:
+      - name: Validate administrative secret
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_ADMIN }}
+        run: |
+          if [[ -z "$DATABASE_URL" ]]; then
+            echo "::error::Configure SUPABASE_DB_URL_ADMIN in the protected production-security environment."
+            exit 1
+          fi
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Verify connection and required role membership
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_ADMIN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" -X --no-psqlrc -v ON_ERROR_STOP=1 -P pager=off <<'SQL'
+          SELECT current_user AS connected_as;
+          DO $$
+          DECLARE
+            role_name text;
+          BEGIN
+            FOREACH role_name IN ARRAY ARRAY['postgres','supabase_admin'] LOOP
+              IF NOT pg_has_role(current_user, role_name, 'MEMBER') THEN
+                RAISE EXCEPTION 'Connected role % is not a member of required owner role %; aborting without changes', current_user, role_name;
+              END IF;
+            END LOOP;
+          END $$;
+          SQL
+
+      - name: Apply narrowly scoped default-privilege revocations
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_ADMIN }}
+          CHANGE_REFERENCE: ${{ inputs.change_reference }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Applying approved hardening for: $CHANGE_REFERENCE"
+          psql "$DATABASE_URL" -X --no-psqlrc -v ON_ERROR_STOP=1 -P pager=off <<'SQL'
+          BEGIN;
+
+          ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+            REVOKE ALL ON TABLES FROM anon, authenticated;
+          ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+            REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+          ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+            REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;
+
+          ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
+            REVOKE ALL ON TABLES FROM anon, authenticated;
+          ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
+            REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+          ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
+            REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;
+
+          COMMIT;
+          SQL
+
+      - name: Verify resulting default ACLs
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_ADMIN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" -X --no-psqlrc -v ON_ERROR_STOP=1 -P pager=off <<'SQL'
+          SELECT d.defaclrole::regrole AS creator_role,
+                 n.nspname AS schema_name,
+                 d.defaclobjtype AS object_type,
+                 d.defaclacl AS default_acl
+          FROM pg_default_acl d
+          LEFT JOIN pg_namespace n ON n.oid = d.defaclnamespace
+          WHERE n.nspname = 'public'
+          ORDER BY creator_role::text, object_type;
+
+          DO $$
+          DECLARE
+            owner_oid oid;
+            acl_item record;
+          BEGIN
+            FOREACH owner_oid IN ARRAY ARRAY[
+              (SELECT oid FROM pg_roles WHERE rolname = 'postgres'),
+              (SELECT oid FROM pg_roles WHERE rolname = 'supabase_admin')
+            ] LOOP
+              FOR acl_item IN
+                SELECT d.defaclobjtype, x.grantee, x.privilege_type
+                FROM pg_default_acl d
+                CROSS JOIN LATERAL aclexplode(d.defaclacl) x
+                WHERE d.defaclrole = owner_oid
+                  AND d.defaclnamespace = 'public'::regnamespace
+              LOOP
+                IF (acl_item.grantee IN (
+                      (SELECT oid FROM pg_roles WHERE rolname = 'anon'),
+                      (SELECT oid FROM pg_roles WHERE rolname = 'authenticated')
+                    )
+                    AND (
+                      (acl_item.defaclobjtype = 'r' AND acl_item.privilege_type IN ('SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER'))
+                      OR (acl_item.defaclobjtype = 'S' AND acl_item.privilege_type IN ('USAGE','SELECT','UPDATE'))
+                    ))
+                   OR (acl_item.grantee = 0 AND acl_item.defaclobjtype = 'f' AND acl_item.privilege_type = 'EXECUTE')
+                   OR (acl_item.grantee IN (
+                      (SELECT oid FROM pg_roles WHERE rolname = 'anon'),
+                      (SELECT oid FROM pg_roles WHERE rolname = 'authenticated')
+                    ) AND acl_item.defaclobjtype = 'f' AND acl_item.privilege_type = 'EXECUTE')
+                THEN
+                  RAISE EXCEPTION 'Unexpected default privilege remains: owner %, object type %, grantee %, privilege %',
+                    owner_oid::regrole, acl_item.defaclobjtype, acl_item.grantee, acl_item.privilege_type;
+                END IF;
+              END LOOP;
+            END LOOP;
+          END $$;
+          SQL
+
+      - name: Publish remediation evidence
+        if: always()
+        run: |
+          {
+            echo "RSBUILD DEFAULT PRIVILEGE REMEDIATION"
+            echo "UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "Commit: $GITHUB_SHA"
+            echo "Change reference: ${{ inputs.change_reference }}"
+            echo "Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > remediation-evidence.txt
+
+      - name: Upload remediation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsbuild-security-remediation-${{ github.run_id }}
+          path: remediation-evidence.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+    # Deliberately no Auth configuration changes, migrations, data writes,
+    # deployments, or grants to anon/authenticated are performed here.
