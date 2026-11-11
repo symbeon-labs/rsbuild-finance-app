@@ -91,6 +91,13 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   const [dependencyResponsible, setDependencyResponsible] = useState("");
   const [dependencyDueDate, setDependencyDueDate] = useState("");
   const [savingDependency, setSavingDependency] = useState(false);
+  const [creatingDeliverableFor, setCreatingDeliverableFor] = useState<{ projectId: string; sprintId: string } | null>(null);
+  const [deliverableTitle, setDeliverableTitle] = useState("");
+  const [deliverableDescription, setDeliverableDescription] = useState("");
+  const [deliverableAcceptance, setDeliverableAcceptance] = useState("");
+  const [deliverableVersion, setDeliverableVersion] = useState("");
+  const [deliverableUrl, setDeliverableUrl] = useState("");
+  const [savingDeliverable, setSavingDeliverable] = useState(false);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -181,6 +188,42 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
       setError(cause instanceof Error ? cause.message : "Falha ao criar atividade.");
     } finally {
       setSavingTask(false);
+    }
+  }
+
+  async function handleCreateDeliverable(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!creatingDeliverableFor || !deliverableTitle.trim()) return;
+    setSavingDeliverable(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `/api/projects/${creatingDeliverableFor.projectId}/sprints/${creatingDeliverableFor.sprintId}/deliverables`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: deliverableTitle,
+            description: deliverableDescription,
+            acceptanceCriteria: deliverableAcceptance,
+            versionLabel: deliverableVersion,
+            resourceUrl: deliverableUrl || null
+          })
+        }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar o entregável.");
+      setDeliverableTitle("");
+      setDeliverableDescription("");
+      setDeliverableAcceptance("");
+      setDeliverableVersion("");
+      setDeliverableUrl("");
+      setCreatingDeliverableFor(null);
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao registrar entregável.");
+    } finally {
+      setSavingDeliverable(false);
     }
   }
 
