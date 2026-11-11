@@ -491,7 +491,7 @@ export default function EnterpriseWorkspace({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setNotice(`Planilha oficial de Baixa em Lote do Omie gerada com sucesso (${settlements.length} títulos liquidados).`);
+    setNotice(`Arquivo CSV gerado para conferência e eventual importação manual no Omie (${settlements.length} itens). Nenhum título foi baixado pelo RSBUILD OS.`);
   }
 
   function handleConfirmSettlementInSession() {
@@ -534,25 +534,25 @@ export default function EnterpriseWorkspace({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setNotice(`Protocolo de blindagem jurídica exportado com sucesso (${evaluations.length} notas analisadas).`);
+    setNotice(`Relatório CSV exportado (${evaluations.length} registros analisados). O arquivo não constitui parecer jurídico nem comprova autenticidade documental.`);
   }
 
   function handleConfirmReceipt(proofId: string) {
-    const today = new Date().toISOString().slice(0, 10);
+    const proof = proofs.find((item) => item.id === proofId);
+    if (!proof) {
+      setNotice("Comprovante não encontrado nesta sessão.");
+      return;
+    }
+    if (!proof.deliveryDate || !proof.receiverName?.trim() || !proof.receiverDocument?.trim()) {
+      setNotice("Conferência bloqueada: informe data de entrega, nome e documento do recebedor a partir da evidência original. O sistema não pode inventar esses dados.");
+      return;
+    }
     setProofs((curr) =>
-      curr.map((p) => {
-        if (p.id !== proofId) return p;
-        return {
-          ...p,
-          status: "comprovado",
-          deliveryDate: p.deliveryDate || today,
-          receiverName: p.receiverName || "Recebedor Confirmado (Operador)",
-          receiverDocument: p.receiverDocument || "Confirmado em Sessão",
-          notes: "Canhoto validado manualmente no fechamento."
-        };
-      })
+      curr.map((item) => item.id === proofId
+        ? { ...item, status: "comprovado" }
+        : item)
     );
-    setNotice("Canhoto validado e liberado para protesto/cobrança jurídica com sucesso!");
+    setNotice("Conferência registrada apenas nesta sessão. Isso não autentica a assinatura, não altera o ERP e não libera cobrança ou protesto.");
   }
 
   function handleParseWhatsApp() {
@@ -568,7 +568,7 @@ export default function EnterpriseWorkspace({
   function handleConfirmParsedOrder() {
     if (!parsedPreview) return;
     setOrders((curr) => [parsedPreview, ...curr]);
-    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à esteira de expedição com sucesso!`);
+    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à fila temporária desta sessão. A fila não foi persistida nem enviada ao ERP.`);
     setParsedPreview(null);
     setWhatsAppText("");
   }
