@@ -106,8 +106,8 @@ test("ENG-MS-03: evaluateProtestoRisk sinaliza atenção em mercadorias em trân
 
 test("ENG-MS-03: computeDeliveryMetrics calcula cobertura e exposição financeira", () => {
   const proofs: DeliveryProof[] = [
-    { id: "1", nfeNumber: "1", customerName: "A", nfeAmount: 1000, issueDate: "2026-04-01", status: "comprovado" },
-    { id: "2", nfeNumber: "2", customerName: "B", nfeAmount: 2000, issueDate: "2026-04-01", status: "comprovado" },
+    { id: "1", nfeNumber: "1", customerName: "A", nfeAmount: 1000, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor A", receiverDocument: "DOC-A", proofFileUrl: "/evidence/a.pdf", status: "comprovado" },
+    { id: "2", nfeNumber: "2", customerName: "B", nfeAmount: 2000, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor B", receiverDocument: "DOC-B", proofFileUrl: "/evidence/b.pdf", status: "comprovado" },
     { id: "3", nfeNumber: "3", customerName: "C", nfeAmount: 1000, issueDate: "2026-04-01", status: "pendente_entrega" },
     { id: "4", nfeNumber: "4", customerName: "D", nfeAmount: 1000, issueDate: "2026-04-01", status: "extraviado" }
   ];
