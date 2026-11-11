@@ -29,8 +29,10 @@ O projeto é uma relação operacional entre organizações, não uma fusão dos
 | projects | Relação entre organização gestora e cliente |
 | project_memberships | Concessão individual de acesso ao projeto |
 | project_sprints | Objetivos, janela e estado de cada sprint |
-| project_tasks | Atividades, prioridade, critérios de aceite e responsável |
-| project_deliverables | Entregáveis e estado de submissão/aceite |
+| project_tasks | Atividades, prioridade, critérios de conclusão e responsável |
+| project_dependencies | Insumos, acessos, decisões e dependências externas |
+
+| project_deliverables | Entregáveis, evidências e estado de submissão/aceite |
 
 ## Fluxo operacional
 
@@ -57,7 +59,7 @@ Os registros começam em planning. Nenhuma sprint ou atividade fictícia é cria
 
 ## Limites desta entrega
 
-- A interface inicial lista projetos, sprints e atividades, e permite à equipe RSBUILD criar sprints e atividades.
+- A interface lista projetos, sprints, atividades, dependências e entregáveis; permite à equipe RSBUILD criar sprints, atividades e registrar dependências.
 - O cadastro de usuários clientes, aprovação formal de entregáveis, comentários, anexos e histórico detalhado de alterações ficam para etapas posteriores.
 - A migração ainda precisa ser aplicada em ambiente de validação e passar pelos testes RLS antes de qualquer uso operacional ou liberação de convites.
 - A interface não deve ser tratada como prova de aceite contratual até que o fluxo de aceite seja implementado.
