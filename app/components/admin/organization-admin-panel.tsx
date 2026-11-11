@@ -68,19 +68,14 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
     } finally { setBusy(false); }
   }
 
-  async function manageInvitation(invitationId: string, action: "resend" | "revoke") {
+  async function manageInvitation(invitationId: string) {
     setBusy(true);
     setMessage("");
     try {
-      const response = action === "revoke"
-        ? await fetch("/api/organization-invitations?organizationId=" + encodeURIComponent(organizationId) + "&invitationId=" + encodeURIComponent(invitationId), { method: "DELETE" })
-        : await fetch("/api/organization-invitations", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ organizationId, invitationId, action: "resend" })
-          });
+      const response = await fetch("/api/organization-invitations?organizationId=" + encodeURIComponent(organizationId) + "&invitationId=" + encodeURIComponent(invitationId), { method: "DELETE" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "invitation_action_failed");
-      setMessage(action === "revoke" ? "Convite revogado." : "Reenvio solicitado.");
+      setMessage("Convite revogado.");
       await loadInvitations();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível atualizar o convite.");
@@ -140,8 +135,7 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
             <div style={{ color: "var(--muted)", fontSize: 11 }}>{invitation.role} · {invitation.status} · expira {new Date(invitation.expires_at).toLocaleDateString("pt-BR")}</div>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
-            {["pending", "sent", "failed"].includes(invitation.status) && <button type="button" className="secondary-button" disabled={busy} onClick={() => manageInvitation(invitation.id, "resend")}>Reenviar</button>}
-            {["pending", "sent", "failed"].includes(invitation.status) && <button type="button" className="secondary-button" disabled={busy} onClick={() => manageInvitation(invitation.id, "revoke")}>Revogar</button>}
+            {["pending", "sent", "failed"].includes(invitation.status) && <button type="button" className="secondary-button" disabled={busy} onClick={() => manageInvitation(invitation.id)}>Revogar</button>}
           </div>
         </div>)}
       </div>
