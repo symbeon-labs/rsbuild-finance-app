@@ -46,10 +46,12 @@ export function PedidosHaView({
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <button className="primary-button" onClick={onExportOmieCsv}>
-            <span>⤓</span> Exportar Pedidos para ERP (CSV)
+            <span>⤓</span> Exportar CSV para conferência
           </button>
         </div>
       </div>
+
+      <div className="inline-note" style={{ marginTop: "12px" }}>Pedidos confirmados nesta tela ficam apenas na memória da sessão. A exportação gera um arquivo CSV; não envia pedidos ao Omie nem grava a fila em uma base operacional.</div>
 
       <div className="metric-grid">
         <Metric
@@ -188,7 +190,7 @@ export function PedidosHaView({
 
               <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
                 <button className="primary-button" onClick={onConfirmOrder}>
-                  <span>✓</span> Confirmar e Adicionar à Carga do Dia
+                  <span>✓</span> Adicionar à fila desta sessão
                 </button>
               </div>
             </div>
