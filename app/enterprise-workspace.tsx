@@ -35,10 +35,6 @@ import {
   parseWhatsAppOrderMessage
 } from "@/lib/orders";
 import {
-  INITIAL_SAMPLE_TITLES,
-  INITIAL_SAMPLE_PROOFS,
-  INITIAL_SAMPLE_HA_ORDERS,
-  INITIAL_SAMPLE_OMIE_RECORDS,
   type ModuleType,
   type NavSection,
   type EnabledModulesConfig,
@@ -126,7 +122,7 @@ export default function EnterpriseWorkspace({
   const [fileName, setFileName] = useState("");
 
   // Registros Omie para conciliação
-  const [omieRecords, setOmieRecords] = useState<OmieRecord[]>(INITIAL_SAMPLE_OMIE_RECORDS);
+  const [omieRecords, setOmieRecords] = useState<OmieRecord[]>([]);
 
   // Simulação de Papéis na Zona Dev (Modo Engenharia)
   const [simulatedRole, setSimulatedRole] = useState<MemberRole | null>(null);
@@ -190,14 +186,13 @@ export default function EnterpriseWorkspace({
   // isSuperAdmin calculado reativamente com base em effectiveRole
 
   // Contas a Receber e Baixas em Lote
-  const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
+  const [titles, setTitles] = useState<ReceivableTitle[]>([]);
 
   // Canhotos de Entrega e Blindagem
-  const [proofs, setProofs] = useState<DeliveryProof[]>(INITIAL_SAMPLE_PROOFS);
+  const [proofs, setProofs] = useState<DeliveryProof[]>([]);
 
   // Pedidos WhatsApp
-  const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>(INITIAL_SAMPLE_HA_ORDERS);
-  const [sessionDataOrganizationId, setSessionDataOrganizationId] = useState<string | null>(null);
+  const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>([]);
   const [whatsAppText, setWhatsAppText] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedWhatsAppOrder | null>(null);
 
@@ -263,18 +258,6 @@ export default function EnterpriseWorkspace({
       const savedEnd = localStorage.getItem("rsbuild_period_end");
       if (savedEnd) setCustomEndDate(savedEnd);
 
-      // Persistência de Dados Operacionais
-      // Estes três módulos ainda são protótipos locais, não registros autoritativos.
-      // A chave por organização impede reaproveitamento acidental entre tenants.
-      setTitles(INITIAL_SAMPLE_TITLES);
-      setProofs(INITIAL_SAMPLE_PROOFS);
-      setOrders(INITIAL_SAMPLE_HA_ORDERS);
-      const savedTitles = localStorage.getItem(`rsbuild_session_titles_${organizationId}`);
-      if (savedTitles) setTitles(JSON.parse(savedTitles));
-      const savedProofs = localStorage.getItem(`rsbuild_session_proofs_${organizationId}`);
-      if (savedProofs) setProofs(JSON.parse(savedProofs));
-      const savedOrders = localStorage.getItem(`rsbuild_session_orders_${organizationId}`);
-      if (savedOrders) setOrders(JSON.parse(savedOrders));
     } catch {
       // Ignora falhas em sandbox restrito / SSR
     } finally {
@@ -282,26 +265,6 @@ export default function EnterpriseWorkspace({
     }
   }, [organizationId, currentOrgId]);
 
-  useEffect(() => {
-    if (sessionDataOrganizationId !== organizationId) return;
-    try {
-      localStorage.setItem(`rsbuild_session_titles_${organizationId}`, JSON.stringify(titles));
-    } catch {}
-  }, [titles, organizationId, sessionDataOrganizationId]);
-
-  useEffect(() => {
-    if (sessionDataOrganizationId !== organizationId) return;
-    try {
-      localStorage.setItem(`rsbuild_session_proofs_${organizationId}`, JSON.stringify(proofs));
-    } catch {}
-  }, [proofs, organizationId, sessionDataOrganizationId]);
-
-  useEffect(() => {
-    if (sessionDataOrganizationId !== organizationId) return;
-    try {
-      localStorage.setItem(`rsbuild_session_orders_${organizationId}`, JSON.stringify(orders));
-    } catch {}
-  }, [orders, organizationId, sessionDataOrganizationId]);
 
   function handleSaveCompanyConfig(
     name: string,
@@ -358,10 +321,10 @@ export default function EnterpriseWorkspace({
     if (typeof window !== "undefined" && !window.confirm("Reiniciar todos os dados operacionais da sessão atual?")) {
       return;
     }
-    setOmieRecords(INITIAL_SAMPLE_OMIE_RECORDS);
-    setTitles(INITIAL_SAMPLE_TITLES);
-    setProofs(INITIAL_SAMPLE_PROOFS);
-    setOrders(INITIAL_SAMPLE_HA_ORDERS);
+    setOmieRecords([]);
+    setTitles([]);
+    setProofs([]);
+    setOrders([]);
     setPendingImport([]);
     setPendingMetadata(null);
     setImportErrors([]);
@@ -371,7 +334,7 @@ export default function EnterpriseWorkspace({
       localStorage.removeItem(`rsbuild_session_proofs_${organizationId}`);
       localStorage.removeItem(`rsbuild_session_orders_${organizationId}`);
     } catch {}
-    setNotice("Sessão reiniciada com dados de demonstração.");
+    setNotice("Dados temporários desta sessão foram limpos. Registros financeiros persistidos não foram alterados.");
   }
 
   // Filtragem Reativa de Registros por Período
@@ -753,7 +716,6 @@ export default function EnterpriseWorkspace({
               matches={matches}
               matchStats={matchStats}
               role={effectiveRole}
-              onReloadSample={() => setTitles(INITIAL_SAMPLE_TITLES)}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}
               onExportBatchSettlement={handleExportBatchSettlement}
@@ -766,7 +728,6 @@ export default function EnterpriseWorkspace({
               evaluations={evaluations}
               onImportProofsFile={handleImportProofsFileData}
               onExportBlindage={handleExportBlindageReport}
-              onReloadSample={() => setProofs(INITIAL_SAMPLE_PROOFS)}
               onConfirmReceipt={handleConfirmReceipt}
             />
           )}
@@ -779,7 +740,6 @@ export default function EnterpriseWorkspace({
               onWhatsAppTextChange={setWhatsAppText}
               onParseMessage={handleParseWhatsApp}
               onConfirmOrder={handleConfirmParsedOrder}
-              onReloadSample={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}
               onExportOmieCsv={handleExportOmieSalesOrders}
               onClearText={() => setWhatsAppText("")}
               onLoadExample={() =>
