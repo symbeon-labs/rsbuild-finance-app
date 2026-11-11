@@ -144,12 +144,12 @@ export function TorreControleView({
       return {
         status: healthStatus,
         statusTone,
-        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} sob risco preventivo de protesto devido a ${atRiskProtestCount} nota(s) sem canhoto na doca.`,
+        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} associados a ${atRiskProtestCount} registro(s) com pendências documentais.`,
         recommendations: [
           {
             priority: "Alta",
-            action: "Blindagem de Cobrança",
-            detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Bloqueio preventivo ativo para evitar protesto indevido (Lei nº 5.474/1968).`
+            action: "Revisão de evidências",
+            detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Pendência documental identificada; revisar as evidências e a situação com os responsáveis antes de qualquer decisão.`
           },
           {
             priority: "Média",
@@ -212,7 +212,7 @@ export function TorreControleView({
       `Score Operacional: ${healthScore === null ? "Não calculado — dados insuficientes" : `${healthScore}%`}\n` +
       `Valor dos pedidos na sessão: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
       `Ocupação estimada da HR: ${hubAcaiMetrics.hrOccupancy}%\n` +
-      `Faturas sob Risco Jurídico: ${formatCurrency(deliveryMetrics.atRiskProtestAmount)}\n\n` +
+      `Pendências documentais: ${formatCurrency(deliveryMetrics.atRiskProtestAmount)}\n\n` +
       `*Síntese do painel:*\n${rsAgentDiagnosis.summary}\n\n` +
       `_Documento gerado a partir dos dados disponíveis no workspace; não representa aprovação ou sincronização externa._`;
 
@@ -366,7 +366,7 @@ export function TorreControleView({
                   icon="🚚"
                 />
                 <Metric
-                  label="Exposição sob Risco"
+                  label="Exposição documental estimada"
                   value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
                   tone={proofs.length > 0 ? (deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "neutral") : "neutral"}
                   detail={proofs.length > 0 ? `${atRiskProtestCount} registro(s) com pendência documental; sem bloqueio externo` : "Sem comprovantes para avaliar exposição"}
