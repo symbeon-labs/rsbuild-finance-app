@@ -119,7 +119,9 @@ export default function EnterpriseWorkspace({
   }
 
   // Estados Financeiros & Sessão
-  const [records, setRecords] = useState<FinancialRecord[]>(INITIAL_SAMPLE_RECORDS);
+  const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
   const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
@@ -239,8 +241,6 @@ export default function EnterpriseWorkspace({
       if (savedEnd) setCustomEndDate(savedEnd);
 
       // Persistência de Dados Operacionais
-      const savedRecords = localStorage.getItem("rsbuild_session_records");
-      if (savedRecords) setRecords(JSON.parse(savedRecords));
       const savedTitles = localStorage.getItem("rsbuild_session_titles");
       if (savedTitles) setTitles(JSON.parse(savedTitles));
       const savedProofs = localStorage.getItem("rsbuild_session_proofs");
@@ -251,13 +251,6 @@ export default function EnterpriseWorkspace({
       // Ignora falhas em sandbox restrito / SSR
     }
   }, []);
-
-  // Watchers de auto-save de dados no localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem("rsbuild_session_records", JSON.stringify(records));
-    } catch {}
-  }, [records]);
 
   useEffect(() => {
     try {
@@ -332,7 +325,7 @@ export default function EnterpriseWorkspace({
     if (typeof window !== "undefined" && !window.confirm("Reiniciar todos os dados operacionais da sessão atual?")) {
       return;
     }
-    setRecords(INITIAL_SAMPLE_RECORDS);
+    setRecords([]);
     setOmieRecords(INITIAL_SAMPLE_OMIE_RECORDS);
     setTitles(INITIAL_SAMPLE_TITLES);
     setProofs(INITIAL_SAMPLE_PROOFS);
@@ -342,7 +335,6 @@ export default function EnterpriseWorkspace({
     setImportErrors([]);
     setFileName("");
     try {
-      localStorage.removeItem("rsbuild_session_records");
       localStorage.removeItem("rsbuild_session_titles");
       localStorage.removeItem("rsbuild_session_proofs");
       localStorage.removeItem("rsbuild_session_orders");
@@ -412,15 +404,37 @@ export default function EnterpriseWorkspace({
     event.target.value = "";
   }
 
-  function confirmImport() {
-    // Adiciona trilha de auditoria em todos os registros importados
-    const recordsWithAudit = pendingImport.map(r => addAuditTrail(r, currentUserEmail));
-    setRecords((current) => [...recordsWithAudit, ...current]);
-    setNotice(`${pendingImport.length} movimentação(ões) adicionada(s) à sessão atual com trilha de auditoria.`);
-    setPendingImport([]);
-    setPendingMetadata(null);
-    setImportErrors([]);
-    setFileName("");
+  async function confirmImport() {
+    if (isImporting || !pendingImport.length || importErrors.length) return;
+    setIsImporting(true);
+    setNotice("");
+    try {
+      const form = new FormData();
+      const selectedFile = inputRef.current?.files?.[0];
+      if (!selectedFile) throw new Error("Selecione novamente o arquivo para confirmar a importação.");
+      form.set("organizationId", organizationId);
+      form.set("file", selectedFile);
+      const response = await fetch("/api/imports", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) {
+        const detail = Array.isArray(payload.details) && payload.details.length ? ` ${payload.details.join(" ")}` : "";
+        throw new Error((payload.error || "Falha ao persistir a importação.") + detail);
+      }
+      const refresh = await fetch(`/api/imports?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const refreshed = await refresh.json();
+      if (!refresh.ok) throw new Error("Importação gravada, mas não foi possível atualizar o dashboard. Recarregue a página.");
+      setRecords(Array.isArray(refreshed.records) ? refreshed.records : []);
+      setNotice(`Importação persistida: ${payload.insertedCount ?? 0} novo(s) registro(s), ${payload.duplicateCount ?? 0} duplicado(s) ignorado(s).`);
+      setPendingImport([]);
+      setPendingMetadata(null);
+      setImportErrors([]);
+      setFileName("");
+      if (inputRef.current) inputRef.current.value = "";
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível concluir a importação.");
+    } finally {
+      setIsImporting(false);
+    }
   }
 
   function cancelImport() {
@@ -677,6 +691,7 @@ export default function EnterpriseWorkspace({
               pendingImport={pendingImport}
               pendingMetadata={pendingMetadata}
               importErrors={importErrors}
+              isImporting={isImporting}
               onSelectFile={() => inputRef.current?.click()}
               onCancelImport={cancelImport}
               onExportOmieOfx={() => handleExportOmie(pendingImport)}
