@@ -24,12 +24,17 @@ export async function GET(request: Request) {
   // function binds the invite to both this Auth user id and verified email.
   const admin = createAdminClient();
   if (!invitationId) return NextResponse.redirect(new URL(destination, url.origin));
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(invitationId)) {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(new URL("/login?error=invite_invalid", url.origin));
+  }
   const { data: organizationId, error: acceptanceError } = await admin.rpc(
     "accept_organization_invitation",
     { p_invitation_id: invitationId, p_user_id: user.id, p_email: user.email.toLowerCase() }
   );
-  if (acceptanceError) {
-    return NextResponse.redirect(new URL("/login?error=invite_acceptance", url.origin));
+  if (acceptanceError || !organizationId) {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(new URL("/login?error=invite_invalid", url.origin));
   }
   if (organizationId) {
     return NextResponse.redirect(new URL(`/?organizationId=${encodeURIComponent(organizationId)}`, url.origin));
