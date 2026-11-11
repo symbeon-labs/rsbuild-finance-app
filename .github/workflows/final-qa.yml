@@ -1,0 +1,160 @@
+name: Final Finance QA
+
+on:
+  push:
+    branches:
+      - qa/final-finance-homologation
+  pull_request:
+    branches:
+      - fix/finance-import-persistence-flow
+  workflow_dispatch:
+    inputs:
+      tester:
+        description: "Responsável pela homologação"
+        required: true
+        type: string
+      login_session:
+        description: "Login e recuperação de sessão"
+        required: true
+        type: choice
+        options: [PENDING, PASS, FAIL, BLOCKED]
+      import_file:
+        description: "Importação de arquivo sintético"
+        required: true
+        type: choice
+        options: [PENDING, PASS, FAIL, BLOCKED]
+      counters:
+        description: "Contadores de inseridos e duplicados"
+        required: true
+        type: choice
+        options: [PENDING, PASS, FAIL, BLOCKED]
+      reload_persistence:
+        description: "Persistência após recarregar"
+        required: true
+        type: choice
+        options: [PENDING, PASS, FAIL, BLOCKED]
+      organization_isolation:
+        description: "Isolamento entre duas organizações"
+        required: true
+        type: choice
+        options: [PENDING, PASS, FAIL, BLOCKED]
+      local_data_isolation:
+        description: "Isolamento dos dados locais por organização"
+        required: true
+        type: choice
+        options: [PENDING, PASS, FAIL, BLOCKED]
+      responsive:
+        description: "Verificação responsiva"
+        required: true
+        type: choice
+        options: [PENDING, PASS, FAIL, BLOCKED]
+      evidence_url:
+        description: "Link para evidências (ou identificador do pacote anexado)"
+        required: true
+        type: string
+      notes:
+        description: "Observações, IDs de execução e defeitos encontrados"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: final-finance-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  technical_validation:
+    name: Technical validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Tests
+        run: npm test
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+
+  functional_homologation:
+    name: Functional homologation record
+    if: ${{ always() && github.event_name == 'workflow_dispatch' }}
+    needs: technical_validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate homologation report
+        id: report
+        env:
+          TECHNICAL_RESULT: ${{ needs.technical_validation.result }}
+          TESTER: ${{ inputs.tester }}
+          LOGIN_SESSION: ${{ inputs.login_session }}
+          IMPORT_FILE: ${{ inputs.import_file }}
+          COUNTERS: ${{ inputs.counters }}
+          RELOAD_PERSISTENCE: ${{ inputs.reload_persistence }}
+          ORGANIZATION_ISOLATION: ${{ inputs.organization_isolation }}
+          LOCAL_DATA_ISOLATION: ${{ inputs.local_data_isolation }}
+          RESPONSIVE: ${{ inputs.responsive }}
+          EVIDENCE_URL: ${{ inputs.evidence_url }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          mkdir -p qa-artifacts
+          {
+            echo "# RSBUILD Finance — Final QA"
+            echo
+            echo "- Data: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            echo "- Repositório: ${GITHUB_REPOSITORY}"
+            echo "- Commit: ${GITHUB_SHA}"
+            echo "- Responsável: ${TESTER}"
+            echo "- CI técnico: ${TECHNICAL_RESULT}"
+            echo
+            echo "| Verificação | Resultado |"
+            echo "|---|---|"
+            echo "| Login e sessão | ${LOGIN_SESSION} |"
+            echo "| Importação sintética | ${IMPORT_FILE} |"
+            echo "| Contadores | ${COUNTERS} |"
+            echo "| Persistência após reload | ${RELOAD_PERSISTENCE} |"
+            echo "| Isolamento entre organizações | ${ORGANIZATION_ISOLATION} |"
+            echo "| Dados locais por organização | ${LOCAL_DATA_ISOLATION} |"
+            echo "| Responsividade | ${RESPONSIVE} |"
+            echo
+            echo "## Evidências"
+            echo "${EVIDENCE_URL}"
+            echo
+            echo "## Observações"
+            echo "${NOTES:-Nenhuma observação informada.}"
+          } > qa-artifacts/final-qa-report.md
+
+          if [ "${TECHNICAL_RESULT}" = "success" ] &&
+             [ "${LOGIN_SESSION}" = "PASS" ] &&
+             [ "${IMPORT_FILE}" = "PASS" ] &&
+             [ "${COUNTERS}" = "PASS" ] &&
+             [ "${RELOAD_PERSISTENCE}" = "PASS" ] &&
+             [ "${ORGANIZATION_ISOLATION}" = "PASS" ] &&
+             [ "${LOCAL_DATA_ISOLATION}" = "PASS" ] &&
+             [ "${RESPONSIVE}" = "PASS" ] &&
+             [ -n "${EVIDENCE_URL//[[:space:]]/}" ]; then
+            echo "approved=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload homologation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsbuild-finance-final-qa-${{ github.run_id }}
+          path: qa-artifacts/final-qa-report.md
+          if-no-files-found: error
+          retention-days: 90
+      - name: Enforce homologation result
+        if: steps.report.outputs.approved != 'true'
+        run: |
+          echo "::error::Homologação não aprovada. Consulte o relatório de evidências."
+          exit 1
