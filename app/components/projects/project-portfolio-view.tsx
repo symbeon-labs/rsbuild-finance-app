@@ -7,6 +7,7 @@ type ProjectTask = {
   title: string;
   description: string;
   acceptance_criteria: string;
+  responsible_label: string;
   status: string;
   priority: string;
   due_date: string | null;
@@ -16,11 +17,14 @@ type ProjectSprint = {
   sprint_number: number;
   title: string;
   objective: string;
+  completion_criteria: string;
   status: string;
   start_date: string | null;
   end_date: string | null;
   project_tasks: ProjectTask[];
+  project_deliverables: { id: string; title: string; description: string; acceptance_criteria: string; version_label: string; status: string; resource_url: string | null }[];
 };
+type ProjectDependency = { id: string; title: string; description: string; dependency_type: string; status: string; responsible_label: string; due_date: string | null; evidence_url: string | null };
 type Project = {
   id: string;
   project_key: string;
@@ -31,6 +35,7 @@ type Project = {
   start_date: string | null;
   target_date: string | null;
   project_sprints: ProjectSprint[];
+  project_dependencies: ProjectDependency[];
 };
 
 const statusLabels: Record<string, string> = {
@@ -55,6 +60,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   const [creatingSprintFor, setCreatingSprintFor] = useState<string | null>(null);
   const [sprintTitle, setSprintTitle] = useState("");
   const [sprintObjective, setSprintObjective] = useState("");
+  const [sprintCompletionCriteria, setSprintCompletionCriteria] = useState("");
   const [sprintStart, setSprintStart] = useState("");
   const [sprintEnd, setSprintEnd] = useState("");
   const [savingSprint, setSavingSprint] = useState(false);
@@ -62,6 +68,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [taskAcceptanceCriteria, setTaskAcceptanceCriteria] = useState("");
+  const [taskResponsibleLabel, setTaskResponsibleLabel] = useState("");
   const [taskPriority, setTaskPriority] = useState("normal");
   const [savingTask, setSavingTask] = useState(false);
 
@@ -105,6 +112,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
         body: JSON.stringify({
           title: sprintTitle,
           objective: sprintObjective,
+          completionCriteria: sprintCompletionCriteria,
           sprintNumber: Math.max(0, ...project.project_sprints.map((sprint) => sprint.sprint_number)) + 1,
           startDate: sprintStart || null,
           endDate: sprintEnd || null
@@ -114,6 +122,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
       if (!response.ok) throw new Error(payload.error || "Não foi possível criar a sprint.");
       setSprintTitle("");
       setSprintObjective("");
+      setSprintCompletionCriteria("");
       setSprintStart("");
       setSprintEnd("");
       setCreatingSprintFor(null);
@@ -136,7 +145,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: taskTitle, description: taskDescription, acceptanceCriteria: taskAcceptanceCriteria, priority: taskPriority })
+          body: JSON.stringify({ title: taskTitle, description: taskDescription, acceptanceCriteria: taskAcceptanceCriteria, responsibleLabel: taskResponsibleLabel, priority: taskPriority })
         }
       );
       const payload = await response.json();
@@ -144,6 +153,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
       setTaskTitle("");
       setTaskDescription("");
       setTaskAcceptanceCriteria("");
+      setTaskResponsibleLabel("");
       setTaskPriority("normal");
       setCreatingTaskFor(null);
       await loadProjects();
@@ -241,6 +251,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                     <h3>Nova sprint</h3>
                     <input required maxLength={140} value={sprintTitle} onChange={(event) => setSprintTitle(event.target.value)} placeholder="Nome da sprint" />
                     <textarea maxLength={3000} value={sprintObjective} onChange={(event) => setSprintObjective(event.target.value)} placeholder="Objetivo e resultado esperado" rows={3} />
+                    <textarea maxLength={3000} value={sprintCompletionCriteria} onChange={(event) => setSprintCompletionCriteria(event.target.value)} placeholder="Critérios de conclusão da sprint" rows={2} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       <label>Início<input type="date" value={sprintStart} onChange={(event) => setSprintStart(event.target.value)} /></label>
                       <label>Fim<input type="date" value={sprintEnd} onChange={(event) => setSprintEnd(event.target.value)} /></label>
@@ -263,6 +274,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                             <div className="eyebrow">SPRINT {String(sprint.sprint_number).padStart(2, "0")}</div>
                             <h3>{sprint.title}</h3>
                             <p>{sprint.objective}</p>
+                            {sprint.completion_criteria && <p className="muted" style={{ fontSize: 12 }}>Conclusão: {sprint.completion_criteria}</p>}
                           </div>
                           <span className="subtle-tag">{statusLabels[sprint.status] || sprint.status}</span>
                         </div>
@@ -275,6 +287,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                             <input required maxLength={180} value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} placeholder="Nome da atividade" />
                             <textarea maxLength={3000} value={taskDescription} onChange={(event) => setTaskDescription(event.target.value)} placeholder="Descrição / contexto" rows={2} />
                             <textarea maxLength={3000} value={taskAcceptanceCriteria} onChange={(event) => setTaskAcceptanceCriteria(event.target.value)} placeholder="Critérios de conclusão / aceite" rows={2} />
+                            <input maxLength={160} value={taskResponsibleLabel} onChange={(event) => setTaskResponsibleLabel(event.target.value)} placeholder="Responsável (nome / papel)" />
                             <select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value)}>
                               <option value="low">Baixa prioridade</option><option value="normal">Normal</option><option value="high">Alta prioridade</option><option value="critical">Crítica</option>
                             </select>
@@ -284,11 +297,24 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                             </div>
                           </form>
                         )}
+                {sprint.project_deliverables.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <strong style={{ fontSize: 12 }}>Entregáveis</strong>
+                    <ul style={{ margin: "6px 0 0", paddingLeft: 18, display: "grid", gap: 5 }}>
+                      {sprint.project_deliverables.map((deliverable) => (
+                        <li key={deliverable.id}>
+                          {deliverable.resource_url ? <a href={deliverable.resource_url} target="_blank" rel="noreferrer">{deliverable.title}</a> : deliverable.title}
+                          <span className="muted"> · {statusLabels[deliverable.status] || deliverable.status}{deliverable.version_label ? ` · ${deliverable.version_label}` : ""}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                         {sprint.project_tasks.length > 0 && (
                           <ul style={{ margin: "12px 0 0", paddingLeft: 18, display: "grid", gap: 6 }}>
                             {sprint.project_tasks.map((task) => (
                               <li key={task.id}>
-                                <span>{task.title}</span> <span className="muted">· {statusLabels[task.status] || task.status} · {task.priority}</span>
+                                <span>{task.title}</span> <span className="muted">· {statusLabels[task.status] || task.status} · {task.priority}{task.responsible_label ? ` · ${task.responsible_label}` : ""}</span>
                                 {task.acceptance_criteria && <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{task.acceptance_criteria}</div>}
                               </li>
                             ))}
@@ -298,6 +324,23 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                     ))}
                   </div>
                 )}
+                <section style={{ marginTop: 20 }}>
+                  <div className="panel-heading"><div><h3>Dependências e insumos</h3><p>Entradas externas, decisões e acessos que condicionam a execução.</p></div><span className="subtle-tag">{selectedProject.project_dependencies.length}</span></div>
+                  {selectedProject.project_dependencies.length === 0 ? (
+                    <div className="table-empty">Nenhuma dependência registrada para este projeto.</div>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8 }}>
+                      {selectedProject.project_dependencies.map((dependency) => (
+                        <li key={dependency.id}>
+                          <strong>{dependency.title}</strong>
+                          <span className="muted"> · {dependency.status}{dependency.responsible_label ? ` · ${dependency.responsible_label}` : ""}</span>
+                          {dependency.description && <div className="muted" style={{ fontSize: 12 }}>{dependency.description}</div>}
+                          {dependency.evidence_url && <a href={dependency.evidence_url} target="_blank" rel="noreferrer">Abrir evidência</a>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
               </>
             )}
           </section>
