@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Props = { organizationId: string; organizationName: string; role: string };
+type Props = { organizationId: string; organizationName: string; role: string };\ntype Invitation = { id: string; email: string; role: string; status: string; expires_at: string; created_at: string };
 
 export function OrganizationAdminPanel({ organizationId, organizationName, role }: Props) {
   const canAdmin = role === "owner" || role === "admin";
@@ -14,7 +14,7 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
   const [zoom, setZoom] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);\n  const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -45,7 +45,7 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
     finally { setBusy(false); }
   }
 
-  async function saveBanner(event: React.FormEvent) {
+  async function manageInvitation(invitationId: string, action: "resend" | "revoke") {\n    setBusy(true); setMessage("");\n    try {\n      const response = action === "revoke"\n        ? await fetch("/api/organization-invitations?organizationId=" + encodeURIComponent(organizationId) + "&invitationId=" + encodeURIComponent(invitationId), { method: "DELETE" })\n        : await fetch("/api/organization-invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId, invitationId, action: "resend" }) });\n      const data = await response.json();\n      if (!response.ok) throw new Error(data.error || "invitation_action_failed");\n      setMessage(action === "revoke" ? "Convite revogado." : "Reenvio solicitado.");\n      await loadInvitations();\n    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível atualizar o convite."); }\n    finally { setBusy(false); }\n  }\n\n  async function saveBanner(event: React.FormEvent) {
     event.preventDefault();
     if (!file) { setMessage("Selecione uma imagem para o banner."); return; }
     setBusy(true); setMessage("");
