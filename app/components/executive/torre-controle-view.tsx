@@ -49,11 +49,9 @@ export function TorreControleView({
   const [activeSubTab, setActiveSubTab] = useState<TorreSubTab>("estrategia");
   const [copiedMemo, setCopiedMemo] = useState(false);
 
-  // Notas em Risco de Protesto
-  const atRiskProtestCount = useMemo(
-    () => evaluations.filter((e) => e.risk === "bloqueio_preventivo").length,
-    [evaluations]
-  );
+  // Todos os registros exigem revisão humana; metadados completos não autenticam a evidência.
+  const documentaryReviewCount = evaluations.length;
+  const incompleteEvidenceCount = evaluations.filter((e) => e.risk !== "metadata_complete").length;
 
   // O índice só existe quando todas as fontes que compõem o cálculo têm dados.
   // Ausência de registros não pode ser interpretada como 100% de conformidade.
@@ -144,12 +142,12 @@ export function TorreControleView({
       return {
         status: healthStatus,
         statusTone,
-        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} associados a ${atRiskProtestCount} registro(s) com pendências documentais.`,
+        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} associados a ${documentaryReviewCount} registro(s) para revisão humana.`,
         recommendations: [
           {
             priority: "Alta",
             action: "Revisão de evidências",
-            detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Pendência documental identificada; revisar as evidências e a situação com os responsáveis antes de qualquer decisão.`
+            detail: `Existem ${documentaryReviewCount} registro(s) que exigem revisão humana. Metadados cadastrados não autenticam arquivos ou assinaturas.`
           },
           {
             priority: "Média",
@@ -188,7 +186,7 @@ export function TorreControleView({
         },
         {
           priority: "Estratégica",
-          action: "Auditoria & DRE",
+          action: "Conferência de dados",
           detail: "Validar a origem e a cobertura dos dados antes de emitir demonstrativos ou afirmar sincronização contábil."
         }
       ]
@@ -199,7 +197,7 @@ export function TorreControleView({
     companyName,
     hubAcaiMetrics,
     deliveryMetrics,
-    atRiskProtestCount,
+    documentaryReviewCount,
     flavorsBreakdown,
     totals,
     readySettlements
@@ -242,17 +240,17 @@ export function TorreControleView({
                 padding: "2px 8px"
               }}
             >
-              MÓDULO DE AUDITORIA & COMPLIANCE
+              MÓDULO DE GOVERNANÇA E CONTROLE
             </span>
           </div>
-          <h1>Torre de Auditoria & Inteligência</h1>
+          <h1>Torre de Governança & Controle</h1>
           <p>
-            Governança central do workspace <strong>{companyName}</strong>: cruzamento contábil x fiscal, blindagem contra protesto indevido (Lei Federal nº 5.474/1968) e pareceres periciais integráveis à <strong>RS Advogados</strong>.
+            Acompanhamento operacional do workspace <strong>{companyName}</strong>: organização de dados, identificação de inconsistências e acompanhamento de pendências para revisão pelos responsáveis.
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
           <button className="secondary-button" onClick={handleCopyMemo}>
-            {copiedMemo ? "✓ Memorando Copiado!" : "📋 Copiar Parecer Executivo"}
+            {copiedMemo ? "✓ Memorando Copiado!" : "📋 Copiar Síntese Operacional"}
           </button>
           <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
             Integração Omie não conectada
@@ -283,7 +281,7 @@ export function TorreControleView({
             color: "var(--ink)"
           }}
         >
-          <span>⎈</span> Visão Estratégica & Parecer
+          <span>⎈</span> Visão Estratégica & Síntese
         </button>
 
         <button
@@ -299,7 +297,7 @@ export function TorreControleView({
             color: "var(--ink)"
           }}
         >
-          <span>🛡</span> Auditoria de Risco Fiscal ({atRiskProtestCount})
+          <span>🛡</span> Pendências documentais ({documentaryReviewCount})
         </button>
 
         <button
@@ -337,7 +335,7 @@ export function TorreControleView({
         )}
       </div>
 
-      {/* ABA 1: VISÃO ESTRATÉGICA & PARECER DO AGENTE RS */}
+      {/* ABA 1: VISÃO ESTRATÉGICA & SÍNTESE OPERACIONAL */}
       {activeSubTab === "estrategia" && (
         <>
           {/* Grid de KPIs Macro Adaptativo ao Workspace */}
@@ -369,7 +367,7 @@ export function TorreControleView({
                   label="Exposição documental estimada"
                   value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
                   tone={proofs.length > 0 ? (deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "neutral") : "neutral"}
-                  detail={proofs.length > 0 ? `${atRiskProtestCount} registro(s) com pendência documental; sem bloqueio externo` : "Sem comprovantes para avaliar exposição"}
+                  detail={proofs.length > 0 ? `${documentaryReviewCount} registro(s) para revisão humana; nenhuma ação externa é executada` : "Sem comprovantes para avaliar exposição"}
                   icon="🛡"
                 />
               </>
@@ -593,8 +591,8 @@ export function TorreControleView({
             <section className="panel">
               <div className="panel-heading">
                 <div>
-                  <h2>Blindagem Jurídica de Cobrança (Lei 5.474/68)</h2>
-                  <p>Proporção de faturamento resguardado por comprovantes na doca.</p>
+                  <h2>Cobertura de metadados de entrega</h2>
+                  <p>Proporção de registros com metadados de entrega completos; autenticidade não verificada.</p>
                 </div>
                 <span className="subtle-tag">SEFAZ / CANHOTOS</span>
               </div>
@@ -602,7 +600,7 @@ export function TorreControleView({
               <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                    <span style={{ color: "var(--green-text, #10B981)", fontWeight: 600 }}>✓ Faturamento Blindado (Apto a Protesto)</span>
+                    <span style={{ color: "var(--green-text, #10B981)", fontWeight: 600 }}>✓ Metadados de entrega completos</span>
                     <strong>{formatCurrency(deliveryMetrics.provenAmount)}</strong>
                   </div>
                   <div style={{ width: "100%", height: "10px", background: "var(--surface-raised, rgba(255,255,255,0.06))", borderRadius: "5px", overflow: "hidden" }}>
@@ -616,19 +614,19 @@ export function TorreControleView({
                     />
                   </div>
                   <span style={{ fontSize: "10px", color: "var(--muted)", marginTop: "3px", display: "block" }}>
-                    {deliveryMetrics.provenCount} de {deliveryMetrics.totalInvoices} entregas com canhoto arquivado.
+                    {deliveryMetrics.provenCount} de {deliveryMetrics.totalInvoices} registros com metadados completos; arquivos não autenticados.
                   </span>
                 </div>
 
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                    <span style={{ color: "var(--red-text, #EF4444)", fontWeight: 600 }}>⛔ Faturamento sob Risco Fiscal / Extravio</span>
+                    <span style={{ color: "var(--red-text, #EF4444)", fontWeight: 600 }}>⛔ Valor sem metadados completos de entrega</span>
                     <strong>{formatCurrency(deliveryMetrics.atRiskProtestAmount)}</strong>
                   </div>
                   <div style={{ width: "100%", height: "10px", background: "var(--surface-raised, rgba(255,255,255,0.06))", borderRadius: "5px", overflow: "hidden" }}>
                     <div
                       style={{
-                        width: `${deliveryMetrics.totalInvoices > 0 ? Math.round((atRiskProtestCount / deliveryMetrics.totalInvoices) * 100) : 0}%`,
+                        width: `${deliveryMetrics.totalInvoices > 0 ? Math.round((incompleteEvidenceCount / deliveryMetrics.totalInvoices) * 100) : 0}%`,
                         height: "100%",
                         background: "var(--red-text, #EF4444)",
                         borderRadius: "5px"
@@ -636,7 +634,7 @@ export function TorreControleView({
                     />
                   </div>
                   <span style={{ fontSize: "10px", color: "var(--muted)", marginTop: "3px", display: "block" }}>
-                    {atRiskProtestCount} fatura(s) com retenção preventiva para evitar litígio judicial.
+                    {incompleteEvidenceCount} registro(s) sem metadados completos; revisar antes de qualquer decisão operacional.
                   </span>
                 </div>
               </div>
@@ -645,13 +643,13 @@ export function TorreControleView({
         </>
       )}
 
-      {/* ABA 2: AUDITORIA DE RISCO FISCAL & CANHOTOS */}
+      {/* ABA 2: REVISÃO DE EVIDÊNCIAS */}
       {activeSubTab === "auditoria" && (
         <section className="panel" style={{ marginBottom: "24px" }}>
           <div className="panel-heading">
             <div>
-              <h2>Auditoria de Risco Jurídico de Cobrança</h2>
-              <p>Notas fiscais que necessitam de intervenção ou arquivamento de comprovante de entrega.</p>
+              <h2>Revisão de evidências de entrega</h2>
+              <p>Registros que exigem conferência humana de metadados e evidências de entrega.</p>
             </div>
             <button className="secondary-button" onClick={() => onNavigateToTab("canhotos")}>
               Ir para Protocolo de Canhotos →
@@ -664,8 +662,8 @@ export function TorreControleView({
                 <tr>
                   <th>NF-e / Destinatário</th>
                   <th className="align-right">Valor da Nota</th>
-                  <th>Avaliação de risco</th>
-                  <th>Fundamentação Legal</th>
+                  <th>Estado documental</th>
+                  <th>Observação operacional</th>
                   <th>Ação Sugerida</th>
                 </tr>
               </thead>
@@ -681,29 +679,27 @@ export function TorreControleView({
                       <span
                         className="status-pill"
                         style={{
-                          background:
-                            ev.risk === "liberado"
-                              ? "var(--green-bg, rgba(16, 185, 129, 0.15))"
-                              : "var(--red-bg, rgba(239, 68, 68, 0.15))",
-                          color:
-                            ev.risk === "liberado"
-                              ? "var(--green-text, #10B981)"
-                              : "var(--red-text, #EF4444)",
+                          background: "var(--surface-raised, rgba(255,255,255,0.06))",
+                          color: "var(--ink)",
                           fontWeight: 700
                         }}
                       >
-                        {ev.risk === "liberado" ? "✓ APTO A COBRANÇA" : "⛔ BLOQUEIO PREVENTIVO"}
+                        {ev.risk === "metadata_complete" ? "Metadados completos · autenticidade pendente" : ev.risk === "priority_review" ? "Revisão prioritária" : "Metadados incompletos · revisar"}
                       </span>
                     </td>
                     <td style={{ fontSize: "11px", color: "var(--muted)", maxWidth: "300px" }}>{ev.reason}</td>
                     <td>
-                      {ev.risk === "bloqueio_preventivo" ? (
+                      {ev.risk === "priority_review" ? (
                         <span style={{ fontSize: "11px", color: "var(--rsbuild-terracotta)", fontWeight: 600 }}>
-                          Reter Duplicata no ERP
+                          Encaminhar para revisão prioritária
+                        </span>
+                      ) : ev.risk === "documentary_review" ? (
+                        <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+                          Completar metadados e revisar
                         </span>
                       ) : (
-                        <span style={{ fontSize: "11px", color: "var(--green-text, #10B981)", fontWeight: 600 }}>
-                          Liberado para Cartório
+                        <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+                          Conferir autenticidade da evidência
                         </span>
                       )}
                     </td>
@@ -753,7 +749,7 @@ export function TorreControleView({
 
             <div style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "16px", background: "var(--surface)" }}>
               <div style={{ fontSize: "20px", marginBottom: "8px" }}>🛡</div>
-              <strong style={{ fontSize: "13px", color: "var(--ink)" }}>Protocolo de Blindagem SEFAZ</strong>
+              <strong style={{ fontSize: "13px", color: "var(--ink)" }}>Registro de Evidências de Entrega</strong>
               <p style={{ fontSize: "11.5px", color: "var(--muted)", margin: "4px 0 12px" }}>
                 {evaluations.length} notas auditadas contra a Lei de Duplicatas Mercantis.
               </p>
@@ -912,7 +908,7 @@ export function TorreControleView({
       )}
 
       <div className="inline-note">
-        <strong>Diretriz de governança:</strong> os resultados exibidos são cálculos auxiliares sobre os registros disponíveis nesta sessão. Não substituem revisão profissional, homologação jurídica ou integração com sistemas de origem.
+        <strong>Diretriz de governança:</strong> os resultados exibidos são cálculos auxiliares sobre os registros disponíveis nesta sessão. Não substituem revisão profissional, revisão especializada ou integração com sistemas de origem.
       </div>
     </>
   );

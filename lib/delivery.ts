@@ -1,16 +1,15 @@
 /**
- * ENG-MS-03: Protocolo Digital de Indexação de Canhotos e Blindagem de Cobrança
+ * ENG-MS-03: Registro de Evidências de Entrega
  * 
  * Regras de Negócio e Rastreabilidade para Mundo do Sabor (ORG-003):
  * - Vincula faturas/NF-e a comprovantes de entrega assinados (canhotos).
- * - Blindagem jurídica preventiva: impede protesto cartorário indevido de duplicatas
- *   sem prova documental de entrega (art. 15 da Lei nº 5.474/1968).
+ * - Organiza metadados de entrega para revisão operacional e humana.
  * - Integração conceitual com dados do Omie ERP e frentes de expedição/motoristas.
  */
 
 export type DeliveryStatus = "pendente_entrega" | "comprovado" | "recusa_devolucao" | "extraviado";
 
-export type ProtestoRisk = "liberado" | "bloqueio_preventivo" | "atencao_prazo";
+export type ProtestoRisk = "metadata_complete" | "priority_review" | "documentary_review";
 
 export interface DeliveryProof {
   id: string;
@@ -38,7 +37,7 @@ export interface ProtestoEvaluation {
   risk: ProtestoRisk;
   reason: string;
   proofId?: string;
-  hasSignedReceipt: boolean;
+  hasCompleteEvidenceMetadata: boolean;
 }
 
 export interface DeliveryMetrics {
@@ -96,42 +95,42 @@ export function evaluateProtestoRisk(
       customerName: "Não identificado",
       nfeAmount: 0,
       deliveryStatus: "extraviado",
-      risk: "bloqueio_preventivo",
+      risk: "priority_review",
       reason: "Nenhum registro de comprovante foi encontrado neste módulo. A situação exige revisão humana; o sistema não determina a legalidade de cobrança ou protesto.",
-      hasSignedReceipt: false
+      hasCompleteEvidenceMetadata: false
     };
   }
 
-  const hasSignedReceipt =
+  const hasCompleteEvidenceMetadata =
     proof.status === "comprovado" &&
     Boolean(proof.receiverName?.trim()) &&
     Boolean(proof.receiverDocument?.trim()) &&
     Boolean(proof.deliveryDate) &&
     Boolean(proof.proofFileUrl?.trim());
 
-  if (proof.status === "comprovado" && hasSignedReceipt) {
+  if (proof.status === "comprovado" && hasCompleteEvidenceMetadata) {
     return {
       nfeNumber: proof.nfeNumber,
       customerName: proof.customerName,
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
-      risk: "liberado",
-      reason: `Há referência de evidência e dados de recebedor (${proof.receiverName}) em ${proof.deliveryDate}. A autenticidade do arquivo e da assinatura não foi verificada; exige revisão humana/jurídica antes de qualquer decisão.`,
+      risk: "metadata_complete",
+      reason: `Há referência de evidência e dados de recebedor (${proof.receiverName}) em ${proof.deliveryDate}. A autenticidade do arquivo e da assinatura não foi verificada; exige revisão humana antes de qualquer decisão.`,
       proofId: proof.id,
-      hasSignedReceipt: true
+      hasCompleteEvidenceMetadata: true
     };
   }
 
-  if (proof.status === "comprovado" && !hasSignedReceipt) {
+  if (proof.status === "comprovado" && !hasCompleteEvidenceMetadata) {
     return {
       nfeNumber: proof.nfeNumber,
       customerName: proof.customerName,
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
-      risk: "atencao_prazo",
+      risk: "documentary_review",
       reason: "O status foi marcado como comprovado, mas faltam data, identificação do recebedor ou referência do arquivo de evidência. Revisão humana necessária.",
       proofId: proof.id,
-      hasSignedReceipt: false
+      hasCompleteEvidenceMetadata: false
     };
   }
 
@@ -141,10 +140,10 @@ export function evaluateProtestoRisk(
       customerName: proof.customerName,
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
-      risk: "bloqueio_preventivo",
+      risk: "priority_review",
       reason: `Há registro de recusa ou devolução (${proof.notes || "sem justificativa"}). Revisar a documentação e o processo antes de qualquer decisão de cobrança.`,
       proofId: proof.id,
-      hasSignedReceipt: false
+      hasCompleteEvidenceMetadata: false
     };
   }
 
@@ -154,10 +153,10 @@ export function evaluateProtestoRisk(
       customerName: proof.customerName,
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
-      risk: "bloqueio_preventivo",
+      risk: "priority_review",
       reason: "O registro indica comprovante extraviado ou ilegível. É necessária revisão documental antes de qualquer decisão de cobrança.",
       proofId: proof.id,
-      hasSignedReceipt: false
+      hasCompleteEvidenceMetadata: false
     };
   }
 
@@ -167,12 +166,12 @@ export function evaluateProtestoRisk(
     customerName: proof.customerName,
     nfeAmount: proof.nfeAmount,
     deliveryStatus: proof.status,
-    risk: context?.isOverdue ? "bloqueio_preventivo" : "atencao_prazo",
+    risk: context?.isOverdue ? "priority_review" : "documentary_review",
     reason: context?.isOverdue
       ? "O título consta vencido enquanto a entrega aparece em trânsito ou sem retorno da expedição. Revisão humana necessária antes de qualquer decisão."
       : "A entrega consta em trânsito. Ainda não há evidência suficiente para concluir sobre cobrança ou protesto.",
     proofId: proof.id,
-    hasSignedReceipt: false
+    hasCompleteEvidenceMetadata: false
   };
 }
 
@@ -329,8 +328,7 @@ export function parseDeliveryCsv(content: string): { proofs: DeliveryProof[]; er
 }
 
 /**
- * Gera relatório CSV do Protocolo de Blindagem de Cobrança e Protesto
- * Pronto para despacho executivo e jurídico da RS2BUILD / Mundo do Sabor.
+ * Gera relatório CSV de evidências e pendências documentais para revisão humana.
  */
 export function generateDeliveryBlindageCsv(
   proofs: DeliveryProof[],
@@ -353,11 +351,11 @@ export function generateDeliveryBlindageCsv(
     const proof = proofs.find((p) => p.nfeNumber === ev.nfeNumber || p.id === ev.proofId);
     const amountStr = ev.nfeAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const riskLabel =
-      ev.risk === "liberado"
-        ? "EVIDENCIA CADASTRADA - REVISAR AUTENTICIDADE"
-        : ev.risk === "bloqueio_preventivo"
-        ? "PENDENCIA DOCUMENTAL - REVISAR"
-        : "REVISAO HUMANA NECESSARIA";
+      ev.risk === "metadata_complete"
+        ? "METADADOS CADASTRADOS - AUTENTICIDADE NAO VERIFICADA"
+        : ev.risk === "priority_review"
+        ? "REVISAO PRIORITARIA"
+        : "REVISAO DOCUMENTAL";
 
     return [
       `"${ev.nfeNumber}"`,

@@ -50,9 +50,26 @@ test("ENG-MS-03: evaluateProtestoRisk reconhece metadados de evidência, sem afi
   };
 
   const evalProven = evaluateProtestoRisk(proofProven);
-  assert.equal(evalProven.risk, "liberado");
-  assert.equal(evalProven.hasSignedReceipt, true);
+  assert.equal(evalProven.risk, "metadata_complete");
+  assert.equal(evalProven.hasCompleteEvidenceMetadata, true);
   assert.match(evalProven.reason, /autenticidade do arquivo e da assinatura não foi verificada/);
+});
+
+test("ENG-MS-03: status comprovado sem metadados completos permanece em revisão documental", () => {
+  const incompleteProof: DeliveryProof = {
+    id: "p-incomplete",
+    nfeNumber: "4589",
+    customerName: "Cliente de Teste",
+    nfeAmount: 750,
+    issueDate: "2026-04-04",
+    status: "comprovado",
+    receiverName: "Recebedor"
+  };
+
+  const evaluation = evaluateProtestoRisk(incompleteProof);
+  assert.equal(evaluation.risk, "documentary_review");
+  assert.equal(evaluation.hasCompleteEvidenceMetadata, false);
+  assert.match(evaluation.reason, /faltam data, identificação do recebedor ou referência do arquivo/);
 });
 
 test("ENG-MS-03: evaluateProtestoRisk bloqueia protesto em caso de recusa/devolução ou extravio", () => {
@@ -67,8 +84,8 @@ test("ENG-MS-03: evaluateProtestoRisk bloqueia protesto em caso de recusa/devolu
   };
 
   const evalDevolucao = evaluateProtestoRisk(proofDevolucao);
-  assert.equal(evalDevolucao.risk, "bloqueio_preventivo");
-  assert.equal(evalDevolucao.hasSignedReceipt, false);
+  assert.equal(evalDevolucao.risk, "priority_review");
+  assert.equal(evalDevolucao.hasCompleteEvidenceMetadata, false);
   assert.match(evalDevolucao.reason, /recusa ou devolução/);
 
   const proofExtraviado: DeliveryProof = {
@@ -81,7 +98,7 @@ test("ENG-MS-03: evaluateProtestoRisk bloqueia protesto em caso de recusa/devolu
   };
 
   const evalExtraviado = evaluateProtestoRisk(proofExtraviado);
-  assert.equal(evalExtraviado.risk, "bloqueio_preventivo");
+  assert.equal(evalExtraviado.risk, "priority_review");
   assert.match(evalExtraviado.reason, /extraviado/);
 });
 
@@ -97,10 +114,10 @@ test("ENG-MS-03: evaluateProtestoRisk sinaliza atenção em mercadorias em trân
   };
 
   const evalEmPrazo = evaluateProtestoRisk(proofTransito, { isOverdue: false });
-  assert.equal(evalEmPrazo.risk, "atencao_prazo");
+  assert.equal(evalEmPrazo.risk, "documentary_review");
 
   const evalVencido = evaluateProtestoRisk(proofTransito, { isOverdue: true });
-  assert.equal(evalVencido.risk, "bloqueio_preventivo");
+  assert.equal(evalVencido.risk, "priority_review");
   assert.match(evalVencido.reason, /O título consta vencido/);
 });
 
@@ -170,7 +187,7 @@ test("ENG-MS-03: generateDeliveryBlindageCsv emite CSV com observação operacio
   assert.match(csv, /NF-e;Cliente;Valor NF/);
   assert.match(csv, /"4580"/);
   assert.match(csv, /"Supermercado Real"/);
-  assert.match(csv, /EVIDENCIA CADASTRADA - REVISAR AUTENTICIDADE/);
+  assert.match(csv, /METADADOS CADASTRADOS - AUTENTICIDADE NAO VERIFICADA/);
   assert.match(csv, /"Marcos Silva"/);
 });
 
