@@ -38,6 +38,11 @@ type Project = {
   project_dependencies: ProjectDependency[];
 };
 
+const dependencyTypeLabels: Record<string, string> = {
+  client_input: "Insumo do cliente", access: "Acesso / credencial", decision: "Decisão / aprovação",
+  external_service: "Fornecedor externo", technical: "Dependência técnica", other: "Outra"
+};
+
 const statusLabels: Record<string, string> = {
   planning: "Planejamento",
   active: "Em andamento",
@@ -49,7 +54,15 @@ const statusLabels: Record<string, string> = {
   todo: "A fazer",
   in_progress: "Em andamento",
   review: "Em revisão",
-  done: "Concluída"
+  done: "Concluída",
+  open: "Em aberto",
+  waiting: "Aguardando",
+  received: "Recebida",
+  waived: "Dispensada",
+  draft: "Rascunho",
+  submitted: "Submetido",
+  accepted: "Aceito",
+  changes_requested: "Ajustes solicitados"
 };
 
 export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
@@ -312,6 +325,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                         <div className="panel-heading">
                           <div>
                             <div className="eyebrow">SPRINT {String(sprint.sprint_number).padStart(2, "0")}</div>
+                            {(sprint.start_date || sprint.end_date) && <div className="muted" style={{ fontSize: 11 }}>{sprint.start_date || "—"} → {sprint.end_date || "—"}</div>}
                             <h3>{sprint.title}</h3>
                             <p>{sprint.objective}</p>
                             {sprint.completion_criteria && <p className="muted" style={{ fontSize: 12 }}>Conclusão: {sprint.completion_criteria}</p>}
@@ -396,7 +410,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                       {selectedProject.project_dependencies.map((dependency) => (
                         <li key={dependency.id}>
                           <strong>{dependency.title}</strong>
-                          <span className="muted"> · {statusLabels[dependency.status] || dependency.status}{dependency.responsible_label ? ` · ${dependency.responsible_label}` : ""}</span>
+                          <span className="muted"> · {dependencyTypeLabels[dependency.dependency_type] || dependency.dependency_type} · {statusLabels[dependency.status] || dependency.status}{dependency.responsible_label ? ` · ${dependency.responsible_label}` : ""}</span>
                           {dependency.description && <div className="muted" style={{ fontSize: 12 }}>{dependency.description}</div>}
                           {dependency.due_date && <div className="muted" style={{ fontSize: 12 }}>Necessário até {dependency.due_date}</div>}
                           {dependency.evidence_url && <a href={dependency.evidence_url} target="_blank" rel="noreferrer">Abrir evidência</a>}
