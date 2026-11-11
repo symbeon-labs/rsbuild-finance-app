@@ -61,23 +61,23 @@ export function CanhotosView({
       <div className="metric-grid">
         <Metric
           label="Taxa de Comprovação"
-          value={`${deliveryMetrics.coverageRate}%`}
-          tone="positive"
-          detail={`${deliveryMetrics.provenCount} de ${deliveryMetrics.totalInvoices} entregas comprovadas`}
+          value={deliveryMetrics.totalInvoices > 0 ? `${deliveryMetrics.coverageRate}%` : "—"}
+          tone={deliveryMetrics.totalInvoices > 0 ? (deliveryMetrics.coverageRate >= 80 ? "positive" : "negative") : "neutral"}
+          detail={deliveryMetrics.totalInvoices > 0 ? `${deliveryMetrics.provenCount} de ${deliveryMetrics.totalInvoices} registros marcados como comprovados` : "Nenhum comprovante importado"}
           icon="✓"
         />
         <Metric
           label="Faturamento Blindado"
           value={formatCurrency(deliveryMetrics.provenAmount)}
-          tone="positive"
-          detail="Canhoto assinado / Apto a protesto"
+          tone={deliveryMetrics.totalInvoices > 0 ? "positive" : "neutral"}
+          detail="Valor associado aos registros marcados como comprovados; exige validação documental"
           icon="🛡"
         />
         <Metric
           label="Risco de Protesto / Sem Canhoto"
           value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
-          tone="negative"
-          detail="Bloqueio preventivo ativo"
+          tone={deliveryMetrics.totalInvoices > 0 ? "negative" : "neutral"}
+          detail={deliveryMetrics.totalInvoices > 0 ? "Estimativa baseada nos registros importados; não é bloqueio jurídico externo" : "Sem dados para avaliar risco"}
           icon="⚠"
         />
         <Metric
@@ -93,7 +93,7 @@ export function CanhotosView({
         <div className="panel-heading">
           <div>
             <h2>Painel de Gestão e Rastreabilidade de Canhotos</h2>
-            <p>Acompanhamento individual de NF-e, recebedores na doca e veredito de proteção judicial.</p>
+            <p>Acompanhamento dos dados de entrega, identificação de recebedores e pendências documentais.</p>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             
@@ -110,7 +110,7 @@ export function CanhotosView({
                   <th className="align-right">Valor NF</th>
                   <th>Motorista / Rota</th>
                   <th>Status Entrega</th>
-                  <th>Blindagem de Protesto</th>
+                  <th>Status da Evidência</th>
                   <th>Recebedor / Data</th>
                   <th>Ação Operacional</th>
                 </tr>
@@ -177,10 +177,10 @@ export function CanhotosView({
                             }}
                           >
                             {evaluation?.risk === "liberado"
-                              ? "✓ APTO A PROTESTO"
+                              ? "✓ Evidência cadastrada"
                               : evaluation?.risk === "bloqueio_preventivo"
-                              ? "⛔ BLOQUEIO PREVENTIVO"
-                              : "⚠ ATENÇÃO PRAZO"}
+                              ? "⛔ Revisão necessária"
+                              : "⚠ Conferir prazo e evidência"}
                           </span>
                           <span style={{ display: "block", fontSize: "10px", color: "var(--muted)", marginTop: "4px", maxWidth: "260px", whiteSpace: "normal" }}>
                             {evaluation?.reason}
