@@ -38,6 +38,23 @@ create table public.project_memberships (
 );
 create index project_memberships_user_idx on public.project_memberships(user_id, project_id);
 
+create table public.project_organization_access (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null,
+  managing_organization_id uuid not null,
+  client_organization_id uuid not null references public.organizations(id) on delete cascade,
+  access_level text not null default 'viewer'
+    check (access_level in ('viewer','contributor')),
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  unique (project_id, client_organization_id),
+  foreign key (project_id, managing_organization_id)
+    references public.projects(id, managing_organization_id) on delete cascade,
+  check (managing_organization_id <> client_organization_id)
+);
+create index project_organization_access_client_idx
+  on public.project_organization_access(client_organization_id, project_id);
+
 create table public.project_sprints (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
@@ -133,6 +150,7 @@ create index project_deliverables_project_idx on public.project_deliverables(pro
 
 alter table public.projects enable row level security;
 alter table public.project_memberships enable row level security;
+alter table public.project_organization_access enable row level security;
 alter table public.project_sprints enable row level security;
 alter table public.project_tasks enable row level security;
 alter table public.project_dependencies enable row level security;
@@ -153,6 +171,12 @@ using (
   or exists (
     select 1 from public.project_memberships pm
     where pm.project_id = projects.id and pm.user_id = (select auth.uid())
+  )
+  or exists (
+    select 1
+    from public.project_organization_access pa
+    join public.organization_memberships cm on cm.organization_id = pa.client_organization_id
+    where pa.project_id = projects.id and cm.user_id = (select auth.uid())
   )
 );
 
@@ -203,6 +227,50 @@ using (
       and o.slug = 'rsbuild'
       and m.user_id = (select auth.uid())
       and m.role = 'owner'
+  )
+);
+
+create policy "client organization members read project grants"
+on public.project_organization_access for select to authenticated
+using (
+  exists (
+    select 1 from public.organization_memberships m
+    where m.organization_id = project_organization_access.client_organization_id
+      and m.user_id = (select auth.uid())
+  )
+  or exists (
+    select 1 from public.organization_memberships m
+    join public.organizations o on o.id = m.organization_id
+    where m.organization_id = project_organization_access.managing_organization_id
+      and o.slug = 'rsbuild'
+      and m.user_id = (select auth.uid())
+      and m.role in ('owner','admin')
+  )
+);
+
+create policy "RSBUILD managers grant client organization project access"
+on public.project_organization_access for insert to authenticated
+with check (
+  exists (
+    select 1 from public.organization_memberships m
+    join public.organizations o on o.id = m.organization_id
+    where m.organization_id = project_organization_access.managing_organization_id
+      and o.slug = 'rsbuild'
+      and m.user_id = (select auth.uid())
+      and m.role in ('owner','admin')
+  )
+);
+
+create policy "RSBUILD managers revoke client organization project access"
+on public.project_organization_access for delete to authenticated
+using (
+  exists (
+    select 1 from public.organization_memberships m
+    join public.organizations o on o.id = m.organization_id
+    where m.organization_id = project_organization_access.managing_organization_id
+      and o.slug = 'rsbuild'
+      and m.user_id = (select auth.uid())
+      and m.role in ('owner','admin')
   )
 );
 
@@ -365,7 +433,7 @@ with check (
 );
 
 grant select, insert, update, delete on public.projects,
-  public.project_memberships, public.project_sprints,
+  public.project_memberships, public.project_organization_access, public.project_sprints,
   public.project_tasks, public.project_dependencies,
   public.project_deliverables to authenticated;
 
@@ -384,3 +452,14 @@ cross join (values
 join public.organizations client on client.slug = seed.client_slug
 where rs.slug = 'rsbuild'
 on conflict (managing_organization_id, client_organization_id, project_key) do nothing;
+
+-- Each client organization can see only its own project in its own workspace.
+insert into public.project_organization_access (
+  project_id, managing_organization_id, client_organization_id, access_level
+)
+select p.id, p.managing_organization_id, p.client_organization_id, 'viewer'
+from public.projects p
+join public.organizations rs on rs.id = p.managing_organization_id
+where rs.slug = 'rsbuild'
+  and p.project_key in ('mundo-do-sabor','hub-acai')
+on conflict (project_id, client_organization_id) do nothing;
