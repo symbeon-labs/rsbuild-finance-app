@@ -2447,16 +2447,8 @@ tbody tr:hover td:last-child {
 
 /* ==========================================================================
    RESPONSIVIDADE DO WORKSPACE — MOBILE, TABLET E TOUCH
-   Camada complementar: preserva o layout desktop e reorganiza controles
-   operacionais em larguras menores, sem esconder funcionalidades essenciais.
+   Ajustes alinhados aos componentes reais do RSBUILD OS.
    ========================================================================== */
-
-html,
-body {
-  width: 100%;
-  min-width: 320px;
-  overflow-x: clip;
-}
 
 .app-shell,
 .main-area,
@@ -2473,15 +2465,11 @@ canvas {
   max-width: 100%;
 }
 
-/* Tablet: mantém a navegação lateral, mas libera espaço para o conteúdo. */
+/* TABLETS */
 @media (min-width: 761px) and (max-width: 1100px) {
   .sidebar {
-    width: 216px;
+    width: 208px;
     padding: 20px 12px 16px;
-  }
-
-  .brand-header {
-    padding-bottom: 20px;
   }
 
   .content {
@@ -2505,21 +2493,8 @@ canvas {
     gap: 8px;
   }
 
-  .topbar-right > div:first-child {
-    max-width: min(260px, 100%);
-  }
-
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dashboard-grid {
-    grid-template-columns: minmax(0, 1.25fr) minmax(240px, 1fr);
-    gap: 12px;
-  }
-
-  .panel {
-    padding: 17px;
   }
 
   .table-toolbar {
@@ -2527,8 +2502,21 @@ canvas {
   }
 }
 
-/* Mobile: navegação horizontal utilizável, controles em múltiplas linhas
-   e conteúdo sem largura mínima herdada do desktop. */
+@media (min-width: 761px) and (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .topbar-right {
+    justify-content: flex-start;
+  }
+}
+
+/* MOBILE */
 @media (max-width: 760px) {
   .app-shell {
     display: block;
@@ -2538,7 +2526,7 @@ canvas {
   .sidebar {
     width: 100%;
     min-width: 0;
-    padding: 12px 12px 9px;
+    padding: 12px 12px 8px;
     border-right: 0;
     border-bottom: 1px solid #383735;
   }
@@ -2549,7 +2537,7 @@ canvas {
   }
 
   .brand-logo-card {
-    max-width: 220px;
+    width: min(220px, 100%);
   }
 
   .module-switcher-container {
@@ -2564,8 +2552,7 @@ canvas {
     font-size: 10px;
   }
 
-  .workspace-label,
-  .sidebar-bottom {
+  .workspace-label {
     display: none;
   }
 
@@ -2584,7 +2571,7 @@ canvas {
 
   .nav-item {
     flex: 0 0 auto;
-    min-height: 40px;
+    min-height: 42px;
     white-space: nowrap;
     padding: 9px 12px;
     font-size: 11px;
@@ -2595,6 +2582,49 @@ canvas {
     width: 16px;
     flex: 0 0 16px;
     font-size: 15px;
+  }
+
+  /* Não esconder configurações nem logout em dispositivos móveis. */
+  .sidebar-bottom {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 5px;
+    border-top: 1px solid #3D3A37;
+  }
+
+  .sidebar-user-row {
+    min-width: 0;
+    flex: 1 1 auto;
+    border-top: 0;
+    padding: 10px 4px 8px;
+    grid-template-columns: 8px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .sidebar-user-row > div:last-child {
+    min-width: 0;
+  }
+
+  .sidebar-user-row strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-user-row span {
+    font-size: 10px;
+  }
+
+  .signout-btn {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 42px;
+    border-top: 0;
+    padding: 9px 10px;
+    white-space: nowrap;
   }
 
   .topbar {
@@ -2632,8 +2662,8 @@ canvas {
     min-width: 0;
   }
 
-  .topbar-right > div:first-child span:last-child {
-    max-width: min(48vw, 220px);
+  .topbar-right > div:first-child span {
+    min-width: 0;
   }
 
   .period-label {
@@ -2644,7 +2674,7 @@ canvas {
     flex: 1 1 180px;
     min-width: 0;
     max-width: 100%;
-    min-height: 40px;
+    min-height: 42px;
     font-size: 12px;
     padding: 8px 28px 8px 10px;
   }
@@ -2660,20 +2690,19 @@ canvas {
   .date-range-container input {
     flex: 1 1 130px;
     min-width: 0;
-    min-height: 40px;
+    min-height: 42px;
   }
 
   .theme-toggle-btn,
-  .reset-session-btn,
-  .avatar {
-    min-height: 40px;
+  .reset-session-btn {
+    min-height: 42px;
   }
 
   .avatar {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     margin-left: auto;
-    flex: 0 0 40px;
+    flex: 0 0 42px;
   }
 
   .reset-session-btn {
@@ -2770,7 +2799,6 @@ canvas {
   }
 
   .activity-summary {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px 10px;
     padding: 16px 0;
@@ -2826,15 +2854,10 @@ canvas {
     gap: 9px;
   }
 
-  .table-toolbar input,
-  .table-toolbar select {
+  .table-toolbar input {
     width: 100%;
     max-width: 100%;
     min-height: 42px;
-  }
-
-  .table-toolbar > * {
-    min-width: 0;
   }
 
   .upload-zone {
@@ -2858,42 +2881,85 @@ canvas {
     padding: 28px 14px 48px;
   }
 
+  .onboarding-container {
+    width: 100%;
+  }
+
+  .onboarding-header {
+    margin-bottom: 24px;
+  }
+
+  .onboarding-header p {
+    font-size: 13px;
+  }
+
+  .onboarding-form {
+    gap: 14px;
+  }
+
   .onboarding-section {
     padding: 18px 15px;
   }
 
-  .onboarding-grid-fields {
-    grid-template-columns: minmax(0, 1fr);
+  .onboarding-section-title {
+    gap: 10px;
   }
 
+  .onboarding-grid-fields,
   .onboarding-org-cards-grid,
   .onboarding-modules-grid,
   .onboarding-themes-wrap {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .onboarding-grid-fields {
+    gap: 12px;
+  }
+
   .onboarding-org-card.verified {
     align-items: flex-start;
     flex-wrap: wrap;
+    gap: 12px;
     padding: 15px;
   }
 
+  .onboarding-org-info {
+    min-width: 0;
+  }
+
   .onboarding-check-badge {
-    margin-left: 46px;
+    margin-left: 40px;
+  }
+
+  .onboarding-footer-links {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .workspace-modal-backdrop {
+    align-items: flex-start;
+    padding: 12px;
+    overflow-y: auto;
   }
 
   .workspace-modal-card {
-    width: min(100%, calc(100vw - 24px));
-    max-width: calc(100vw - 24px);
+    width: 100%;
+    max-width: 520px;
     max-height: calc(100dvh - 24px);
+    margin: auto;
+    padding: 20px 16px;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
 
+  .workspace-modal-header {
+    gap: 12px;
+  }
+
   input,
   select,
-  textarea,
-  button {
+  textarea {
     max-width: 100%;
   }
 
@@ -2904,7 +2970,7 @@ canvas {
   }
 }
 
-/* Telefones estreitos: evita que métricas e controles comprimam o texto. */
+/* TELEFONES ESTREITOS */
 @media (max-width: 380px) {
   .content {
     padding-inline: 11px;
@@ -2918,8 +2984,18 @@ canvas {
     min-height: 100px;
   }
 
-  .topbar-right > div:first-child span:last-child {
-    display: none;
+  .module-tab {
+    gap: 4px;
+    letter-spacing: 0.2px;
+  }
+
+  .sidebar-user-row span {
+    font-size: 9px;
+  }
+
+  .signout-btn {
+    gap: 6px;
+    padding-inline: 7px;
   }
 
   .reset-session-btn {
