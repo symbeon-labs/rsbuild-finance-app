@@ -11,6 +11,13 @@ values
  ('ffffffff-ffff-4fff-8fff-ffffffffffff','00000000-0000-0000-0000-000000000000','authenticated','authenticated','portfolio-client-b@test.invalid','',now(),now(),now())
 on conflict (id) do nothing;
 
+insert into public.organizations (id,legal_name,display_name,slug)
+values
+ ('11111111-1111-4111-8111-111111111111','RSBUILD Inovação Ltda','RSBUILD Inovação','rsbuild'),
+ ('22222222-2222-4222-8222-222222222222','Mundo do Sabor Ltda','Mundo do Sabor','mundo_sabor'),
+ ('33333333-3333-4333-8333-333333333333','Hub Açaí Ltda','Hub Açaí','hub_acai')
+on conflict (id) do nothing;
+
 insert into public.organization_memberships (organization_id,user_id,role)
 select id, 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'owner'
 from public.organizations where slug='rsbuild'
