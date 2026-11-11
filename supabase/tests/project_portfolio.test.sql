@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(14);
+select plan(19);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -61,11 +61,18 @@ insert into public.project_dependencies (project_id,title,dependency_type)
 select id,'Insumo de teste','client_input'
 from public.projects where project_key in ('rls-mundo-sabor','rls-hub-acai');
 
+insert into public.project_deliverables (project_id,sprint_id,title)
+select p.id,s.id,'Entregável RLS'
+from public.projects p join public.project_sprints s on s.project_id=p.id
+where p.project_key in ('rls-mundo-sabor','rls-hub-acai');
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub','dddddddd-dddd-4ddd-8ddd-dddddddddddd',true);
 select is((select count(*)::int from public.projects where project_key like 'rls-%'),2,'RSBUILD owner sees both managed test projects');
 select is((select count(*)::int from public.project_sprints s join public.projects p on p.id=s.project_id where p.project_key like 'rls-%'),2,'RSBUILD owner sees sprints from both projects');
 select is((select count(*)::int from public.project_dependencies d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),2,'RSBUILD owner sees dependencies from both projects');
+select is((select count(*)::int from public.project_deliverables d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),2,'RSBUILD owner sees deliverables from both projects');
+select lives_ok($insert into public.project_deliverables (project_id,title) select id,'Deliverable created by RSBUILD' from public.projects where project_key='rls-mundo-sabor'$,'RSBUILD owner can register a deliverable');
 select lives_ok($$insert into public.project_sprints (project_id,sprint_number,title) select id,2,'Sprint criada pela RSBUILD' from public.projects where project_key='rls-mundo-sabor'$$,'RSBUILD owner can create a sprint');
 reset role;
 
@@ -74,7 +81,8 @@ select set_config('request.jwt.claim.sub','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
 select is((select count(*)::int from public.projects where project_key like 'rls-%'),1,'client user sees only the explicitly granted project');
 select is((select count(*)::int from public.project_sprints s join public.projects p on p.id=s.project_id where p.project_key like 'rls-%'),2,'client user sees sprints only in the granted project');
 select is((select count(*)::int from public.project_tasks t join public.projects p on p.id=t.project_id where p.project_key like 'rls-%'),1,'client user sees tasks only in the granted project');
-select is((select count(*)::int from public.project_dependencies d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),1,'client user sees dependencies only in the granted project');
+select is((select count(*)::int from public.project_dependencies d join public.projects p on p.id=d.project_id where p.id in (select project_id from public.project_memberships where user_id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee')),1,'client user sees dependencies only in the granted project');
+select is((select count(*)::int from public.project_deliverables d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),2,'client user sees deliverables only in the granted project');
 select throws_ok($insert into public.project_sprints (project_id,sprint_number,title) select id,9,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$,'42501',null,'client viewer cannot create sprints');
 select throws_ok($insert into public.project_dependencies (project_id,title) select id,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$,'42501',null,'client viewer cannot create dependencies');
 reset role;
@@ -85,6 +93,7 @@ select is((select count(*)::int from public.projects where project_key like 'rls
 select is((select count(*)::int from public.project_sprints),0,'client without project grant sees no sprints');
 select is((select count(*)::int from public.project_tasks),0,'client without project grant sees no tasks');
 select is((select count(*)::int from public.project_dependencies),0,'client without project grant sees no dependencies');
+select is((select count(*)::int from public.project_deliverables),0,'client without project grant sees no deliverables');
 reset role;
 
 select * from finish();
