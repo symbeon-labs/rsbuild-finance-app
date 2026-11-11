@@ -6,7 +6,7 @@ on:
       - qa/final-finance-homologation
   pull_request:
     branches:
-      - fix/finance-import-persistence-flow
+      - main
   workflow_dispatch:
     inputs:
       tester:
