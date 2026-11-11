@@ -62,26 +62,30 @@ Commit consultado: `c8e3e33994f71ed320f52b79ffc8c7410362a9ee`.
 
 | Dependência | Estado |
 |---|---|
-| Supabase remoto | Nenhuma escrita ou migration executada nesta etapa |
+| Supabase remoto | Consulta SQL somente leitura executada; nenhuma escrita ou migration nesta verificação |
 | Branch Supabase exclusiva de QA | Não criada — decisão de custo zero |
 | Preview Vercel | Deploy READY anteriormente; acesso interativo bloqueado por proteção/SSO |
-| Identidades de QA | **Cadastro informado pelo responsável; não verificado diretamente nesta sessão** |
-| Dois tenants de teste | Não provisionados/confirmados |
+| Identidades de QA | Ambas encontradas em `auth.users`, com e-mail confirmado |
+| Dois tenants exclusivos de QA | Não existem evidências de provisionamento; memberships atuais apontam para organizações existentes |
 | Massa sintética | Preparada em fixture; compatibilidade com parser ainda precisa ser validada |
 | Evidência visual da interface | Pendente de acesso autorizado ao Preview |
 
-As organizações já existentes no banco não devem ser presumidas como tenants de teste e não serão utilizadas para simular isolamento.
+## 4.1 Verificação de identidades e memberships
 
-## 4.1 Identidades de QA — cadastro informado
+Consulta somente de leitura realizada no projeto Supabase `rsbuild-finance-app`, relacionando `auth.users`, `public.organization_memberships` e `public.organizations`, filtrada pelos dois e-mails indicados.
 
-O responsável informou que os seguintes e-mails **já estavam cadastrados** no Supabase Auth. O cadastro não foi consultado diretamente nesta sessão; portanto, registramos essa informação como confirmação do responsável, não como verificação independente:
+**Resultado observado:**
 
-| Identidade | Uso proposto | Estado |
-|---|---|---|
-| `symbeonlabs@gmail.com` | QA — Organização A | Cadastro informado; vínculo ao tenant pendente de verificação |
-| `makunesayto@gmail.com` | QA — Organização B | Cadastro informado; vínculo ao tenant pendente de verificação |
+| Identidade | E-mail confirmado | Organização(ões) vinculada(s) | Papel |
+|---|---:|---|---|
+| `symbeonlabs@gmail.com` | Sim | Hub Açaí Salvador | viewer |
+| `makunesayto@gmail.com` | Sim | Hub Açaí Salvador; Mundo do Sabor Alimentos | viewer em ambas |
 
-Assim, não devemos solicitar novo cadastro nem criar contas duplicadas. Ainda falta confirmar que ambas conseguem autenticar, têm acesso autorizado ao Preview e estão vinculadas a dois tenants exclusivamente de teste. Nenhuma conta foi criada, convite enviado ou dado remoto alterado nesta etapa. Não compartilhar senhas, links mágicos, códigos OTP ou tokens.
+As duas organizações retornadas estão com status `active`.
+
+**Interpretação:** as identidades existem e estão confirmadas, mas a distribuição atual não corresponde a dois usuários isolados em dois tenants distintos. O usuário `symbeonlabs@gmail.com` aparece vinculado somente a Hub Açaí Salvador; `makunesayto@gmail.com` aparece vinculado a Hub Açaí Salvador e Mundo do Sabor Alimentos.
+
+Essas organizações são registros já existentes no projeto e não foram classificadas como tenants de QA. Não utilizar esses vínculos para homologação multi-tenant nem alterar memberships existentes sem autorização e sem confirmar que as organizações são exclusivamente de teste. A consulta não verificou login efetivo nem acesso ao Preview.
 
 ## 5. Matriz funcional — estado atual
 
@@ -89,11 +93,11 @@ Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica 
 
 | ID | Caso | Estado | Motivo / condição para executar |
 |---|---|---|---|
-| QA-01 | Login e recuperação de sessão | BLOCKED | Cadastro informado; autenticação e acesso autorizado ao Preview ainda precisam ser verificados |
+| QA-01 | Login e recuperação de sessão | BLOCKED | Usuários encontrados e e-mails confirmados; login efetivo e acesso autorizado ao Preview ainda não testados |
 | QA-02 | Importação de arquivo sintético | BLOCKED | Preview acessível e fixture compatível com o parser |
 | QA-03 | Contadores de inseridos e duplicados | BLOCKED | Executar QA-02 e comparar retorno com resultado persistido |
-| QA-04 | Persistência após reload e novo login | BLOCKED | Identidades/sessão de teste e execução de importação |
-| QA-05 | Isolamento entre organizações | BLOCKED | Confirmar os vínculos das duas identidades a dois tenants de teste distintos |
+| QA-04 | Persistência após reload e novo login | BLOCKED | Sessões de teste e execução de importação |
+| QA-05 | Isolamento entre organizações | BLOCKED | Memberships atuais não representam dois usuários em dois tenants exclusivos de QA; preparar ambiente de teste seguro |
 | QA-06 | Isolamento de dados locais por organização | BLOCKED | Acesso interativo e duas organizações de teste |
 | QA-07 | Responsividade móvel e desktop | BLOCKED | Acesso interativo ao Preview |
 
@@ -112,10 +116,10 @@ Fixture versionada: [finance-import-synthetic.csv](./fixtures/finance-import-syn
 
 1. Manter PR #34 e PR #35 em revisão; não mesclar nem promover produção.
 2. Usar os resultados atuais do GitHub Actions como evidência técnica, vinculados aos SHAs acima.
-3. Não recadastrar as identidades: confirmar o acesso delas no Supabase Auth e verificar/provisionar os vínculos a dois tenants exclusivamente de teste. Não reutilizar organizações ou dados reais de clientes.
+3. Não recadastrar as identidades: já foram encontradas no Auth. Definir um ambiente/duas organizações exclusivamente de QA e validar memberships sem reaproveitar organizações reais.
 4. Confirmar um caminho autorizado para acessar o Preview protegido, sem compartilhar senhas, cookies ou tokens.
 5. Revisar o parser e confirmar CSV/OFX sintético compatível; registrar dataset, hash e resultado esperado.
-6. Executar QA-01 a QA-07 no Preview, capturando evidências sem dados sensíveis.
+6. Executar QA-01 a QA-07 no Preview ou ambiente local isolado, capturando evidências sem dados sensíveis.
 7. Registrar defeitos, retestar correções e fechar o relatório com o SHA exato testado.
 
 Se o acesso ao Preview continuar indisponível, a alternativa é executar localmente pelo responsável técnico, usando configuração de teste e dados sintéticos, sem apontar para o Supabase de produção. A execução local deve registrar versão/commit, ambiente e evidências.
@@ -126,10 +130,10 @@ A homologação só poderá ser declarada concluída quando:
 
 - CI técnico estiver verde no commit candidato;
 - QA-01 a QA-07 estiverem PASS, com evidências revisáveis;
-- os testes multi-tenant forem executados com duas identidades cadastradas e duas organizações de teste;
+- os testes multi-tenant forem executados com duas identidades e duas organizações exclusivamente de teste;
 - não houver defeitos críticos ou altos em aberto;
 - houver aceite humano registrado.
 
-**Status nesta data: PRÉ-HOMOLOGAÇÃO TÉCNICA APROVADA; HOMOLOGAÇÃO FUNCIONAL NÃO CONCLUÍDA; CADASTRO DAS IDENTIDADES INFORMADO PELO RESPONSÁVEL, PENDENTE DE VERIFICAÇÃO INDEPENDENTE; F-01 ABERTO PARA CORREÇÃO/DECISÃO.**
+**Status nesta data: PRÉ-HOMOLOGAÇÃO TÉCNICA APROVADA; HOMOLOGAÇÃO FUNCIONAL NÃO CONCLUÍDA; IDENTIDADES EXISTENTES E CONFIRMADAS, MAS MEMBERSHIPS NÃO CONFIGURAM DOIS TENANTS DE QA; F-01 ABERTO PARA CORREÇÃO/DECISÃO.**
 
 Este documento não representa aceite do cliente, certificação de segurança, autorização de produção ou declaração de que todos os módulos do RSBUILD Finance estão prontos.
