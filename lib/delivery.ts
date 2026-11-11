@@ -179,6 +179,16 @@ export function evaluateProtestoRisk(
 /**
  * Calcula métricas executivas consolidadas da carteira de canhotos
  */
+function hasCompleteReceiptEvidence(proof: DeliveryProof): boolean {
+  return Boolean(
+    proof.status === "comprovado" &&
+    proof.deliveryDate &&
+    proof.receiverName?.trim() &&
+    proof.receiverDocument?.trim() &&
+    proof.proofFileUrl?.trim()
+  );
+}
+
 export function computeDeliveryMetrics(proofs: DeliveryProof[]): DeliveryMetrics {
   const totalInvoices = proofs.length;
   const totalAmount = proofs.reduce((sum, p) => sum + p.nfeAmount, 0);
@@ -193,10 +203,11 @@ export function computeDeliveryMetrics(proofs: DeliveryProof[]): DeliveryMetrics
   let lostAmount = 0;
 
   for (const p of proofs) {
-    if (p.status === "comprovado") {
+    if (p.status === "comprovado" && hasCompleteReceiptEvidence(p)) {
       provenCount++;
       provenAmount += p.nfeAmount;
-    } else if (p.status === "pendente_entrega") {
+    } else if (p.status === "pendente_entrega" || p.status === "comprovado") {
+      // Status manual sem metadados completos não conta como entrega comprovada.
       pendingDeliveryCount++;
       pendingDeliveryAmount += p.nfeAmount;
     } else if (p.status === "recusa_devolucao") {
