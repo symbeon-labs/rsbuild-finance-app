@@ -173,11 +173,11 @@ export function CanhotosView({
                               fontWeight: 700
                             }}
                           >
-                            {evaluation?.risk === "liberado"
-                              ? "✓ Evidência cadastrada"
-                              : evaluation?.risk === "bloqueio_preventivo"
-                              ? "⛔ Revisão necessária"
-                              : "⚠ Conferir prazo e evidência"}
+                            {evaluation?.risk === "metadata_complete"
+                              ? "Metadados completos · autenticidade pendente"
+                              : evaluation?.risk === "priority_review"
+                              ? "Revisão prioritária"
+                              : "Metadados incompletos · revisar"}
                           </span>
                           <span style={{ display: "block", fontSize: "10px", color: "var(--muted)", marginTop: "4px", maxWidth: "260px", whiteSpace: "normal" }}>
                             {evaluation?.reason}
