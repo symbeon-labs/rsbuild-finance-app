@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(19);
+select plan(21);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -80,7 +80,8 @@ select is((select count(*)::int from public.project_sprints s join public.projec
 select is((select count(*)::int from public.project_dependencies d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),2,'RSBUILD owner sees dependencies from both projects');
 select is((select count(*)::int from public.project_deliverables d join public.projects p on p.id=d.project_id where p.project_key like 'rls-%'),2,'RSBUILD owner sees deliverables from both projects');
 select lives_ok($sql$insert into public.project_deliverables (project_id,title) select id,'Deliverable created by RSBUILD' from public.projects where project_key='rls-mundo-sabor'$sql$,'RSBUILD owner can register a deliverable');
-select lives_ok($$insert into public.project_sprints (project_id,sprint_number,title) select id,2,'Sprint criada pela RSBUILD' from public.projects where project_key='rls-mundo-sabor'$$,'RSBUILD owner can create a sprint');
+select lives_ok($insert into public.project_sprints (project_id,sprint_number,title) select id,2,'Sprint criada pela RSBUILD' from public.projects where project_key='rls-mundo-sabor'$,'RSBUILD owner can create a sprint');
+select lives_ok($sql$update public.project_sprints set status='active' where project_id=(select id from public.projects where project_key='rls-mundo-sabor') and sprint_number=1$sql$,'RSBUILD owner can update sprint status');
 reset role;
 
 set local role authenticated;
@@ -93,6 +94,7 @@ select is((select count(*)::int from public.project_deliverables d join public.p
 select throws_ok($sql$insert into public.project_sprints (project_id,sprint_number,title) select id,9,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$sql$,'42501',null,'client viewer cannot create sprints');
 select throws_ok($sql$insert into public.project_dependencies (project_id,title) select id,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$sql$,'42501',null,'client viewer cannot create dependencies');
 select throws_ok($sql$insert into public.project_deliverables (project_id,title) select id,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$sql$,'42501',null,'client viewer cannot register deliverables');
+select throws_ok($sql$update public.project_tasks set status='done' where id=(select t.id from public.project_tasks t join public.projects p on p.id=t.project_id where p.project_key='rls-mundo-sabor' limit 1)$sql$,'42501',null,'client viewer cannot change task execution status');
 reset role;
 
 set local role authenticated;
