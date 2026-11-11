@@ -5,7 +5,7 @@ This runbook defines two manually triggered GitHub Actions workflows for the D02
 ## Workflows
 
 - **RSBUILD Security Audit** (`.github/workflows/security-audit.yml`): read-only inspection of roles, schema privileges, sensitive function execution, default ACLs, RLS/storage policies and pgTAP availability.
-- **RSBUILD Security Remediation** (`.github/workflows/security-remediation.yml`): narrowly scoped revocation of future default privileges for objects created by `postgres` and `supabase_admin` in `public`, followed by an ACL assertion.
+- **RSBUILD Security Remediation** (`.github/workflows/security-remediation.yml`): narrowly scoped revocation of future table/sequence privileges in `public` and global function EXECUTE defaults for objects created by `postgres` and `supabase_admin`, followed by an ACL assertion.
 
 Neither workflow applies migrations, modifies business data, deploys the application, changes existing object grants, or configures Supabase Auth.
 
@@ -34,7 +34,7 @@ Use a dedicated credential with the minimum ownership/membership needed. Never p
 
 ## Important limits
 
-- PostgreSQL default privileges affect future objects created by the named owner roles; they do not retroactively change existing tables, sequences, or functions.
+- PostgreSQL default privileges affect future objects created by the named owner roles; they do not retroactively change existing tables, sequences, or functions. Function EXECUTE is revoked at the creator-role global default level because a schema-specific default ACL cannot subtract a global PUBLIC grant.
 - The workflow does not attempt `SET ROLE` or bypass ownership checks.
 - If the connection cannot administer defaults for either owner, the preflight aborts before any changes.
 - Leaked Password Protection is an Auth configuration setting and is intentionally excluded. Enable it through the Supabase Dashboard (Authentication → Settings → Password Security) and record a separate screenshot/evidence.
