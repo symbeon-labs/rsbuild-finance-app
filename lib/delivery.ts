@@ -115,7 +115,7 @@ export function evaluateProtestoRisk(
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
       risk: "metadata_complete",
-      reason: `Há referência de evidência e dados de recebedor (${proof.receiverName}) em ${proof.deliveryDate}. A autenticidade do arquivo e da assinatura não foi verificada; exige revisão humana/jurídica antes de qualquer decisão.`,
+      reason: `Há referência de evidência e dados de recebedor (${proof.receiverName}) em ${proof.deliveryDate}. A autenticidade do arquivo e da assinatura não foi verificada; exige revisão humana antes de qualquer decisão.`,
       proofId: proof.id,
       hasCompleteEvidenceMetadata: true
     };
