@@ -5,7 +5,7 @@
 - An organization owner or admin may invite a person as viewer or operator.
 - Only an owner may grant the admin role.
 - Invitation rows are created before the email side effect and remain auditable as pending, sent, failed, accepted, revoked, or expired.
-- Invitations expire after seven days in the application database. Supabase Auth invitation-link expiry is configured separately in the Auth project settings and must not exceed the intended onboarding window.
+- Invitations expire after one hour in the application database. Supabase Auth invitation-link expiry is configured separately in the Auth project settings and must not exceed the intended onboarding window.
 - A membership is created only after the recipient follows the invitation link, exchanges the Auth code, and the server verifies the authenticated user's ID and email against the exact invitation UUID.
 - Existing memberships are never overwritten or demoted during invitation acceptance.
 - Revoked, expired, accepted, or mismatched invitation IDs cannot provision access.
