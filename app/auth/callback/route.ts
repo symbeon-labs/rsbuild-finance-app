@@ -32,7 +32,13 @@ export async function GET(request: Request) {
     await supabase.auth.signOut();
     return NextResponse.redirect(new URL("/login?error=invite", url.origin));
   }
-  if (!invitationId) return NextResponse.redirect(new URL(destination, url.origin));
+  if (!invitationId) {
+    if (type === "invite") {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL("/login?error=invite_context_missing", url.origin));
+    }
+    return NextResponse.redirect(new URL(destination, url.origin));
+  }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(invitationId)) {
     await supabase.auth.signOut();
     return NextResponse.redirect(new URL("/login?error=invite_invalid", url.origin));
