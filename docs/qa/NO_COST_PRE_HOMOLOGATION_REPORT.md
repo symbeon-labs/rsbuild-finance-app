@@ -45,7 +45,20 @@ Commit consultado: `c8e3e33994f71ed320f52b79ffc8c7410362a9ee`.
 - Job de registro funcional: SKIPPED, pois a execução foi disparada por evento de push, não por `workflow_dispatch`.
 - O formulário de execução manual ainda depende de o workflow existir na branch padrão. Não mesclar apenas para habilitá-lo.
 
-## 3. Estado de acesso e infraestrutura
+## 3. Achado adicional da revisão estática
+
+### F-01 — Limite de 5.000 movimentos sem aviso na experiência
+
+**Classificação:** risco funcional de completude de dados; correção recomendada antes de aceite para operações com volume superior ao limite.
+
+- A rota `GET /api/imports` consulta no máximo 5.000 registros e devolve o campo `truncated` quando atinge esse limite.
+- O consumidor em `app/enterprise-workspace.tsx` utiliza `payload.records`, mas não trata `payload.truncated`.
+- Consequência potencial: quando a organização ultrapassar 5.000 movimentos no conjunto consultado, totais e indicadores calculados no cliente podem representar somente a amostra retornada.
+- A existência do limite foi confirmada no diff da PR #34. Não foi possível observar o efeito em runtime por falta de acesso interativo ao Preview.
+
+**Recomendação de fechamento:** implementar paginação/carregamento incremental com agregação consistente, ou bloquear/sinalizar claramente os indicadores quando a resposta estiver truncada. Adicionar teste automatizado para o comportamento acima do limite. Até a correção ou uma decisão formal de escopo/volume, manter este achado aberto.
+
+## 4. Estado de acesso e infraestrutura
 
 | Dependência | Estado |
 |---|---|
@@ -59,7 +72,7 @@ Commit consultado: `c8e3e33994f71ed320f52b79ffc8c7410362a9ee`.
 
 As organizações já existentes no banco não devem ser presumidas como tenants de teste e não serão utilizadas para simular isolamento.
 
-## 4. Matriz funcional — estado atual
+## 5. Matriz funcional — estado atual
 
 Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica ausência de pré-condição de acesso/ambiente, não uma falha comprovada do produto.
 
@@ -73,7 +86,7 @@ Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica 
 | QA-06 | Isolamento de dados locais por organização | BLOCKED | Acesso interativo e duas organizações de teste |
 | QA-07 | Responsividade móvel e desktop | BLOCKED | Acesso interativo ao Preview |
 
-## 5. Plano de execução sem custo
+## 6. Plano de execução sem custo
 
 1. Manter PR #34 e PR #35 em revisão; não mesclar nem promover produção.
 2. Usar os resultados atuais do GitHub Actions como evidência técnica, vinculados aos SHAs acima.
@@ -85,7 +98,7 @@ Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica 
 
 Se o acesso ao Preview continuar indisponível, a alternativa é executar localmente pelo responsável técnico, usando configuração de teste e dados sintéticos, sem apontar para o Supabase de produção. A execução local deve registrar versão/commit, ambiente e evidências.
 
-## 6. Critério de homologação
+## 7. Critério de homologação
 
 A homologação só poderá ser declarada concluída quando:
 
@@ -95,6 +108,6 @@ A homologação só poderá ser declarada concluída quando:
 - não houver defeitos críticos ou altos em aberto;
 - houver aceite humano registrado.
 
-**Status nesta data: PRÉ-HOMOLOGAÇÃO TÉCNICA APROVADA; HOMOLOGAÇÃO FUNCIONAL NÃO CONCLUÍDA.**
+**Status nesta data: PRÉ-HOMOLOGAÇÃO TÉCNICA APROVADA; HOMOLOGAÇÃO FUNCIONAL NÃO CONCLUÍDA; F-01 ABERTO PARA CORREÇÃO/DECISÃO.**
 
 Este documento não representa aceite do cliente, certificação de segurança, autorização de produção ou declaração de que todos os módulos do RSBUILD Finance estão prontos.
