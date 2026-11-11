@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseCsv, parseOfx } from "@/lib/finance";
-import { majorToMinor } from "@/lib/finance-persistence";
+import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 
 export const runtime = "nodejs";
@@ -154,8 +154,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "import_commit_failed", cleanupPending: Boolean(cleanupError) }, { status: 422 });
   }
 
+  const result = data?.[0] ?? null;
+  const counts = normalizeImportCounts(result);
   return NextResponse.json({
-    result: data?.[0] ?? null,
+    result,
+    ...counts,
     parserVersion: "main-finance-parser/1",
     parsedCount: normalized.length
   }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
