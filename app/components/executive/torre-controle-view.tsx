@@ -335,7 +335,7 @@ export function TorreControleView({
         )}
       </div>
 
-      {/* ABA 1: VISÃO ESTRATÉGICA & PARECER DO AGENTE RS */}
+      {/* ABA 1: VISÃO ESTRATÉGICA & SÍNTESE OPERACIONAL */}
       {activeSubTab === "estrategia" && (
         <>
           {/* Grid de KPIs Macro Adaptativo ao Workspace */}
@@ -751,7 +751,7 @@ export function TorreControleView({
 
             <div style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "16px", background: "var(--surface)" }}>
               <div style={{ fontSize: "20px", marginBottom: "8px" }}>🛡</div>
-              <strong style={{ fontSize: "13px", color: "var(--ink)" }}>Protocolo de Blindagem SEFAZ</strong>
+              <strong style={{ fontSize: "13px", color: "var(--ink)" }}>Registro de Evidências de Entrega</strong>
               <p style={{ fontSize: "11.5px", color: "var(--muted)", margin: "4px 0 12px" }}>
                 {evaluations.length} notas auditadas contra a Lei de Duplicatas Mercantis.
               </p>
@@ -910,7 +910,7 @@ export function TorreControleView({
       )}
 
       <div className="inline-note">
-        <strong>Diretriz de governança:</strong> os resultados exibidos são cálculos auxiliares sobre os registros disponíveis nesta sessão. Não substituem revisão profissional, homologação jurídica ou integração com sistemas de origem.
+        <strong>Diretriz de governança:</strong> os resultados exibidos são cálculos auxiliares sobre os registros disponíveis nesta sessão. Não substituem revisão profissional, revisão especializada ou integração com sistemas de origem.
       </div>
     </>
   );
