@@ -11,7 +11,6 @@ import {
   parseCsv,
   parseOfx,
   filterRecordsByPeriodOption,
-  addAuditTrail,
   updateAuditTrail,
   type PeriodOption
 } from "@/lib/finance";
@@ -154,6 +153,7 @@ export default function EnterpriseWorkspace({
 
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const pendingFileRef = useRef<File | null>(null);
 
   // Customização de Marca do Workspace (White-label & Multi-Tenant)
   const currentOrgId = organizationSlug;
@@ -393,6 +393,7 @@ export default function EnterpriseWorkspace({
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    pendingFileRef.current = file;
     setFileName(file.name);
     setNotice("");
     const text = await file.text();
@@ -410,7 +411,7 @@ export default function EnterpriseWorkspace({
     setNotice("");
     try {
       const form = new FormData();
-      const selectedFile = inputRef.current?.files?.[0];
+      const selectedFile = pendingFileRef.current;
       if (!selectedFile) throw new Error("Selecione novamente o arquivo para confirmar a importação.");
       form.set("organizationId", organizationId);
       form.set("file", selectedFile);
@@ -429,6 +430,7 @@ export default function EnterpriseWorkspace({
       setPendingMetadata(null);
       setImportErrors([]);
       setFileName("");
+      pendingFileRef.current = null;
       if (inputRef.current) inputRef.current.value = "";
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Não foi possível concluir a importação.");
@@ -442,6 +444,8 @@ export default function EnterpriseWorkspace({
     setPendingMetadata(null);
     setImportErrors([]);
     setFileName("");
+    pendingFileRef.current = null;
+    if (inputRef.current) inputRef.current.value = "";
     setNotice("Importação cancelada.");
   }
 
