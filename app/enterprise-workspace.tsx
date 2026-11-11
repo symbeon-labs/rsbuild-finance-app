@@ -543,8 +543,8 @@ export default function EnterpriseWorkspace({
       setNotice("Comprovante não encontrado nesta sessão.");
       return;
     }
-    if (!proof.deliveryDate || !proof.receiverName?.trim() || !proof.receiverDocument?.trim()) {
-      setNotice("Conferência bloqueada: informe data de entrega, nome e documento do recebedor a partir da evidência original. O sistema não pode inventar esses dados.");
+    if (!proof.deliveryDate || !proof.receiverName?.trim() || !proof.receiverDocument?.trim() || !proof.proofFileUrl?.trim()) {
+      setNotice("Conferência bloqueada: informe data de entrega, nome, documento do recebedor e referência do arquivo de evidência original. O sistema não pode inventar esses dados.");
       return;
     }
     setProofs((curr) =>
