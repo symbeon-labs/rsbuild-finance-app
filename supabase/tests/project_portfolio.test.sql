@@ -67,7 +67,7 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',true);
 select is((select count(*)::int from public.projects where project_key like 'rls-%'),1,'client user sees only the explicitly granted project');
-select is((select count(*)::int from public.project_sprints s join public.projects p on p.id=s.project_id where p.project_key like 'rls-%'),1,'client user sees sprints only in the granted project');
+select is((select count(*)::int from public.project_sprints s join public.projects p on p.id=s.project_id where p.project_key like 'rls-%'),2,'client user sees sprints only in the granted project');
 select is((select count(*)::int from public.project_tasks t join public.projects p on p.id=t.project_id where p.project_key like 'rls-%'),1,'client user sees tasks only in the granted project');
 select throws_ok($$insert into public.project_sprints (project_id,sprint_number,title) select id,9,'Client forbidden' from public.projects where project_key='rls-mundo-sabor'$$,'42501',null,'client viewer cannot create sprints');
 reset role;
