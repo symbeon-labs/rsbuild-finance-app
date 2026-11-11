@@ -26,11 +26,12 @@ export async function POST(request: Request, context: RouteContext) {
 
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const objective = typeof body.objective === "string" ? body.objective.trim() : "";
+  const completionCriteria = typeof body.completionCriteria === "string" ? body.completionCriteria.trim() : "";
   const sprintNumber = Number(body.sprintNumber);
   const startDate = typeof body.startDate === "string" && body.startDate ? body.startDate : null;
   const endDate = typeof body.endDate === "string" && body.endDate ? body.endDate : null;
 
-  if (!title || title.length > 140 || objective.length > 3000 ||
+  if (!title || title.length > 140 || objective.length > 3000 || completionCriteria.length > 3000 ||
       !Number.isSafeInteger(sprintNumber) || sprintNumber < 1 ||
       (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) ||
       (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) ||
@@ -43,10 +44,11 @@ export async function POST(request: Request, context: RouteContext) {
     sprint_number: sprintNumber,
     title,
     objective,
+    completion_criteria: completionCriteria,
     start_date: startDate,
     end_date: endDate,
     created_by: user.id
-  }).select("id, sprint_number, title, objective, status, start_date, end_date").single();
+  }).select("id, sprint_number, title, objective, completion_criteria, status, start_date, end_date").single();
 
   if (error) {
     const status = error.code === "23505" ? 409 : error.code === "42501" ? 403 : 422;
