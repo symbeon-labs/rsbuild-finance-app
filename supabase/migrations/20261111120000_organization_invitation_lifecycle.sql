@@ -13,37 +13,43 @@ create index if not exists organization_invitations_acceptance_idx
   on public.organization_invitations (invited_user_id, lower(email), expires_at)
   where status = 'sent';
 
-create or replace function public.accept_organization_invitations_for_user(p_user_id uuid, p_email text)
-returns setof uuid language plpgsql security definer set search_path = ''
+create or replace function public.accept_organization_invitation(
+  p_invitation_id uuid,
+  p_user_id uuid,
+  p_email text
+)
+returns uuid language plpgsql security definer set search_path = ''
 as $$
 declare invitation_row record;
 begin
   if auth.role() <> 'service_role' then
     raise exception 'service_role_required' using errcode = '42501';
   end if;
-  if p_user_id is null or p_email is null or length(trim(p_email)) = 0 then
+  if p_invitation_id is null or p_user_id is null or p_email is null or length(trim(p_email)) = 0 then
     raise exception 'invalid_invitation_identity' using errcode = '22023';
   end if;
-  for invitation_row in
-    select id, organization_id, role from public.organization_invitations
-    where invited_user_id = p_user_id and lower(email) = lower(trim(p_email))
-      and status = 'sent' and expires_at > now()
-    order by created_at asc for update
-  loop
-    insert into public.organization_memberships (organization_id,user_id,role)
+  select id, organization_id, role into invitation_row
+    from public.organization_invitations
+    where id = p_invitation_id
+      and lower(email) = lower(trim(p_email))
+      and (invited_user_id is null or invited_user_id = p_user_id)
+      and status in ('pending','sent')
+      and expires_at > now()
+    for update;
+  if not found then
+    raise exception 'invitation_invalid_or_expired' using errcode = 'P0002';
+  end if;
+
+  insert into public.organization_memberships (organization_id,user_id,role)
     values (invitation_row.organization_id,p_user_id,invitation_row.role)
     on conflict (organization_id,user_id) do nothing;
-    update public.organization_invitations
-      set status = 'accepted', accepted_at = now() where id = invitation_row.id;
-    return next invitation_row.organization_id;
-  end loop;
-  update public.organization_invitations set status = 'expired'
-    where invited_user_id = p_user_id and lower(email) = lower(trim(p_email))
-      and status = 'sent' and expires_at <= now();
-  return;
+  update public.organization_invitations
+    set status = 'accepted', invited_user_id = p_user_id, accepted_at = now()
+    where id = invitation_row.id;
+  return invitation_row.organization_id;
 end;
 $$;
-revoke all on function public.accept_organization_invitations_for_user(uuid,text) from public, anon, authenticated;
+revoke all on function public.accept_organization_invitation(uuid,uuid,text) from public, anon, authenticated;
 grant execute on function public.accept_organization_invitations_for_user(uuid,text) to service_role;
 revoke insert, update, delete on public.organization_invitations from anon, authenticated;
 grant select on public.organization_invitations to authenticated;
