@@ -1,0 +1,100 @@
+# RSBUILD Finance — Pré-homologação sem custo
+
+**Data de referência:** 11/11/2026  
+**Repositório:** `symbeon-labs/rsbuild-finance-app`  
+**Objetivo:** consolidar evidências técnicas disponíveis e preparar a homologação funcional sem criar infraestrutura paga, sem alterar o Supabase remoto e sem publicar em produção.
+
+## 1. Decisão operacional
+
+A homologação seguirá em modo **zero custo adicional** até a formalização comercial do RSBUILD.
+
+- Não criar Supabase Branch de QA.
+- Não habilitar compute adicional nem serviço pago.
+- Não executar migrations, inserts, updates ou deletes no Supabase remoto.
+- Não utilizar dados, usuários ou organizações reais de clientes como massa de teste.
+- Não mesclar PRs nem promover deploy para produção como parte deste pacote.
+- Não contornar autenticação/SSO do Preview nem solicitar compartilhamento de credenciais.
+
+## 2. Evidências técnicas verificadas
+
+### PR #34 — fluxo de importação e persistência
+
+Commit validado: `34fe8519d2a5591e9c30e562a453b46ae3655d62`.
+
+| Verificação | Resultado observado |
+|---|---|
+| CI principal | PASS — run #239 |
+| Audit, testes, typecheck e build | PASS |
+| Full Verification — aplicação | PASS |
+| Full Verification — migrations locais e pgTAP | PASS |
+| Vercel Preview | READY para o commit candidato (verificação anterior) |
+| Teste manual da interface | BLOCKED — Preview protegido por SSO/acesso não disponível nesta sessão |
+
+Runs consultados:
+- CI: [run 43057474224](https://github.com/symbeon-labs/rsbuild-finance-app/actions/runs/43057474224)
+- Full Verification: [run 43057474203](https://github.com/symbeon-labs/rsbuild-finance-app/actions/runs/43057474203)
+
+**Interpretação:** a validação automatizada da aplicação e da suíte de banco em Supabase local isolado passou. Isso não prova o comportamento ponta a ponta na interface, o isolamento real entre dois usuários nem a operação no ambiente do cliente.
+
+### PR #35 — protocolo de homologação
+
+Commit consultado: `c8e3e33994f71ed320f52b79ffc8c7410362a9ee`.
+
+- Workflow `Final Finance QA`: execução técnica PASS — [run 43058605875](https://github.com/symbeon-labs/rsbuild-finance-app/actions/runs/43058605875).
+- Etapas concluídas com sucesso: instalação, audit, testes, TypeScript e build.
+- Job de registro funcional: SKIPPED, pois a execução foi disparada por evento de push, não por `workflow_dispatch`.
+- O formulário de execução manual ainda depende de o workflow existir na branch padrão. Não mesclar apenas para habilitá-lo.
+
+## 3. Estado de acesso e infraestrutura
+
+| Dependência | Estado |
+|---|---|
+| Supabase remoto | Nenhuma escrita ou migration executada nesta etapa |
+| Branch Supabase exclusiva de QA | Não criada — decisão de custo zero |
+| Preview Vercel | Deploy READY anteriormente; acesso interativo bloqueado por proteção/SSO |
+| Usuários de teste | Não fornecidos/confirmados |
+| Dois tenants de teste | Não provisionados/confirmados |
+| Massa sintética | Preparar/usar somente após confirmar o formato aceito pelo importador |
+| Evidência visual da interface | Pendente de acesso autorizado ao Preview |
+
+As organizações já existentes no banco não devem ser presumidas como tenants de teste e não serão utilizadas para simular isolamento.
+
+## 4. Matriz funcional — estado atual
+
+Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica ausência de pré-condição de acesso/ambiente, não uma falha comprovada do produto.
+
+| ID | Caso | Estado | Motivo / condição para executar |
+|---|---|---|---|
+| QA-01 | Login e recuperação de sessão | BLOCKED | Acesso interativo autorizado ao Preview e usuário de teste |
+| QA-02 | Importação de arquivo sintético | BLOCKED | Preview acessível e fixture no formato aceito pelo parser |
+| QA-03 | Contadores de inseridos e duplicados | BLOCKED | Executar QA-02 e comparar retorno com resultado persistido |
+| QA-04 | Persistência após reload e novo login | BLOCKED | Sessão de teste e execução de importação |
+| QA-05 | Isolamento entre organizações | BLOCKED | Dois usuários e dois tenants de teste autorizados |
+| QA-06 | Isolamento de dados locais por organização | BLOCKED | Acesso interativo e duas organizações de teste |
+| QA-07 | Responsividade móvel e desktop | BLOCKED | Acesso interativo ao Preview |
+
+## 5. Plano de execução sem custo
+
+1. Manter PR #34 e PR #35 em revisão; não mesclar nem promover produção.
+2. Usar os resultados atuais do GitHub Actions como evidência técnica, vinculados aos SHAs acima.
+3. Confirmar um caminho autorizado para acessar o Preview protegido, sem compartilhar senhas, cookies ou tokens.
+4. Confirmar/provisionar, pelo responsável do ambiente, dois usuários e dois tenants exclusivamente de teste. Não reutilizar contas reais.
+5. Revisar o parser e preparar CSV/OFX sintético compatível; registrar dataset, hash e resultado esperado.
+6. Executar QA-01 a QA-07 no Preview, capturando evidências sem dados sensíveis.
+7. Registrar defeitos, retestar correções e fechar o relatório com o SHA exato testado.
+
+Se o acesso ao Preview continuar indisponível, a alternativa é executar localmente pelo responsável técnico, usando configuração de teste e dados sintéticos, sem apontar para o Supabase de produção. A execução local deve registrar versão/commit, ambiente e evidências.
+
+## 6. Critério de homologação
+
+A homologação só poderá ser declarada concluída quando:
+
+- CI técnico estiver verde no commit candidato;
+- QA-01 a QA-07 estiverem PASS, com evidências revisáveis;
+- os testes multi-tenant forem executados com duas identidades e organizações de teste;
+- não houver defeitos críticos ou altos em aberto;
+- houver aceite humano registrado.
+
+**Status nesta data: PRÉ-HOMOLOGAÇÃO TÉCNICA APROVADA; HOMOLOGAÇÃO FUNCIONAL NÃO CONCLUÍDA.**
+
+Este documento não representa aceite do cliente, certificação de segurança, autorização de produção ou declaração de que todos os módulos do RSBUILD Finance estão prontos.
