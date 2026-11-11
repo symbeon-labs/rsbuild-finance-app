@@ -679,29 +679,27 @@ export function TorreControleView({
                       <span
                         className="status-pill"
                         style={{
-                          background:
-                            ev.risk === "metadata_complete"
-                              ? "var(--green-bg, rgba(16, 185, 129, 0.15))"
-                              : "var(--red-bg, rgba(239, 68, 68, 0.15))",
-                          color:
-                            ev.risk === "metadata_complete"
-                              ? "var(--green-text, #10B981)"
-                              : "var(--red-text, #EF4444)",
+                          background: "var(--surface-raised, rgba(255,255,255,0.06))",
+                          color: "var(--ink)",
                           fontWeight: 700
                         }}
                       >
-                        {ev.risk === "metadata_complete" ? "Metadados completos · revisar autenticidade" : "Revisão documental necessária"}
+                        {ev.risk === "metadata_complete" ? "Metadados completos · autenticidade pendente" : ev.risk === "priority_review" ? "Revisão prioritária" : "Metadados incompletos · revisar"}
                       </span>
                     </td>
                     <td style={{ fontSize: "11px", color: "var(--muted)", maxWidth: "300px" }}>{ev.reason}</td>
                     <td>
                       {ev.risk === "priority_review" ? (
                         <span style={{ fontSize: "11px", color: "var(--rsbuild-terracotta)", fontWeight: 600 }}>
-                          Encaminhar para revisão humana
+                          Encaminhar para revisão prioritária
+                        </span>
+                      ) : ev.risk === "documentary_review" ? (
+                        <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+                          Completar metadados e revisar
                         </span>
                       ) : (
-                        <span style={{ fontSize: "11px", color: "var(--green-text, #10B981)", fontWeight: 600 }}>
-                          Metadados completos; sem autorização de cobrança
+                        <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+                          Conferir autenticidade da evidência
                         </span>
                       )}
                     </td>
