@@ -48,7 +48,6 @@ export function TorreControleView({
 }: TorreControleViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<TorreSubTab>("estrategia");
   const [copiedMemo, setCopiedMemo] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   // Notas em Risco de Protesto
   const atRiskProtestCount = useMemo(
@@ -56,16 +55,17 @@ export function TorreControleView({
     [evaluations]
   );
 
-  // Score de Saúde Operacional RSBUILD (0-100)
+  // O índice só existe quando todas as fontes que compõem o cálculo têm dados.
+  // Ausência de registros não pode ser interpretada como 100% de conformidade.
   const healthScore = useMemo(() => {
-    const coverageScore = deliveryMetrics.coverageRate || 0; // peso 40%
+    if (!records.length || !titles.length || !proofs.length || !orders.length) return null;
+    const coverageScore = deliveryMetrics.coverageRate;
     const readySettlements = matches.filter((m) => m.suggestedStatus === "pronto_para_baixa").length;
-    const reconcilRate = titles.length > 0 ? Math.round((readySettlements / titles.length) * 100) : 100; // peso 35%
-    const logisticsEfficiency = Math.min(100, hubAcaiMetrics.hrOccupancy || 0); // peso 25%
-
+    const reconcilRate = Math.round((readySettlements / titles.length) * 100);
+    const logisticsEfficiency = Math.min(100, hubAcaiMetrics.hrOccupancy);
     const score = Math.round(coverageScore * 0.4 + reconcilRate * 0.35 + logisticsEfficiency * 0.25);
     return Math.max(0, Math.min(100, score));
-  }, [deliveryMetrics, matches, titles, hubAcaiMetrics]);
+  }, [records, deliveryMetrics, matches, titles, proofs, orders, hubAcaiMetrics]);
 
   // Curva de Sabores Vendidos no WhatsApp
   const flavorsBreakdown = useMemo(() => {
@@ -112,6 +112,17 @@ export function TorreControleView({
 
   // Diagnóstico Narrativo Gerado pelo Agente RS Adaptativo
   const rsAgentDiagnosis = useMemo(() => {
+    if (healthScore === null) {
+      return {
+        status: "Dados insuficientes",
+        statusTone: "neutral",
+        summary: "Ainda não há dados operacionais suficientes e consistentes para calcular um índice de governança. Importe e valide as fontes necessárias antes de emitir um diagnóstico.",
+        recommendations: [
+          { priority: "Alta", action: "Completar fontes de dados", detail: "Disponibilize registros financeiros, títulos, comprovantes de entrega e pedidos para habilitar a análise consolidada." }
+        ]
+      };
+    }
+
     let healthStatus = "Operação Estável";
     let statusTone = "positive";
     if (healthScore < 50) {
@@ -163,7 +174,7 @@ export function TorreControleView({
     return {
       status: healthStatus,
       statusTone,
-      summary: `Diagnóstico de Auditoria Corporativa · ${companyName}: O índice de governança é de ${healthScore}%. Foram consolidadas ${totalIncomingFormatted} em entradas operacionais, resultando em saldo líquido em caixa de ${balanceFormatted}. Na esteira de reconciliação de ERP (Omie), há ${readySettlements} título(s) com correspondência bancária exata prontos para liquidação em lote sem divergência contábil. Recomenda-se acionar a sincronização assistida para emitir os relatórios de fechamento contábil.`,
+      summary: `Painel de governança · ${companyName}: índice calculado em ${healthScore}%. Os registros financeiros disponíveis totalizam ${totalIncomingFormatted} em entradas e saldo líquido de ${balanceFormatted}. Existem ${readySettlements} correspondências candidatas para revisão humana; nenhuma baixa ou sincronização com ERP é executada automaticamente.`,
       recommendations: [
         {
           priority: "Alta",
@@ -178,7 +189,7 @@ export function TorreControleView({
         {
           priority: "Estratégica",
           action: "Auditoria & DRE",
-          detail: "Demonstrativo contábil e livro razão auditados e sincronizados com os lançamentos de extrato multibanco."
+          detail: "Validar a origem e a cobertura dos dados antes de emitir demonstrativos ou afirmar sincronização contábil."
         }
       ]
     };
@@ -195,27 +206,19 @@ export function TorreControleView({
   ]);
 
   function handleCopyMemo() {
-    const memoText = `*MEMORANDO ESTRATÉGICO · AGENTE RS*\n` +
+    const memoText = `*RELATÓRIO EXECUTIVO · RSBUILD OS*\n` +
       `Workspace: ${companyName}\n` +
       `Data: ${new Date().toLocaleDateString("pt-BR")}\n` +
-      `Score Operacional: ${healthScore}%\n` +
+      `Score Operacional: ${healthScore === null ? "Não calculado — dados insuficientes" : `${healthScore}%`}\n` +
       `Faturamento do Dia: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
       `Ocupação Frota HR: ${hubAcaiMetrics.hrOccupancy}%\n` +
       `Faturas sob Risco Jurídico: ${formatCurrency(deliveryMetrics.atRiskProtestAmount)}\n\n` +
-      `*Parecer do Agente RS:*\n${rsAgentDiagnosis.summary}\n\n` +
-      `_Sincronização auditada e validada pelo Agente RS._`;
+      `*Síntese do painel:*\n${rsAgentDiagnosis.summary}\n\n` +
+      `_Documento gerado a partir dos dados disponíveis no workspace; não representa aprovação ou sincronização externa._`;
 
     navigator.clipboard.writeText(memoText);
     setCopiedMemo(true);
     setTimeout(() => setCopiedMemo(false), 3000);
-  }
-
-  function handleTriggerSync() {
-    setSyncStatus("Preparando lote de sincronização assistida...");
-    setTimeout(() => {
-      setSyncStatus("Lote de pedidos e conciliações conferido com sucesso pelo Agente RS! Arquivos gerados para auditoria.");
-      setTimeout(() => setSyncStatus(null), 5000);
-    }, 1200);
   }
 
   return (
@@ -226,7 +229,7 @@ export function TorreControleView({
           <div className="eyebrow" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
               <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "var(--green-text, #10B981)" }} />
-              <strong>AGENTE RS</strong> · AUDITORIA & BLINDAGEM JURÍDICA
+              <strong>PAINEL DE GOVERNANÇA</strong> · AUDITORIA & CONTROLE OPERACIONAL
             </span>
             <span
               className="status-pill"
@@ -251,27 +254,11 @@ export function TorreControleView({
           <button className="secondary-button" onClick={handleCopyMemo}>
             {copiedMemo ? "✓ Memorando Copiado!" : "📋 Copiar Parecer Executivo"}
           </button>
-          <button className="primary-button" onClick={handleTriggerSync}>
-            <span>⚡</span> Sincronização Assistida
+          <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
+            Integração Omie não conectada
           </button>
         </div>
       </div>
-
-      {syncStatus && (
-        <div
-          className="notice"
-          role="status"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--rsbuild-terracotta)",
-            color: "var(--ink)",
-            marginBottom: "20px"
-          }}
-        >
-          <span>✦ {syncStatus}</span>
-          <button onClick={() => setSyncStatus(null)}>×</button>
-        </div>
-      )}
 
       {/* Subseletor Operacional da Torre de Controle */}
       <div
@@ -357,8 +344,8 @@ export function TorreControleView({
           <div className="metric-grid">
             <Metric
               label="Índice de Governança"
-              value={`${healthScore}%`}
-              tone={healthScore >= 75 ? "positive" : healthScore >= 50 ? "neutral" : "negative"}
+              value={healthScore === null ? "—" : `${healthScore}%`}
+              tone={healthScore === null ? "neutral" : healthScore >= 75 ? "positive" : healthScore >= 50 ? "neutral" : "negative"}
               detail={`Status operacional: ${rsAgentDiagnosis.status}`}
               icon="⎈"
             />
@@ -734,8 +721,8 @@ export function TorreControleView({
               <h2>Esteira de Sincronização Assistida com o Omie</h2>
               <p>Lotes operacionais conferidos pelo Agente RS aguardando autorização de envio.</p>
             </div>
-            <button className="primary-button" onClick={handleTriggerSync}>
-              <span>⚡</span> Executar Sincronização Assistida
+            <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
+              Integração não disponível
             </button>
           </div>
 
