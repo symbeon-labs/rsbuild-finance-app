@@ -52,7 +52,7 @@ test("ENG-MS-03: evaluateProtestoRisk reconhece metadados de evidência, sem afi
   const evalProven = evaluateProtestoRisk(proofProven);
   assert.equal(evalProven.risk, "liberado");
   assert.equal(evalProven.hasSignedReceipt, true);
-  assert.match(evalProven.reason, /autenticidade não foi verificada/);
+  assert.match(evalProven.reason, /autenticidade do arquivo e da assinatura não foi verificada/);
 });
 
 test("ENG-MS-03: evaluateProtestoRisk bloqueia protesto em caso de recusa/devolução ou extravio", () => {
