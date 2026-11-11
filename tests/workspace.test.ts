@@ -58,11 +58,11 @@ test("GOV-02: Produto 2 (Reconciliação ERP) opera de forma 100% independente d
   assert.ok(!visibleItems.some((i) => i.id === "pedidos-ha"), "Pedidos de logística não devem aparecer");
 });
 
-test("GOV-03: Produto 4 (Auditoria / Agente RS) isola itens periciais e de compliance jurídico", () => {
+test("GOV-03: Produto 4 (Governança) mantém a área de controle no módulo de auditoria", () => {
   const auditItems = ALL_NAV_ITEMS.filter((i) => i.module === "audit");
   assert.equal(auditItems.length, 1);
   assert.equal(auditItems[0].id, "torre-controle");
-  assert.equal(auditItems[0].label, "Auditoria & Torre RS");
+  assert.equal(auditItems[0].label, "Governança & Controle");
 });
 
 test("GOV-04: Filtragem de menu respeita estritamente o módulo ativo e os produtos contratados", () => {
