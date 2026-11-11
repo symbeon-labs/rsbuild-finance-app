@@ -260,8 +260,6 @@ export default function EnterpriseWorkspace({
 
     } catch {
       // Ignora falhas em sandbox restrito / SSR
-    } finally {
-      setSessionDataOrganizationId(organizationId);
     }
   }, [organizationId, currentOrgId]);
 
