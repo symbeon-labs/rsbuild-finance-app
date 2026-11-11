@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-type Props = { organizationId: string; organizationName: string; role: string };\ntype Invitation = { id: string; email: string; role: string; status: string; expires_at: string; created_at: string };
+type Props = { organizationId: string; organizationName: string; role: string };
+type Invitation = {
+  id: string; email: string; role: string; status: string;
+  expires_at: string; created_at: string; accepted_at?: string | null;
+};
 
 export function OrganizationAdminPanel({ organizationId, organizationName, role }: Props) {
   const canAdmin = role === "owner" || role === "admin";
@@ -14,7 +18,16 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
   const [zoom, setZoom] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);\n  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+
+  const loadInvitations = useCallback(async () => {
+    if (!canAdmin) return;
+    const response = await fetch("/api/organization-invitations?organizationId=" + encodeURIComponent(organizationId), { cache: "no-store" });
+    if (!response.ok) throw new Error("Não foi possível carregar os convites.");
+    const data = await response.json();
+    setInvitations(Array.isArray(data.invitations) ? data.invitations : []);
+  }, [canAdmin, organizationId]);
 
   useEffect(() => {
     let active = true;
@@ -30,8 +43,16 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
     return () => { active = false; };
   }, [organizationId]);
 
+  useEffect(() => {
+    let active = true;
+    loadInvitations().catch(() => {});
+    return () => { active = false; };
+  }, [loadInvitations]);
+
   async function sendInvite(event: React.FormEvent) {
-    event.preventDefault(); setBusy(true); setMessage("");
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
     try {
       const response = await fetch("/api/organization-invitations", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -39,27 +60,54 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "invite_failed");
-      setMessage("Convite enviado para " + email + ". O acesso está limitado a " + organizationName + ".");
+      setMessage("Convite enviado. O acesso será liberado após a aceitação e validação.");
       setEmail("");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível enviar o convite."); }
-    finally { setBusy(false); }
+      await loadInvitations();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível enviar o convite.");
+    } finally { setBusy(false); }
   }
 
-  async function manageInvitation(invitationId: string, action: "resend" | "revoke") {\n    setBusy(true); setMessage("");\n    try {\n      const response = action === "revoke"\n        ? await fetch("/api/organization-invitations?organizationId=" + encodeURIComponent(organizationId) + "&invitationId=" + encodeURIComponent(invitationId), { method: "DELETE" })\n        : await fetch("/api/organization-invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId, invitationId, action: "resend" }) });\n      const data = await response.json();\n      if (!response.ok) throw new Error(data.error || "invitation_action_failed");\n      setMessage(action === "revoke" ? "Convite revogado." : "Reenvio solicitado.");\n      await loadInvitations();\n    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível atualizar o convite."); }\n    finally { setBusy(false); }\n  }\n\n  async function saveBanner(event: React.FormEvent) {
+  async function manageInvitation(invitationId: string, action: "resend" | "revoke") {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = action === "revoke"
+        ? await fetch("/api/organization-invitations?organizationId=" + encodeURIComponent(organizationId) + "&invitationId=" + encodeURIComponent(invitationId), { method: "DELETE" })
+        : await fetch("/api/organization-invitations", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ organizationId, invitationId, action: "resend" })
+          });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "invitation_action_failed");
+      setMessage(action === "revoke" ? "Convite revogado." : "Reenvio solicitado.");
+      await loadInvitations();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível atualizar o convite.");
+    } finally { setBusy(false); }
+  }
+
+  async function saveBanner(event: React.FormEvent) {
     event.preventDefault();
     if (!file) { setMessage("Selecione uma imagem para o banner."); return; }
-    setBusy(true); setMessage("");
+    setBusy(true);
+    setMessage("");
     try {
       const form = new FormData();
-      form.set("organizationId", organizationId); form.set("file", file);
-      form.set("positionX", String(positionX)); form.set("positionY", String(positionY)); form.set("zoom", String(zoom));
+      form.set("organizationId", organizationId);
+      form.set("file", file);
+      form.set("positionX", String(positionX));
+      form.set("positionY", String(positionY));
+      form.set("zoom", String(zoom));
       const response = await fetch("/api/organization-branding", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "banner_save_failed");
-      setBanner(data.bannerUrl); setFile(null);
+      setBanner(data.bannerUrl);
+      setFile(null);
       setMessage("Banner salvo para " + organizationName + ".");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível salvar o banner."); }
-    finally { setBusy(false); }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível salvar o banner.");
+    } finally { setBusy(false); }
   }
 
   return <section className="panel" style={{ padding: 22, marginBottom: 20, display: "grid", gap: 22 }}>
@@ -68,19 +116,36 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
       <h2 style={{ margin: "6px 0" }}>{organizationName}</h2>
       <p style={{ color: "var(--muted)", fontSize: 12, margin: 0 }}>Convites e identidade visual ficam vinculados ao UUID desta organização.</p>
     </div>
-    {canAdmin && <form onSubmit={sendInvite} style={{ display: "grid", gap: 10, maxWidth: 560 }}>
-      <h3 style={{ margin: 0 }}>Convidar integrante</h3>
-      <label style={{ display: "grid", gap: 5, fontSize: 12 }}>E-mail
-        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="pessoa@empresa.com" />
-      </label>
-      <label style={{ display: "grid", gap: 5, fontSize: 12 }}>Papel
-        <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
-          <option value="viewer">Visualização</option><option value="operator">Operação</option>
-          {role === "owner" && <option value="admin">Administrador</option>}
-        </select>
-      </label>
-      <button className="primary-button" disabled={busy} type="submit">{busy ? "Enviando…" : "Enviar convite"}</button>
-    </form>}
+    {canAdmin && <>
+      <form onSubmit={sendInvite} style={{ display: "grid", gap: 10, maxWidth: 560 }}>
+        <h3 style={{ margin: 0 }}>Convidar integrante</h3>
+        <label style={{ display: "grid", gap: 5, fontSize: 12 }}>E-mail
+          <input type="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="pessoa@empresa.com" />
+        </label>
+        <label style={{ display: "grid", gap: 5, fontSize: 12 }}>Papel
+          <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
+            <option value="viewer">Visualização</option>
+            <option value="operator">Operação</option>
+            {role === "owner" && <option value="admin">Administrador</option>}
+          </select>
+        </label>
+        <button className="primary-button" disabled={busy} type="submit">{busy ? "Enviando…" : "Enviar convite"}</button>
+      </form>
+      <div style={{ display: "grid", gap: 10 }}>
+        <h3 style={{ margin: 0 }}>Convites da organização</h3>
+        {invitations.length === 0 && <p style={{ color: "var(--muted)", fontSize: 12 }}>Nenhum convite registrado.</p>}
+        {invitations.map(invitation => <div key={invitation.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
+          <div style={{ minWidth: 180 }}>
+            <strong style={{ fontSize: 12 }}>{invitation.email}</strong>
+            <div style={{ color: "var(--muted)", fontSize: 11 }}>{invitation.role} · {invitation.status} · expira {new Date(invitation.expires_at).toLocaleDateString("pt-BR")}</div>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {["pending", "sent", "failed"].includes(invitation.status) && <button type="button" className="secondary-button" disabled={busy} onClick={() => manageInvitation(invitation.id, "resend")}>Reenviar</button>}
+            {["pending", "sent", "failed"].includes(invitation.status) && <button type="button" className="secondary-button" disabled={busy} onClick={() => manageInvitation(invitation.id, "revoke")}>Revogar</button>}
+          </div>
+        </div>)}
+      </div>
+    </>}
     <form onSubmit={saveBanner} style={{ display: "grid", gap: 12 }}>
       <h3 style={{ margin: 0 }}>Banner exclusivo da empresa</h3>
       {banner && <div style={{ height: 170, overflow: "hidden", borderRadius: 9, background: "#171717" }}>
