@@ -44,9 +44,7 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
   }, [organizationId]);
 
   useEffect(() => {
-    let active = true;
     loadInvitations().catch(() => {});
-    return () => { active = false; };
   }, [loadInvitations]);
 
   async function sendInvite(event: React.FormEvent) {
