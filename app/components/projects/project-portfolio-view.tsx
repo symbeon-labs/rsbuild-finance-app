@@ -71,6 +71,13 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   const [taskResponsibleLabel, setTaskResponsibleLabel] = useState("");
   const [taskPriority, setTaskPriority] = useState("normal");
   const [savingTask, setSavingTask] = useState(false);
+  const [showDependencyForm, setShowDependencyForm] = useState(false);
+  const [dependencyTitle, setDependencyTitle] = useState("");
+  const [dependencyDescription, setDependencyDescription] = useState("");
+  const [dependencyType, setDependencyType] = useState("client_input");
+  const [dependencyResponsible, setDependencyResponsible] = useState("");
+  const [dependencyDueDate, setDependencyDueDate] = useState("");
+  const [savingDependency, setSavingDependency] = useState(false);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -161,6 +168,39 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
       setError(cause instanceof Error ? cause.message : "Falha ao criar atividade.");
     } finally {
       setSavingTask(false);
+    }
+  }
+
+  async function handleCreateDependency(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !dependencyTitle.trim()) return;
+    setSavingDependency(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${selectedProject.id}/dependencies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: dependencyTitle,
+          description: dependencyDescription,
+          dependencyType,
+          responsibleLabel: dependencyResponsible,
+          dueDate: dependencyDueDate || null
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar a dependência.");
+      setDependencyTitle("");
+      setDependencyDescription("");
+      setDependencyType("client_input");
+      setDependencyResponsible("");
+      setDependencyDueDate("");
+      setShowDependencyForm(false);
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao registrar dependência.");
+    } finally {
+      setSavingDependency(false);
     }
   }
 
@@ -325,7 +365,30 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                   </div>
                 )}
                 <section style={{ marginTop: 20 }}>
-                  <div className="panel-heading"><div><h3>Dependências e insumos</h3><p>Entradas externas, decisões e acessos que condicionam a execução.</p></div><span className="subtle-tag">{selectedProject.project_dependencies.length}</span></div>
+                  <div className="panel-heading">
+                    <div><h3>Dependências e insumos</h3><p>Entradas externas, decisões e acessos que condicionam a execução.</p></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span className="subtle-tag">{selectedProject.project_dependencies.length}</span>
+                      {canManage && <button className="text-button" type="button" onClick={() => setShowDependencyForm((value) => !value)}>＋ Registrar</button>}
+                    </div>
+                  </div>
+                  {canManage && showDependencyForm && (
+                    <form onSubmit={handleCreateDependency} style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+                      <input required maxLength={180} value={dependencyTitle} onChange={(event) => setDependencyTitle(event.target.value)} placeholder="Insumo, acesso ou decisão necessária" />
+                      <textarea maxLength={3000} value={dependencyDescription} onChange={(event) => setDependencyDescription(event.target.value)} placeholder="Descrição e impacto no cronograma" rows={2} />
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <select value={dependencyType} onChange={(event) => setDependencyType(event.target.value)}>
+                          <option value="client_input">Insumo do cliente</option><option value="access">Acesso / credencial</option><option value="decision">Decisão / aprovação</option><option value="external_service">Fornecedor externo</option><option value="technical">Dependência técnica</option><option value="other">Outra</option>
+                        </select>
+                        <input maxLength={160} value={dependencyResponsible} onChange={(event) => setDependencyResponsible(event.target.value)} placeholder="Responsável" />
+                      </div>
+                      <label>Prazo necessário<input type="date" value={dependencyDueDate} onChange={(event) => setDependencyDueDate(event.target.value)} /></label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button className="primary-button" type="submit" disabled={savingDependency}>{savingDependency ? "Salvando..." : "Registrar dependência"}</button>
+                        <button className="secondary-button" type="button" onClick={() => setShowDependencyForm(false)}>Cancelar</button>
+                      </div>
+                    </form>
+                  )}
                   {selectedProject.project_dependencies.length === 0 ? (
                     <div className="table-empty">Nenhuma dependência registrada para este projeto.</div>
                   ) : (
@@ -333,8 +396,9 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                       {selectedProject.project_dependencies.map((dependency) => (
                         <li key={dependency.id}>
                           <strong>{dependency.title}</strong>
-                          <span className="muted"> · {dependency.status}{dependency.responsible_label ? ` · ${dependency.responsible_label}` : ""}</span>
+                          <span className="muted"> · {statusLabels[dependency.status] || dependency.status}{dependency.responsible_label ? ` · ${dependency.responsible_label}` : ""}</span>
                           {dependency.description && <div className="muted" style={{ fontSize: 12 }}>{dependency.description}</div>}
+                          {dependency.due_date && <div className="muted" style={{ fontSize: 12 }}>Necessário até {dependency.due_date}</div>}
                           {dependency.evidence_url && <a href={dependency.evidence_url} target="_blank" rel="noreferrer">Abrir evidência</a>}
                         </li>
                       ))}
