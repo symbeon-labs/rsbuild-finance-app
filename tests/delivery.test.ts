@@ -159,7 +159,8 @@ test("ENG-MS-03: generateDeliveryBlindageCsv emite CSV com observação operacio
       deliveryDate: "2026-04-03",
       status: "comprovado",
       receiverName: "Marcos Silva",
-      receiverDocument: "12345"
+      receiverDocument: "12345",
+      proofFileUrl: "/evidence/receipt-4580.pdf"
     }
   ];
 
