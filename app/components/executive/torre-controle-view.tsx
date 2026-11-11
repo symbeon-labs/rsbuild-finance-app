@@ -110,7 +110,7 @@ export function TorreControleView({
       .sort((a, b) => b.total - a.total);
   }, [titles]);
 
-  // Diagnóstico Narrativo Gerado pelo Agente RS Adaptativo
+  // Síntese calculada a partir dos dados disponíveis
   const rsAgentDiagnosis = useMemo(() => {
     if (healthScore === null) {
       return {
@@ -144,7 +144,7 @@ export function TorreControleView({
       return {
         status: healthStatus,
         statusTone,
-        summary: `Diagnóstico executivo Hub Açaí: O índice de governança global é de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} sob risco preventivo de protesto devido a ${atRiskProtestCount} nota(s) sem canhoto na doca.`,
+        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} sob risco preventivo de protesto devido a ${atRiskProtestCount} nota(s) sem canhoto na doca.`,
         recommendations: [
           {
             priority: "Alta",
@@ -160,8 +160,8 @@ export function TorreControleView({
           },
           {
             priority: "Estratégica",
-            action: "Sincronização Assistida",
-            detail: `${readySettlements} títulos com correspondência bancária exata prontos para liquidação contábil no Omie.`
+            action: "Revisão de correspondências",
+            detail: `${readySettlements} correspondências candidatas para revisão humana. A integração Omie não está conectada.`
           }
         ]
       };
@@ -179,7 +179,7 @@ export function TorreControleView({
         {
           priority: "Alta",
           action: "Reconciliação ERP & Baixas",
-          detail: `${readySettlements} título(s) identificados com correspondência bancária exata (valor e data) prontos para remessa de baixa no Omie.`
+          detail: `${readySettlements} correspondência(s) candidata(s) identificada(s) por valor e data; exigem revisão humana e não foram enviadas ao ERP.`
         },
         {
           priority: "Média",
@@ -390,17 +390,17 @@ export function TorreControleView({
                   icon="🏦"
                 />
                 <Metric
-                  label="Reconciliação Omie"
+                  label="Correspondências bancárias"
                   value={`${readySettlements} títulos`}
                   tone="positive"
-                  detail="Prontos para liquidação contábil"
+                  detail="Candidatas à revisão humana; sem envio ao ERP"
                   icon="✓"
                 />
               </>
             )}
           </div>
 
-          {/* Painel do Agente RS */}
+          {/* Painel de análise */}
           <section
             className="panel"
             style={{
@@ -413,7 +413,7 @@ export function TorreControleView({
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ color: "var(--rsbuild-terracotta)", fontSize: "16px" }}>✦</span>
-                  <h2>Parecer de Governança · Agente RS</h2>
+                  <h2>Síntese de Governança</h2>
                 </div>
                 <p>Síntese executiva orientada a regras de negócio e proteção patrimonial da organização.</p>
               </div>
@@ -421,11 +421,11 @@ export function TorreControleView({
                 className="status-pill"
                 style={{
                   background:
-                    healthScore >= 75
+                    healthScore !== null && healthScore >= 75
                       ? "var(--green-bg, rgba(16, 185, 129, 0.15))"
                       : "var(--yellow-bg, rgba(245, 158, 11, 0.15))",
                   color:
-                    healthScore >= 75
+                    healthScore !== null && healthScore >= 75
                       ? "var(--green-text, #10B981)"
                       : "var(--yellow-text, #F59E0B)",
                   fontWeight: 700
@@ -662,7 +662,7 @@ export function TorreControleView({
                 <tr>
                   <th>NF-e / Destinatário</th>
                   <th className="align-right">Valor da Nota</th>
-                  <th>Parecer do Agente RS</th>
+                  <th>Avaliação de risco</th>
                   <th>Fundamentação Legal</th>
                   <th>Ação Sugerida</th>
                 </tr>
@@ -718,8 +718,8 @@ export function TorreControleView({
         <section className="panel" style={{ marginBottom: "24px" }}>
           <div className="panel-heading">
             <div>
-              <h2>Esteira de Sincronização Assistida com o Omie</h2>
-              <p>Lotes operacionais conferidos pelo Agente RS aguardando autorização de envio.</p>
+              <h2>Integrações e exportações</h2>
+              <p>A integração com o Omie ainda não está conectada. Nenhum lote foi enviado ou está aguardando envio.</p>
             </div>
             <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
               Integração não disponível
