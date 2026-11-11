@@ -86,7 +86,18 @@ Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica 
 | QA-06 | Isolamento de dados locais por organização | BLOCKED | Acesso interativo e duas organizações de teste |
 | QA-07 | Responsividade móvel e desktop | BLOCKED | Acesso interativo ao Preview |
 
-## 6. Plano de execução sem custo
+## 6. Massa sintética preparada
+
+Fixture versionada: [finance-import-synthetic.csv](./fixtures/finance-import-synthetic.csv).
+
+- 3 movimentos sintéticos: 2 entradas e 1 saída.
+- Total de entradas esperado: R$ 2.375,25.
+- Total de saídas esperado: R$ 250,50.
+- Saldo líquido esperado: R$ 2.124,75.
+- Categorias e descrições são artificiais; não há dados de cliente.
+- O arquivo serve para validar leitura e prévia CSV. A contagem de duplicados exige reimportação controlada e confirmação do comportamento idempotente no ambiente de teste.
+
+## 7. Plano de execução sem custo
 
 1. Manter PR #34 e PR #35 em revisão; não mesclar nem promover produção.
 2. Usar os resultados atuais do GitHub Actions como evidência técnica, vinculados aos SHAs acima.
@@ -98,7 +109,7 @@ Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica 
 
 Se o acesso ao Preview continuar indisponível, a alternativa é executar localmente pelo responsável técnico, usando configuração de teste e dados sintéticos, sem apontar para o Supabase de produção. A execução local deve registrar versão/commit, ambiente e evidências.
 
-## 7. Critério de homologação
+## 8. Critério de homologação
 
 A homologação só poderá ser declarada concluída quando:
 
