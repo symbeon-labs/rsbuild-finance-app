@@ -44,31 +44,6 @@ export async function POST(request: Request) {
   if (access.error || !("user" in access)) return NextResponse.json({ error: access.error }, { status: access.status });
   const admin = createAdminClient();
 
-  if (body.action === "resend") {
-    const invitationId = String(body.invitationId ?? "");
-    if (!UUID.test(invitationId)) return NextResponse.json({ error: "invalid_invitation" }, { status: 400 });
-    const { data: row, error } = await admin.from("organization_invitations")
-      .select("id,email,status,expires_at").eq("id", invitationId)
-      .eq("organization_id", organizationId).maybeSingle();
-    if (error || !row) return NextResponse.json({ error: "invitation_not_found" }, { status: 404 });
-    if (!["pending", "failed", "sent"].includes(row.status) || new Date(row.expires_at).getTime() <= Date.now()) {
-      return NextResponse.json({ error: "invitation_not_resendable" }, { status: 409 });
-    }
-    const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(row.email, {
-      redirectTo: new URL("/auth/callback", request.url).toString(),
-      data: { invited_organization_id: organizationId }
-    });
-    if (inviteError || !invited.user) {
-      await admin.from("organization_invitations").update({ status: "failed" }).eq("id", invitationId);
-      return NextResponse.json({ error: "invite_delivery_failed" }, { status: 502 });
-    }
-    const { error: updateError } = await admin.from("organization_invitations").update({
-      invited_user_id: invited.user.id, status: "sent", last_sent_at: new Date().toISOString()
-    }).eq("id", invitationId);
-    if (updateError) return NextResponse.json({ error: "invite_state_update_failed" }, { status: 502 });
-    return NextResponse.json({ ok: true, invitationId, status: "sent" });
-  }
-
   if (body.action && body.action !== "create") return NextResponse.json({ error: "invalid_action" }, { status: 400 });
   const email = String(body.email ?? "").trim().toLowerCase();
   const role = String(body.role ?? "viewer");
@@ -95,7 +70,7 @@ export async function POST(request: Request) {
   if (recordError || !row) return NextResponse.json({ error: "invitation_record_failed" }, { status: 502 });
 
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: new URL("/auth/callback", request.url).toString(),
+    redirectTo: new URL("/auth/callback?invitationId=" + encodeURIComponent(row.id), request.url).toString(),
     data: { invited_organization_id: organizationId }
   });
   if (inviteError || !invited.user) {
