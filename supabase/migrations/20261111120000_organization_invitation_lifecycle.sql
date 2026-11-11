@@ -32,7 +32,7 @@ begin
   loop
     insert into public.organization_memberships (organization_id,user_id,role)
     values (invitation_row.organization_id,p_user_id,invitation_row.role)
-    on conflict (organization_id,user_id) do update set role = excluded.role;
+    on conflict (organization_id,user_id) do nothing;
     update public.organization_invitations
       set status = 'accepted', accepted_at = now() where id = invitation_row.id;
     return next invitation_row.organization_id;
