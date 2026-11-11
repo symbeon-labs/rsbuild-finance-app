@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       start_date, target_date, created_at, updated_at,
       project_sprints (
         id, sprint_number, title, objective, status, start_date, end_date, sort_order,
-        project_tasks (id, title, status, priority, due_date, sort_order),
+        project_tasks (id, title, description, acceptance_criteria, status, priority, due_date, sort_order),
         project_deliverables (id, title, status, resource_url, created_at)
       )
     `)
