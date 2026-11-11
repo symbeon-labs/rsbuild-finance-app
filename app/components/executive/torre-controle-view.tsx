@@ -49,11 +49,9 @@ export function TorreControleView({
   const [activeSubTab, setActiveSubTab] = useState<TorreSubTab>("estrategia");
   const [copiedMemo, setCopiedMemo] = useState(false);
 
-  // Notas em Risco de Protesto
-  const atRiskProtestCount = useMemo(
-    () => evaluations.filter((e) => e.risk === "bloqueio_preventivo").length,
-    [evaluations]
-  );
+  // Todos os registros exigem revisão humana; metadados completos não autenticam a evidência.
+  const documentaryReviewCount = evaluations.length;
+  const incompleteEvidenceCount = evaluations.filter((e) => e.risk !== "metadata_complete").length;
 
   // O índice só existe quando todas as fontes que compõem o cálculo têm dados.
   // Ausência de registros não pode ser interpretada como 100% de conformidade.
@@ -144,12 +142,12 @@ export function TorreControleView({
       return {
         status: healthStatus,
         statusTone,
-        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} associados a ${atRiskProtestCount} registro(s) com pendências documentais.`,
+        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} associados a ${documentaryReviewCount} registro(s) para revisão humana.`,
         recommendations: [
           {
             priority: "Alta",
             action: "Revisão de evidências",
-            detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Pendência documental identificada; revisar as evidências e a situação com os responsáveis antes de qualquer decisão.`
+            detail: `Existem ${documentaryReviewCount} registro(s) que exigem revisão humana. Metadados cadastrados não autenticam arquivos ou assinaturas.`
           },
           {
             priority: "Média",
@@ -242,17 +240,17 @@ export function TorreControleView({
                 padding: "2px 8px"
               }}
             >
-              MÓDULO DE AUDITORIA & COMPLIANCE
+              MÓDULO DE GOVERNANÇA E CONTROLE
             </span>
           </div>
-          <h1>Torre de Auditoria & Inteligência</h1>
+          <h1>Torre de Governança & Controle</h1>
           <p>
-            Governança central do workspace <strong>{companyName}</strong>: cruzamento contábil x fiscal, blindagem contra protesto indevido (Lei Federal nº 5.474/1968) e pareceres periciais integráveis à <strong>RS Advogados</strong>.
+            Acompanhamento operacional do workspace <strong>{companyName}</strong>: organização de dados, identificação de inconsistências e acompanhamento de pendências para revisão pelos responsáveis.
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
           <button className="secondary-button" onClick={handleCopyMemo}>
-            {copiedMemo ? "✓ Memorando Copiado!" : "📋 Copiar Parecer Executivo"}
+            {copiedMemo ? "✓ Memorando Copiado!" : "📋 Copiar Síntese Operacional"}
           </button>
           <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
             Integração Omie não conectada
@@ -283,7 +281,7 @@ export function TorreControleView({
             color: "var(--ink)"
           }}
         >
-          <span>⎈</span> Visão Estratégica & Parecer
+          <span>⎈</span> Visão Estratégica & Síntese
         </button>
 
         <button
@@ -299,7 +297,7 @@ export function TorreControleView({
             color: "var(--ink)"
           }}
         >
-          <span>🛡</span> Auditoria de Risco Fiscal ({atRiskProtestCount})
+          <span>🛡</span> Pendências documentais ({documentaryReviewCount})
         </button>
 
         <button
@@ -369,7 +367,7 @@ export function TorreControleView({
                   label="Exposição documental estimada"
                   value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
                   tone={proofs.length > 0 ? (deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "neutral") : "neutral"}
-                  detail={proofs.length > 0 ? `${atRiskProtestCount} registro(s) com pendência documental; sem bloqueio externo` : "Sem comprovantes para avaliar exposição"}
+                  detail={proofs.length > 0 ? `${documentaryReviewCount} registro(s) para revisão humana; nenhuma ação externa é executada` : "Sem comprovantes para avaliar exposição"}
                   icon="🛡"
                 />
               </>
@@ -622,13 +620,13 @@ export function TorreControleView({
 
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                    <span style={{ color: "var(--red-text, #EF4444)", fontWeight: 600 }}>⛔ Faturamento sob Risco Fiscal / Extravio</span>
+                    <span style={{ color: "var(--red-text, #EF4444)", fontWeight: 600 }}>⛔ Valor sem metadados completos de entrega</span>
                     <strong>{formatCurrency(deliveryMetrics.atRiskProtestAmount)}</strong>
                   </div>
                   <div style={{ width: "100%", height: "10px", background: "var(--surface-raised, rgba(255,255,255,0.06))", borderRadius: "5px", overflow: "hidden" }}>
                     <div
                       style={{
-                        width: `${deliveryMetrics.totalInvoices > 0 ? Math.round((atRiskProtestCount / deliveryMetrics.totalInvoices) * 100) : 0}%`,
+                        width: `${deliveryMetrics.totalInvoices > 0 ? Math.round((incompleteEvidenceCount / deliveryMetrics.totalInvoices) * 100) : 0}%`,
                         height: "100%",
                         background: "var(--red-text, #EF4444)",
                         borderRadius: "5px"
@@ -636,7 +634,7 @@ export function TorreControleView({
                     />
                   </div>
                   <span style={{ fontSize: "10px", color: "var(--muted)", marginTop: "3px", display: "block" }}>
-                    {atRiskProtestCount} fatura(s) com retenção preventiva para evitar litígio judicial.
+                    {incompleteEvidenceCount} registro(s) sem metadados completos; revisar antes de qualquer decisão operacional.
                   </span>
                 </div>
               </div>
@@ -645,7 +643,7 @@ export function TorreControleView({
         </>
       )}
 
-      {/* ABA 2: AUDITORIA DE RISCO FISCAL & CANHOTOS */}
+      {/* ABA 2: PENDÊNCIAS DOCUMENTAIS */}
       {activeSubTab === "auditoria" && (
         <section className="panel" style={{ marginBottom: "24px" }}>
           <div className="panel-heading">
