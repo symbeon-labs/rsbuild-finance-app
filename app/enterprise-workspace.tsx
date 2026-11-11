@@ -197,8 +197,32 @@ export default function EnterpriseWorkspace({
 
   // Pedidos WhatsApp
   const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>(INITIAL_SAMPLE_HA_ORDERS);
+  const [sessionDataOrganizationId, setSessionDataOrganizationId] = useState<string | null>(null);
   const [whatsAppText, setWhatsAppText] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedWhatsAppOrder | null>(null);
+
+  // Carrega sempre a fonte autoritativa financeira da organização autenticada.
+  useEffect(() => {
+    let active = true;
+    setRecords([]);
+    setIsLoadingRecords(true);
+    fetch(`/api/imports?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Não foi possível carregar os movimentos financeiros.");
+        return payload;
+      })
+      .then((payload) => {
+        if (active) setRecords(Array.isArray(payload.records) ? payload.records : []);
+      })
+      .catch((error) => {
+        if (active) setNotice(error instanceof Error ? error.message : "Falha ao carregar movimentos financeiros.");
+      })
+      .finally(() => {
+        if (active) setIsLoadingRecords(false);
+      });
+    return () => { active = false; };
+  }, [organizationId]);
 
   // Hidratação inicial do localStorage (Configurações e Persistência de Sessão)
   useEffect(() => {
@@ -240,34 +264,44 @@ export default function EnterpriseWorkspace({
       if (savedEnd) setCustomEndDate(savedEnd);
 
       // Persistência de Dados Operacionais
-      const savedTitles = localStorage.getItem("rsbuild_session_titles");
+      // Estes três módulos ainda são protótipos locais, não registros autoritativos.
+      // A chave por organização impede reaproveitamento acidental entre tenants.
+      setTitles(INITIAL_SAMPLE_TITLES);
+      setProofs(INITIAL_SAMPLE_PROOFS);
+      setOrders(INITIAL_SAMPLE_HA_ORDERS);
+      const savedTitles = localStorage.getItem(`rsbuild_session_titles_${organizationId}`);
       if (savedTitles) setTitles(JSON.parse(savedTitles));
-      const savedProofs = localStorage.getItem("rsbuild_session_proofs");
+      const savedProofs = localStorage.getItem(`rsbuild_session_proofs_${organizationId}`);
       if (savedProofs) setProofs(JSON.parse(savedProofs));
-      const savedOrders = localStorage.getItem("rsbuild_session_orders");
+      const savedOrders = localStorage.getItem(`rsbuild_session_orders_${organizationId}`);
       if (savedOrders) setOrders(JSON.parse(savedOrders));
     } catch {
       // Ignora falhas em sandbox restrito / SSR
+    } finally {
+      setSessionDataOrganizationId(organizationId);
     }
-  }, []);
+  }, [organizationId, currentOrgId]);
 
   useEffect(() => {
+    if (sessionDataOrganizationId !== organizationId) return;
     try {
-      localStorage.setItem("rsbuild_session_titles", JSON.stringify(titles));
+      localStorage.setItem(`rsbuild_session_titles_${organizationId}`, JSON.stringify(titles));
     } catch {}
-  }, [titles]);
+  }, [titles, organizationId, sessionDataOrganizationId]);
 
   useEffect(() => {
+    if (sessionDataOrganizationId !== organizationId) return;
     try {
-      localStorage.setItem("rsbuild_session_proofs", JSON.stringify(proofs));
+      localStorage.setItem(`rsbuild_session_proofs_${organizationId}`, JSON.stringify(proofs));
     } catch {}
-  }, [proofs]);
+  }, [proofs, organizationId, sessionDataOrganizationId]);
 
   useEffect(() => {
+    if (sessionDataOrganizationId !== organizationId) return;
     try {
-      localStorage.setItem("rsbuild_session_orders", JSON.stringify(orders));
+      localStorage.setItem(`rsbuild_session_orders_${organizationId}`, JSON.stringify(orders));
     } catch {}
-  }, [orders]);
+  }, [orders, organizationId, sessionDataOrganizationId]);
 
   function handleSaveCompanyConfig(
     name: string,
@@ -333,9 +367,9 @@ export default function EnterpriseWorkspace({
     setImportErrors([]);
     setFileName("");
     try {
-      localStorage.removeItem("rsbuild_session_titles");
-      localStorage.removeItem("rsbuild_session_proofs");
-      localStorage.removeItem("rsbuild_session_orders");
+      localStorage.removeItem(`rsbuild_session_titles_${organizationId}`);
+      localStorage.removeItem(`rsbuild_session_proofs_${organizationId}`);
+      localStorage.removeItem(`rsbuild_session_orders_${organizationId}`);
     } catch {}
     setNotice("Sessão reiniciada com dados de demonstração.");
   }
@@ -644,6 +678,10 @@ export default function EnterpriseWorkspace({
         />
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
+          <div className="inline-note" role="note">
+            Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
+          </div>
+          {isLoadingRecords && <div className="inline-note" role="status">Carregando movimentos financeiros da organização...</div>}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button className="secondary-button" type="button" onClick={() => setIsAdminPanelOpen((open) => !open)}>{isAdminPanelOpen ? "Fechar administração" : "Equipe e identidade"}</button>
           </div>
