@@ -84,10 +84,19 @@ export async function POST(request: Request) {
     await admin.from("organization_invitations").update({ status: "failed" }).eq("id", row.id);
     return NextResponse.json({ error: "invite_delivery_failed" }, { status: 502 });
   }
-  const { error: sentError } = await admin.from("organization_invitations").update({
+  const { data: sentRow, error: sentError } = await admin.from("organization_invitations").update({
     invited_user_id: invited.user.id, status: "sent", last_sent_at: new Date().toISOString()
-  }).eq("id", row.id);
+  }).eq("id", row.id).eq("status", "pending").select("id").maybeSingle();
   if (sentError) return NextResponse.json({ error: "invite_state_update_failed", invitationId: row.id }, { status: 502 });
+  if (!sentRow) {
+    // The recipient may accept immediately, or an administrator may revoke
+    // while Auth sends the email. Never overwrite either terminal state.
+    const { data: latest, error: latestError } = await admin.from("organization_invitations")
+      .select("status").eq("id", row.id).maybeSingle();
+    if (latestError || latest?.status !== "accepted") {
+      return NextResponse.json({ error: "invite_state_changed" }, { status: 409 });
+    }
+  }
   return NextResponse.json({ ok: true, invitationId: row.id, email, role, status: "sent", expiresAt }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }
   });
