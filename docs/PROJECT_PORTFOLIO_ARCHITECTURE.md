@@ -34,7 +34,7 @@ O projeto é uma relação operacional entre organizações, não uma fusão dos
 
 ## Fluxo operacional
 
-1. A RSBUILD abre seu workspace e acessa Projetos e Sprints.
+1. A RSBUILD abre seu workspace e acessa Projetos e Sprints. A antiga Zona das Sprints na Torre de Controle funciona como atalho para essa mesma visão, sem manter um segundo painel estático.
 2. A equipe seleciona Mundo do Sabor ou Hub Açaí.
 3. O projeto contém suas sprints, atividades e entregáveis.
 4. A equipe registra progresso e mantém os critérios de aceite.
@@ -47,7 +47,13 @@ A migração cria dois registros de portfólio, resolvendo organizações pelos 
 - mundo_sabor → Mundo do Sabor;
 - hub_acai → Hub Açaí.
 
-Os registros começam em planning. Nenhuma sprint ou atividade fictícia é criada. O conteúdo aprovado das sprints deve ser importado/cadastrado a partir dos documentos oficiais de cada empresa.
+Os registros começam em planning. Nenhuma sprint ou atividade fictícia é criada. O conteúdo aprovado deve ser importado a partir da matriz oficial vigente do Ciclo 01 (v2.2); materiais anteriores de mobilização/alinhamento servem como referência, não como substitutos silenciosos da versão aprovada.
+
+## Referências de escopo consultadas
+
+- RSBUILD Plano de Sprints Ciclo 01 v2.2 (matriz oficial de planejamento; conteúdo a importar sem reinterpretação).
+- CICLO_01_PLANO_DE_MOBILIZACAO_v1.0.pdf (governança, seis entregáveis, marcos e critérios gerais).
+- 04_ATA-01_ALINHAMENTO_EXECUTIVO_CICLO_01_v1.4.pdf (priorização e dependências registradas em edição anterior).
 
 ## Limites desta entrega
 
