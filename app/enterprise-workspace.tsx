@@ -72,9 +72,21 @@ type EnterpriseWorkspaceProps = {
   organizationName: string;
   membershipRole: string;
   userEmail: string;
+  userFullName?: string;
+  userRoleTitle?: string;
+  preferredTheme?: "sand" | "dark";
 };
 
-export default function EnterpriseWorkspace({ organizationId, organizationSlug, organizationName, membershipRole, userEmail }: EnterpriseWorkspaceProps) {
+export default function EnterpriseWorkspace({
+  organizationId,
+  organizationSlug,
+  organizationName,
+  membershipRole,
+  userEmail,
+  userFullName,
+  userRoleTitle,
+  preferredTheme
+}: EnterpriseWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
@@ -148,7 +160,7 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   // Tema Visual: 'sand' ou 'dark'
-  const [theme, setTheme] = useState<"sand" | "dark">("sand");
+  const [theme, setTheme] = useState<"sand" | "dark">(preferredTheme || "sand");
 
   function toggleTheme() {
     const next = theme === "sand" ? "dark" : "sand";
@@ -188,6 +200,8 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
   // Hidratação inicial do localStorage (Configurações e Persistência de Sessão)
   useEffect(() => {
     try {
+      localStorage.setItem("rsbuild_selected_organization", organizationId);
+      document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
       const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
       if (savedLogo) setCompanyLogoUrl(savedLogo);
       const savedModules = localStorage.getItem("rsbuild_workspace_modules");
@@ -595,6 +609,8 @@ export default function EnterpriseWorkspace({ organizationId, organizationSlug, 
           theme={theme}
           userRole={effectiveRole}
           userEmail={currentUserEmail}
+          userFullName={userFullName}
+          userRoleTitle={userRoleTitle}
           onPeriodChange={handlePeriodChange}
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}

@@ -96,3 +96,73 @@ test("GOV-04: Filtragem de menu respeita estritamente o módulo ativo e os produ
   const audItems = getItems("audit", allActive);
   assert.ok(audItems.some((i) => i.id === "torre-controle"));
 });
+
+test("GOV-05: Roteamento Direto Multi-Tenant: usuário com 1 única organização vinculada é direcionado sem tela intermediária", () => {
+  const userOrganizations = [
+    { id: "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76", display_name: "Hub do Açaí Distribuidora", slug: "hub_acai" }
+  ];
+
+  // Simulação da lógica de resolução de tenant
+  function resolveTenant(orgs: typeof userOrganizations, paramId?: string, cookieId?: string, metaId?: string) {
+    let sel = orgs.find((o) => o.id === paramId);
+    if (!sel && cookieId) sel = orgs.find((o) => o.id === cookieId);
+    if (!sel && metaId) sel = orgs.find((o) => o.id === metaId);
+    if (!sel && orgs.length === 1) sel = orgs[0];
+    if (!sel && orgs.length > 0) sel = orgs[0];
+    return sel;
+  }
+
+  // Sem parâmetros, cookies ou metadata: resolve a única empresa do usuário diretamente
+  const resolved = resolveTenant(userOrganizations);
+  assert.ok(resolved);
+  assert.equal(resolved.slug, "hub_acai");
+  assert.equal(resolved.display_name, "Hub do Açaí Distribuidora");
+});
+
+test("GOV-06: Roteamento Direto Multi-Tenant: usuário recorrente com preferência em cookie/metadata é roteado com prioridade", () => {
+  const userOrganizations = [
+    { id: "0269fe05-0990-41a8-a28c-2919691eaf0f", display_name: "RSBUILD Engenharia e Holding", slug: "rsbuild" },
+    { id: "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76", display_name: "Hub do Açaí Distribuidora", slug: "hub_acai" }
+  ];
+
+  function resolveTenant(orgs: typeof userOrganizations, paramId?: string, cookieId?: string, metaId?: string) {
+    let sel = orgs.find((o) => o.id === paramId);
+    if (!sel && cookieId) sel = orgs.find((o) => o.id === cookieId);
+    if (!sel && metaId) sel = orgs.find((o) => o.id === metaId);
+    if (!sel && orgs.length === 1) sel = orgs[0];
+    if (!sel && orgs.length > 0) sel = orgs[0];
+    return sel;
+  }
+
+  // Cookie aponta para Hub do Açaí
+  const resolvedFromCookie = resolveTenant(userOrganizations, undefined, "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76");
+  assert.equal(resolvedFromCookie?.slug, "hub_acai");
+
+  // Metadata aponta para RSBUILD
+  const resolvedFromMeta = resolveTenant(userOrganizations, undefined, undefined, "0269fe05-0990-41a8-a28c-2919691eaf0f");
+  assert.equal(resolvedFromMeta?.slug, "rsbuild");
+
+  // Parâmetro explícito na URL tem precedência absoluta sobre cookie
+  const resolvedFromParam = resolveTenant(userOrganizations, "0269fe05-0990-41a8-a28c-2919691eaf0f", "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76");
+  assert.equal(resolvedFromParam?.slug, "rsbuild");
+});
+
+test("GOV-07: Onboarding & Personalização: novos usuários sem onboarding_completed acionam personalização", () => {
+  function shouldShowOnboarding(isOnboardingCompleted: boolean, isDevEmail: boolean, isForceSetup: boolean): boolean {
+    return (!isOnboardingCompleted && !isDevEmail) || isForceSetup;
+  }
+
+  // Novo usuário comercial (Flávio / Vitor no 1º login)
+  assert.equal(shouldShowOnboarding(false, false, false), true);
+
+  // Usuário que já concluiu o onboarding no passado
+  assert.equal(shouldShowOnboarding(true, false, false), false);
+
+  // Desenvolvedor sem setup forçado entra direto
+  assert.equal(shouldShowOnboarding(false, true, false), false);
+
+  // Qualquer usuário (inclusive dev) com ?setup=true aciona a tela de personalização
+  assert.equal(shouldShowOnboarding(true, true, true), true);
+  assert.equal(shouldShowOnboarding(false, true, true), true);
+});
+

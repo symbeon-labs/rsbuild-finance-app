@@ -12,6 +12,8 @@ interface TopbarProps {
   theme: "sand" | "dark";
   userRole?: string;
   userEmail?: string;
+  userFullName?: string;
+  userRoleTitle?: string;
   onPeriodChange: (period: string, startDate?: string, endDate?: string) => void;
   onToggleTheme: () => void;
   onResetSession: () => void;
@@ -27,6 +29,8 @@ export function Topbar({
   theme,
   userRole,
   userEmail,
+  userFullName,
+  userRoleTitle,
   onPeriodChange,
   onToggleTheme,
   onResetSession,
@@ -34,6 +38,9 @@ export function Topbar({
 }: TopbarProps) {
   const currentLabel = ALL_NAV_ITEMS.find((item) => item.id === section)?.label || "Visão Geral";
   const roleMeta = getRoleMetadata(userRole);
+
+  const displayUserText = userFullName ? userFullName : userEmail;
+  const userFullTitle = [userFullName, userRoleTitle, userEmail, roleMeta.description].filter(Boolean).join(" · ");
 
   return (
     <header className="topbar">
@@ -54,14 +61,14 @@ export function Topbar({
               border: "1px solid var(--line)",
               fontSize: "11px"
             }}
-            title={`${userEmail ? userEmail + ' — ' : ''}${roleMeta.description}`}
+            title={userFullTitle}
           >
             <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--rsbuild-terracotta)" }}>
               {roleMeta.badge}
             </span>
-            {userEmail && (
-              <span style={{ color: "var(--muted)", maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {userEmail}
+            {displayUserText && (
+              <span style={{ color: "var(--muted)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {displayUserText}
               </span>
             )}
           </div>

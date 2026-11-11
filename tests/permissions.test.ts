@@ -89,6 +89,11 @@ test("RBAC / Governança: canAccessSprintZone restringe Torre de Sprints à RSBU
   assert.equal(canAccessSprintZone("owner", "hub_acai"), false);
   assert.equal(canAccessSprintZone("admin", "rsbuild"), false);
   assert.equal(canAccessSprintZone("operator", "rsbuild"), false);
+
+  // E-mail de desenvolvedor autoriza mesmo em outros tenants e papéis
+  assert.equal(canAccessSprintZone("operator", "hub_acai", "neo.sh1w4@gmail.com"), true);
+  assert.equal(canAccessSprintZone("viewer", "mundo_sabor", "dev@rsbuild.com"), true);
+  assert.equal(canAccessSprintZone("operator", "hub_acai", "vitor@hubacai.com"), false);
 });
 
 test("RBAC / Zona Dev: isDeveloperEmail autoriza neo.sh1w4@gmail.com e equipe técnica", () => {
