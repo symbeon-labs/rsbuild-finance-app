@@ -45,7 +45,7 @@ const statusLabels: Record<string, string> = {
   done: "Concluída"
 };
 
-export function ProjectPortfolioView() {
+export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -225,10 +225,10 @@ export function ProjectPortfolioView() {
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, margin: "16px 0" }}>
                   <strong>Sprints do projeto</strong>
-                  <button className="primary-button" type="button" onClick={() => setCreatingSprintFor(selectedProject.id)}>＋ Nova sprint</button>
+                  {canManage && <button className="primary-button" type="button" onClick={() => setCreatingSprintFor(selectedProject.id)}>＋ Nova sprint</button>}
                 </div>
 
-                {creatingSprintFor === selectedProject.id && (
+                {canManage && creatingSprintFor === selectedProject.id && (
                   <form className="panel" onSubmit={handleCreateSprint} style={{ display: "grid", gap: 10, marginBottom: 14 }}>
                     <h3>Nova sprint</h3>
                     <input required maxLength={140} value={sprintTitle} onChange={(event) => setSprintTitle(event.target.value)} placeholder="Nome da sprint" />
@@ -260,9 +260,9 @@ export function ProjectPortfolioView() {
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10 }}>
                           <span className="muted" style={{ fontSize: 12 }}>{sprint.project_tasks.length} atividade(s)</span>
-                          <button className="text-button" type="button" onClick={() => setCreatingTaskFor({ projectId: selectedProject.id, sprintId: sprint.id })}>＋ Atividade</button>
+                          {canManage && <button className="text-button" type="button" onClick={() => setCreatingTaskFor({ projectId: selectedProject.id, sprintId: sprint.id })}>＋ Atividade</button>}
                         </div>
-                        {creatingTaskFor?.sprintId === sprint.id && (
+                        {canManage && creatingTaskFor?.sprintId === sprint.id && (
                           <form onSubmit={handleCreateTask} style={{ display: "grid", gap: 8, marginTop: 10 }}>
                             <input required maxLength={180} value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} placeholder="Nome da atividade" />
                             <textarea maxLength={3000} value={taskDescription} onChange={(event) => setTaskDescription(event.target.value)} placeholder="Descrição / contexto" rows={2} />
