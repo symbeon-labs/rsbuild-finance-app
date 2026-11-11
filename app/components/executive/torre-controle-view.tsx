@@ -186,7 +186,7 @@ export function TorreControleView({
         },
         {
           priority: "Estratégica",
-          action: "Auditoria & DRE",
+          action: "Conferência de dados",
           detail: "Validar a origem e a cobertura dos dados antes de emitir demonstrativos ou afirmar sincronização contábil."
         }
       ]
@@ -197,7 +197,7 @@ export function TorreControleView({
     companyName,
     hubAcaiMetrics,
     deliveryMetrics,
-    atRiskProtestCount,
+    documentaryReviewCount,
     flavorsBreakdown,
     totals,
     readySettlements
@@ -591,8 +591,8 @@ export function TorreControleView({
             <section className="panel">
               <div className="panel-heading">
                 <div>
-                  <h2>Blindagem Jurídica de Cobrança (Lei 5.474/68)</h2>
-                  <p>Proporção de faturamento resguardado por comprovantes na doca.</p>
+                  <h2>Cobertura de metadados de entrega</h2>
+                  <p>Proporção de registros com metadados de entrega completos; autenticidade não verificada.</p>
                 </div>
                 <span className="subtle-tag">SEFAZ / CANHOTOS</span>
               </div>
@@ -600,7 +600,7 @@ export function TorreControleView({
               <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
-                    <span style={{ color: "var(--green-text, #10B981)", fontWeight: 600 }}>✓ Faturamento Blindado (Apto a Protesto)</span>
+                    <span style={{ color: "var(--green-text, #10B981)", fontWeight: 600 }}>✓ Metadados de entrega completos</span>
                     <strong>{formatCurrency(deliveryMetrics.provenAmount)}</strong>
                   </div>
                   <div style={{ width: "100%", height: "10px", background: "var(--surface-raised, rgba(255,255,255,0.06))", borderRadius: "5px", overflow: "hidden" }}>
@@ -614,7 +614,7 @@ export function TorreControleView({
                     />
                   </div>
                   <span style={{ fontSize: "10px", color: "var(--muted)", marginTop: "3px", display: "block" }}>
-                    {deliveryMetrics.provenCount} de {deliveryMetrics.totalInvoices} entregas com canhoto arquivado.
+                    {deliveryMetrics.provenCount} de {deliveryMetrics.totalInvoices} registros com metadados completos; arquivos não autenticados.
                   </span>
                 </div>
 
@@ -643,13 +643,13 @@ export function TorreControleView({
         </>
       )}
 
-      {/* ABA 2: PENDÊNCIAS DOCUMENTAIS */}
+      {/* ABA 2: REVISÃO DE EVIDÊNCIAS */}
       {activeSubTab === "auditoria" && (
         <section className="panel" style={{ marginBottom: "24px" }}>
           <div className="panel-heading">
             <div>
-              <h2>Auditoria de Risco Jurídico de Cobrança</h2>
-              <p>Notas fiscais que necessitam de intervenção ou arquivamento de comprovante de entrega.</p>
+              <h2>Revisão de evidências de entrega</h2>
+              <p>Registros que exigem conferência humana de metadados e evidências de entrega.</p>
             </div>
             <button className="secondary-button" onClick={() => onNavigateToTab("canhotos")}>
               Ir para Protocolo de Canhotos →
@@ -662,8 +662,8 @@ export function TorreControleView({
                 <tr>
                   <th>NF-e / Destinatário</th>
                   <th className="align-right">Valor da Nota</th>
-                  <th>Avaliação de risco</th>
-                  <th>Fundamentação Legal</th>
+                  <th>Estado documental</th>
+                  <th>Observação operacional</th>
                   <th>Ação Sugerida</th>
                 </tr>
               </thead>
@@ -680,28 +680,28 @@ export function TorreControleView({
                         className="status-pill"
                         style={{
                           background:
-                            ev.risk === "liberado"
+                            ev.risk === "metadata_complete"
                               ? "var(--green-bg, rgba(16, 185, 129, 0.15))"
                               : "var(--red-bg, rgba(239, 68, 68, 0.15))",
                           color:
-                            ev.risk === "liberado"
+                            ev.risk === "metadata_complete"
                               ? "var(--green-text, #10B981)"
                               : "var(--red-text, #EF4444)",
                           fontWeight: 700
                         }}
                       >
-                        {ev.risk === "liberado" ? "✓ APTO A COBRANÇA" : "⛔ BLOQUEIO PREVENTIVO"}
+                        {ev.risk === "metadata_complete" ? "Metadados completos · revisar autenticidade" : "Revisão documental necessária"}
                       </span>
                     </td>
                     <td style={{ fontSize: "11px", color: "var(--muted)", maxWidth: "300px" }}>{ev.reason}</td>
                     <td>
-                      {ev.risk === "bloqueio_preventivo" ? (
+                      {ev.risk === "priority_review" ? (
                         <span style={{ fontSize: "11px", color: "var(--rsbuild-terracotta)", fontWeight: 600 }}>
-                          Reter Duplicata no ERP
+                          Encaminhar para revisão humana
                         </span>
                       ) : (
                         <span style={{ fontSize: "11px", color: "var(--green-text, #10B981)", fontWeight: 600 }}>
-                          Liberado para Cartório
+                          Metadados completos; sem autorização de cobrança
                         </span>
                       )}
                     </td>
