@@ -50,6 +50,6 @@ begin
 end;
 $$;
 revoke all on function public.accept_organization_invitation(uuid,uuid,text) from public, anon, authenticated;
-grant execute on function public.accept_organization_invitations_for_user(uuid,text) to service_role;
+grant execute on function public.accept_organization_invitation(uuid,uuid,text) to service_role;
 revoke insert, update, delete on public.organization_invitations from anon, authenticated;
 grant select on public.organization_invitations to authenticated;
