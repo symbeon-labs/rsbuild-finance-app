@@ -39,6 +39,7 @@ jobs:
       - name: Run read-only audit
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_READONLY }}
+          PGOPTIONS: "-c default_transaction_read_only=on"
           AUDIT_REASON: ${{ inputs.reason }}
         shell: bash
         run: |
