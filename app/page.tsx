@@ -2,25 +2,17 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import EnterpriseWorkspace from "./enterprise-workspace";
-import { OnboardingExperience } from "@/app/components/auth/onboarding-experience";
+import { OrgCookieSetter } from "@/app/components/org-cookie-setter";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
-import { isDeveloperEmail } from "@/lib/permissions";
 import type { OrganizationId } from "@/app/types/workspace";
 
 export const dynamic = "force-dynamic";
 
-type Props = {
-  searchParams: Promise<{
-    organizationId?: string;
-    setup?: string;
-    tab?: string;
-  }>;
-};
+type Props = { searchParams: Promise<{ organizationId?: string }> };
 
 export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
-  const cookieStore = await cookies();
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) redirect("/login");
@@ -63,55 +55,15 @@ export default async function Home({ searchParams }: Props) {
     );
   }
 
-  // =========================================================================
-  // FLUXO DE PRIMEIRO ACESSO (ONBOARDING & PERSONALIZAÇÃO DA EXPERIÊNCIA)
-  // Para novos usuários no 1º login: personaliza perfil e confirma organização
-  // sem expor outros tenants corporativos da plataforma.
-  // =========================================================================
-  const isOnboardingCompleted = Boolean(user.user_metadata?.onboarding_completed);
-  const isForceSetup = params.setup === "true";
-  const isDev = isDeveloperEmail(user.email);
-  const shouldShowOnboarding = (!isOnboardingCompleted && !isDev) || isForceSetup;
+  // Prioridade de seleção: URL > cookie persistido > única organização
+  const cookieStore = await cookies();
+  const savedOrgId = cookieStore.get("rsbuild_selected_org")?.value;
 
-  if (shouldShowOnboarding) {
-    return (
-      <OnboardingExperience
-        userEmail={user.email ?? ""}
-        organizations={organizations}
-        defaultFullName={user.user_metadata?.full_name}
-        defaultRoleTitle={user.user_metadata?.role_title}
-        defaultTheme={user.user_metadata?.preferred_theme}
-      />
-    );
-  }
-
-  // =========================================================================
-  // FLUXO DE ACESSO DIRETO (CONTAS EXISTENTES / RECORRENTES)
-  // Usuários que já fizeram login vão DIRETO para o workspace sem tela intermediária.
-  // =========================================================================
-  // 1. Prioridade: Parâmetro explícito na URL (se for uma organização autorizada)
   let selected = organizations.find((organization) => organization.id === params.organizationId);
-
-  // 2. Cookie de última organização utilizada
-  const lastOrgIdCookie = cookieStore.get("rsbuild_last_org_id")?.value;
-  if (!selected && lastOrgIdCookie) {
-    selected = organizations.find((organization) => organization.id === lastOrgIdCookie);
+  if (!selected && savedOrgId) {
+    selected = organizations.find((organization) => organization.id === savedOrgId);
   }
-
-  // 3. Metadata do usuário salvo no Supabase Auth
-  const metaLastOrgId = user.user_metadata?.last_organization_id as string | undefined;
-  if (!selected && metaLastOrgId) {
-    selected = organizations.find((organization) => organization.id === metaLastOrgId);
-  }
-
-  // 4. Se pertencer a apenas 1 organização, usa ela diretamente
   if (!selected && organizations.length === 1) {
-    selected = organizations[0];
-  }
-
-  // 5. Fallback seguro para contas já logadas com múltiplas organizações:
-  //    Seleciona a primeira organização vinculada para garantir entrada direta
-  if (!selected && organizations.length > 0) {
     selected = organizations[0];
   }
 
@@ -119,9 +71,19 @@ export default async function Home({ searchParams }: Props) {
     return (
       <main className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <section className="panel" style={{ width: "min(100%, 560px)", padding: 32 }}>
-          <h1>Nenhum espaço de trabalho ativo encontrado</h1>
-          <p>Sua conta possui credenciais ativas mas nenhuma organização pôde ser selecionada.</p>
-          <form action={signOut}><button className="secondary-button" type="submit">Sair</button></form>
+          <div className="eyebrow">RSBUILD OS</div>
+          <h1 style={{ marginTop: 12 }}>Selecione a organização</h1>
+          <p>Escolha o espaço de trabalho vinculado à sua conta.</p>
+          <form action="/" method="get" style={{ display: "grid", gap: 16, marginTop: 20 }}>
+            <label style={{ display: "grid", gap: 6 }}>Organização
+              <select name="organizationId" required defaultValue="">
+                <option value="" disabled>Selecione...</option>
+                {organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.display_name}</option>)}
+              </select>
+            </label>
+            <button className="primary-button" type="submit">Continuar</button>
+          </form>
+          <form action={signOut} style={{ marginTop: 12 }}><button className="secondary-button" type="submit">Sair</button></form>
         </section>
       </main>
     );
@@ -140,19 +102,16 @@ export default async function Home({ searchParams }: Props) {
       </main>
     );
   }
-
   const organizationSlug = selected.slug as OrganizationId;
   return (
     <Suspense fallback={null}>
+      <OrgCookieSetter organizationId={selected.id} />
       <EnterpriseWorkspace
         organizationId={selected.id}
         organizationSlug={organizationSlug}
         organizationName={selected.display_name}
         membershipRole={selectedMembership?.role ?? "viewer"}
         userEmail={user.email ?? ""}
-        userFullName={user.user_metadata?.full_name}
-        userRoleTitle={user.user_metadata?.role_title}
-        preferredTheme={user.user_metadata?.preferred_theme}
       />
     </Suspense>
   );

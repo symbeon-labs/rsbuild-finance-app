@@ -9,10 +9,10 @@ values
  ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','00000000-0000-0000-0000-000000000000','authenticated','authenticated','import-b@test.invalid','',now(),now(),now())
 on conflict (id) do nothing;
 
-insert into public.organizations (id,legal_name,display_name)
+insert into public.organizations (id,legal_name,display_name,slug)
 values
- ('55555555-5555-4555-8555-555555555555','Import A Ltda','Import A'),
- ('66666666-6666-4666-8666-666666666666','Import B Ltda','Import B')
+ ('55555555-5555-4555-8555-555555555555','Import A Ltda','Import A','import_a'),
+ ('66666666-6666-4666-8666-666666666666','Import B Ltda','Import B','import_b')
 on conflict (id) do nothing;
 
 insert into public.organization_memberships (organization_id,user_id,role)

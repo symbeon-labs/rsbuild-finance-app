@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MemberRole, ROLE_HIERARCHY, isDeveloperEmail } from "@/lib/permissions";
+import { MemberRole, ROLE_HIERARCHY } from "@/lib/permissions";
 import {
   OrganizationId,
   ORGANIZATION_PRESETS,
@@ -18,6 +18,7 @@ import { DeliveryProof } from "@/lib/delivery";
 import { ParsedWhatsAppOrder } from "@/lib/orders";
 
 interface DevZonePanelProps {
+  developerAccessAllowed: boolean;
   currentOrgId: string;
   currentOrgSlug: OrganizationId;
   realUserEmail: string;
@@ -37,21 +38,14 @@ interface DevZonePanelProps {
   onResetAllData: () => void;
 }
 
-const DEV_AUTH_KEY = "rsbuild_dev_authenticated";
-const DEV_PIN = "rsdev2026";
-
 const TENANT_UUIDS: Record<OrganizationId, string> = {
   rsbuild: "0269fe05-0990-41a8-a28c-2919691eaf0f",
   hub_acai: "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76",
   mundo_sabor: "c5356414-adce-4fdc-941b-15cfe26b991e"
 };
 
-// Whitelist de e-mails de engenharia autorizados automaticamente
-function isDevWhitelisted(email: string): boolean {
-  return isDeveloperEmail(email);
-}
-
 export function DevZonePanel({
+  developerAccessAllowed,
   currentOrgId,
   currentOrgSlug,
   realUserEmail,
@@ -71,23 +65,8 @@ export function DevZonePanel({
 }: DevZonePanelProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [pinPromptOpen, setPinPromptOpen] = useState(false);
-  const [inputPin, setInputPin] = useState("");
-  const [pinError, setPinError] = useState(false);
+  const isAuthorized = developerAccessAllowed;
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
-
-  // Verifica autorização (whitelist ou PIN na sessão)
-  useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(DEV_AUTH_KEY);
-      if (stored === "true" || isDevWhitelisted(realUserEmail)) {
-        setIsAuthorized(true);
-      }
-    } catch {
-      // Ignora erro em ambientes restritos
-    }
-  }, [realUserEmail]);
 
   // Listener para o atalho de teclado Ctrl + Shift + D
   useEffect(() => {
@@ -96,30 +75,12 @@ export function DevZonePanel({
         e.preventDefault();
         if (isAuthorized) {
           setIsOpen((prev) => !prev);
-        } else {
-          setPinPromptOpen(true);
         }
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isAuthorized]);
-
-  function handleUnlockWithPin(e: React.FormEvent) {
-    e.preventDefault();
-    if (inputPin.trim() === DEV_PIN) {
-      setIsAuthorized(true);
-      try {
-        sessionStorage.setItem(DEV_AUTH_KEY, "true");
-      } catch {}
-      setPinPromptOpen(false);
-      setIsOpen(true);
-      setInputPin("");
-      setPinError(false);
-    } else {
-      setPinError(true);
-    }
-  }
 
   function showNotice(msg: string) {
     setFeedbackNotice(msg);
@@ -253,102 +214,6 @@ export function DevZonePanel({
             </span>
           )}
         </button>
-      )}
-
-      {/* Modal de Desbloqueio por PIN (Quando ativado via atalho sem whitelist prévia) */}
-      {pinPromptOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 100000,
-            background: "rgba(0,0,0,0.75)",
-            backdropFilter: "blur(4px)",
-            display: "grid",
-            placeItems: "center",
-            padding: "16px"
-          }}
-          onClick={() => setPinPromptOpen(false)}
-        >
-          <div
-            style={{
-              background: "#18181b",
-              border: "1px solid #3f3f46",
-              borderRadius: "12px",
-              padding: "24px",
-              width: "min(100%, 360px)",
-              color: "#f4f4f5"
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-              <span style={{ fontSize: "18px" }}>🔒</span>
-              <h3 style={{ margin: 0, fontSize: "15px" }}>Acesso à Zona Dev</h3>
-            </div>
-            <p style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "4px" }}>
-              Área de engenharia acima dos acessos operacionais e da diretoria. Digite o PIN de autorização técnica:
-            </p>
-            <form onSubmit={handleUnlockWithPin} style={{ marginTop: "16px" }}>
-              <input
-                type="password"
-                autoFocus
-                placeholder="PIN de Engenharia"
-                value={inputPin}
-                onChange={(e) => {
-                  setInputPin(e.target.value);
-                  setPinError(false);
-                }}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  background: "#27272a",
-                  border: pinError ? "1px solid #ef4444" : "1px solid #52525b",
-                  borderRadius: "6px",
-                  color: "#ffffff",
-                  fontSize: "14px",
-                  boxSizing: "border-box"
-                }}
-              />
-              {pinError && (
-                <div style={{ color: "#ef4444", fontSize: "11px", marginTop: "6px" }}>
-                  PIN incorreto. Acesso restrito a engenheiros.
-                </div>
-              )}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
-                <button
-                  type="button"
-                  onClick={() => setPinPromptOpen(false)}
-                  style={{
-                    background: "transparent",
-                    color: "#a1a1aa",
-                    border: "1px solid #3f3f46",
-                    borderRadius: "6px",
-                    padding: "6px 12px",
-                    fontSize: "12px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    background: "#f59e0b",
-                    color: "#18181b",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "6px 14px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer"
-                  }}
-                >
-                  Desbloquear
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
 
       {/* Drawer Lateral da Zona Dev */}

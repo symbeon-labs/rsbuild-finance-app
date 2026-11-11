@@ -48,7 +48,7 @@ import {
   ORGANIZATION_PRESETS,
   orgHasExecutiveTower
 } from "@/app/types/workspace";
-import { MemberRole, canAccessSprintZone } from "@/lib/permissions";
+import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
 import { applyBrandColor } from "@/app/lib/brand-color";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
@@ -72,6 +72,7 @@ type EnterpriseWorkspaceProps = {
   organizationName: string;
   membershipRole: string;
   userEmail: string;
+  isDeveloperAuthorized?: boolean;
   userFullName?: string;
   userRoleTitle?: string;
   preferredTheme?: "sand" | "dark";
@@ -83,6 +84,7 @@ export default function EnterpriseWorkspace({
   organizationName,
   membershipRole,
   userEmail,
+  isDeveloperAuthorized = false,
   userFullName,
   userRoleTitle,
   preferredTheme
@@ -458,6 +460,10 @@ export default function EnterpriseWorkspace({
   }
 
   function handleExportBatchSettlement(customMatches?: ReconciliationMatch[]) {
+    if (!canApproveBatchSettlement(membershipRole)) {
+      setNotice("Ação bloqueada: somente Owner ou Admin pode gerar o lote oficial de baixas.");
+      return;
+    }
     const target = customMatches && customMatches.length ? customMatches : matchStats.ready;
     if (!target.length) {
       setNotice("Não há títulos com correspondência bancária pronta para baixa.");
@@ -479,6 +485,10 @@ export default function EnterpriseWorkspace({
   }
 
   function handleConfirmSettlementInSession() {
+    if (!canApproveBatchSettlement(membershipRole)) {
+      setNotice("Ação bloqueada: somente Owner ou Admin pode confirmar baixas.");
+      return;
+    }
     const matchedTitleIds = new Set(matchStats.ready.map((m) => m.title.id));
     setTitles((curr) =>
       curr.map((t) => (matchedTitleIds.has(t.id) ? { ...t, status: "baixado" as const } : t))
@@ -650,7 +660,7 @@ export default function EnterpriseWorkspace({
               evaluations={evaluations}
               orders={orders}
               hubAcaiMetrics={hubAcaiMetrics}
-              hasSprintZone={canAccessSprintZone(effectiveRole, organizationSlug)}
+              hasSprintZone={canAccessSprintZone(effectiveRole, organizationSlug) || isDeveloperAuthorized}
               onNavigateToTab={navigateTo}
             />
           )}
@@ -753,6 +763,7 @@ export default function EnterpriseWorkspace({
         onUploadLogo={handleLogoUploadFile}
       />
       <DevZonePanel
+        developerAccessAllowed={isDeveloperAuthorized || canAccessSprintZone(membershipRole, organizationSlug)}
         currentOrgId={organizationId}
         currentOrgSlug={organizationSlug}
         realUserEmail={currentUserEmail}

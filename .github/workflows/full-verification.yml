@@ -1,0 +1,157 @@
+name: RSBUILD Finance — Full Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to verify (branch/tag matching is case-insensitive)"
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "app/**"
+      - "lib/**"
+      - "tests/**"
+      - "supabase/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rsbuild-full-verification-${{ github.event.pull_request.number || inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: App — audit, tests, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve source ref
+        id: source
+        shell: bash
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            requested="$(printf '%s' "$REQUESTED_REF" | xargs)"
+            if [[ -z "$requested" ]]; then
+              echo "::error::A branch, tag or commit ref is required."
+              exit 1
+            fi
+            if [[ "$requested" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              resolved="$requested"
+            else
+              refs="$(git ls-remote --heads --tags "https://github.com/$GITHUB_REPOSITORY.git")"
+              resolved="$(printf '%s\n' "$refs" | awk -v wanted="$requested" '
+                {
+                  ref=$2
+                  sub(/^refs\/(heads|tags)\//, "", ref)
+                  if (tolower(ref) == tolower(wanted)) {
+                    if (ref == wanted) exact=ref
+                    else if (fallback == "") { fallback=ref }
+                  }
+                }
+                END { if (exact != "") print exact; else if (fallback != "") print fallback }
+              ')"
+              if [[ -z "$resolved" ]]; then
+                echo "::error::Could not resolve '$requested' to an existing branch or tag."
+                exit 1
+              fi
+            fi
+            echo "Resolved requested ref '$requested' to '$resolved'."
+            echo "ref=$resolved" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "ref=$PR_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+      - name: Unit and integration tests
+        run: npm test
+      - name: TypeScript validation
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+
+  database:
+    name: Database — migrations and pgTAP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve source ref
+        id: source
+        shell: bash
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            requested="$(printf '%s' "$REQUESTED_REF" | xargs)"
+            if [[ -z "$requested" ]]; then
+              echo "::error::A branch, tag or commit ref is required."
+              exit 1
+            fi
+            if [[ "$requested" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              resolved="$requested"
+            else
+              refs="$(git ls-remote --heads --tags "https://github.com/$GITHUB_REPOSITORY.git")"
+              resolved="$(printf '%s\n' "$refs" | awk -v wanted="$requested" '
+                {
+                  ref=$2
+                  sub(/^refs\/(heads|tags)\//, "", ref)
+                  if (tolower(ref) == tolower(wanted)) {
+                    if (ref == wanted) exact=ref
+                    else if (fallback == "") { fallback=ref }
+                  }
+                }
+                END { if (exact != "") print exact; else if (fallback != "") print fallback }
+              ')"
+              if [[ -z "$resolved" ]]; then
+                echo "::error::Could not resolve '$requested' to an existing branch or tag."
+                exit 1
+              fi
+            fi
+            echo "Resolved requested ref '$requested' to '$resolved'."
+            echo "ref=$resolved" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "ref=$PR_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+      - name: Install Supabase CLI
+        id: supabase_cli
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start isolated local Supabase stack
+        run: supabase start -x studio,edge-runtime,logflare,vector
+      - name: Validate local migration application
+        run: supabase db reset
+      - name: Run pgTAP database suite
+        run: supabase test db
+      - name: Stop local Supabase stack
+        if: always() && steps.supabase_cli.outcome == 'success'
+        run: supabase stop --no-backup
