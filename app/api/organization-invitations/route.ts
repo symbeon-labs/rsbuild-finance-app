@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invitation_already_exists" }, { status: 409 });
   }
 
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
   const { data: row, error: recordError } = await admin.from("organization_invitations").upsert({
     organization_id: organizationId, email, role, invited_by: access.user.id,
     invited_user_id: null, status: "pending", expires_at: expiresAt,
