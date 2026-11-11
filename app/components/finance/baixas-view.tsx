@@ -16,7 +16,6 @@ interface BaixasViewProps {
     totalReadyAmount: number;
   };
   role?: string;
-  onReloadSample: () => void;
   onImportTitlesFile: (file: File) => void;
   onConfirmSettlementInSession: () => void;
   onExportBatchSettlement: () => void;
@@ -27,7 +26,6 @@ export function BaixasView({
   matches,
   matchStats,
   role,
-  onReloadSample,
   onImportTitlesFile,
   onConfirmSettlementInSession,
   onExportBatchSettlement
@@ -57,13 +55,7 @@ export function BaixasView({
           <p>Conciliação inteligente e liquidação de contas a receber sem arrastar cards manuais no ERP.</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <button
-            className="secondary-button"
-            onClick={onReloadSample}
-            title="Recarregar títulos exemplo para teste"
-          >
-            ⚡ Carregar Exemplo
-          </button>
+          
           <button className="secondary-button" onClick={() => titlesInputRef.current?.click()}>
             ＋ Importar Títulos (CSV)
           </button>
@@ -230,10 +222,8 @@ export function BaixasView({
         ) : (
           <EmptyState
             icon="✓"
-            title="Nenhum título a receber carregado"
-            text="Carregue os títulos pendentes do Omie ou utilize a amostra da Mundo do Sabor."
-            action="Carregar Amostra Mundo do Sabor"
-            onAction={onReloadSample}
+            title="Nenhum título carregado"
+            text="Importe uma base de títulos autorizada. Nenhum dado de demonstração é exibido como dado operacional."
           />
         )}
       </section>
