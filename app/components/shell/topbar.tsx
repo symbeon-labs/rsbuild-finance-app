@@ -147,13 +147,13 @@ export function Topbar({
           type="button"
           className="reset-session-btn"
           onClick={onResetSession}
-          title="Reiniciar registros em cache e restaurar dados iniciais de demonstração"
+          title="Limpar os dados temporários desta sessão; os registros financeiros persistidos não serão alterados"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="1 4 1 10 7 10" />
             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
           </svg>
-          <span>Reiniciar</span>
+          <span>Limpar sessão</span>
         </button>
 
         <button
