@@ -98,6 +98,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   const [deliverableVersion, setDeliverableVersion] = useState("");
   const [deliverableUrl, setDeliverableUrl] = useState("");
   const [savingDeliverable, setSavingDeliverable] = useState(false);
+  const [statusUpdatingFor, setStatusUpdatingFor] = useState<string | null>(null);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -191,6 +192,44 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
     }
   }
 
+  async function updateSprintStatus(projectId: string, sprintId: string, status: string) {
+    setStatusUpdatingFor(sprintId);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${projectId}/sprints`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sprintId, status })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar a sprint.");
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao atualizar sprint.");
+    } finally {
+      setStatusUpdatingFor(null);
+    }
+  }
+
+  async function updateTaskStatus(projectId: string, sprintId: string, taskId: string, status: string) {
+    setStatusUpdatingFor(taskId);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${projectId}/sprints/${sprintId}/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, status })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar a atividade.");
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao atualizar atividade.");
+    } finally {
+      setStatusUpdatingFor(null);
+    }
+  }
+
   async function handleCreateDeliverable(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!creatingDeliverableFor || !deliverableTitle.trim()) return;
@@ -265,6 +304,11 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
     (sum, project) => sum + project.project_sprints.reduce((sprintSum, sprint) => sprintSum + sprint.project_tasks.length, 0),
     0
   );
+  const completedTasks = projects.reduce(
+    (sum, project) => sum + project.project_sprints.reduce((sprintSum, sprint) => sprintSum + sprint.project_tasks.filter((task) => task.status === "done").length, 0),
+    0
+  );
+  const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
     <>
@@ -283,6 +327,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
         <div className="panel"><div className="eyebrow">PROJETOS VISÍVEIS</div><h2>{projects.length}</h2><p className="muted">Conforme suas permissões</p></div>
         <div className="panel"><div className="eyebrow">SPRINTS</div><h2>{totalSprints}</h2><p className="muted">Planejadas e em execução</p></div>
         <div className="panel"><div className="eyebrow">ATIVIDADES</div><h2>{totalTasks}</h2><p className="muted">Registradas nas sprints</p></div>
+        <div className="panel"><div className="eyebrow">CONCLUSÃO</div><h2>{totalTasks ? `${completionRate}%` : "—"}</h2><p className="muted">{completedTasks}/{totalTasks} atividades concluídas</p></div>
       </div>
 
       {error && <div className="notice" role="alert">{error}</div>}
@@ -316,7 +361,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                   </span>
                   <span style={{ display: "block", marginTop: 6 }}>{project.name}</span>
                   <span className="muted" style={{ display: "block", marginTop: 4, fontSize: 12 }}>
-                    {project.project_sprints.length} sprint(s) · {project.project_sprints.reduce((sum, sprint) => sum + sprint.project_tasks.length, 0)} atividade(s)
+                    {project.project_sprints.length} sprint(s) · {project.project_sprints.reduce((sum, sprint) => sum + sprint.project_tasks.filter((task) => task.status === "done").length, 0)}/{project.project_sprints.reduce((sum, sprint) => sum + sprint.project_tasks.length, 0)} atividades concluídas
                   </span>
                 </button>
               ))}
@@ -373,7 +418,11 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                             <p>{sprint.objective}</p>
                             {sprint.completion_criteria && <p className="muted" style={{ fontSize: 12 }}>Conclusão: {sprint.completion_criteria}</p>}
                           </div>
-                          <span className="subtle-tag">{statusLabels[sprint.status] || sprint.status}</span>
+                          {canManage ? (
+                            <select aria-label={`Status da sprint ${sprint.title}`} value={sprint.status} disabled={statusUpdatingFor === sprint.id} onChange={(event) => void updateSprintStatus(selectedProject.id, sprint.id, event.target.value)}>
+                              <option value="planned">Planejada</option><option value="active">Em andamento</option><option value="blocked">Bloqueada</option><option value="completed">Concluída</option><option value="cancelled">Cancelada</option>
+                            </select>
+                          ) : <span className="subtle-tag">{statusLabels[sprint.status] || sprint.status}</span>}
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10 }}>
                           <span className="muted" style={{ fontSize: 12 }}>{sprint.project_tasks.length} atividade(s)</span>
@@ -411,7 +460,12 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                           <ul style={{ margin: "12px 0 0", paddingLeft: 18, display: "grid", gap: 6 }}>
                             {sprint.project_tasks.map((task) => (
                               <li key={task.id}>
-                                <span>{task.title}</span> <span className="muted">· {statusLabels[task.status] || task.status} · {task.priority}{task.responsible_label ? ` · ${task.responsible_label}` : ""}</span>
+                                <span>{task.title}</span> <span className="muted">· {task.priority}{task.responsible_label ? ` · ${task.responsible_label}` : ""}</span>
+                                {canManage ? (
+                                  <select aria-label={`Status da atividade ${task.title}`} value={task.status} disabled={statusUpdatingFor === task.id} onChange={(event) => void updateTaskStatus(selectedProject.id, sprint.id, task.id, event.target.value)}>
+                                    <option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="blocked">Bloqueada</option><option value="review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option>
+                                  </select>
+                                ) : <span className="muted">· {statusLabels[task.status] || task.status}</span>}
                                 {task.acceptance_criteria && <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{task.acceptance_criteria}</div>}
                               </li>
                             ))}
