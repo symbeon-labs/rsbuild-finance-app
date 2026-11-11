@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       id: row.id, date: row.transaction_date, description: row.description,
       amount: amountMinor / 100, direction: row.direction,
       category: row.category || "Não classificado", source: "Importação financeira",
-      status: row.status, sourceRecordId: row.source_record_id ?? undefined,
+      status: row.status === "conciliado" ? "conciliado" : "pendente", sourceRecordId: row.source_record_id ?? undefined,
       importBatchId: row.import_batch_id ?? undefined,
       createdAt: row.created_at ?? undefined, createdBy: row.created_by ?? undefined
     };
