@@ -81,7 +81,7 @@ export function CanhotosView({
           icon="⚠"
         />
         <Metric
-          label="Em Trânsito / Expedição"
+          label="Pendência documental"
           value={`${deliveryMetrics.pendingDeliveryCount} faturas`}
           tone="neutral"
           detail={formatCurrency(deliveryMetrics.pendingDeliveryAmount)}
