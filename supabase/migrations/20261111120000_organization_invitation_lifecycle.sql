@@ -2,7 +2,7 @@
 alter table public.organization_invitations
   drop constraint if exists organization_invitations_status_check;
 alter table public.organization_invitations
-  add column if not exists expires_at timestamptz not null default (now() + interval '7 days'),
+  add column if not exists expires_at timestamptz not null default (now() + interval '1 hour'),
   add column if not exists accepted_at timestamptz,
   add column if not exists revoked_at timestamptz,
   add column if not exists last_sent_at timestamptz;
