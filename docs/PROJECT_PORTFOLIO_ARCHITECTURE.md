@@ -18,7 +18,8 @@ O projeto é uma relação operacional entre organizações, não uma fusão dos
 - Membros da organização RSBUILD podem consultar o portfólio administrado por ela, respeitando suas alçadas.
 - A gestão de projetos é restrita a Owner/Admin da RSBUILD.
 - A criação e manutenção de sprints, atividades e entregáveis é restrita a Owner/Admin/Operator da RSBUILD.
-- Usuários de organizações clientes só visualizam projetos quando recebem uma linha explícita em project_memberships.
+- A organização cliente recebe uma concessão explícita em project_organization_access; assim, seus próprios membros visualizam o projeto dentro do workspace da empresa.
+- Concessões individuais em project_memberships podem ser usadas futuramente para colaboradores externos específicos.
 - O nível de acesso do cliente é viewer ou contributor; nesta primeira versão, ambos são somente leitura. Escrita permanece sob responsabilidade da equipe RSBUILD.
 - Nenhuma política concede acesso aos dados financeiros de outro tenant.
 
@@ -27,6 +28,7 @@ O projeto é uma relação operacional entre organizações, não uma fusão dos
 | Entidade | Responsabilidade |
 |---|---|
 | projects | Relação entre organização gestora e cliente |
+| project_organization_access | Concessão da organização cliente ao seu próprio projeto |
 | project_memberships | Concessão individual de acesso ao projeto |
 | project_sprints | Objetivos, janela e estado de cada sprint |
 | project_tasks | Atividades, prioridade, critérios de conclusão e responsável |
@@ -40,12 +42,12 @@ O projeto é uma relação operacional entre organizações, não uma fusão dos
 2. A equipe seleciona Mundo do Sabor ou Hub Açaí.
 3. O projeto contém suas sprints, atividades e entregáveis.
 4. A equipe registra progresso e mantém os critérios de aceite.
-5. Quando o projeto estiver pronto para compartilhamento, a RSBUILD concede acesso individual aos usuários do cliente.
+5. A organização cliente recebe acesso somente ao seu próprio projeto por uma concessão de escopo organizacional; não é necessário adicionar seus usuários ao workspace RSBUILD.
 6. O cliente acessa apenas o projeto explicitamente liberado, sem obter associação geral ao workspace RSBUILD ou aos demais clientes.
 
 ## Dados iniciais
 
-A migração cria dois registros de portfólio, resolvendo organizações pelos slugs canônicos:
+A migração cria dois registros de portfólio e concede a cada organização acesso de leitura somente ao seu projeto, resolvendo organizações pelos slugs canônicos:
 - mundo_sabor → Mundo do Sabor;
 - hub_acai → Hub Açaí.
 
