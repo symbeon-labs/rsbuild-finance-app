@@ -16,6 +16,7 @@ create table public.projects (
   updated_at timestamptz not null default now(),
   unique (managing_organization_id, client_organization_id, project_key),
   unique (id, managing_organization_id),
+  unique (id, managing_organization_id, client_organization_id),
   check (managing_organization_id <> client_organization_id),
   check (project_key ~ '^[a-z][a-z0-9-]{1,62}$')
 );
@@ -48,8 +49,8 @@ create table public.project_organization_access (
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
   unique (project_id, client_organization_id),
-  foreign key (project_id, managing_organization_id)
-    references public.projects(id, managing_organization_id) on delete cascade,
+  foreign key (project_id, managing_organization_id, client_organization_id)
+    references public.projects(id, managing_organization_id, client_organization_id) on delete cascade,
   check (managing_organization_id <> client_organization_id)
 );
 create index project_organization_access_client_idx
