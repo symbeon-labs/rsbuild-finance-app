@@ -65,12 +65,23 @@ Commit consultado: `c8e3e33994f71ed320f52b79ffc8c7410362a9ee`.
 | Supabase remoto | Nenhuma escrita ou migration executada nesta etapa |
 | Branch Supabase exclusiva de QA | Não criada — decisão de custo zero |
 | Preview Vercel | Deploy READY anteriormente; acesso interativo bloqueado por proteção/SSO |
-| Usuários de teste | Não fornecidos/confirmados |
+| Identidades indicadas | symbeonlabs@gmail.com e makunesayto@gmail.com; cadastro/acesso ainda não verificados |
 | Dois tenants de teste | Não provisionados/confirmados |
 | Massa sintética | Preparar/usar somente após confirmar o formato aceito pelo importador |
 | Evidência visual da interface | Pendente de acesso autorizado ao Preview |
 
 As organizações já existentes no banco não devem ser presumidas como tenants de teste e não serão utilizadas para simular isolamento.
+
+## 4.1 Identidades indicadas para QA
+
+O responsável indicou os seguintes e-mails para serem utilizados como identidades de teste:
+
+| Identidade | Uso proposto | Estado de provisionamento |
+|---|---|---|
+| `symbeonlabs@gmail.com` | QA — Organização A | A confirmar no Supabase Auth; não presumir conta existente |
+| `makunesayto@gmail.com` | QA — Organização B | A confirmar no Supabase Auth; não presumir conta existente |
+
+Essas identidades ficam designadas para a homologação, mas ainda não constituem evidência de que os usuários estejam cadastrados, tenham acesso ao Preview ou estejam vinculados a organizações distintas. O responsável do ambiente deve confirmar/provisionar os usuários e os dois tenants de teste. Não foram criadas contas, enviados convites nem alterados dados remotos nesta etapa. Não compartilhar senhas, links mágicos, códigos OTP ou tokens.
 
 ## 5. Matriz funcional — estado atual
 
@@ -78,11 +89,11 @@ Os casos abaixo permanecem sem PASS funcional. A classificação BLOCKED indica 
 
 | ID | Caso | Estado | Motivo / condição para executar |
 |---|---|---|---|
-| QA-01 | Login e recuperação de sessão | BLOCKED | Acesso interativo autorizado ao Preview e usuário de teste |
+| QA-01 | Login e recuperação de sessão | BLOCKED | Acesso interativo autorizado ao Preview e confirmação de cadastro das identidades indicadas |
 | QA-02 | Importação de arquivo sintético | BLOCKED | Preview acessível e fixture no formato aceito pelo parser |
 | QA-03 | Contadores de inseridos e duplicados | BLOCKED | Executar QA-02 e comparar retorno com resultado persistido |
 | QA-04 | Persistência após reload e novo login | BLOCKED | Sessão de teste e execução de importação |
-| QA-05 | Isolamento entre organizações | BLOCKED | Dois usuários e dois tenants de teste autorizados |
+| QA-05 | Isolamento entre organizações | BLOCKED | Confirmar que as duas identidades indicadas estão vinculadas a dois tenants de teste distintos |
 | QA-06 | Isolamento de dados locais por organização | BLOCKED | Acesso interativo e duas organizações de teste |
 | QA-07 | Responsividade móvel e desktop | BLOCKED | Acesso interativo ao Preview |
 
@@ -102,7 +113,7 @@ Fixture versionada: [finance-import-synthetic.csv](./fixtures/finance-import-syn
 1. Manter PR #34 e PR #35 em revisão; não mesclar nem promover produção.
 2. Usar os resultados atuais do GitHub Actions como evidência técnica, vinculados aos SHAs acima.
 3. Confirmar um caminho autorizado para acessar o Preview protegido, sem compartilhar senhas, cookies ou tokens.
-4. Confirmar/provisionar, pelo responsável do ambiente, dois usuários e dois tenants exclusivamente de teste. Não reutilizar contas reais.
+4. Confirmar no Supabase Auth o cadastro das identidades indicadas (symbeonlabs@gmail.com e makunesayto@gmail.com) e provisionar/vincular cada uma a um tenant exclusivamente de teste. Não reutilizar organizações ou dados reais de clientes.
 5. Revisar o parser e preparar CSV/OFX sintético compatível; registrar dataset, hash e resultado esperado.
 6. Executar QA-01 a QA-07 no Preview, capturando evidências sem dados sensíveis.
 7. Registrar defeitos, retestar correções e fechar o relatório com o SHA exato testado.
