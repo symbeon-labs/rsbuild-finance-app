@@ -37,17 +37,19 @@ export function EmptyState({
   icon: string;
   title: string;
   text: string;
-  action: string;
-  onAction: () => void;
+  action?: string;
+  onAction?: () => void;
 }) {
   return (
     <div className="empty-state">
       <div className="empty-icon">{icon}</div>
       <strong>{title}</strong>
       <p>{text}</p>
-      <button className="text-button" onClick={onAction}>
-        {action} →
-      </button>
+      {action && onAction && (
+        <button className="text-button" onClick={onAction}>
+          {action} →
+        </button>
+      )}
     </div>
   );
 }

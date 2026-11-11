@@ -165,7 +165,7 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" },
 
   // 4. Módulo Auditoria & Inteligência Jurídica (Agente RS / JEV)
-  { id: "torre-controle", label: "Auditoria & Torre RS", icon: "⎈", module: "audit" }
+  { id: "torre-controle", label: "Governança & Controle", icon: "⎈", module: "audit" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [

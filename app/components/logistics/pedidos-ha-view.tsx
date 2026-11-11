@@ -17,7 +17,6 @@ interface PedidosHaViewProps {
   onWhatsAppTextChange: (text: string) => void;
   onParseMessage: () => void;
   onConfirmOrder: () => void;
-  onReloadSample: () => void;
   onExportOmieCsv: () => void;
   onClearText: () => void;
   onLoadExample: () => void;
@@ -31,7 +30,6 @@ export function PedidosHaView({
   onWhatsAppTextChange,
   onParseMessage,
   onConfirmOrder,
-  onReloadSample,
   onExportOmieCsv,
   onClearText,
   onLoadExample
@@ -48,10 +46,12 @@ export function PedidosHaView({
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <button className="primary-button" onClick={onExportOmieCsv}>
-            <span>⤓</span> Exportar Pedidos para ERP (CSV)
+            <span>⤓</span> Exportar CSV para conferência
           </button>
         </div>
       </div>
+
+      <div className="inline-note" style={{ marginTop: "12px" }}>Pedidos confirmados nesta tela ficam apenas na memória da sessão. A exportação gera um arquivo CSV; não envia pedidos ao Omie nem grava a fila em uma base operacional.</div>
 
       <div className="metric-grid">
         <Metric
@@ -190,7 +190,7 @@ export function PedidosHaView({
 
               <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
                 <button className="primary-button" onClick={onConfirmOrder}>
-                  <span>✓</span> Confirmar e Adicionar à Carga do Dia
+                  <span>✓</span> Adicionar à fila desta sessão
                 </button>
               </div>
             </div>
@@ -210,9 +210,7 @@ export function PedidosHaView({
             <h2>Fila de Pedidos do Dia (Expedição & Carregamento)</h2>
             <p>Consolidação da carga para os veículos de entrega e expedição logística.</p>
           </div>
-          <button className="secondary-button" onClick={onReloadSample}>
-            Restaurar Amostra de Demonstração
-          </button>
+          
         </div>
 
         {orders.length > 0 ? (
@@ -289,9 +287,7 @@ export function PedidosHaView({
           <EmptyState
             icon="📱"
             title="Nenhum pedido na esteira"
-            text="Decifre novas mensagens do WhatsApp para montar a carga de expedição."
-            action="Carregar Pedidos de Exemplo"
-            onAction={onReloadSample}
+            text="Decifre uma mensagem recebida e confirme o pedido para adicioná-lo à fila desta sessão. A fila ainda não possui persistência operacional."
           />
         )}
       </section>

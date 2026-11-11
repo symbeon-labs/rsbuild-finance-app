@@ -16,7 +16,6 @@ interface BaixasViewProps {
     totalReadyAmount: number;
   };
   role?: string;
-  onReloadSample: () => void;
   onImportTitlesFile: (file: File) => void;
   onConfirmSettlementInSession: () => void;
   onExportBatchSettlement: () => void;
@@ -27,7 +26,6 @@ export function BaixasView({
   matches,
   matchStats,
   role,
-  onReloadSample,
   onImportTitlesFile,
   onConfirmSettlementInSession,
   onExportBatchSettlement
@@ -57,13 +55,7 @@ export function BaixasView({
           <p>Conciliação inteligente e liquidação de contas a receber sem arrastar cards manuais no ERP.</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <button
-            className="secondary-button"
-            onClick={onReloadSample}
-            title="Recarregar títulos exemplo para teste"
-          >
-            ⚡ Carregar Exemplo
-          </button>
+          
           <button className="secondary-button" onClick={() => titlesInputRef.current?.click()}>
             ＋ Importar Títulos (CSV)
           </button>
@@ -110,19 +102,21 @@ export function BaixasView({
         />
       </section>
 
+      <div className="inline-note" style={{ marginTop: "12px" }}>Títulos e decisões de baixa são temporários nesta sessão. O sistema não grava a baixa no ERP nem substitui a conferência no sistema de origem.</div>
+
       <section className="panel" style={{ marginTop: "24px" }}>
         <div className="panel-heading">
           <div>
             <h2>Painel de Conciliação e Baixa em Lote</h2>
-            <p>Cruzamento entre contas a receber do Omie e lançamentos bancários conciliados</p>
+            <p>Cruzamento entre títulos importados e lançamentos bancários disponíveis nesta sessão.</p>
           </div>
           {matchStats.ready.length > 0 && (
             <div style={{ display: "flex", gap: "8px" }}>
               <button className="secondary-button" onClick={onConfirmSettlementInSession} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Marcar títulos como baixados nesta sessão de demonstração."}>
                 {hasSettlementAuth ? "Marcar Baixados na Sessão" : "🔒 Baixa Restrita à Diretoria"}
               </button>
-              <button className={hasSettlementAuth ? "primary-button" : "secondary-button"} onClick={onExportBatchSettlement} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Gerar arquivo de baixa para importação no Omie."}>
-                {hasSettlementAuth ? "⚡ Baixar Lote Oficial Omie (.CSV)" : "🔒 Baixa Restrita à Diretoria"}
+              <button className={hasSettlementAuth ? "primary-button" : "secondary-button"} onClick={onExportBatchSettlement} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Gerar CSV para conferência e eventual importação manual no Omie; nenhuma baixa será executada aqui."}>
+                {hasSettlementAuth ? "Exportar CSV para Omie" : "🔒 Baixa Restrita à Diretoria"}
               </button>
             </div>
           )}
@@ -230,10 +224,8 @@ export function BaixasView({
         ) : (
           <EmptyState
             icon="✓"
-            title="Nenhum título a receber carregado"
-            text="Carregue os títulos pendentes do Omie ou utilize a amostra da Mundo do Sabor."
-            action="Carregar Amostra Mundo do Sabor"
-            onAction={onReloadSample}
+            title="Nenhum título carregado"
+            text="Importe uma base de títulos autorizada. Nenhum dado de demonstração é exibido como dado operacional."
           />
         )}
       </section>

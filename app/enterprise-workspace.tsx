@@ -35,10 +35,6 @@ import {
   parseWhatsAppOrderMessage
 } from "@/lib/orders";
 import {
-  INITIAL_SAMPLE_TITLES,
-  INITIAL_SAMPLE_PROOFS,
-  INITIAL_SAMPLE_HA_ORDERS,
-  INITIAL_SAMPLE_OMIE_RECORDS,
   type ModuleType,
   type NavSection,
   type EnabledModulesConfig,
@@ -126,7 +122,7 @@ export default function EnterpriseWorkspace({
   const [fileName, setFileName] = useState("");
 
   // Registros Omie para conciliação
-  const [omieRecords, setOmieRecords] = useState<OmieRecord[]>(INITIAL_SAMPLE_OMIE_RECORDS);
+  const [omieRecords, setOmieRecords] = useState<OmieRecord[]>([]);
 
   // Simulação de Papéis na Zona Dev (Modo Engenharia)
   const [simulatedRole, setSimulatedRole] = useState<MemberRole | null>(null);
@@ -144,9 +140,9 @@ export default function EnterpriseWorkspace({
     if (start !== undefined) setCustomStartDate(start);
     if (end !== undefined) setCustomEndDate(end);
     try {
-      localStorage.setItem("rsbuild_period_option", p);
-      if (start !== undefined) localStorage.setItem("rsbuild_period_start", start);
-      if (end !== undefined) localStorage.setItem("rsbuild_period_end", end);
+      localStorage.setItem(`rsbuild_period_option_${organizationId}`, p);
+      if (start !== undefined) localStorage.setItem(`rsbuild_period_start_${organizationId}`, start);
+      if (end !== undefined) localStorage.setItem(`rsbuild_period_end_${organizationId}`, end);
     } catch {}
   }
 
@@ -179,25 +175,23 @@ export default function EnterpriseWorkspace({
   // Cor de Marca do Workspace (Brand Color Picker) — substitui --rsbuild-terracotta dinamicamente
   const [brandColor, setBrandColor] = useState<string>("#B5583C");
 
-  // Controle de Módulos Habilitados (4 Produtos Desacoplados)
-  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({
-    finance: true,
-    reconciliation: true,
-    logistics: true,
-    audit: true
-  });
+  // Módulos iniciais respeitam a configuração declarada para cada organização.
+  // Preferências locais podem personalizar apenas o workspace atual neste navegador.
+  const organizationPreset = ORGANIZATION_PRESETS.find((preset) => preset.id === currentOrgId);
+  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>(
+    organizationPreset?.enabledModules ?? { finance: true, reconciliation: false, logistics: false, audit: false }
+  );
 
   // isSuperAdmin calculado reativamente com base em effectiveRole
 
   // Contas a Receber e Baixas em Lote
-  const [titles, setTitles] = useState<ReceivableTitle[]>(INITIAL_SAMPLE_TITLES);
+  const [titles, setTitles] = useState<ReceivableTitle[]>([]);
 
   // Canhotos de Entrega e Blindagem
-  const [proofs, setProofs] = useState<DeliveryProof[]>(INITIAL_SAMPLE_PROOFS);
+  const [proofs, setProofs] = useState<DeliveryProof[]>([]);
 
   // Pedidos WhatsApp
-  const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>(INITIAL_SAMPLE_HA_ORDERS);
-  const [sessionDataOrganizationId, setSessionDataOrganizationId] = useState<string | null>(null);
+  const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>([]);
   const [whatsAppText, setWhatsAppText] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedWhatsAppOrder | null>(null);
 
@@ -229,9 +223,9 @@ export default function EnterpriseWorkspace({
     try {
       localStorage.setItem("rsbuild_selected_organization", organizationId);
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
-      const savedLogo = localStorage.getItem("rsbuild_workspace_logo");
+      const savedLogo = localStorage.getItem(`rsbuild_workspace_logo_${organizationId}`);
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedModules = localStorage.getItem("rsbuild_workspace_modules");
+      const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
         setEnabledModules({
@@ -249,59 +243,25 @@ export default function EnterpriseWorkspace({
 
       // Hidratação da Cor de Marca (Brand Color Picker)
       {
-        const savedBrandColor = localStorage.getItem("rsbuild_workspace_brand_color");
-        const colorToApply = ORGANIZATION_PRESETS.find((p) => p.id === currentOrgId)?.brandColor || savedBrandColor || "#B5583C";
+        const savedBrandColor = localStorage.getItem(`rsbuild_workspace_brand_color_${organizationId}`);
+        const colorToApply = organizationPreset?.brandColor || savedBrandColor || "#B5583C";
         setBrandColor(colorToApply);
         applyBrandColor(colorToApply);
       }
 
       // Persistência de Período
-      const savedPeriod = localStorage.getItem("rsbuild_period_option") as PeriodOption | null;
+      const savedPeriod = localStorage.getItem(`rsbuild_period_option_${organizationId}`) as PeriodOption | null;
       if (savedPeriod) setPeriod(savedPeriod);
-      const savedStart = localStorage.getItem("rsbuild_period_start");
+      const savedStart = localStorage.getItem(`rsbuild_period_start_${organizationId}`);
       if (savedStart) setCustomStartDate(savedStart);
-      const savedEnd = localStorage.getItem("rsbuild_period_end");
+      const savedEnd = localStorage.getItem(`rsbuild_period_end_${organizationId}`);
       if (savedEnd) setCustomEndDate(savedEnd);
 
-      // Persistência de Dados Operacionais
-      // Estes três módulos ainda são protótipos locais, não registros autoritativos.
-      // A chave por organização impede reaproveitamento acidental entre tenants.
-      setTitles(INITIAL_SAMPLE_TITLES);
-      setProofs(INITIAL_SAMPLE_PROOFS);
-      setOrders(INITIAL_SAMPLE_HA_ORDERS);
-      const savedTitles = localStorage.getItem(`rsbuild_session_titles_${organizationId}`);
-      if (savedTitles) setTitles(JSON.parse(savedTitles));
-      const savedProofs = localStorage.getItem(`rsbuild_session_proofs_${organizationId}`);
-      if (savedProofs) setProofs(JSON.parse(savedProofs));
-      const savedOrders = localStorage.getItem(`rsbuild_session_orders_${organizationId}`);
-      if (savedOrders) setOrders(JSON.parse(savedOrders));
     } catch {
       // Ignora falhas em sandbox restrito / SSR
-    } finally {
-      setSessionDataOrganizationId(organizationId);
     }
   }, [organizationId, currentOrgId]);
 
-  useEffect(() => {
-    if (sessionDataOrganizationId !== organizationId) return;
-    try {
-      localStorage.setItem(`rsbuild_session_titles_${organizationId}`, JSON.stringify(titles));
-    } catch {}
-  }, [titles, organizationId, sessionDataOrganizationId]);
-
-  useEffect(() => {
-    if (sessionDataOrganizationId !== organizationId) return;
-    try {
-      localStorage.setItem(`rsbuild_session_proofs_${organizationId}`, JSON.stringify(proofs));
-    } catch {}
-  }, [proofs, organizationId, sessionDataOrganizationId]);
-
-  useEffect(() => {
-    if (sessionDataOrganizationId !== organizationId) return;
-    try {
-      localStorage.setItem(`rsbuild_session_orders_${organizationId}`, JSON.stringify(orders));
-    } catch {}
-  }, [orders, organizationId, sessionDataOrganizationId]);
 
   function handleSaveCompanyConfig(
     name: string,
@@ -320,13 +280,13 @@ export default function EnterpriseWorkspace({
       setBrandColor(colorToApply);
       applyBrandColor(colorToApply);
       try {
-        localStorage.setItem("rsbuild_workspace_brand_color", colorToApply);
+        localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
     }
     if (modules) {
       setEnabledModules(modules);
       try {
-        localStorage.setItem("rsbuild_workspace_modules", JSON.stringify(modules));
+        localStorage.setItem(`rsbuild_workspace_modules_${organizationId}`, JSON.stringify(modules));
       } catch {}
       if (!modules.finance && modules.logistics && activeModule === "finance") {
         navigateTo("pedidos-ha");
@@ -336,9 +296,9 @@ export default function EnterpriseWorkspace({
     }
     try {
       if (logo) {
-        localStorage.setItem("rsbuild_workspace_logo", logo);
+        localStorage.setItem(`rsbuild_workspace_logo_${organizationId}`, logo);
       } else {
-        localStorage.removeItem("rsbuild_workspace_logo");
+        localStorage.removeItem(`rsbuild_workspace_logo_${organizationId}`);
       }
     } catch {}
     setNotice(`Workspace configurado com sucesso para ${name}!`);
@@ -355,13 +315,13 @@ export default function EnterpriseWorkspace({
   }
 
   function resetSession() {
-    if (typeof window !== "undefined" && !window.confirm("Reiniciar todos os dados operacionais da sessão atual?")) {
+    if (typeof window !== "undefined" && !window.confirm("Limpar os dados temporários desta sessão? Os registros financeiros persistidos não serão alterados.")) {
       return;
     }
-    setOmieRecords(INITIAL_SAMPLE_OMIE_RECORDS);
-    setTitles(INITIAL_SAMPLE_TITLES);
-    setProofs(INITIAL_SAMPLE_PROOFS);
-    setOrders(INITIAL_SAMPLE_HA_ORDERS);
+    setOmieRecords([]);
+    setTitles([]);
+    setProofs([]);
+    setOrders([]);
     setPendingImport([]);
     setPendingMetadata(null);
     setImportErrors([]);
@@ -371,7 +331,7 @@ export default function EnterpriseWorkspace({
       localStorage.removeItem(`rsbuild_session_proofs_${organizationId}`);
       localStorage.removeItem(`rsbuild_session_orders_${organizationId}`);
     } catch {}
-    setNotice("Sessão reiniciada com dados de demonstração.");
+    setNotice("Dados temporários desta sessão foram limpos. Registros financeiros persistidos não foram alterados.");
   }
 
   // Filtragem Reativa de Registros por Período
@@ -531,7 +491,7 @@ export default function EnterpriseWorkspace({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setNotice(`Planilha oficial de Baixa em Lote do Omie gerada com sucesso (${settlements.length} títulos liquidados).`);
+    setNotice(`Arquivo CSV gerado para conferência e eventual importação manual no Omie (${settlements.length} itens). Nenhum título foi baixado pelo RSBUILD OS.`);
   }
 
   function handleConfirmSettlementInSession() {
@@ -574,25 +534,25 @@ export default function EnterpriseWorkspace({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setNotice(`Protocolo de blindagem jurídica exportado com sucesso (${evaluations.length} notas analisadas).`);
+    setNotice(`Relatório CSV exportado (${evaluations.length} registros analisados). O arquivo não constitui parecer jurídico nem comprova autenticidade documental.`);
   }
 
   function handleConfirmReceipt(proofId: string) {
-    const today = new Date().toISOString().slice(0, 10);
+    const proof = proofs.find((item) => item.id === proofId);
+    if (!proof) {
+      setNotice("Comprovante não encontrado nesta sessão.");
+      return;
+    }
+    if (!proof.deliveryDate || !proof.receiverName?.trim() || !proof.receiverDocument?.trim() || !proof.proofFileUrl?.trim()) {
+      setNotice("Conferência bloqueada: informe data de entrega, nome, documento do recebedor e referência do arquivo de evidência original. O sistema não pode inventar esses dados.");
+      return;
+    }
     setProofs((curr) =>
-      curr.map((p) => {
-        if (p.id !== proofId) return p;
-        return {
-          ...p,
-          status: "comprovado",
-          deliveryDate: p.deliveryDate || today,
-          receiverName: p.receiverName || "Recebedor Confirmado (Operador)",
-          receiverDocument: p.receiverDocument || "Confirmado em Sessão",
-          notes: "Canhoto validado manualmente no fechamento."
-        };
-      })
+      curr.map((item) => item.id === proofId
+        ? { ...item, status: "comprovado" }
+        : item)
     );
-    setNotice("Canhoto validado e liberado para protesto/cobrança jurídica com sucesso!");
+    setNotice("Conferência registrada apenas nesta sessão. Isso não autentica a assinatura, não altera o ERP e não libera cobrança ou protesto.");
   }
 
   function handleParseWhatsApp() {
@@ -608,7 +568,7 @@ export default function EnterpriseWorkspace({
   function handleConfirmParsedOrder() {
     if (!parsedPreview) return;
     setOrders((curr) => [parsedPreview, ...curr]);
-    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à esteira de expedição com sucesso!`);
+    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à fila temporária desta sessão. A fila não foi persistida nem enviada ao ERP.`);
     setParsedPreview(null);
     setWhatsAppText("");
   }
@@ -753,7 +713,6 @@ export default function EnterpriseWorkspace({
               matches={matches}
               matchStats={matchStats}
               role={effectiveRole}
-              onReloadSample={() => setTitles(INITIAL_SAMPLE_TITLES)}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}
               onExportBatchSettlement={handleExportBatchSettlement}
@@ -766,7 +725,6 @@ export default function EnterpriseWorkspace({
               evaluations={evaluations}
               onImportProofsFile={handleImportProofsFileData}
               onExportBlindage={handleExportBlindageReport}
-              onReloadSample={() => setProofs(INITIAL_SAMPLE_PROOFS)}
               onConfirmReceipt={handleConfirmReceipt}
             />
           )}
@@ -779,7 +737,6 @@ export default function EnterpriseWorkspace({
               onWhatsAppTextChange={setWhatsAppText}
               onParseMessage={handleParseWhatsApp}
               onConfirmOrder={handleConfirmParsedOrder}
-              onReloadSample={() => setOrders(INITIAL_SAMPLE_HA_ORDERS)}
               onExportOmieCsv={handleExportOmieSalesOrders}
               onClearText={() => setWhatsAppText("")}
               onLoadExample={() =>

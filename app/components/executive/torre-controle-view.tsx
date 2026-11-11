@@ -48,7 +48,6 @@ export function TorreControleView({
 }: TorreControleViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<TorreSubTab>("estrategia");
   const [copiedMemo, setCopiedMemo] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   // Notas em Risco de Protesto
   const atRiskProtestCount = useMemo(
@@ -56,16 +55,17 @@ export function TorreControleView({
     [evaluations]
   );
 
-  // Score de Saúde Operacional RSBUILD (0-100)
+  // O índice só existe quando todas as fontes que compõem o cálculo têm dados.
+  // Ausência de registros não pode ser interpretada como 100% de conformidade.
   const healthScore = useMemo(() => {
-    const coverageScore = deliveryMetrics.coverageRate || 0; // peso 40%
+    if (!records.length || !titles.length || !proofs.length || !orders.length) return null;
+    const coverageScore = deliveryMetrics.coverageRate;
     const readySettlements = matches.filter((m) => m.suggestedStatus === "pronto_para_baixa").length;
-    const reconcilRate = titles.length > 0 ? Math.round((readySettlements / titles.length) * 100) : 100; // peso 35%
-    const logisticsEfficiency = Math.min(100, hubAcaiMetrics.hrOccupancy || 0); // peso 25%
-
+    const reconcilRate = Math.round((readySettlements / titles.length) * 100);
+    const logisticsEfficiency = Math.min(100, hubAcaiMetrics.hrOccupancy);
     const score = Math.round(coverageScore * 0.4 + reconcilRate * 0.35 + logisticsEfficiency * 0.25);
     return Math.max(0, Math.min(100, score));
-  }, [deliveryMetrics, matches, titles, hubAcaiMetrics]);
+  }, [records, deliveryMetrics, matches, titles, proofs, orders, hubAcaiMetrics]);
 
   // Curva de Sabores Vendidos no WhatsApp
   const flavorsBreakdown = useMemo(() => {
@@ -110,15 +110,26 @@ export function TorreControleView({
       .sort((a, b) => b.total - a.total);
   }, [titles]);
 
-  // Diagnóstico Narrativo Gerado pelo Agente RS Adaptativo
+  // Síntese calculada a partir dos dados disponíveis
   const rsAgentDiagnosis = useMemo(() => {
-    let healthStatus = "Operação Estável";
+    if (healthScore === null) {
+      return {
+        status: "Dados insuficientes",
+        statusTone: "neutral",
+        summary: "Ainda não há dados operacionais suficientes e consistentes para calcular um índice de governança. Importe e valide as fontes necessárias antes de emitir um diagnóstico.",
+        recommendations: [
+          { priority: "Alta", action: "Completar fontes de dados", detail: "Disponibilize registros financeiros, títulos, comprovantes de entrega e pedidos para habilitar a análise consolidada." }
+        ]
+      };
+    }
+
+    let healthStatus = "Faixa experimental elevada";
     let statusTone = "positive";
     if (healthScore < 50) {
-      healthStatus = "Atenção Crítica";
+      healthStatus = "Faixa experimental baixa";
       statusTone = "negative";
     } else if (healthScore < 75) {
-      healthStatus = "Gargalos Identificados";
+      healthStatus = "Faixa experimental intermediária";
       statusTone = "neutral";
     }
 
@@ -133,12 +144,12 @@ export function TorreControleView({
       return {
         status: healthStatus,
         statusTone,
-        summary: `Diagnóstico executivo Hub Açaí: O índice de governança global é de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} sob risco preventivo de protesto devido a ${atRiskProtestCount} nota(s) sem canhoto na doca.`,
+        summary: `Painel de governança Hub Açaí: índice calculado de ${healthScore}%. No comercial, foram consolidadas ${hubAcaiMetrics.totalBoxes} caixas (${revenueFormatted}), com o sabor '${topFlavor}' liderando ${topFlavorShare}% da esteira de pedidos. O caminhão HR opera a ${hubAcaiMetrics.hrOccupancy}% da capacidade. No financeiro, há ${riskAmountFormatted} associados a ${atRiskProtestCount} registro(s) com pendências documentais.`,
         recommendations: [
           {
             priority: "Alta",
-            action: "Blindagem de Cobrança",
-            detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Bloqueio preventivo ativo para evitar protesto indevido (Lei nº 5.474/1968).`
+            action: "Revisão de evidências",
+            detail: `Existem ${atRiskProtestCount} nota(s) fiscal(is) sem canhoto na doca. Pendência documental identificada; revisar as evidências e a situação com os responsáveis antes de qualquer decisão.`
           },
           {
             priority: "Média",
@@ -149,8 +160,8 @@ export function TorreControleView({
           },
           {
             priority: "Estratégica",
-            action: "Sincronização Assistida",
-            detail: `${readySettlements} títulos com correspondência bancária exata prontos para liquidação contábil no Omie.`
+            action: "Revisão de correspondências",
+            detail: `${readySettlements} correspondências candidatas para revisão humana. A integração Omie não está conectada.`
           }
         ]
       };
@@ -163,12 +174,12 @@ export function TorreControleView({
     return {
       status: healthStatus,
       statusTone,
-      summary: `Diagnóstico de Auditoria Corporativa · ${companyName}: O índice de governança é de ${healthScore}%. Foram consolidadas ${totalIncomingFormatted} em entradas operacionais, resultando em saldo líquido em caixa de ${balanceFormatted}. Na esteira de reconciliação de ERP (Omie), há ${readySettlements} título(s) com correspondência bancária exata prontos para liquidação em lote sem divergência contábil. Recomenda-se acionar a sincronização assistida para emitir os relatórios de fechamento contábil.`,
+      summary: `Painel de governança · ${companyName}: índice calculado em ${healthScore}%. Os registros financeiros disponíveis totalizam ${totalIncomingFormatted} em entradas e saldo líquido de ${balanceFormatted}. Existem ${readySettlements} correspondências candidatas para revisão humana; nenhuma baixa ou sincronização com ERP é executada automaticamente.`,
       recommendations: [
         {
           priority: "Alta",
           action: "Reconciliação ERP & Baixas",
-          detail: `${readySettlements} título(s) identificados com correspondência bancária exata (valor e data) prontos para remessa de baixa no Omie.`
+          detail: `${readySettlements} correspondência(s) candidata(s) identificada(s) por valor e data; exigem revisão humana e não foram enviadas ao ERP.`
         },
         {
           priority: "Média",
@@ -178,7 +189,7 @@ export function TorreControleView({
         {
           priority: "Estratégica",
           action: "Auditoria & DRE",
-          detail: "Demonstrativo contábil e livro razão auditados e sincronizados com os lançamentos de extrato multibanco."
+          detail: "Validar a origem e a cobertura dos dados antes de emitir demonstrativos ou afirmar sincronização contábil."
         }
       ]
     };
@@ -195,27 +206,19 @@ export function TorreControleView({
   ]);
 
   function handleCopyMemo() {
-    const memoText = `*MEMORANDO ESTRATÉGICO · AGENTE RS*\n` +
+    const memoText = `*RELATÓRIO EXECUTIVO · RSBUILD OS*\n` +
       `Workspace: ${companyName}\n` +
       `Data: ${new Date().toLocaleDateString("pt-BR")}\n` +
-      `Score Operacional: ${healthScore}%\n` +
-      `Faturamento do Dia: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
-      `Ocupação Frota HR: ${hubAcaiMetrics.hrOccupancy}%\n` +
-      `Faturas sob Risco Jurídico: ${formatCurrency(deliveryMetrics.atRiskProtestAmount)}\n\n` +
-      `*Parecer do Agente RS:*\n${rsAgentDiagnosis.summary}\n\n` +
-      `_Sincronização auditada e validada pelo Agente RS._`;
+      `Score Operacional: ${healthScore === null ? "Não calculado — dados insuficientes" : `${healthScore}%`}\n` +
+      `Valor dos pedidos na sessão: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
+      `Ocupação estimada da HR: ${hubAcaiMetrics.hrOccupancy}%\n` +
+      `Pendências documentais: ${formatCurrency(deliveryMetrics.atRiskProtestAmount)}\n\n` +
+      `*Síntese do painel:*\n${rsAgentDiagnosis.summary}\n\n` +
+      `_Documento gerado a partir dos dados disponíveis no workspace; não representa aprovação ou sincronização externa._`;
 
     navigator.clipboard.writeText(memoText);
     setCopiedMemo(true);
     setTimeout(() => setCopiedMemo(false), 3000);
-  }
-
-  function handleTriggerSync() {
-    setSyncStatus("Preparando lote de sincronização assistida...");
-    setTimeout(() => {
-      setSyncStatus("Lote de pedidos e conciliações conferido com sucesso pelo Agente RS! Arquivos gerados para auditoria.");
-      setTimeout(() => setSyncStatus(null), 5000);
-    }, 1200);
   }
 
   return (
@@ -226,7 +229,7 @@ export function TorreControleView({
           <div className="eyebrow" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
               <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "var(--green-text, #10B981)" }} />
-              <strong>AGENTE RS</strong> · AUDITORIA & BLINDAGEM JURÍDICA
+              <strong>PAINEL DE GOVERNANÇA</strong> · AUDITORIA & CONTROLE OPERACIONAL
             </span>
             <span
               className="status-pill"
@@ -251,27 +254,11 @@ export function TorreControleView({
           <button className="secondary-button" onClick={handleCopyMemo}>
             {copiedMemo ? "✓ Memorando Copiado!" : "📋 Copiar Parecer Executivo"}
           </button>
-          <button className="primary-button" onClick={handleTriggerSync}>
-            <span>⚡</span> Sincronização Assistida
+          <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
+            Integração Omie não conectada
           </button>
         </div>
       </div>
-
-      {syncStatus && (
-        <div
-          className="notice"
-          role="status"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--rsbuild-terracotta)",
-            color: "var(--ink)",
-            marginBottom: "20px"
-          }}
-        >
-          <span>✦ {syncStatus}</span>
-          <button onClick={() => setSyncStatus(null)}>×</button>
-        </div>
-      )}
 
       {/* Subseletor Operacional da Torre de Controle */}
       <div
@@ -328,7 +315,7 @@ export function TorreControleView({
             color: "var(--ink)"
           }}
         >
-          <span>⇄</span> Esteira de Sincronização ERP
+          <span>⇄</span> Integrações ERP
         </button>
 
         {hasSprintZone && (
@@ -356,64 +343,66 @@ export function TorreControleView({
           {/* Grid de KPIs Macro Adaptativo ao Workspace */}
           <div className="metric-grid">
             <Metric
-              label="Índice de Governança"
-              value={`${healthScore}%`}
-              tone={healthScore >= 75 ? "positive" : healthScore >= 50 ? "neutral" : "negative"}
-              detail={`Status operacional: ${rsAgentDiagnosis.status}`}
+              label="Indicador experimental"
+              value={healthScore === null ? "—" : `${healthScore}%`}
+              tone={healthScore === null ? "neutral" : healthScore >= 75 ? "positive" : healthScore >= 50 ? "neutral" : "negative"}
+              detail={`Faixa provisória: ${rsAgentDiagnosis.status}. Critérios ainda não homologados.`}
               icon="⎈"
             />
             {isHubAcai ? (
               <>
                 <Metric
-                  label="Faturamento do Dia"
-                  value={formatCurrency(hubAcaiMetrics.totalRevenue)}
-                  tone="positive"
-                  detail={`${hubAcaiMetrics.totalBoxes} caixas em ${hubAcaiMetrics.totalOrders} pedidos`}
+                  label="Valor dos pedidos na sessão"
+                  value={hubAcaiMetrics.totalOrders > 0 ? formatCurrency(hubAcaiMetrics.totalRevenue) : "—"}
+                  tone={hubAcaiMetrics.totalOrders > 0 ? "neutral" : "neutral"}
+                  detail={hubAcaiMetrics.totalOrders > 0 ? `${hubAcaiMetrics.totalBoxes} caixas em ${hubAcaiMetrics.totalOrders} pedidos temporários` : "Nenhum pedido processado nesta sessão"}
                   icon="💰"
                 />
                 <Metric
-                  label="Ocupação Frota HR"
-                  value={`${hubAcaiMetrics.hrOccupancy}%`}
-                  tone={hubAcaiMetrics.hrOccupancy > 90 ? "negative" : "positive"}
-                  detail={`${hubAcaiMetrics.totalBoxes} / 350 caixas de capacidade`}
+                  label="Ocupação estimada da HR"
+                  value={hubAcaiMetrics.totalOrders > 0 ? `${hubAcaiMetrics.hrOccupancy}%` : "—"}
+                  tone={hubAcaiMetrics.totalOrders > 0 ? (hubAcaiMetrics.hrOccupancy > 90 ? "negative" : "neutral") : "neutral"}
+                  detail={hubAcaiMetrics.totalOrders > 0 ? `${hubAcaiMetrics.totalBoxes} / 350 caixas; capacidade precisa ser validada` : "Sem pedidos para estimar ocupação"}
                   icon="🚚"
                 />
                 <Metric
-                  label="Exposição sob Risco"
+                  label="Exposição documental estimada"
                   value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
-                  tone={deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "positive"}
-                  detail={`${atRiskProtestCount} fatura(s) sem canhoto na doca`}
+                  tone={proofs.length > 0 ? (deliveryMetrics.atRiskProtestAmount > 0 ? "negative" : "neutral") : "neutral"}
+                  detail={proofs.length > 0 ? `${atRiskProtestCount} registro(s) com pendência documental; sem bloqueio externo` : "Sem comprovantes para avaliar exposição"}
                   icon="🛡"
                 />
               </>
             ) : (
               <>
                 <Metric
-                  label="Entradas Consolidadas"
-                  value={formatCurrency(totals.incoming)}
-                  tone="positive"
-                  detail={`${records.filter((r) => r.direction === "entrada").length} crédito(s) no período`}
+                  label="Entradas importadas"
+                  value={records.length > 0 ? formatCurrency(totals.incoming) : "—"}
+                  tone={records.length > 0 ? "neutral" : "neutral"}
+                  detail={records.length > 0 ? `${records.filter((r) => r.direction === "entrada").length} crédito(s) no período` : "Nenhum movimento importado"}
                   icon="↗"
                 />
                 <Metric
-                  label="Saldo Líquido em Caixa"
-                  value={formatCurrency(totals.balance)}
-                  tone={totals.balance >= 0 ? "positive" : "negative"}
+                  label="Saldo calculado dos registros"
+                  value={records.length > 0 ? formatCurrency(totals.balance) : "—"}
+                  tone={records.length > 0 ? (totals.balance >= 0 ? "neutral" : "negative") : "neutral"}
                   detail="Posição consolidada multibanco"
                   icon="🏦"
                 />
                 <Metric
-                  label="Reconciliação Omie"
+                  label="Correspondências bancárias"
                   value={`${readySettlements} títulos`}
                   tone="positive"
-                  detail="Prontos para liquidação contábil"
+                  detail="Candidatas à revisão humana; sem envio ao ERP"
                   icon="✓"
                 />
               </>
             )}
           </div>
 
-          {/* Painel do Agente RS */}
+          <div className="inline-note" style={{ marginTop: "12px" }}>Indicador experimental: cálculo provisório ponderado por cobertura de comprovantes (40%), correspondências de títulos (35%) e ocupação estimada da frota (25%). Pesos e critérios ainda não foram homologados; não utilizar como KPI oficial ou evidência de governança.</div>
+
+          {/* Painel de análise */}
           <section
             className="panel"
             style={{
@@ -426,7 +415,7 @@ export function TorreControleView({
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ color: "var(--rsbuild-terracotta)", fontSize: "16px" }}>✦</span>
-                  <h2>Parecer de Governança · Agente RS</h2>
+                  <h2>Síntese de Governança</h2>
                 </div>
                 <p>Síntese executiva orientada a regras de negócio e proteção patrimonial da organização.</p>
               </div>
@@ -434,11 +423,11 @@ export function TorreControleView({
                 className="status-pill"
                 style={{
                   background:
-                    healthScore >= 75
+                    healthScore !== null && healthScore >= 75
                       ? "var(--green-bg, rgba(16, 185, 129, 0.15))"
                       : "var(--yellow-bg, rgba(245, 158, 11, 0.15))",
                   color:
-                    healthScore >= 75
+                    healthScore !== null && healthScore >= 75
                       ? "var(--green-text, #10B981)"
                       : "var(--yellow-text, #F59E0B)",
                   fontWeight: 700
@@ -675,7 +664,7 @@ export function TorreControleView({
                 <tr>
                   <th>NF-e / Destinatário</th>
                   <th className="align-right">Valor da Nota</th>
-                  <th>Parecer do Agente RS</th>
+                  <th>Avaliação de risco</th>
                   <th>Fundamentação Legal</th>
                   <th>Ação Sugerida</th>
                 </tr>
@@ -731,11 +720,11 @@ export function TorreControleView({
         <section className="panel" style={{ marginBottom: "24px" }}>
           <div className="panel-heading">
             <div>
-              <h2>Esteira de Sincronização Assistida com o Omie</h2>
-              <p>Lotes operacionais conferidos pelo Agente RS aguardando autorização de envio.</p>
+              <h2>Integrações e exportações</h2>
+              <p>A integração com o Omie ainda não está conectada. Nenhum lote foi enviado ou está aguardando envio.</p>
             </div>
-            <button className="primary-button" onClick={handleTriggerSync}>
-              <span>⚡</span> Executar Sincronização Assistida
+            <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
+              Integração não disponível
             </button>
           </div>
 
@@ -923,7 +912,7 @@ export function TorreControleView({
       )}
 
       <div className="inline-note">
-        <strong>Diretriz de Governança do Agente RS:</strong> O Agente RS audita os dados com rigor matemático e jurídico, eliminando ruídos operacionais e gerando alçadas claras de decisão para a diretoria antes de qualquer integração definitiva com o ERP.
+        <strong>Diretriz de governança:</strong> os resultados exibidos são cálculos auxiliares sobre os registros disponíveis nesta sessão. Não substituem revisão profissional, homologação jurídica ou integração com sistemas de origem.
       </div>
     </>
   );

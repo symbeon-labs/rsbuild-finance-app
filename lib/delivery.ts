@@ -83,8 +83,8 @@ export function isValidNfeKey(key: string): boolean {
 }
 
 /**
- * Avalia o risco jurídico de cobrança e protesto de uma fatura/título
- * com base na existência e integridade do canhoto de entrega.
+ * Classifica pendências documentais para revisão humana.
+ * Não determina legalidade, não autentica assinaturas e não autoriza protesto ou cobrança.
  */
 export function evaluateProtestoRisk(
   proof: DeliveryProof | undefined,
@@ -97,14 +97,17 @@ export function evaluateProtestoRisk(
       nfeAmount: 0,
       deliveryStatus: "extraviado",
       risk: "bloqueio_preventivo",
-      reason: "Nenhum registro de expedição ou canhoto encontrado para esta fatura. Protesto bloqueado.",
+      reason: "Nenhum registro de comprovante foi encontrado neste módulo. A situação exige revisão humana; o sistema não determina a legalidade de cobrança ou protesto.",
       hasSignedReceipt: false
     };
   }
 
   const hasSignedReceipt =
     proof.status === "comprovado" &&
-    Boolean(proof.receiverName || proof.proofFileUrl);
+    Boolean(proof.receiverName?.trim()) &&
+    Boolean(proof.receiverDocument?.trim()) &&
+    Boolean(proof.deliveryDate) &&
+    Boolean(proof.proofFileUrl?.trim());
 
   if (proof.status === "comprovado" && hasSignedReceipt) {
     return {
@@ -113,9 +116,22 @@ export function evaluateProtestoRisk(
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
       risk: "liberado",
-      reason: `Canhoto validado e assinado por ${proof.receiverName || "recebedor autorizado"} em ${proof.deliveryDate || "data confirmada"}. Apto para protesto legal.`,
+      reason: `Há referência de evidência e dados de recebedor (${proof.receiverName}) em ${proof.deliveryDate}. A autenticidade do arquivo e da assinatura não foi verificada; exige revisão humana/jurídica antes de qualquer decisão.`,
       proofId: proof.id,
       hasSignedReceipt: true
+    };
+  }
+
+  if (proof.status === "comprovado" && !hasSignedReceipt) {
+    return {
+      nfeNumber: proof.nfeNumber,
+      customerName: proof.customerName,
+      nfeAmount: proof.nfeAmount,
+      deliveryStatus: proof.status,
+      risk: "atencao_prazo",
+      reason: "O status foi marcado como comprovado, mas faltam data, identificação do recebedor ou referência do arquivo de evidência. Revisão humana necessária.",
+      proofId: proof.id,
+      hasSignedReceipt: false
     };
   }
 
@@ -126,7 +142,7 @@ export function evaluateProtestoRisk(
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
       risk: "bloqueio_preventivo",
-      reason: `Mercadoria com recusa ou devolução registrada (${proof.notes || "sem justificativa"}). Protesto vedado.`,
+      reason: `Há registro de recusa ou devolução (${proof.notes || "sem justificativa"}). Revisar a documentação e o processo antes de qualquer decisão de cobrança.`,
       proofId: proof.id,
       hasSignedReceipt: false
     };
@@ -139,7 +155,7 @@ export function evaluateProtestoRisk(
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
       risk: "bloqueio_preventivo",
-      reason: "Canhoto físico extraviado ou ilegível. Necessário termo de recebimento ou acareação antes de cobrança.",
+      reason: "O registro indica comprovante extraviado ou ilegível. É necessária revisão documental antes de qualquer decisão de cobrança.",
       proofId: proof.id,
       hasSignedReceipt: false
     };
@@ -153,8 +169,8 @@ export function evaluateProtestoRisk(
     deliveryStatus: proof.status,
     risk: context?.isOverdue ? "bloqueio_preventivo" : "atencao_prazo",
     reason: context?.isOverdue
-      ? "Título vencido mas mercadoria consta ainda em trânsito ou sem retorno da expedição. Não protestar."
-      : "Mercadoria em trânsito com motorista. Aguardando retorno da carga com canhoto assinado.",
+      ? "O título consta vencido enquanto a entrega aparece em trânsito ou sem retorno da expedição. Revisão humana necessária antes de qualquer decisão."
+      : "A entrega consta em trânsito. Ainda não há evidência suficiente para concluir sobre cobrança ou protesto.",
     proofId: proof.id,
     hasSignedReceipt: false
   };
@@ -163,6 +179,16 @@ export function evaluateProtestoRisk(
 /**
  * Calcula métricas executivas consolidadas da carteira de canhotos
  */
+function hasCompleteReceiptEvidence(proof: DeliveryProof): boolean {
+  return Boolean(
+    proof.status === "comprovado" &&
+    proof.deliveryDate &&
+    proof.receiverName?.trim() &&
+    proof.receiverDocument?.trim() &&
+    proof.proofFileUrl?.trim()
+  );
+}
+
 export function computeDeliveryMetrics(proofs: DeliveryProof[]): DeliveryMetrics {
   const totalInvoices = proofs.length;
   const totalAmount = proofs.reduce((sum, p) => sum + p.nfeAmount, 0);
@@ -177,10 +203,11 @@ export function computeDeliveryMetrics(proofs: DeliveryProof[]): DeliveryMetrics
   let lostAmount = 0;
 
   for (const p of proofs) {
-    if (p.status === "comprovado") {
+    if (p.status === "comprovado" && hasCompleteReceiptEvidence(p)) {
       provenCount++;
       provenAmount += p.nfeAmount;
-    } else if (p.status === "pendente_entrega") {
+    } else if (p.status === "pendente_entrega" || p.status === "comprovado") {
+      // Status manual sem metadados completos não conta como entrega comprovada.
       pendingDeliveryCount++;
       pendingDeliveryAmount += p.nfeAmount;
     } else if (p.status === "recusa_devolucao") {
@@ -318,7 +345,7 @@ export function generateDeliveryBlindageCsv(
     "Recebedor",
     "Doc Recebedor",
     "Risco Protesto",
-    "Parecer Juridico Blindagem",
+    "Observacao Operacional - Revisao Humana",
     "Chave NF-e"
   ].join(";");
 
@@ -327,10 +354,10 @@ export function generateDeliveryBlindageCsv(
     const amountStr = ev.nfeAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const riskLabel =
       ev.risk === "liberado"
-        ? "LIBERADO"
+        ? "EVIDENCIA CADASTRADA - REVISAR AUTENTICIDADE"
         : ev.risk === "bloqueio_preventivo"
-        ? "BLOQUEIO PREVENTIVO"
-        : "ATENCAO PRAZO";
+        ? "PENDENCIA DOCUMENTAL - REVISAR"
+        : "REVISAO HUMANA NECESSARIA";
 
     return [
       `"${ev.nfeNumber}"`,

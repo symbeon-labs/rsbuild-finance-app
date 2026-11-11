@@ -35,7 +35,7 @@ test("ENG-MS-03: isValidNfeKey valida chaves de NF-e com dígito verificador SEF
   assert.equal(isValidNfeKey(""), false);
 });
 
-test("ENG-MS-03: evaluateProtestoRisk libera protesto apenas com canhoto assinado", () => {
+test("ENG-MS-03: evaluateProtestoRisk reconhece metadados de evidência, sem afirmar legalidade", () => {
   const proofProven: DeliveryProof = {
     id: "p1",
     nfeNumber: "4580",
@@ -45,13 +45,14 @@ test("ENG-MS-03: evaluateProtestoRisk libera protesto apenas com canhoto assinad
     deliveryDate: "2026-04-03",
     status: "comprovado",
     receiverName: "Marcos Souza (Gerente)",
-    receiverDocument: "RG 12.345.678-SSP/BA"
+    receiverDocument: "RG 12.345.678-SSP/BA",
+    proofFileUrl: "/evidence/receipt-4580.pdf"
   };
 
   const evalProven = evaluateProtestoRisk(proofProven);
   assert.equal(evalProven.risk, "liberado");
   assert.equal(evalProven.hasSignedReceipt, true);
-  assert.match(evalProven.reason, /Marcos Souza/);
+  assert.match(evalProven.reason, /autenticidade do arquivo e da assinatura não foi verificada/);
 });
 
 test("ENG-MS-03: evaluateProtestoRisk bloqueia protesto em caso de recusa/devolução ou extravio", () => {
@@ -100,24 +101,26 @@ test("ENG-MS-03: evaluateProtestoRisk sinaliza atenção em mercadorias em trân
 
   const evalVencido = evaluateProtestoRisk(proofTransito, { isOverdue: true });
   assert.equal(evalVencido.risk, "bloqueio_preventivo");
-  assert.match(evalVencido.reason, /Título vencido mas mercadoria consta ainda em trânsito/);
+  assert.match(evalVencido.reason, /O título consta vencido/);
 });
 
 test("ENG-MS-03: computeDeliveryMetrics calcula cobertura e exposição financeira", () => {
   const proofs: DeliveryProof[] = [
-    { id: "1", nfeNumber: "1", customerName: "A", nfeAmount: 1000, issueDate: "2026-04-01", status: "comprovado" },
-    { id: "2", nfeNumber: "2", customerName: "B", nfeAmount: 2000, issueDate: "2026-04-01", status: "comprovado" },
+    { id: "1", nfeNumber: "1", customerName: "A", nfeAmount: 1000, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor A", receiverDocument: "DOC-A", proofFileUrl: "/evidence/a.pdf", status: "comprovado" },
+    { id: "2", nfeNumber: "2", customerName: "B", nfeAmount: 2000, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor B", receiverDocument: "DOC-B", proofFileUrl: "/evidence/b.pdf", status: "comprovado" },
     { id: "3", nfeNumber: "3", customerName: "C", nfeAmount: 1000, issueDate: "2026-04-01", status: "pendente_entrega" },
-    { id: "4", nfeNumber: "4", customerName: "D", nfeAmount: 1000, issueDate: "2026-04-01", status: "extraviado" }
+    { id: "4", nfeNumber: "4", customerName: "D", nfeAmount: 1000, issueDate: "2026-04-01", status: "extraviado" },
+    { id: "5", nfeNumber: "5", customerName: "E", nfeAmount: 500, issueDate: "2026-04-01", deliveryDate: "2026-04-02", receiverName: "Recebedor E", receiverDocument: "DOC-E", status: "comprovado" }
   ];
 
   const metrics = computeDeliveryMetrics(proofs);
-  assert.equal(metrics.totalInvoices, 4);
-  assert.equal(metrics.totalAmount, 5000);
+  assert.equal(metrics.totalInvoices, 5);
+  assert.equal(metrics.totalAmount, 5500);
   assert.equal(metrics.provenCount, 2);
   assert.equal(metrics.provenAmount, 3000);
-  assert.equal(metrics.coverageRate, 50); // 2 de 4 = 50%
-  assert.equal(metrics.atRiskProtestAmount, 2000); // 5000 - 3000
+  assert.equal(metrics.pendingDeliveryCount, 2); // inclui status comprovado sem referência de evidência
+  assert.equal(metrics.coverageRate, 40); // 2 de 5 = 40%
+  assert.equal(metrics.atRiskProtestAmount, 2500); // 5500 - 3000
 });
 
 test("ENG-MS-03: parseDeliveryCsv processa CSV com separadores brasileiros e extrai status", () => {
@@ -145,7 +148,7 @@ test("ENG-MS-03: parseDeliveryCsv processa CSV com separadores brasileiros e ext
   assert.equal(result.proofs[2].status, "recusa_devolucao");
 });
 
-test("ENG-MS-03: generateDeliveryBlindageCsv emite CSV com cabeçalho e termos de parecer jurídico", () => {
+test("ENG-MS-03: generateDeliveryBlindageCsv emite CSV com observação operacional e revisão humana", () => {
   const proofs: DeliveryProof[] = [
     {
       id: "p1",
@@ -156,7 +159,8 @@ test("ENG-MS-03: generateDeliveryBlindageCsv emite CSV com cabeçalho e termos d
       deliveryDate: "2026-04-03",
       status: "comprovado",
       receiverName: "Marcos Silva",
-      receiverDocument: "12345"
+      receiverDocument: "12345",
+      proofFileUrl: "/evidence/receipt-4580.pdf"
     }
   ];
 
@@ -166,7 +170,7 @@ test("ENG-MS-03: generateDeliveryBlindageCsv emite CSV com cabeçalho e termos d
   assert.match(csv, /NF-e;Cliente;Valor NF/);
   assert.match(csv, /"4580"/);
   assert.match(csv, /"Supermercado Real"/);
-  assert.match(csv, /LIBERADO/);
+  assert.match(csv, /EVIDENCIA CADASTRADA - REVISAR AUTENTICIDADE/);
   assert.match(csv, /"Marcos Silva"/);
 });
 

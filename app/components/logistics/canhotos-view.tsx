@@ -15,7 +15,6 @@ interface CanhotosViewProps {
   evaluations: ProtestoEvaluation[];
   onImportProofsFile: (file: File) => void;
   onExportBlindage: () => void;
-  onReloadSample: () => void;
   onConfirmReceipt: (proofId: string) => void;
 }
 
@@ -25,7 +24,6 @@ export function CanhotosView({
   evaluations,
   onImportProofsFile,
   onExportBlindage,
-  onReloadSample,
   onConfirmReceipt
 }: CanhotosViewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,30 +56,32 @@ export function CanhotosView({
         </div>
       </div>
 
+      <div className="inline-note" style={{ marginTop: "12px" }}>Os comprovantes importados e as conferências desta tela permanecem apenas na sessão atual. A tela não autentica assinatura, não comprova entrega por conta própria e não libera protesto ou cobrança.</div>
+
       <div className="metric-grid">
         <Metric
           label="Taxa de Comprovação"
-          value={`${deliveryMetrics.coverageRate}%`}
-          tone="positive"
-          detail={`${deliveryMetrics.provenCount} de ${deliveryMetrics.totalInvoices} entregas comprovadas`}
+          value={deliveryMetrics.totalInvoices > 0 ? `${deliveryMetrics.coverageRate}%` : "—"}
+          tone={deliveryMetrics.totalInvoices > 0 ? (deliveryMetrics.coverageRate >= 80 ? "positive" : "negative") : "neutral"}
+          detail={deliveryMetrics.totalInvoices > 0 ? `${deliveryMetrics.provenCount} de ${deliveryMetrics.totalInvoices} registros marcados como comprovados` : "Nenhum comprovante importado"}
           icon="✓"
         />
         <Metric
           label="Faturamento Blindado"
           value={formatCurrency(deliveryMetrics.provenAmount)}
-          tone="positive"
-          detail="Canhoto assinado / Apto a protesto"
+          tone={deliveryMetrics.totalInvoices > 0 ? "positive" : "neutral"}
+          detail="Valor associado aos registros marcados como comprovados; exige validação documental"
           icon="🛡"
         />
         <Metric
-          label="Risco de Protesto / Sem Canhoto"
+          label="Exposição documental estimada"
           value={formatCurrency(deliveryMetrics.atRiskProtestAmount)}
-          tone="negative"
-          detail="Bloqueio preventivo ativo"
+          tone={deliveryMetrics.totalInvoices > 0 ? "negative" : "neutral"}
+          detail={deliveryMetrics.totalInvoices > 0 ? "Estimativa baseada nos registros importados; não é bloqueio jurídico externo" : "Sem dados para avaliar risco"}
           icon="⚠"
         />
         <Metric
-          label="Em Trânsito / Expedição"
+          label="Pendência documental"
           value={`${deliveryMetrics.pendingDeliveryCount} faturas`}
           tone="neutral"
           detail={formatCurrency(deliveryMetrics.pendingDeliveryAmount)}
@@ -93,12 +93,10 @@ export function CanhotosView({
         <div className="panel-heading">
           <div>
             <h2>Painel de Gestão e Rastreabilidade de Canhotos</h2>
-            <p>Acompanhamento individual de NF-e, recebedores na doca e veredito de proteção judicial.</p>
+            <p>Acompanhamento dos dados de entrega, identificação de recebedores e pendências documentais.</p>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button className="secondary-button" onClick={onReloadSample}>
-              Restaurar Amostra Mundo do Sabor
-            </button>
+            
           </div>
         </div>
 
@@ -112,7 +110,7 @@ export function CanhotosView({
                   <th className="align-right">Valor NF</th>
                   <th>Motorista / Rota</th>
                   <th>Status Entrega</th>
-                  <th>Blindagem de Protesto</th>
+                  <th>Status da Evidência</th>
                   <th>Recebedor / Data</th>
                   <th>Ação Operacional</th>
                 </tr>
@@ -179,10 +177,10 @@ export function CanhotosView({
                             }}
                           >
                             {evaluation?.risk === "liberado"
-                              ? "✓ APTO A PROTESTO"
+                              ? "✓ Evidência cadastrada"
                               : evaluation?.risk === "bloqueio_preventivo"
-                              ? "⛔ BLOQUEIO PREVENTIVO"
-                              : "⚠ ATENÇÃO PRAZO"}
+                              ? "⛔ Revisão necessária"
+                              : "⚠ Conferir prazo e evidência"}
                           </span>
                           <span style={{ display: "block", fontSize: "10px", color: "var(--muted)", marginTop: "4px", maxWidth: "260px", whiteSpace: "normal" }}>
                             {evaluation?.reason}
@@ -207,9 +205,9 @@ export function CanhotosView({
                             className="secondary-button"
                             style={{ fontSize: "10px", padding: "6px 10px" }}
                             onClick={() => onConfirmReceipt(p.id)}
-                            title="Validar recebimento e liberar título para cobrança/protesto"
+                            title="Registrar conferência temporária; não substitui evidência válida nem libera cobrança ou protesto"
                           >
-                            Validar Canhoto
+                            Conferir dados
                           </button>
                         ) : (
                           <span style={{ fontSize: "11px", color: "var(--green-text, #15803D)", fontWeight: 600 }}>Arquivado</span>
@@ -224,10 +222,8 @@ export function CanhotosView({
         ) : (
           <EmptyState
             icon="📦"
-            title="Nenhum canhoto carregado"
-            text="Importe a planilha de expedição ou utilize os dados de amostra da Mundo do Sabor."
-            action="Carregar Amostra Mundo do Sabor"
-            onAction={onReloadSample}
+            title="Nenhum comprovante carregado"
+            text="Importe uma planilha de expedição autorizada. Não há registros operacionais disponíveis neste workspace."
           />
         )}
       </section>
