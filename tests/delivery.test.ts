@@ -55,6 +55,23 @@ test("ENG-MS-03: evaluateProtestoRisk reconhece metadados de evidência, sem afi
   assert.match(evalProven.reason, /autenticidade do arquivo e da assinatura não foi verificada/);
 });
 
+test("ENG-MS-03: status comprovado sem metadados completos permanece em revisão documental", () => {
+  const incompleteProof: DeliveryProof = {
+    id: "p-incomplete",
+    nfeNumber: "4589",
+    customerName: "Cliente de Teste",
+    nfeAmount: 750,
+    issueDate: "2026-04-04",
+    status: "comprovado",
+    receiverName: "Recebedor"
+  };
+
+  const evaluation = evaluateProtestoRisk(incompleteProof);
+  assert.equal(evaluation.risk, "documentary_review");
+  assert.equal(evaluation.hasCompleteEvidenceMetadata, false);
+  assert.match(evaluation.reason, /faltam data, identificação do recebedor ou referência do arquivo/);
+});
+
 test("ENG-MS-03: evaluateProtestoRisk bloqueia protesto em caso de recusa/devolução ou extravio", () => {
   const proofDevolucao: DeliveryProof = {
     id: "p2",
