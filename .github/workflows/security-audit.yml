@@ -1,0 +1,114 @@
+name: RSBUILD Security Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Motivo da auditoria"
+        required: true
+        type: string
+        default: "D02 security gate verification"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rsbuild-security-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Read-only Supabase security audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate required secret
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_READONLY }}
+        run: |
+          if [[ -z "$DATABASE_URL" ]]; then
+            echo "::error::Configure SUPABASE_DB_URL_READONLY as a GitHub Actions secret."
+            exit 1
+          fi
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Run read-only audit
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_READONLY }}
+          AUDIT_REASON: ${{ inputs.reason }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit
+          {
+            echo "RSBUILD D02 SECURITY AUDIT"
+            echo "UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "Reason: $AUDIT_REASON"
+            echo "Commit: $GITHUB_SHA"
+            echo
+            echo "== Server and role capabilities =="
+            psql "$DATABASE_URL" -X --no-psqlrc -v ON_ERROR_STOP=1 -P pager=off <<'SQL'
+          SELECT current_database() AS database,
+                 current_user AS connected_as,
+                 version() AS postgres_version;
+
+          SELECT rolname, rolsuper, rolcreaterole, rolcreatedb, rolbypassrls
+          FROM pg_roles
+          WHERE rolname IN ('postgres','supabase_admin','anon','authenticated','service_role')
+          ORDER BY rolname;
+
+          SELECT n.nspname AS schema_name,
+                 r.rolname AS role_name,
+                 has_schema_privilege(r.rolname, n.oid, 'USAGE') AS can_use,
+                 has_schema_privilege(r.rolname, n.oid, 'CREATE') AS can_create
+          FROM pg_namespace n
+          CROSS JOIN pg_roles r
+          WHERE n.nspname IN ('public','private')
+            AND r.rolname IN ('public','anon','authenticated','service_role')
+          ORDER BY n.nspname, r.rolname;
+
+          SELECT p.oid::regprocedure AS function_name,
+                 p.prosecdef AS security_definer,
+                 has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_execute,
+                 has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_execute,
+                 has_function_privilege('public', p.oid, 'EXECUTE') AS public_execute
+          FROM pg_proc p
+          JOIN pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname IN ('public','private')
+            AND (p.proname ILIKE '%financial_import%' OR p.prosecdef)
+          ORDER BY n.nspname, p.proname;
+
+          SELECT d.defaclrole::regrole AS creator_role,
+                 n.nspname AS schema_name,
+                 d.defaclobjtype AS object_type,
+                 d.defaclacl AS default_acl
+          FROM pg_default_acl d
+          LEFT JOIN pg_namespace n ON n.oid = d.defaclnamespace
+          WHERE n.nspname = 'public'
+             OR d.defaclnamespace = 0
+          ORDER BY creator_role::text, object_type;
+
+          SELECT schemaname, tablename, policyname, roles, cmd, qual, with_check
+          FROM pg_policies
+          WHERE schemaname IN ('public','storage')
+          ORDER BY schemaname, tablename, policyname;
+
+          SELECT extname, extversion
+          FROM pg_extension
+          WHERE extname IN ('pgtap','plpgsql')
+          ORDER BY extname;
+          SQL
+          } 2>&1 | tee security-audit/report.txt
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsbuild-security-audit-${{ github.run_id }}
+          path: security-audit/report.txt
+          if-no-files-found: warn
+          retention-days: 30
