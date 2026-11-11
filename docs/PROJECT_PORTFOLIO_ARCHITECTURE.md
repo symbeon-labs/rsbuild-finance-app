@@ -59,10 +59,10 @@ Os registros começam em planning. Nenhuma sprint ou atividade fictícia é cria
 
 ## Limites desta entrega
 
-- A interface lista projetos, sprints, atividades, dependências e entregáveis; permite à equipe RSBUILD criar sprints, atividades e registrar dependências.
+- A interface lista projetos, sprints, atividades, dependências e entregáveis; permite à equipe RSBUILD criar sprints, atividades, registrar dependências e vincular entregáveis por URL HTTPS.
 - O cadastro de usuários clientes, aprovação formal de entregáveis, comentários, anexos e histórico detalhado de alterações ficam para etapas posteriores.
 - A migração ainda precisa ser aplicada em ambiente de validação e passar pelos testes RLS antes de qualquer uso operacional ou liberação de convites.
-- A interface não deve ser tratada como prova de aceite contratual até que o fluxo de aceite seja implementado.
+- O campo de status do entregável ainda não representa aceite formal do cliente. A aprovação/rejeição pelo cliente, comentários, anexos e histórico de decisões exigem fluxo próprio antes de qualquer aceite contratual.
 
 ## Critérios de aceite
 
