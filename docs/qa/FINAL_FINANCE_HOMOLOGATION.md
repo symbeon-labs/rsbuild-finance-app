@@ -1,6 +1,6 @@
 # RSBUILD Finance — Final QA / Homologação Funcional
 
-**Escopo:** validar o fluxo de importação e leitura financeira do PR #34 antes de qualquer merge ou deploy de produção.
+**Escopo:** validar funcionalmente o fluxo de importação e leitura financeira integrado à main pelo PR #34, antes de qualquer promoção para produção.
 
 ## Regras de segurança
 
@@ -113,6 +113,6 @@ O gate só retorna sucesso quando o CI técnico estiver verde, todos os sete cas
 - [ ] QA-01 a QA-07 aprovados.
 - [ ] Evidências revisáveis anexadas ou referenciadas.
 - [ ] Nenhum defeito P0/P1 aberto.
-- [ ] Aprovação humana registrada no PR #34.
+- [ ] Aprovação humana registrada nesta PR de homologação (#35).
 
 **Este workflow registra e avalia a homologação; não faz merge, não publica produção e não altera o Supabase remoto.** A aprovação do workflow, isoladamente, não substitui revisão humana nem configura proteção de branch no GitHub.
