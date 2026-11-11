@@ -315,7 +315,7 @@ export function TorreControleView({
             color: "var(--ink)"
           }}
         >
-          <span>⇄</span> Esteira de Sincronização ERP
+          <span>⇄</span> Integrações ERP
         </button>
 
         {hasSprintZone && (
@@ -910,7 +910,7 @@ export function TorreControleView({
       )}
 
       <div className="inline-note">
-        <strong>Diretriz de Governança do Agente RS:</strong> O Agente RS audita os dados com rigor matemático e jurídico, eliminando ruídos operacionais e gerando alçadas claras de decisão para a diretoria antes de qualquer integração definitiva com o ERP.
+        <strong>Diretriz de governança:</strong> os resultados exibidos são cálculos auxiliares sobre os registros disponíveis nesta sessão. Não substituem revisão profissional, homologação jurídica ou integração com sistemas de origem.
       </div>
     </>
   );
