@@ -5,6 +5,8 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 type ProjectTask = {
   id: string;
   title: string;
+  description: string;
+  acceptance_criteria: string;
   status: string;
   priority: string;
   due_date: string | null;
@@ -59,6 +61,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   const [creatingTaskFor, setCreatingTaskFor] = useState<{ projectId: string; sprintId: string } | null>(null);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
+  const [taskAcceptanceCriteria, setTaskAcceptanceCriteria] = useState("");
   const [taskPriority, setTaskPriority] = useState("normal");
   const [savingTask, setSavingTask] = useState(false);
 
@@ -78,6 +81,10 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
   }, []);
 
   useEffect(() => { void loadProjects(); }, [loadProjects]);
+
+  useEffect(() => {
+    if (!selectedProjectId && projects.length > 0) setSelectedProjectId(projects[0].id);
+  }, [projects, selectedProjectId]);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -129,13 +136,14 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: taskTitle, description: taskDescription, priority: taskPriority })
+          body: JSON.stringify({ title: taskTitle, description: taskDescription, acceptanceCriteria: taskAcceptanceCriteria, priority: taskPriority })
         }
       );
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Não foi possível criar a atividade.");
       setTaskTitle("");
       setTaskDescription("");
+      setTaskAcceptanceCriteria("");
       setTaskPriority("normal");
       setCreatingTaskFor(null);
       await loadProjects();
@@ -266,6 +274,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                           <form onSubmit={handleCreateTask} style={{ display: "grid", gap: 8, marginTop: 10 }}>
                             <input required maxLength={180} value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} placeholder="Nome da atividade" />
                             <textarea maxLength={3000} value={taskDescription} onChange={(event) => setTaskDescription(event.target.value)} placeholder="Descrição / contexto" rows={2} />
+                            <textarea maxLength={3000} value={taskAcceptanceCriteria} onChange={(event) => setTaskAcceptanceCriteria(event.target.value)} placeholder="Critérios de conclusão / aceite" rows={2} />
                             <select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value)}>
                               <option value="low">Baixa prioridade</option><option value="normal">Normal</option><option value="high">Alta prioridade</option><option value="critical">Crítica</option>
                             </select>
@@ -279,7 +288,8 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                           <ul style={{ margin: "12px 0 0", paddingLeft: 18, display: "grid", gap: 6 }}>
                             {sprint.project_tasks.map((task) => (
                               <li key={task.id}>
-                                <span>{task.title}</span> <span className="muted">· {statusLabels[task.status] || task.status}</span>
+                                <span>{task.title}</span> <span className="muted">· {statusLabels[task.status] || task.status} · {task.priority}</span>
+                                {task.acceptance_criteria && <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{task.acceptance_criteria}</div>}
                               </li>
                             ))}
                           </ul>
