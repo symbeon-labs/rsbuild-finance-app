@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "RSBUILD OS | Central de Operações",
-  description: "Sistema operacional integrado: inteligência financeira, expedição e conciliação corporativa da RSBUILD."
+  description: "Ambiente multiempresa da RSBUILD para organizar operações, dados, processos e módulos evolutivos."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
