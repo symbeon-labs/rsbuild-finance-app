@@ -15,7 +15,6 @@ interface CanhotosViewProps {
   evaluations: ProtestoEvaluation[];
   onImportProofsFile: (file: File) => void;
   onExportBlindage: () => void;
-  onReloadSample: () => void;
   onConfirmReceipt: (proofId: string) => void;
 }
 
@@ -25,7 +24,6 @@ export function CanhotosView({
   evaluations,
   onImportProofsFile,
   onExportBlindage,
-  onReloadSample,
   onConfirmReceipt
 }: CanhotosViewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,9 +94,7 @@ export function CanhotosView({
             <p>Acompanhamento individual de NF-e, recebedores na doca e veredito de proteção judicial.</p>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button className="secondary-button" onClick={onReloadSample}>
-              Restaurar Amostra Mundo do Sabor
-            </button>
+            
           </div>
         </div>
 
@@ -224,10 +220,8 @@ export function CanhotosView({
         ) : (
           <EmptyState
             icon="📦"
-            title="Nenhum canhoto carregado"
-            text="Importe a planilha de expedição ou utilize os dados de amostra da Mundo do Sabor."
-            action="Carregar Amostra Mundo do Sabor"
-            onAction={onReloadSample}
+            title="Nenhum comprovante carregado"
+            text="Importe uma planilha de expedição autorizada. Não há registros operacionais disponíveis neste workspace."
           />
         )}
       </section>
