@@ -38,7 +38,6 @@ import {
   INITIAL_SAMPLE_TITLES,
   INITIAL_SAMPLE_PROOFS,
   INITIAL_SAMPLE_HA_ORDERS,
-  INITIAL_SAMPLE_RECORDS,
   INITIAL_SAMPLE_OMIE_RECORDS,
   type ModuleType,
   type NavSection,
@@ -325,7 +324,6 @@ export default function EnterpriseWorkspace({
     if (typeof window !== "undefined" && !window.confirm("Reiniciar todos os dados operacionais da sessão atual?")) {
       return;
     }
-    setRecords([]);
     setOmieRecords(INITIAL_SAMPLE_OMIE_RECORDS);
     setTitles(INITIAL_SAMPLE_TITLES);
     setProofs(INITIAL_SAMPLE_PROOFS);
