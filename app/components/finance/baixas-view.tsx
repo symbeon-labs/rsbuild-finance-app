@@ -52,7 +52,7 @@ export function BaixasView({
         <div>
           <div className="eyebrow">INTEGRAÇÃO ERP · LIQUIDAÇÃO</div>
           <h1>Baixas & Conciliação de Títulos</h1>
-          <p>Conciliação inteligente e liquidação de contas a receber sem arrastar cards manuais no ERP.</p>
+          <p>Conciliação assistida de títulos e extratos, com exportação para conferência e eventual importação manual no ERP.</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           
@@ -231,7 +231,7 @@ export function BaixasView({
       </section>
 
       <div className="inline-note" style={{ marginTop: "16px" }}>
-        <strong>Diretriz de Liquidação Assistida:</strong> O motor de conciliação assistida gera o lote de liquidação e o arquivo de importação oficial para o ERP sem intervenção manual de arraste de cards, preservando a alçada de aprovação do operador financeiro antes da efetivação bancária.
+        <strong>Limite operacional:</strong> a exportação gera um CSV para conferência e eventual importação manual no ERP. Nenhuma baixa é executada, persistida ou enviada ao sistema de origem por esta tela.
       </div>
     </>
   );
