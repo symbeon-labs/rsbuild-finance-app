@@ -54,7 +54,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "only_owner_can_invite_admin" }, { status: 403 });
   }
 
-  const { count: recentInvitations, error: rateError } = await admin.from("organization_invitations")\n    .select("id", { count: "exact", head: true })\n    .eq("organization_id", organizationId).eq("invited_by", access.user.id)\n    .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());\n  if (rateError) return NextResponse.json({ error: "invitation_rate_check_failed" }, { status: 502 });\n  if ((recentInvitations ?? 0) >= 10) return NextResponse.json({ error: "invitation_rate_limit" }, { status: 429 });\n\n  const { data: existing } = await admin.from("organization_invitations")
+  const { count: recentInvitations, error: rateError } = await admin.from("organization_invitations")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId).eq("invited_by", access.user.id)
+    .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
+  if (rateError) return NextResponse.json({ error: "invitation_rate_check_failed" }, { status: 502 });
+  if ((recentInvitations ?? 0) >= 10) return NextResponse.json({ error: "invitation_rate_limit" }, { status: 429 });
+
+  const { data: existing } = await admin.from("organization_invitations")
     .select("id,status,expires_at").eq("organization_id", organizationId).eq("email", email).maybeSingle();
   if (existing && (existing.status === "accepted" ||
       (["pending", "sent"].includes(existing.status) && new Date(existing.expires_at).getTime() > Date.now()))) {
