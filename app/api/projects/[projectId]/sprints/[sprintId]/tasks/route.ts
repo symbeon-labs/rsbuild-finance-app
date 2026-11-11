@@ -28,9 +28,10 @@ export async function POST(request: Request, context: RouteContext) {
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const description = typeof body.description === "string" ? body.description.trim() : "";
   const acceptanceCriteria = typeof body.acceptanceCriteria === "string" ? body.acceptanceCriteria.trim() : "";
+  const responsibleLabel = typeof body.responsibleLabel === "string" ? body.responsibleLabel.trim() : "";
   const priority = ["low", "normal", "high", "critical"].includes(String(body.priority)) ? String(body.priority) : "normal";
 
-  if (!title || title.length > 180 || description.length > 3000 || acceptanceCriteria.length > 3000) {
+  if (!title || title.length > 180 || description.length > 3000 || acceptanceCriteria.length > 3000 || responsibleLabel.length > 160) {
     return NextResponse.json({ error: "invalid_task_payload" }, { status: 400 });
   }
 
@@ -40,9 +41,10 @@ export async function POST(request: Request, context: RouteContext) {
     title,
     description,
     acceptance_criteria: acceptanceCriteria,
+    responsible_label: responsibleLabel,
     priority,
     created_by: user.id
-  }).select("id, title, description, acceptance_criteria, status, priority, due_date").single();
+  }).select("id, title, description, acceptance_criteria, status, priority, due_date, responsible_label").single();
 
   if (error) {
     const status = error.code === "42501" ? 403 : 422;
