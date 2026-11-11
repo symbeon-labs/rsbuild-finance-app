@@ -86,6 +86,10 @@ Se não houver duas organizações e usuários de teste, marcar os testes multi-
 
 ## Registro e execução pelo GitHub Actions
 
+**Nota de ativação:** o GitHub só permite iniciar `workflow_dispatch` quando o arquivo do workflow já existe na branch padrão do repositório. Enquanto este PR estiver Draft e o arquivo ainda não estiver na branch padrão, a execução manual pelo formulário do Actions não estará disponível. O evento de `push` nesta branch executa a validação técnica; até a ativação do dispatch, registre a homologação funcional neste checklist e publique o resultado/evidências como comentário no PR #35. Não mescle este PR apenas para habilitar o formulário sem revisão explícita.
+
+Quando o workflow estiver presente na branch padrão:
+
 1. Abrir **Actions → Final Finance QA**.
 2. Selecionar **Run workflow** na branch de homologação.
 3. Informar o responsável e o resultado de cada caso: `PASS`, `FAIL`, `BLOCKED` ou `PENDING`.
