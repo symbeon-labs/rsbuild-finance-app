@@ -99,6 +99,7 @@ export default function EnterpriseWorkspace({
     if (s === "baixas" || s === "conciliacao") return "reconciliation";
     if (s === "pedidos-ha" || s === "canhotos") return "logistics";
     if (s === "torre-controle") return "audit";
+    if (s === "projetos") return ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.defaultModule ?? "finance";
     return "finance";
   }
 
