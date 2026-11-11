@@ -56,6 +56,8 @@ export function CanhotosView({
         </div>
       </div>
 
+      <div className="inline-note" style={{ marginTop: "12px" }}>Os comprovantes importados e as conferências desta tela permanecem apenas na sessão atual. A tela não autentica assinatura, não comprova entrega por conta própria e não libera protesto ou cobrança.</div>
+
       <div className="metric-grid">
         <Metric
           label="Taxa de Comprovação"
@@ -203,9 +205,9 @@ export function CanhotosView({
                             className="secondary-button"
                             style={{ fontSize: "10px", padding: "6px 10px" }}
                             onClick={() => onConfirmReceipt(p.id)}
-                            title="Validar recebimento e liberar título para cobrança/protesto"
+                            title="Registrar conferência temporária; não substitui evidência válida nem libera cobrança ou protesto"
                           >
-                            Validar Canhoto
+                            Conferir dados
                           </button>
                         ) : (
                           <span style={{ fontSize: "11px", color: "var(--green-text, #15803D)", fontWeight: 600 }}>Arquivado</span>
