@@ -97,7 +97,7 @@ create table public.project_deliverables (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   foreign key (project_id, sprint_id)
-    references public.project_sprints(project_id, id) on delete set null
+    references public.project_sprints(project_id, id)
 );
 create index project_deliverables_project_idx on public.project_deliverables(project_id, created_at desc);
 
@@ -316,10 +316,10 @@ insert into public.projects (
 select rs.id, client.id, client.display_name, seed.project_key,
        seed.name, seed.description, 'planning'
 from public.organizations rs
-join public.organizations client on client.slug = seed.client_slug
 cross join (values
   ('mundo-do-sabor', 'mundo_sabor', 'Mundo do Sabor', 'Projeto de estruturação operacional e integração dos dados da empresa.'),
   ('hub-acai', 'hub_acai', 'Hub Açaí', 'Projeto de estruturação operacional e integração dos dados da empresa.')
 ) as seed(project_key, client_slug, name, description)
+join public.organizations client on client.slug = seed.client_slug
 where rs.slug = 'rsbuild'
 on conflict (managing_organization_id, client_organization_id, project_key) do nothing;
