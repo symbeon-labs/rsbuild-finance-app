@@ -114,7 +114,7 @@ Fixture versionada: [finance-import-synthetic.csv](./fixtures/finance-import-syn
 
 ## 7. Plano de execução sem custo
 
-1. Manter PR #34 e PR #35 em revisão; não mesclar nem promover produção.
+1. Tratar PR #34 como integrada à main; manter PR #35 em revisão e não promover produção.
 2. Usar os resultados atuais do GitHub Actions como evidência técnica, vinculados aos SHAs acima.
 3. Não recadastrar as identidades: já foram encontradas no Auth. Definir um ambiente/duas organizações exclusivamente de QA e validar memberships sem reaproveitar organizações reais.
 4. Confirmar um caminho autorizado para acessar o Preview protegido, sem compartilhar senhas, cookies ou tokens.
