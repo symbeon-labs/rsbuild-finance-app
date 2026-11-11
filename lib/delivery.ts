@@ -3,8 +3,7 @@
  * 
  * Regras de Negócio e Rastreabilidade para Mundo do Sabor (ORG-003):
  * - Vincula faturas/NF-e a comprovantes de entrega assinados (canhotos).
- * - Blindagem jurídica preventiva: impede protesto cartorário indevido de duplicatas
- *   sem prova documental de entrega (art. 15 da Lei nº 5.474/1968).
+ * - Organiza metadados de entrega para revisão operacional e humana.
  * - Integração conceitual com dados do Omie ERP e frentes de expedição/motoristas.
  */
 
@@ -141,7 +140,7 @@ export function evaluateProtestoRisk(
       customerName: proof.customerName,
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
-      risk: "bloqueio_preventivo",
+      risk: "priority_review",
       reason: `Há registro de recusa ou devolução (${proof.notes || "sem justificativa"}). Revisar a documentação e o processo antes de qualquer decisão de cobrança.`,
       proofId: proof.id,
       hasCompleteEvidenceMetadata: false
@@ -154,7 +153,7 @@ export function evaluateProtestoRisk(
       customerName: proof.customerName,
       nfeAmount: proof.nfeAmount,
       deliveryStatus: proof.status,
-      risk: "bloqueio_preventivo",
+      risk: "priority_review",
       reason: "O registro indica comprovante extraviado ou ilegível. É necessária revisão documental antes de qualquer decisão de cobrança.",
       proofId: proof.id,
       hasCompleteEvidenceMetadata: false
