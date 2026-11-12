@@ -269,25 +269,6 @@ As configurações da empresa não podem desativar:
 
 A matriz de permissões da seção 7 é uma proposta inicial do produto. A configuração poderá restringir alçadas dentro dos limites de segurança definidos pelo sistema, mas não conceder poderes que contrariem o modelo de autorização central.
 
-## 10. Próxima sequência técnica
-
-1. Validar B01–B12 com responsáveis financeiros e amostras anonimizadas de títulos (Omie e outras origens).
-2. Converter o modelo aprovado em ERD lógico e dicionário de dados.
-3. Definir constraints, índices, idempotência, RLS e matriz de permissões por operação.
-4. Especificar contratos de comandos transacionais (criar, confirmar, alocar, estornar) e respostas de erro.
-5. Criar cenários automatizados, incluindo dois tenants e concorrência de liquidação.
-6. Só então propor migrations incrementais em branch isolada e ambiente de desenvolvimento autorizado.
-
-## 11. Referências internas examinadas
-
-- `supabase/migrations/20261104210850_d02_managed_persistence.sql`
-- `supabase/migrations/20261109130004_d02_transactional_imports.sql`
-- `lib/finance.ts`
-- `lib/finance-persistence.ts`
-- `lib/reconciliation.ts`
-- `app/components/finance/baixas-view.tsx`
-- `docs/IMPLEMENTATION_PLAN.md`
-
 
 ### 9.4 Experiência de configuração — fluxo proposto
 
@@ -363,6 +344,25 @@ A configuração não pode ampliar privilégios de acesso a dados nem substituir
 10. Falhas durante a ativação não deixam a organização parcialmente configurada ou com duas versões simultaneamente ativas.
 11. O fluxo de delegação expirada ou revogada bloqueia a aprovação e preserva o histórico.
 12. A simulação do wizard não cria títulos, liquidações, conciliações ou efeitos financeiros reais.
+
+## 10. Próxima sequência técnica
+
+1. Validar B01–B12 com responsáveis financeiros e amostras anonimizadas de títulos (Omie e outras origens).
+2. Converter o modelo aprovado em ERD lógico e dicionário de dados.
+3. Definir constraints, índices, idempotência, RLS e matriz de permissões por operação.
+4. Especificar contratos de comandos transacionais (criar, confirmar, alocar, estornar) e respostas de erro.
+5. Criar cenários automatizados, incluindo dois tenants e concorrência de liquidação.
+6. Só então propor migrations incrementais em branch isolada e ambiente de desenvolvimento autorizado.
+
+## 11. Referências internas examinadas
+
+- `supabase/migrations/20261104210850_d02_managed_persistence.sql`
+- `supabase/migrations/20261109130004_d02_transactional_imports.sql`
+- `lib/finance.ts`
+- `lib/finance-persistence.ts`
+- `lib/reconciliation.ts`
+- `app/components/finance/baixas-view.tsx`
+- `docs/IMPLEMENTATION_PLAN.md`
 
 
 **Nota de rastreabilidade:** F01.1 é uma especificação nova e distinta do plano legado D01–D07. A presente proposta não afirma que os cenários de aceite já foram executados.
