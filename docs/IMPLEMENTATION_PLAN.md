@@ -1,11 +1,18 @@
-# Plano de Implementação — RSBUILD Finance
+# RSBUILD OS — Plano de Implementação do Domínio Finance
 
-**Versão:** 0.1  
-**Status:** Plano técnico de trabalho
+**Versão:** 0.2  
+**Status:** Plano técnico de trabalho do primeiro domínio  
+**Escopo:** Finance; não representa o plano de implementação de todos os domínios do RSBUILD OS.
+
+## Relação com a arquitetura da plataforma
+
+Este documento orienta a evolução do domínio Finance dentro do RSBUILD OS. A arquitetura da plataforma, seus limites de domínio e a sequência de migração são definidos em [RSBUILD OS Architecture & Repository Migration v1.0](RSBUILD_OS_ARCHITECTURE_MIGRATION_v1.0.md) e na baseline arquitetural sujeita a revisão.
+
+O RSBUILD OS é a plataforma; Finance é o primeiro domínio estruturado. Este plano preserva as prioridades financeiras existentes sem declarar outros domínios implementados, nem autorizar mudanças no Symbeon Financial Core.
 
 ## Objetivo
 
-Organizar a evolução da aplicação a partir das capacidades financeiras priorizadas, mantendo entregas verificáveis e separando funcionalidades já presentes de capacidades futuras.
+Organizar a evolução do domínio Finance a partir das capacidades financeiras priorizadas, mantendo entregas verificáveis e separando funcionalidades já presentes de capacidades futuras.
 
 ## Estado identificado na aplicação
 
@@ -89,9 +96,9 @@ Limitações identificadas:
 
 **Aceite:** conjunto de casos rotulados e métricas de precisão por tipo de relacionamento.
 
-### D07 — Expansão adaptativa
+### D07 — Expansão adaptativa do domínio Finance
 
-- Permitir habilitar capacidades por empresa conforme configuração e validação.
+- Permitir habilitar capacidades financeiras por empresa conforme configuração e validação.
 - Versionar regras operacionais e mapeamentos específicos.
 - Adicionar fontes, unidades e módulos conforme necessidade observada.
 - Monitorar cobertura, desempenho e qualidade por empresa.
@@ -106,7 +113,11 @@ Limitações identificadas:
 - Não realizar escrita em ERP ou banco sem autorização e escopo próprios.
 - Cada etapa deve possuir testes automatizados, evidências e critérios de aceite.
 - Não declarar capacidade como disponível antes de cumprir seus critérios.
+- Respeitar a baseline de arquitetura do RSBUILD OS e os gates aprovados.
+- Não replicar no aplicativo algoritmos, semântica financeira ou metodologia interna do Symbeon Financial Core.
 
 ## Próxima prioridade técnica
 
-A primeira prioridade é D01 — Integridade da importação. Antes de ampliar fontes ou construir indicadores mais sofisticados, a aplicação precisa demonstrar que interpreta corretamente os arquivos, preserva sua origem e evita duplicidades.
+A primeira prioridade do domínio Finance permanece D01 — Integridade da importação. Antes de ampliar fontes ou construir indicadores mais sofisticados, a aplicação precisa demonstrar que interpreta corretamente os arquivos, preserva sua origem e evita duplicidades.
+
+**Nota:** este plano é restrito ao domínio Finance. A expansão para outros domínios depende de descoberta, delimitação, validação e contratação próprias.
