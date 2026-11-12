@@ -59,6 +59,7 @@ import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
+import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
@@ -90,7 +91,7 @@ export default function EnterpriseWorkspace({
   // URL Sync para Seção e Módulo
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
+    urlTab && ["visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -98,6 +99,7 @@ export default function EnterpriseWorkspace({
     if (s === "baixas" || s === "conciliacao") return "reconciliation";
     if (s === "pedidos-ha" || s === "canhotos") return "logistics";
     if (s === "torre-controle") return "audit";
+    if (s === "projetos") return ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.defaultModule ?? "finance";
     return "finance";
   }
 
@@ -652,6 +654,7 @@ export default function EnterpriseWorkspace({
               <button onClick={() => setNotice("")}>×</button>
             </div>
           )}
+          {section === "projetos" && <ProjectPortfolioView canManage={organizationSlug === "rsbuild" && ["owner", "admin", "operator"].includes(membershipRole)} />}
           {section === "visao-geral" && (
             <VisaoGeralView
               records={filteredRecords}

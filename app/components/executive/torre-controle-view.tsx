@@ -29,7 +29,7 @@ interface TorreControleViewProps {
   onNavigateToTab: (tab: any) => void;
 }
 
-type TorreSubTab = "estrategia" | "auditoria" | "sincronizacao" | "sprints";
+type TorreSubTab = "estrategia" | "auditoria" | "sincronizacao";
 
 export function TorreControleView({
   companyName = "RSBUILD Inovação",
@@ -319,14 +319,14 @@ export function TorreControleView({
         {hasSprintZone && (
           <button
             type="button"
-            onClick={() => setActiveSubTab("sprints")}
-            className={activeSubTab === "sprints" ? "secondary-button active" : "secondary-button"}
+            onClick={() => onNavigateToTab("projetos")}
+            className="secondary-button"
             style={{
               padding: "8px 16px",
               fontSize: "12px",
-              fontWeight: activeSubTab === "sprints" ? 700 : 500,
-              background: activeSubTab === "sprints" ? "var(--surface-raised, rgba(255,255,255,0.08))" : "transparent",
-              borderColor: activeSubTab === "sprints" ? "var(--rsbuild-terracotta)" : "var(--line)",
+              fontWeight: 600,
+              background: "transparent",
+              borderColor: "var(--line)",
               color: "var(--ink)"
             }}
           >
@@ -756,152 +756,6 @@ export function TorreControleView({
               <button className="secondary-button" style={{ fontSize: "11px", width: "100%" }} onClick={() => onNavigateToTab("canhotos")}>
                 Revisar Protocolo de Canhotos
               </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ABA 4: ZONA DAS SPRINTS - Apenas RSBUILD */}
-      {activeSubTab === "sprints" && (
-        <section className="panel" style={{ marginBottom: "24px" }}>
-          <div className="panel-heading">
-            <div>
-              <h2>Zona das Sprints - Ciclo 01</h2>
-              <p>Acompanhamento do progresso das sprints de Mundo do Sabor e Hub Açaí (09/11 - 04/12/2026).</p>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "20px", marginTop: "20px" }}>
-            {/* Frente A - Mundo do Sabor */}
-            <div style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "20px", background: "var(--surface)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                <span style={{ fontSize: "24px" }}>🍦</span>
-                <div>
-                  <h3 style={{ fontSize: "14px", margin: 0, color: "var(--ink)" }}>Frente A - Mundo do Sabor</h3>
-                  <p style={{ fontSize: "11px", color: "var(--muted)", margin: "4px 0 0" }}>Engenharia Financeira (ENG-MS-01, ENG-MS-02, ENG-MS-03)</p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint A1 (09-13/11)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>4/8 tarefas (50%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "50%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-                <div style={{ fontSize: "10px", color: "var(--muted)", marginTop: "4px" }}>
-                  ✅ A1.4 Parser OFX · ✅ A1.5 Motor correspondência · ✅ A1.6 Tela conciliação · ✅ A1.7 Trilha auditoria
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint A2 (16-19/11)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>0/7 tarefas (0%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "0%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint A3 (23-27/11)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>0/6 tarefas (0%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "0%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint A4 (30/11-04/12)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>0/6 tarefas (0%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "0%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Frente B - Hub Açaí */}
-            <div style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "20px", background: "var(--surface)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                <span style={{ fontSize: "24px" }}>🍨</span>
-                <div>
-                  <h3 style={{ fontSize: "14px", margin: 0, color: "var(--ink)" }}>Frente B - Hub Açaí</h3>
-                  <p style={{ fontSize: "11px", color: "var(--muted)", margin: "4px 0 0" }}>Engenharia Logística (ENG-HA-01, H1-H4)</p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint H1 (09-13/11)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>0/6 tarefas (0%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "0%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint H2 (16-19/11)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>0/6 tarefas (0%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "0%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint H3 (23-27/11)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>0/5 tarefas (0%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "0%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "12px", color: "var(--ink)" }}>Sprint H4 (30/11-04/12)</strong>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>0/6 tarefas (0%)</span>
-                </div>
-                <div style={{ height: "8px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: "0%", background: "var(--rsbuild-terracotta)", borderRadius: "4px" }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Status Geral */}
-          <div style={{ marginTop: "24px", padding: "16px", background: "var(--surface-raised, rgba(255,255,255,0.03))", borderRadius: "8px", border: "1px solid var(--line)" }}>
-            <h3 style={{ fontSize: "13px", margin: "0 0 12px 0", color: "var(--ink)" }}>Status Geral do Ciclo 01</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-              <div>
-                <div style={{ fontSize: "10px", color: "var(--muted)", marginBottom: "4px" }}>Progresso Total</div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--ink)" }}>4/26</div>
-                <div style={{ fontSize: "11px", color: "var(--muted)" }}>tarefas (15%)</div>
-              </div>
-              <div>
-                <div style={{ fontSize: "10px", color: "var(--muted)", marginBottom: "4px" }}>Bloqueadores</div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--red-text, #EF4444)" }}>7</div>
-                <div style={{ fontSize: "11px", color: "var(--muted)" }}>dependências externas</div>
-              </div>
-              <div>
-                <div style={{ fontSize: "10px", color: "var(--muted)", marginBottom: "4px" }}>Frente A</div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--rsbuild-terracotta)" }}>50%</div>
-                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Sprint A1 completa</div>
-              </div>
-              <div>
-                <div style={{ fontSize: "10px", color: "var(--muted)", marginBottom: "4px" }}>Frente B</div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--yellow-text, #F59E0B)" }}>0%</div>
-                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Aguardando decisões</div>
-              </div>
             </div>
           </div>
         </section>
