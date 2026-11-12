@@ -293,24 +293,51 @@ Para `reconciliation_links`, adicionar FKs compostas equivalentes para título, 
 8. Grants e RLS são controles distintos: validar ambos para cada tabela e função.
 9. Não permitir que o payload de política conceda permissões de acesso à plataforma; políticas financeiras apenas regulam comportamento de negócio.
 
-## 10. Decisões que precisam ser validadas antes do desenho físico
+## 10. Registro consolidado de decisões D01–D12
 
-| ID | Decisão | Impacto |
-|---|---|---|
-| D01 | Parcela é entidade filha ou documento independente por ERP? | Cardinalidade e importação de títulos. |
-| D02 | Cadastro mestre de contrapartes será criado no F01 ou integrado a módulo existente? | FK vs snapshot. |
-| D03 | Reversão será evento compensatório separado ou registro ligado por `reversal_of_id`? | Ledger e cálculo do saldo. |
-| D04 | Ajustes serão positivos/negativos com convenção única ou tipo define sinal? | Fechamento aritmético. |
-| D05 | Uma movimentação bancária pode ser dividida entre várias liquidações? | Unicidade e conciliação parcial. |
-| D06 | Liquidação pode existir sem alocação? Em quais cenários e com qual evidência? | Constraint de alocação e adiantamentos. |
-| D07 | Uma política pode ser aprovada pelo mesmo usuário que a elaborou? | Workflow e segregação. |
-| D08 | Qual papel/permissão existente representa diretoria ou delegado? | RBAC e autorização. |
-| D09 | Configuração terá vigência futura ou ativação imediata apenas no MVP? | Seleção da versão aplicada. |
-| D10 | Moeda será BRL-only no MVP? | Validação e compatibilidade de alocações. |
-| D11 | Título importado pode ser atualizado pelo ERP após confirmação? | Versionamento e reconciliação de alterações. |
-| D12 | Como identificar contraparte e documento sem referência estável? | Idempotência e deduplicação. |
+Esta seção consolida o baseline técnico recomendado para orientar o modelo físico. **DECIDED** significa decisão de arquitetura proposta para o MVP; não significa aprovação de política financeira por uma empresa. **CONFIGURABLE** indica comportamento parametrizável por organização, mediante versão aprovada de política. **CONDITIONAL** indica comportamento dependente de contexto ou capacidade existente. **BLOCKED** indica dependência externa que precisa ser resolvida antes da implementação correspondente.
 
-Defaults técnicos não devem substituir decisões do negócio. Enquanto não resolvidas, as ambiguidades devem permanecer explícitas no contrato e impedir implementação de regras irreversíveis.
+| ID | Tema | Resolução consolidada | Estado |
+|---|---|---|---|
+| D01 | Parcelas | Parcelas permanecem entidades filhas do título quando representarem um único compromisso parcelado. Quando o ERP/origem fornecer cada parcela como documento financeiro autônomo, a organização poderá configurá-la como título independente; não criar parcelas artificiais. | CONFIGURABLE |
+| D02 | Contrapartes | Adotar cadastro mestre de contrapartes (clientes/fornecedores) com identidade tenant-scoped. O título preserva snapshot dos dados relevantes no momento da criação/confirmação, para manter histórico mesmo após atualização cadastral. Antes do modelo físico, verificar se já existe cadastro mestre reutilizável em outro módulo; não duplicar domínio existente. | DECIDED; integração CONDITIONAL |
+| D03 | Estornos | Não apagar nem reescrever liquidações confirmadas. Estorno será um evento compensatório próprio, imutável, relacionado à liquidação original e sujeito a autorização/auditoria. Uma liquidação original não poderá receber estornos duplicados acima do saldo reversível; estorno parcial, se permitido, deverá ser explicitamente representado. | DECIDED |
+| D04 | Ajustes | Armazenar o valor do ajuste como magnitude positiva e registrar seu efeito econômico por enumeração explícita (aumenta ou reduz o valor liquidado), combinado com um tipo de ajuste permitido. Não inferir sinal pela descrição textual. A regra aritmética e os tipos válidos serão versionados/validados pela política. | DECIDED |
+| D05 | Divisão de movimentação | Permitir conciliação parcial de uma movimentação bancária e sua distribuição entre múltiplas liquidações. O modelo físico deverá registrar o valor alocado por vínculo movimento–liquidação e impedir, transacionalmente, que a soma das alocações exceda o valor conciliável do movimento. O vínculo de evidência genérico, sem valor alocado, não é suficiente para controlar saldo. | DECIDED |
+| D06 | Liquidação sem alocação | Permitir liquidação sem alocação somente quando a política vigente aprovada autorizar o cenário e houver justificativa, classificação e trilha de auditoria. O valor não alocado deverá permanecer identificável como adiantamento/crédito ou saldo pendente, sem ser tratado como título liquidado. A entidade/fluxo de crédito ou adiantamento deverá ser especificada antes da migration. | CONFIGURABLE; modelagem de crédito CONDITIONAL |
+| D07 | Autoaprovação | A mesma pessoa poderá elaborar e aprovar uma configuração apenas se a política vigente da organização não exigir segregação de funções e se suas permissões específicas permitirem ambas as ações. O sistema deverá registrar autor, aprovador e regra aplicada. | CONFIGURABLE |
+| D08 | Diretoria e delegados | Não presumir que a role genérica admin equivale a diretor. A autorização deverá usar permissões financeiras explícitas para configurar, submeter, aprovar e administrar delegações. Delegações precisam de escopo, prazo, concedente, revogação e auditoria. Reutilizar o RBAC central se ele já oferecer essas capacidades. | DECIDED; integração CONDITIONAL |
+| D09 | Vigência de políticas | Suportar vigência futura. A ativação imediata será o padrão quando nenhuma data futura for informada; a versão aplicada a cada operação será selecionada pela vigência e registrada no evento. Não permitir sobreposição ambígua de versões ativas para o mesmo módulo/organização. | DECIDED + CONFIGURABLE |
+| D10 | Moedas | BRL será a única moeda operacional habilitada no MVP. O modelo mantém campo de moeda ISO 4217 para evolução futura, mas múltiplas moedas, conversão cambial e alocações entre moedas ficam desabilitadas até especificação própria. | DECIDED (MVP) |
+| D11 | Atualização pelo ERP | Preservar o snapshot e o histórico de títulos confirmados. Alterações recebidas do ERP após confirmação não sobrescrevem silenciosamente os dados financeiros: devem gerar proposta de revisão/delta, decisão autorizada e evento auditável. Campos de origem e metadados técnicos podem ser atualizados segundo regra explícita sem alterar o fato financeiro confirmado. | DECIDED |
+| D12 | Identificação externa | Priorizar identificadores estáveis e escopados por organização, sistema de origem e tipo de documento. Quando a origem não fornecer identificador estável, não deduplicar automaticamente por similaridade de descrição, valor ou data; apresentar possível duplicidade para revisão humana. Idempotência técnica de uma mesma requisição é distinta da deduplicação semântica de documentos. | DECIDED |
+
+### 10.1 Consequências obrigatórias para o modelo físico
+
+1. **D01:** manter a relação título–parcelas e definir no contrato de importação quando a origem representa um título parcelado ou documentos independentes.
+2. **D02:** inspecionar o domínio/cadastro existente antes de criar tabela; manter snapshot histórico no título mesmo com FK para cadastro mestre.
+3. **D03:** preferir tabela/evento de reversão compensatória com referência obrigatória à liquidação original. Não usar exclusão ou alteração destrutiva do registro confirmado.
+4. **D04:** incluir campo explícito de efeito (increase/decrease ou enum equivalente), além do tipo e valor positivo. Fechar a fórmula do valor líquido antes de criar constraints.
+5. **D05:** acrescentar estrutura explícita de alocação de movimentação bancária para liquidação, com amount_minor, moeda e FKs tenant-scoped. O saldo conciliável deve ser calculado/validado sob transação e concorrência.
+6. **D06:** não tratar liquidação sem alocação como liquidação de título. Definir entidade/estado para adiantamento ou crédito e como será posteriormente aplicado.
+7. **D07–D08:** especificar permissões granulares e fluxo de aprovação no servidor; papel de interface não é prova suficiente de autoridade.
+8. **D09:** definir regra determinística de seleção da versão pela data/hora efetiva e bloquear intervalos conflitantes.
+9. **D10:** impor BRL no serviço e nas operações do MVP, ainda que a coluna permaneça preparada para ISO 4217.
+10. **D11:** distinguir atualização de metadados de origem de alteração de conteúdo financeiro confirmado; alterações financeiras exigem revisão.
+11. **D12:** definir chave de idempotência de integração e fila/estado de possíveis duplicidades sem referência estável.
+
+### 10.2 Limites e validações ainda necessários
+
+As decisões acima fecham o baseline de arquitetura, mas não substituem validações de domínio e operação. Antes do modelo físico definitivo, ainda será necessário:
+
+- verificar se existe cadastro mestre de contrapartes/RBAC reutilizável;
+- validar os fluxos de adiantamento, crédito e estorno parcial com exemplos reais anonimizados;
+- fechar a fórmula aritmética de ajustes e liquidações;
+- definir como o valor conciliável de cada movimentação será calculado quando houver tarifas, estornos ou lançamentos bancários compostos;
+- confirmar formatos e identificadores reais dos ERPs de origem;
+- validar com responsáveis financeiros quais opções CONFIGURABLE serão disponibilizadas no wizard e quem pode aprová-las.
+
+Nenhuma dessas validações autoriza por si só migration, alteração do Supabase ou mudança de dados. As políticas financeiras efetivas de cada organização só poderão ser consideradas aprovadas após decisão de seus responsáveis autorizados e registro no fluxo de governança.
 
 ## 11. Plano de implementação posterior (não autorizado por este documento)
 
