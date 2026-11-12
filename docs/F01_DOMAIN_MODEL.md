@@ -178,7 +178,7 @@ Os nomes finais de enum e transições são decisão técnica posterior; o signi
 3. Valores monetários são inteiros em centavos (`bigint` no banco), moeda explícita; não usar ponto flutuante para persistência/cálculo.
 4. Não somar moedas diferentes sem conversão explícita e taxa versionada — fora do MVP.
 5. Valor original do título não é sobrescrito por pagamento; saldo é calculado a partir de alocações válidas.
-6. Alocação confirmada não pode exceder saldo aberto do título/parcela, salvo regra formal para crédito/adiantamento.
+6. Alocação confirmada não pode exceder saldo aberto do título/parcela. Fluxo de crédito/adiantamento está fora do MVP e não constitui exceção ativa.
 7. Uma liquidação confirmada deve ter uma ou mais alocações ou uma justificativa de não alocação aprovada (decisão pendente).
 8. Total de alocações e ajustes deve fechar com o valor liquidado segundo composição formal definida.
 9. Um mesmo movimento bancário não pode ser consumido duas vezes por conciliações confirmadas incompatíveis, salvo split explícito e modelado.
@@ -229,9 +229,9 @@ O produto deve oferecer uma etapa de **Configuração Inicial do Módulo Finance
 | ID | Política | Configuração proposta |
 |---|---|---|
 | P01 | Unidade de gestão | Título com parcelas ou parcela do ERP como unidade independente. |
-| P02 | Liquidação sem movimento bancário | Permitir ou exigir evidência/movimento conciliado; definir meios autorizados. |
+| P02 | Liquidação sem movimento bancário | No MVP F01, confirmação exige alocação financeira e evidência de origem suficiente; liquidação sem alocação não é permitida. Outras modalidades ficam fora do escopo até especificação e aprovação próprias. |
 | P03 | Liquidações parciais e agrupadas | Habilitar pagamento parcial, recebimento parcial e liquidação de múltiplos títulos. |
-| P04 | Adiantamentos e créditos não aplicados | Permitir, restringir ou desabilitar; definir conta/fluxo de crédito pendente. |
+| P04 | Adiantamentos e créditos não aplicados | Fixado como desabilitado no MVP F01. Não confirmar saldo excedente ou crédito implícito; habilitação futura exige ledger próprio de crédito/adiantamento. |
 | P05 | Saldo residual e tolerância | Limite em centavos e perfil autorizado para baixa de resíduo. |
 | P06 | Alçadas de confirmação e estorno | Perfis, limites por valor, dupla aprovação e segregação criador/aprovador. |
 | P07 | Ajustes financeiros | Tipos permitidos (juros, multa, desconto, tarifa, retenção, abatimento), sinais e justificativas obrigatórias. |
@@ -366,3 +366,12 @@ A configuração não pode ampliar privilégios de acesso a dados nem substituir
 
 
 **Nota de rastreabilidade:** F01.1 é uma especificação nova e distinta do plano legado D01–D07. A presente proposta não afirma que os cenários de aceite já foram executados.
+
+
+---
+
+## 12. Decisão de escopo B06 — liquidação sem alocação
+
+O fechamento das dependências F01.3 torna explícita a restrição do MVP: liquidação confirmada exige alocação completa e composição financeira validada. P02 e P04 não serão apresentados como toggles habilitáveis no configurador inicial enquanto o produto não possuir ledger de créditos/adiantamentos. A organização não pode aprovar uma capacidade que o produto não implementa.
+
+Esta decisão prevalece sobre qualquer redação anterior que sugira que liquidação sem alocação possa ser habilitada apenas por configuração. A futura habilitação requer modelagem, implementação, testes e nova aprovação de escopo.
