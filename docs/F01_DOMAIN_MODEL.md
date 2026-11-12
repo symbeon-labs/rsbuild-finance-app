@@ -288,4 +288,81 @@ A matriz de permissões da seção 7 é uma proposta inicial do produto. A confi
 - `app/components/finance/baixas-view.tsx`
 - `docs/IMPLEMENTATION_PLAN.md`
 
+
+### 9.4 Experiência de configuração — fluxo proposto
+
+O configurador deve funcionar como um assistente de implantação (wizard), não como uma tela técnica de parâmetros. A diretoria deve compreender o impacto de cada escolha sem precisar conhecer o modelo de dados.
+
+Fluxo sugerido:
+
+1. **Contexto da empresa:** confirmar organização, atividade, moedas e fontes/ERPs utilizados.
+2. **Estrutura dos títulos:** definir se a unidade operacional será título ou parcela e como tratar documentos importados.
+3. **Liquidações:** definir pagamentos parciais/agrupados, meios aceitos, adiantamentos e liquidação sem movimento bancário.
+4. **Ajustes e tolerâncias:** definir descontos, juros, multas, tarifas e tolerâncias de saldo residual.
+5. **Governança e alçadas:** definir quem cadastra, confirma, aprova, cancela e estorna; configurar limites e dupla aprovação.
+6. **Revisão e simulação:** apresentar resumo em linguagem de negócio, alertar conflitos e simular exemplos representativos sem gravar operações financeiras.
+7. **Aprovação e ativação:** responsável autorizado confirma a versão; o sistema registra autoria, data, motivo e versão e só então libera as capacidades correspondentes.
+
+Cada etapa deve apresentar: finalidade, opções, consequência operacional, dependências, recomendação conservadora e indicação clara do que ainda precisa de decisão. Não pré-selecionar opções como se já tivessem sido aprovadas.
+
+### 9.5 Estados do ciclo de configuração
+
+- `not_started`: configuração ainda não iniciada.
+- `in_progress`: preenchimento em andamento; nenhuma capacidade produtiva dependente pode ser ativada.
+- `pending_approval`: revisão concluída, aguardando aprovação de pessoa autorizada.
+- `active`: versão aprovada e vigente.
+- `change_pending`: alteração proposta para uma configuração ativa, aguardando aprovação.
+- `suspended`: configuração suspensa por inconsistência, revogação ou ação administrativa auditada.
+
+A configuração deve ter um identificador próprio e versões imutáveis. Uma edição cria uma nova versão em rascunho; não altera a versão ativa. A ativação deve ser transacional e registrar o evento de auditoria correspondente.
+
+### 9.6 Modelo lógico conceitual da configuração
+
+Entidades conceituais sugeridas, sem compromisso de nomes físicos:
+
+- **FinancialModuleConfiguration:** identidade da configuração da organização e estado atual.
+- **FinancialPolicyVersion:** versão imutável das políticas P01–P12, com schema version, conteúdo validado, autor, timestamps, motivo e vigência.
+- **FinancialPolicyApproval:** aprovação vinculada à versão, com aprovador, papel/delegação, decisão, justificativa e instante.
+- **FinancialPolicyChange:** proposta de alteração, comparação entre versões, motivo e estado do fluxo.
+
+Requisitos de persistência:
+- escopo obrigatório por `organization_id`;
+- versão do schema separada da versão da política;
+- conteúdo validado no servidor contra schema conhecido;
+- histórico append-only de aprovações e ativações;
+- nenhuma política ativa sobrescrita;
+- referência explícita à versão aplicada em cada operação financeira relevante;
+- constraints e RLS impedindo leitura ou alteração entre organizações.
+
+Não armazenar apenas um JSON livre sem validação, trilha de aprovação e regras de compatibilidade. A representação física (colunas normalizadas, JSONB validado ou abordagem híbrida) será decidida no desenho de dados F01.2/F01.3.
+
+### 9.7 Governança e autorização
+
+A diretoria pode delegar a configuração e aprovação a um responsável, mas a delegação deve ser explícita, limitada ao escopo e auditável. Não inferir poder de aprovação apenas por o usuário ser membro da organização.
+
+O servidor deve validar, em cada ação:
+- vínculo ativo do usuário com a organização;
+- permissão específica para configurar ou aprovar políticas;
+- validade e escopo da delegação, quando aplicável;
+- segregação entre solicitante e aprovador, se exigida pela política vigente;
+- versão esperada, evitando aprovações concorrentes ou sobre versão desatualizada.
+
+A configuração não pode ampliar privilégios de acesso a dados nem substituir o controle central de autorização. Ela define regras operacionais financeiras dentro dos limites concedidos pelo produto.
+
+### 9.8 Critérios de aceite do configurador
+
+1. Uma organização nova permanece bloqueada para operações produtivas até concluir e aprovar a configuração obrigatória.
+2. Usuário sem permissão não consegue criar, alterar, aprovar ou ativar políticas, mesmo chamando endpoints diretamente.
+3. Uma versão aprovada é imutável; alterações criam nova versão e não mudam operações anteriores.
+4. Uma aprovação registra identidade do aprovador, papel ou delegação, data, versão e justificativa.
+5. Dependências inválidas impedem a aprovação e explicam como corrigir.
+6. O resumo de revisão corresponde exatamente ao conteúdo que será aprovado (sem divergência entre tela e payload).
+7. Cada operação financeira registra a versão de política aplicada, inclusive quando uma versão nova passa a vigorar depois.
+8. Uma alteração futura pode ter vigência definida, sem retroagir sobre liquidações, conciliações ou auditorias já registradas.
+9. Testes com duas organizações comprovam isolamento de configuração, versões, aprovações e operações.
+10. Falhas durante a ativação não deixam a organização parcialmente configurada ou com duas versões simultaneamente ativas.
+11. O fluxo de delegação expirada ou revogada bloqueia a aprovação e preserva o histórico.
+12. A simulação do wizard não cria títulos, liquidações, conciliações ou efeitos financeiros reais.
+
+
 **Nota de rastreabilidade:** F01.1 é uma especificação nova e distinta do plano legado D01–D07. A presente proposta não afirma que os cenários de aceite já foram executados.
