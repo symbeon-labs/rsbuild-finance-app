@@ -360,3 +360,62 @@ Nenhuma dessas validações autoriza por si só migration, alteração do Supaba
 - `docs/F01_DOMAIN_MODEL.md`
 
 **Nota de rastreabilidade:** o modelo reflete a estrutura das migrations consultadas e uma proposta de evolução. Não representa schema já implantado, não afirma que as regras de negócio foram aprovadas e não comprova testes de runtime.
+
+
+---
+
+# 13. Decisões B01–B08 — fechamento do modelo lógico
+
+Este adendo registra as decisões arquiteturais consolidadas em F01.3. Onde houver conflito, este adendo prevalece sobre a lista de validações pendentes da seção 10.2. Ele não altera o schema existente nem aprova políticas financeiras de uma empresa.
+
+| ID | Decisão lógica consolidada |
+|---|---|
+| B01 | RSBUILD mantém o cadastro mestre tenant-scoped de contrapartes; Financial Core define DTO/semântica canônica e referências, sem manter cadastro persistente próprio. Título conserva snapshot. Identificadores externos ficam em relação própria e escopada por origem. |
+| B02 | Membership e role geral não bastam para ações sensíveis. Confirmação, estorno, aprovação de política e conciliação divergente exigem permissão financeira explícita por usuário/organização, validada no servidor. |
+| B03 | Separar extinção do título e movimento de caixa. Cada ajuste possui efeito assinado no caixa e efeito assinado no saldo do título. Tarifas bancárias não são desconto do título. Retenções tributárias/múltiplos beneficiários ficam fora do MVP. |
+| B04 | Estorno é evento compensatório append-only, parcial ou total, alocado às alocações originais e aos vínculos bancários afetados. |
+| B05 | Movimentação bancária pode ser dividida entre liquidações. Um ledger quantitativo controla o valor consumido, liberado por reversões e saldo disponível. |
+| B06 | Liquidação confirmada sem alocação e crédito/adiantamento não aplicado ficam desabilitados no MVP. Não existe saldo excedente implícito. |
+| B07 | Omie é read-only no v0.1. Integração de títulos usa identificador externo estável validado; sem chave estável, revisão manual sem deduplicação heurística. Atualização de título confirmado vira proposta auditável. |
+| B08 | Datas civis usam DATE; instantes usam TIMESTAMPTZ. Timezone IANA pertence à organização. Vigência de política usa intervalo semiaberto [início, fim), sem sobreposição. |
+
+## 13.1 Ajustes no grafo lógico
+
+Adicionar as relações:
+
+- `FinancialCounterparty 1:N FinancialCounterpartyExternalId`.
+- `Organization 1:N FinancialAuthorization`.
+- `SettlementReversal 1:N SettlementReversalAllocation`.
+- `BankSettlementAllocation 1:N BankSettlementAllocationReversal`.
+
+A alocação bancária continua sendo uma relação quantitativa distinta de `ReconciliationLink`, que guarda evidências. A reversão deve apontar para o evento original e para as alocações específicas afetadas.
+
+## 13.2 Semântica financeira consolidada
+
+Para cada alocação:
+- `principal_amount_minor` representa principal extinto;
+- `title_effect_minor` é o efeito assinado do ajuste no valor do título extinto;
+- `cash_effect_minor` é o efeito assinado no caixa movimentado.
+
+Equações:
+- valor extinto do título = principal + soma dos efeitos no título;
+- caixa associado = principal + soma dos efeitos no caixa;
+- saldo do título = valor original confirmado − soma líquida de valores extintos;
+- saldo conciliável do movimento = valor original do movimento − alocações ativas + valores liberados por reversões.
+
+O comando de confirmação valida as equações por alocação e liquidação, com lock transacional. Valores cross-row não são garantidos por CHECK isolado.
+
+## 13.3 Segurança e autoridade
+
+A role `admin` não é sinônimo automático de diretor/aprovador. Permissões críticas são concessões explícitas, limitadas por organização, usuário, ação e vigência. A segregação maker-checker fica obrigatória no MVP para confirmação de liquidação e aprovação da configuração financeira. O backend deriva o ator da sessão autenticada; a UI nunca fornece a autoridade como dado confiável.
+
+## 13.4 Limites remanescentes — não bloqueiam o desenho, bloqueiam a implementação
+
+1. Inspecionar módulos RSBUILD adjacentes antes da migration para garantir que não exista cadastro mestre corporativo a reutilizar.
+2. Validar chaves de Omie com documentação atual e amostras autorizadas; o contrato do Core mantém Omie read-only e não declara conector implementado.
+3. Implementar e testar o serviço de autorização; a matriz existente em `lib/permissions.ts` não é suficiente isoladamente.
+4. Implementar fixtures para juros, multa, desconto, estorno parcial, split, concorrência e idempotência.
+5. Configurar timezone IANA na entidade de organização/configuração operacional antes de operar datas locais.
+6. Definir futuro modelo fiscal para retenções e ledger de créditos antes de reabrir esses escopos.
+
+As decisões arquiteturais B01–B08 estão fechadas para o baseline F01. Os itens acima são tarefas verificáveis de engenharia/validação, não perguntas abertas que justifiquem alterar arbitrariamente o modelo.
