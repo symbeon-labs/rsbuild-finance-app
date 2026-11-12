@@ -218,22 +218,56 @@ Esta matriz é proposta de domínio e não substitui nem altera `lib/permissions
 - Repetir uma operação com a mesma chave idempotente sem duplicar liquidação/alocação.
 - Verificar autoria derivada da sessão e trilha de auditoria.
 
-## 9. Decisões de negócio que bloqueiam o esquema definitivo
+## 9. Configuração financeira e governança da empresa
 
-| ID | Decisão | Opções / impacto |
+As decisões operacionais listadas abaixo devem ser resolvidas pela diretoria (ou responsável formalmente delegado) durante a implantação do módulo financeiro, antes de a organização iniciar sua operação. Elas não devem ser fixadas universalmente pelo código nem exigir uma nova entrega de engenharia para cada empresa.
+
+O produto deve oferecer uma etapa de **Configuração Inicial do Módulo Financeiro**, com opções explicadas, valores padrão seguros, validação, registro de aprovação e possibilidade de revisão controlada. A configuração deve ser vinculada à organização, versionada e auditável. Alterações posteriores não podem reescrever eventos financeiros passados: cada operação deve preservar a versão da política vigente quando ocorreu.
+
+### 9.1 Políticas configuráveis pela diretoria
+
+| ID | Política | Configuração proposta |
 |---|---|---|
-| B01 | Unidade de gestão: título ou parcela? | Título com parcelas; ou cada parcela do ERP como título independente. Impacta entidades e importação. |
-| B02 | Liquidação sem movimento bancário é permitida? | Sim, com meio/evidência; ou exigir movimento conciliado. Impacta fluxo caixa/caixa físico. |
-| B03 | Pagamento/recebimento parcial e agrupado? | Recomendado suportar ambos desde o modelo inicial. |
-| B04 | Adiantamentos e créditos sem título? | Exigir conta transitória/crédito não aplicado; fora do MVP ou incluído. |
-| B05 | Tolerância de arredondamento/saldo residual? | Definir centavos, arredondamento e autorização para baixa de resíduo. |
-| B06 | Alçada de confirmação/estorno? | Por perfil, valor, criador diferente do aprovador e/ou dupla aprovação. |
-| B07 | Ajustes permitidos? | Juros, multa, desconto, tarifa, retenções, abatimentos e outros. Definir incidência e sinal. |
-| B08 | Cancelamento após liquidação? | Bloquear; ou exigir estorno antes do cancelamento. |
-| B09 | Cadastro de contraparte? | Mestre próprio, snapshot no título ou referência externa. |
-| B10 | Moedas no MVP? | BRL apenas (recomendado) ou multi-moeda desde início. |
-| B11 | Competência e data de caixa? | Manter emissão/competência/vencimento separadas de data efetiva de liquidação. |
-| B12 | Origem/ERP e identificadores? | Definir chave estável por fonte e política de atualização de títulos importados. |
+| P01 | Unidade de gestão | Título com parcelas ou parcela do ERP como unidade independente. |
+| P02 | Liquidação sem movimento bancário | Permitir ou exigir evidência/movimento conciliado; definir meios autorizados. |
+| P03 | Liquidações parciais e agrupadas | Habilitar pagamento parcial, recebimento parcial e liquidação de múltiplos títulos. |
+| P04 | Adiantamentos e créditos não aplicados | Permitir, restringir ou desabilitar; definir conta/fluxo de crédito pendente. |
+| P05 | Saldo residual e tolerância | Limite em centavos e perfil autorizado para baixa de resíduo. |
+| P06 | Alçadas de confirmação e estorno | Perfis, limites por valor, dupla aprovação e segregação criador/aprovador. |
+| P07 | Ajustes financeiros | Tipos permitidos (juros, multa, desconto, tarifa, retenção, abatimento), sinais e justificativas obrigatórias. |
+| P08 | Cancelamento após liquidação | Bloquear ou exigir estorno prévio; definir quem autoriza. |
+| P09 | Cadastro de contraparte | Cadastro mestre da organização, snapshot no título ou referência externa. |
+| P10 | Moedas operacionais | BRL apenas no MVP ou habilitação de outras moedas com regras explícitas. |
+| P11 | Datas financeiras | Uso obrigatório/separado de emissão, competência, vencimento e liquidação efetiva. |
+| P12 | Origem e ERP | Fontes autorizadas, identificadores estáveis e política de atualização de títulos importados. |
+
+A interface de configuração deve explicar consequências e dependências. Exemplo: habilitar liquidação sem movimento bancário exige definir meio de pagamento e evidência mínima; habilitar dupla aprovação exige impedir que o mesmo usuário crie e aprove a operação quando essa segregação estiver configurada.
+
+### 9.2 Invariantes não configuráveis
+
+As configurações da empresa não podem desativar:
+- isolamento por organização e validação de todas as relações tenant-scoped;
+- precisão monetária em unidades inteiras e moeda explícita;
+- integridade referencial e consistência transacional;
+- autoria derivada da sessão confiável no servidor;
+- trilha de auditoria para operações críticas;
+- idempotência e proteção contra duplicidade;
+- preservação do histórico de liquidações confirmadas e estornos;
+- distinção entre sugestão algorítmica e decisão financeira confirmada;
+- prevenção de alocação acima do saldo, exceto por fluxo explícito de crédito/adiantamento autorizado.
+
+### 9.3 Requisitos do mecanismo de configuração
+
+1. Configuração inicial obrigatória antes de habilitar operações financeiras produtivas.
+2. Perfil autorizado (diretoria ou delegado) confirma a configuração inicial.
+3. Políticas versionadas por organização, com autor, data, motivo e versão.
+4. Mudanças posteriores passam por confirmação e registram vigência; não alteram retroativamente decisões/eventos.
+5. Cada comando financeiro registra a versão de política aplicada.
+6. Dependências e combinações inválidas são bloqueadas com explicação.
+7. Valores padrão devem ser conservadores e apresentados como sugestões, nunca como decisões já tomadas pela empresa.
+8. Deve existir estado de configuração incompleta/bloqueada, sem simular que o módulo está operacional.
+
+A matriz de permissões da seção 7 é uma proposta inicial do produto. A configuração poderá restringir alçadas dentro dos limites de segurança definidos pelo sistema, mas não conceder poderes que contrariem o modelo de autorização central.
 
 ## 10. Próxima sequência técnica
 
