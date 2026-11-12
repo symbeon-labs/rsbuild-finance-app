@@ -849,3 +849,17 @@ O desenho físico deve incorporar antes da migration:
 - [ ] B08: DATE/TIMESTAMPTZ, timezone e intervalos definidos; validar timezone e constraint em testes.
 
 **Conclusão:** B01–B08 deixam de ser perguntas abertas de arquitetura. Permanecem tarefas de verificação e implementação, explicitamente listadas acima. Nenhuma dessas decisões comprova que o código, banco, Core ou Omie já implementam os comportamentos.
+
+
+## 13.12 Precisões de schema decorrentes da revisão B01–B08
+
+Para evitar ambiguidades de implementação, aplicar também estas precisões ao dicionário físico:
+
+1. Em `financial_counterparties`, usar `party_roles text[] NOT NULL` com allowlist não vazia (`customer`, `supplier`, `other`). `party_kind` continua descrevendo pessoa/empresa/outro; não representa papel comercial. A validação da allowlist ocorre no backend e em CHECK equivalente.
+2. `financial_authorizations(organization_id,user_id)` deve referenciar a chave primária composta existente de `organization_memberships(organization_id,user_id)`. `granted_by` também deve ser membro ativo e ter autoridade de concessão no instante da concessão. A validade corrente é reavaliada em cada comando, não confiada a um grant antigo.
+3. Em `settlement_adjustments`, substituir a convenção anterior `effect + amount_minor` por `cash_effect_minor bigint NOT NULL` e `title_effect_minor bigint NOT NULL`, ambos assinados. O tipo do ajuste e a política validam combinações permitidas. Exigir ao menos um dos efeitos diferente de zero. Tarifas bancárias não são registradas nesta tabela.
+4. `settlement_reversal_allocations` precisa referenciar a alocação original por FK tenant-scoped e guardar separadamente o valor de título revertido e o valor de caixa revertido. `bank_settlement_allocation_reversals` registra quanto da alocação bancária original foi liberado. Ambos são append-only.
+5. A tabela `organizations` existente poderá receber `time_zone text NOT NULL DEFAULT 'America/Sao_Paulo'` em migration própria, com validação contra catálogo IANA no backend. Se houver tabela de configuração operacional por organização, preferir armazenar timezone nela e manter uma única fonte autoritativa.
+6. A constraint de não sobreposição de vigência deve ser definida por organização + configuração/módulo e usar intervalo semiaberto. Se for usada exclusion constraint GiST, instalar/verificar extensão necessária e estratégia de migração antes de executar; não assumir extensão disponível.
+7. A projeção de `financial_records.status` precisa representar consumo parcial (por exemplo, `parcialmente_conciliado`) ou derivar o status de ledger de alocações. Não marcar movimento parcialmente consumido como `conciliado`.
+8. `settlements.gross_amount_minor` representa caixa efetivo da liquidação; o valor extinto do título é calculado pelas alocações e efeitos de título. Não usar um campo único para ambos.
