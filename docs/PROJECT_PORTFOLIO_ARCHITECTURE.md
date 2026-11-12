@@ -1,76 +1,114 @@
-# Portfólio de projetos e sprints — RSBUILD OS
+# Portfólio de projetos, governança e evolução modular — RSBUILD OS
 
-**Status:** implementação inicial em revisão (feature branch)
-**Escopo:** workspace central da RSBUILD com visibilidade de projetos autorizados por organização.
+**Status:** diretriz arquitetural consolidada; implementação inicial em revisão na PR #40.  
+**Escopo imediato:** preservar a experiência do RSBUILD OS e integrar a governança de acesso à estrutura de projetos já implementada.
 
-## Decisão de arquitetura
+## 1. Princípio central
 
-A RSBUILD opera um portfólio central de projetos. Cada projeto referencia:
-- a organização que administra a execução (managing_organization_id);
-- a organização cliente (client_organization_id);
-- um snapshot do nome de exibição do cliente;
-- sprints, atividades e entregáveis.
+O RSBUILD OS deve evoluir sua infraestrutura sem descaracterizar a interface nem substituir o conceito de produto originalmente definido.
 
-O projeto é uma relação operacional entre organizações, não uma fusão dos seus workspaces. Dados financeiros, usuários, convites, branding e demais recursos do tenant continuam sujeitos às políticas de sua própria organização.
+A interface continua sendo o ambiente de trabalho. As funcionalidades existentes continuam organizadas pela experiência do usuário. Identidade, autorização e governança operam transversalmente, por trás dessas experiências.
 
-## Acesso
+**Princípio:** a interface define a experiência; os módulos definem as capacidades funcionais; a camada de autorização define quem pode utilizar cada capacidade, em qual contexto e sob quais condições.
 
-- Membros da organização RSBUILD podem consultar o portfólio administrado por ela, respeitando suas alçadas.
-- A gestão de projetos é restrita a Owner/Admin da RSBUILD.
-- A criação e manutenção de sprints, atividades e entregáveis é restrita a Owner/Admin/Operator da RSBUILD.
-- A organização cliente recebe uma concessão explícita em project_organization_access; assim, seus próprios membros visualizam o projeto dentro do workspace da empresa.
-- Concessões individuais em project_memberships podem ser usadas futuramente para colaboradores externos específicos.
-- O nível de acesso do cliente é viewer ou contributor; nesta primeira versão, ambos são somente leitura. Escrita permanece sob responsabilidade da equipe RSBUILD.
-- Nenhuma política concede acesso aos dados financeiros de outro tenant.
+Esta diretriz não autoriza remover, renomear ou redesenhar funcionalidades existentes por conveniência arquitetural.
 
-## Modelo de dados
+## 2. Visão de produto
 
-| Entidade | Responsabilidade |
-|---|---|
-| projects | Relação entre organização gestora e cliente |
-| project_organization_access | Concessão da organização cliente ao seu próprio projeto |
-| project_memberships | Concessão individual de acesso ao projeto |
-| project_sprints | Objetivos, janela e estado de cada sprint |
-| project_tasks | Atividades, prioridade, critérios de conclusão e responsável |
-| project_dependencies | Insumos, acessos, decisões e dependências externas |
+O RSBUILD OS é concebido como um workspace operacional extensível para organizações, equipes e projetos. Seu valor está em oferecer um ambiente coerente no qual funcionalidades e módulos especializados possam coexistir, mantendo limites claros entre organizações e contextos de trabalho.
 
-| project_deliverables | Entregáveis, evidências e estado de submissão/aceite |
+A evolução pretendida não é transformar o RSBUILD em um ERP monolítico nem em um simples painel de administração. É construir um núcleo organizacional confiável que permita incorporar novas capacidades sem recriar, a cada módulo, identidade, estrutura organizacional, controle de acesso e auditoria.
 
-## Fluxo operacional
+## 3. Três responsabilidades que trabalham juntas
 
-1. A RSBUILD abre seu workspace e acessa Projetos e Sprints. A antiga Zona das Sprints na Torre de Controle funciona como atalho para essa mesma visão, sem manter um segundo painel estático.
-2. A equipe seleciona Mundo do Sabor ou Hub Açaí.
-3. O projeto contém suas sprints, atividades e entregáveis.
-4. A equipe registra progresso e mantém os critérios de aceite.
-5. A organização cliente recebe acesso somente ao seu próprio projeto por uma concessão de escopo organizacional; não é necessário adicionar seus usuários ao workspace RSBUILD.
-6. O cliente acessa apenas o projeto explicitamente liberado, sem obter associação geral ao workspace RSBUILD ou aos demais clientes.
+### 3.1 Experiência — interface e workspace
 
-## Dados iniciais
+Preserva a navegação, os espaços de trabalho e as funcionalidades escolhidas para o conceito original do produto. O usuário continua acessando as áreas operacionais familiares; a autorização apenas determina quais dados e ações estão disponíveis para seu contexto.
 
-A migração cria dois registros de portfólio e concede a cada organização acesso de leitura somente ao seu projeto, resolvendo organizações pelos slugs canônicos:
-- mundo_sabor → Mundo do Sabor;
-- hub_acai → Hub Açaí.
+### 3.2 Capacidades — funcionalidades e módulos
 
-Os registros começam em planning. Nenhuma sprint ou atividade fictícia é criada. O conteúdo aprovado deve ser importado a partir da matriz oficial vigente do Ciclo 01 (v2.2); materiais anteriores de mobilização/alinhamento servem como referência, não como substitutos silenciosos da versão aprovada.
+As funcionalidades atuais permanecem parte do produto. No futuro, módulos especializados poderão ser habilitados e integrados por contratos explícitos, sem criar workspaces paralelos ou duplicar a experiência principal.
 
-## Referências de escopo consultadas
+Exemplos de domínios futuros incluem capacidades financeiras, fiscais, jurídicas, operacionais e analíticas. Esses exemplos representam possibilidades de evolução, não funcionalidades declaradas como já implementadas.
 
-- RSBUILD Plano de Sprints Ciclo 01 v2.2 (matriz oficial de planejamento; conteúdo a importar sem reinterpretação).
-- CICLO_01_PLANO_DE_MOBILIZACAO_v1.0.pdf (governança, seis entregáveis, marcos e critérios gerais).
-- 04_ATA-01_ALINHAMENTO_EXECUTIVO_CICLO_01_v1.4.pdf (priorização e dependências registradas em edição anterior).
+### 3.3 Governança — identidade, escopo e autorização
 
-## Limites desta entrega
+A autorização é transversal e deve considerar:
+- identidade autenticada;
+- organização e vínculo organizacional;
+- papel do usuário;
+- projeto e associação explícita;
+- capacidade/ação solicitada;
+- limites de dados e contexto.
 
-- A interface lista projetos, sprints, atividades, dependências e entregáveis; permite à equipe RSBUILD criar sprints e atividades, atualizar seus estados de execução, registrar dependências e vincular entregáveis por URL HTTPS. O progresso exibido é calculado pelas atividades marcadas como concluídas.
-- O cadastro de usuários clientes, aprovação formal de entregáveis, comentários, anexos e histórico detalhado de alterações ficam para etapas posteriores.
-- A migração ainda precisa ser aplicada em ambiente de validação e passar pelos testes RLS antes de qualquer uso operacional ou liberação de convites.
-- O campo de status do entregável ainda não representa aceite formal do cliente. A aprovação/rejeição pelo cliente, comentários, anexos e histórico de decisões exigem fluxo próprio antes de qualquer aceite contratual.
+A interface pode ocultar ações indisponíveis para melhorar a experiência, mas isso nunca substitui a validação no servidor e as políticas RLS.
 
-## Critérios de aceite
+## 4. Estrutura organizacional e isolamento
 
-- Usuário RSBUILD autorizado enxerga os dois projetos iniciais.
-- Usuário cliente só enxerga projetos com grant explícito.
-- Usuário cliente não consegue criar ou alterar sprints/atividades.
-- Usuário sem grant não consegue consultar projeto, sprint, tarefa ou entregável.
-- Dados financeiros de tenants continuam isolados pelas políticas existentes.
-- Build, typecheck e testes SQL passam antes do merge.
+A RSBUILD pode administrar um portfólio central de projetos sem fundir os workspaces das organizações clientes.
+
+Cada projeto representa uma relação operacional entre uma organização gestora e uma organização cliente. A concessão de acesso a um projeto não deve conceder acesso geral ao workspace RSBUILD, a outros clientes ou aos dados financeiros de outro tenant.
+
+Uma pessoa pode ter papéis diferentes em organizações e projetos diferentes. O acesso deve ser concedido por escopo explícito, não inferido apenas pela existência de uma conta ou vínculo em outra organização.
+
+## 5. Estado da implementação na PR #40
+
+A PR #40 implementa a primeira base do portfólio:
+- projetos associados à organização gestora e à organização cliente;
+- concessão de acesso organizacional ao projeto;
+- concessões individuais por projeto como estrutura de associação;
+- sprints, tarefas, dependências e entregáveis;
+- políticas RLS e APIs autenticadas para as operações descritas na PR;
+- workspace “Projetos e Sprints” integrado à navegação existente;
+- redirecionamento da antiga Zona das Sprints para a visão central, evitando um segundo painel estático.
+
+Os projetos iniciais são Mundo do Sabor e Hub Açaí, em estado `planning`. Não se devem criar sprints ou tarefas fictícias. A matriz oficial aprovada do Ciclo 01 v2.2 deve ser importada preservando seu conteúdo.
+
+### Limites conhecidos desta etapa
+
+- A interface/fluxo de gestão de concessões de acesso a usuários específicos ainda precisa ser implementado e validado antes de afirmar que o gerenciamento completo de membros está pronto.
+- O acesso organizacional do cliente e as concessões individuais são mecanismos distintos; não presumir que um substitui o outro.
+- O estado de um entregável não equivale a aceite formal ou contratual do cliente.
+- Cadastro/convidamento de usuários clientes, aprovação formal, comentários, anexos e histórico detalhado de decisões permanecem fora do escopo implementado até que sejam especificados e construídos.
+- A migração não deve ser considerada aplicada em produção sem execução e evidência explícitas.
+- A PR não deve ser considerada pronta para merge apenas com base na existência do código; build, typecheck, testes RLS/pgTAP e validação visual precisam ser confirmados no head atual.
+
+## 6. Próxima entrega: gestão de acessos integrada à interface
+
+A próxima evolução deve acrescentar uma área administrativa discreta de **Acessos e Permissões**, mantendo a navegação e as funcionalidades operacionais do conceito original.
+
+Escopo funcional inicial:
+1. Listar usuários elegíveis já existentes, sem criar convites implicitamente.
+2. Consultar a organização e os projetos aos quais cada pessoa pode receber acesso.
+3. Conceder acesso a um projeto com escopo e papel explícitos.
+4. Revogar a concessão sem excluir a identidade ou o vínculo organizacional.
+5. Exibir o estado atual da concessão e registrar quem realizou a alteração e quando, conforme suporte do modelo de auditoria.
+6. Validar autorização no servidor e RLS; não confiar em controles visuais como barreira de segurança.
+
+Antes de implementar, confirmar o modelo atual de identidade e membership no repositório e no schema de validação. Não presumir que todos os usuários de uma organização são automaticamente elegíveis ou que existe um mecanismo de convite pronto.
+
+## 7. Evolução posterior — sem antecipar escopo
+
+Depois de estabilizar a gestão de acessos, a arquitetura poderá evoluir incrementalmente para:
+- **Module Registry:** catálogo e habilitação de módulos;
+- **Agent Registry:** registro e escopo de agentes;
+- **Integration Contracts:** contratos para integração entre módulos e sistemas;
+- **Audit Trail:** trilha consistente de concessões, operações e decisões.
+
+Esses componentes são direções arquiteturais futuras. Não devem ser introduzidos como dependências do MVP nem justificar uma reestruturação prematura.
+
+Agentes e módulos devem obedecer ao mesmo princípio: capacidade técnica não equivale a autoridade. Cada execução deve respeitar identidade, escopo e autorização explícita.
+
+## 8. Regras de decisão para a evolução
+
+Toda mudança futura deve responder afirmativamente a estes critérios:
+- Preserva as funcionalidades e a experiência escolhidas para o RSBUILD?
+- Mantém isolamento entre organizações e projetos?
+- Valida ações no backend e no banco, além da interface?
+- Evita duplicar identidade, navegação ou gestão de acesso em cada módulo?
+- É necessária para a entrega atual ou pode ficar para uma etapa posterior?
+- Pode ser testada com usuários autorizados, usuários sem concessão e organizações distintas?
+
+## 9. Critério de sucesso
+
+O RSBUILD mantém uma experiência operacional unificada, enquanto pessoas e organizações acessam somente os recursos e dados autorizados. Novas funcionalidades podem ser incorporadas gradualmente sem descaracterizar a interface, quebrar o isolamento entre tenants ou reconstruir a governança a cada integração.
