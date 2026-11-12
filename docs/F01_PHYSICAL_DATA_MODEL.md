@@ -611,3 +611,241 @@ Antes de qualquer migration:
 - `docs/F01_LOGICAL_DATA_MODEL.md`
 
 **Rastreabilidade:** este documento é uma especificação proposta baseada na inspeção das migrations existentes na branch. Não comprova schema implantado, não cria migration e não afirma que os testes funcionais foram executados.
+
+
+---
+
+# 13. Resolução das dependências B01–B08
+
+**Estado:** decisões técnicas de baseline para o MVP F01.  
+**Autoridade:** proposta de arquitetura do produto; não equivale à aprovação das políticas financeiras de uma organização.  
+**Regra de precedência:** este adendo complementa e, nos pontos explicitados, prevalece sobre as seções anteriores deste documento. Nenhuma decisão autoriza migration ou alteração remota do Supabase.
+
+## 13.1 Registro de decisões
+
+| ID | Decisão fechada | Estado |
+|---|---|---|
+| B01 — Contrapartes | Cadastro mestre tenant-scoped no domínio de persistência RSBUILD; Core mantém contrato canônico e referência, sem banco próprio | DECIDED |
+| B02 — Autorização | Membership é pré-condição, não autoridade suficiente; comandos sensíveis exigem permissão financeira explícita validada no servidor | DECIDED |
+| B03 — Fórmula | Separar valor que extingue título do valor efetivamente movimentado; ajustes carregam efeito de caixa e efeito sobre título | DECIDED |
+| B04 — Estorno | Estorno compensatório parcial ou total, alocado contra cada alocação original e cada consumo bancário | DECIDED |
+| B05 — Split bancário | Uma movimentação pode financiar várias liquidações; soma líquida alocada nunca supera seu valor disponível | DECIDED |
+| B06 — Não alocado | Liquidação sem alocação fica desabilitada no MVP; adiantamentos/créditos exigem ledger próprio em fase posterior | DECIDED — MVP BLOCK |
+| B07 — ERP | Omie read-only no v0.1; importação de títulos só é idempotente com identificador estável da origem | DECIDED |
+| B08 — Tempo | Datas de negócio em DATE; instantes em TIMESTAMPTZ; timezone IANA da organização; vigências em intervalos semiabertos sem sobreposição | DECIDED |
+
+## 13.2 B01 — Cadastro mestre de contrapartes
+
+A inspeção do `symbeon-financial-core` confirma que o domínio canônico prevê `counterparty_reference` em SourceRecord e extensões de papel para contas a pagar/receber com parte, mas não apresenta um cadastro mestre persistente implementado. O Core é uma biblioteca/contrato de semântica, não o dono de um banco multi-tenant.
+
+**Decisão:** `financial_counterparties` pertence ao domínio de persistência do RSBUILD, com escopo obrigatório por organização. O Core define DTOs/semântica portáveis para contraparte e identificadores externos, mas não cria nem mantém registros de cadastro. A integração RSBUILD adapta o contrato do Core para a persistência tenant-scoped.
+
+Regras:
+1. Um cadastro pode exercer os papéis `customer`, `supplier` ou ambos; papel é relação/uso, não tipo ontológico da pessoa.
+2. A identidade interna é UUID + organização. Identidade externa é composta por organização + source system + external ID.
+3. Não impor unicidade global por CPF/CNPJ nem fundir cadastros automaticamente por nome/documento.
+4. Título confirmado preserva snapshot de nome, documento normalizado quando permitido e referência de contraparte; alteração posterior no cadastro não reescreve o snapshot.
+5. Quando a origem não trouxer ID estável, criar contraparte provisória/revisável ou manter referência textual de origem; nunca fazer merge heurístico automático.
+6. Se outro módulo RSBUILD já possuir cadastro mestre corporativo, ele deverá ser identificado antes da migration e assumir o ownership; não manter dois cadastros concorrentes.
+
+**Ajuste físico obrigatório:** adicionar a `financial_counterparties` uma tabela de identificadores externos:
+
+`financial_counterparty_external_ids(id, organization_id, counterparty_id, source_system, external_id, first_seen_at, last_seen_at, created_at)`
+
+- UNIQUE `(organization_id,id)`.
+- UNIQUE `(organization_id,source_system,external_id)`.
+- FK composta `(organization_id,counterparty_id)` → `financial_counterparties(organization_id,id)`.
+- `source_system` e `external_id` são NOT NULL; normalização preserva também o valor bruto na proveniência.
+- Não reutilizar `data_source_id` como identidade de negócio se a origem/conta puder ser reconfigurada.
+
+## 13.3 B02 — Autorização granular e segregação de funções
+
+As roles atuais `owner/admin/operator/viewer` permanecem como membership e capacidades gerais de workspace. A descrição visual em `lib/permissions.ts` não é prova de autoridade financeira formal. Em particular, `admin` não será interpretado automaticamente como diretor ou aprovador financeiro.
+
+**Decisão:** toda operação F01 exige (a) membership ativa na organização, (b) permissão financeira específica e (c) validação server-side. A interface pode ocultar ações, mas nunca é o controle de segurança.
+
+Matriz inicial conservadora:
+
+| Ação | Owner/Admin/Operator/Viewer |
+|---|---|
+| Consultar títulos, contrapartes, liquidações e decisões | Qualquer membro ativo |
+| Criar/importar título e contraparte | Owner, Admin, Operator |
+| Editar rascunho | Owner, Admin, Operator |
+| Propor conciliação | Owner, Admin, Operator |
+| Confirmar conciliação sem divergência | Usuário com `reconciliation.confirm` |
+| Confirmar conciliação divergente | Usuário com `reconciliation.approve_discrepancy` |
+| Confirmar liquidação | Usuário com `settlement.confirm` |
+| Estornar liquidação | Usuário com `settlement.reverse` |
+| Criar/alterar configuração | Usuário com `policy.configure` |
+| Aprovar/ativar versão de política | Usuário com `policy.approve` |
+| Administrar delegações | Usuário com `authority.delegate` |
+
+As roles podem fornecer permissões operacionais não críticas por uma matriz central versionada. Permissões de confirmação, divergência, estorno, aprovação de política e delegação exigem concessão explícita por organização, por usuário, com escopo e vigência. Nenhuma role isolada concede automaticamente essas alçadas.
+
+**Segregação default:** o criador de título, liquidação, decisão ou versão de política não pode aprovar/confirmar a mesma operação. Exceção só pode ser habilitada por política aprovada e não pode dispensar trilha de auditoria. Para o MVP, a regra é sempre exigir ator distinto em confirmação de liquidação e aprovação da configuração financeira.
+
+**Persistência:** `financial_authorizations` é a fonte de concessões específicas:
+
+- `id uuid PK`, `organization_id uuid NOT NULL`, `user_id uuid NOT NULL`;
+- `permission_key text NOT NULL`;
+- `scope jsonb NOT NULL DEFAULT '{}'` (validado por allowlist no backend; não é expressão livre);
+- `granted_by uuid NOT NULL`, `granted_at timestamptz NOT NULL`;
+- `valid_from timestamptz NOT NULL`, `valid_until timestamptz`, `revoked_at timestamptz`, `reason text NOT NULL`;
+- UNIQUE `(organization_id,id)`;
+- FK para organizations e membership (garantir que usuário pertence à organização; preferir FK composta após criar UNIQUE adequado em memberships);
+- CHECK de vigência;
+- índice por `(organization_id,user_id,permission_key,valid_from)`.
+
+Concessões são eventos auditáveis; revogação não apaga histórico. Delegação deve apontar para uma autorização com escopo, prazo, concedente autorizado e cadeia de autoridade verificável. `financial_policy_delegations` pode permanecer como entidade de delegação se necessário, mas não duplica o grant: a autorização aponta para a delegação e a delegação limita a origem/escopo. Se o RBAC central existente vier a suportar esse mesmo contrato, integrar nele e remover a tabela redundante antes da migration.
+
+## 13.4 B03 — Fórmula aritmética e semântica dos ajustes
+
+**Decisão:** separar dois conceitos que não são intercambiáveis:
+
+- **Valor de baixa do título:** quanto da obrigação/direito foi extinto.
+- **Valor de caixa:** quanto efetivamente entrou ou saiu da conta bancária associado à liquidação.
+
+Para cada alocação:
+- `principal_amount_minor` = parte do principal original que será extinta;
+- `title_effect_minor` = efeito do ajuste sobre o total da obrigação/direito extinto;
+- `cash_effect_minor` = efeito do ajuste sobre o caixa efetivamente movimentado;
+- valores de efeito são inteiros assinados; positivo aumenta o valor, negativo reduz.
+
+Equações canônicas:
+- `title_extinguished_minor = principal_amount_minor + SUM(title_effect_minor)`
+- `cash_amount_minor = SUM(principal_amount_minor + cash_effect_minor)`
+- `settlement.gross_amount_minor = SUM(cash_amount_minor por alocação)`
+- `bank_settlement_allocations.allocated_amount_minor` deve reconciliar com o caixa efetivo da liquidação, observadas as regras de split e eventuais diferenças bancárias documentadas.
+
+Convenções iniciais:
+- Juros e multa: `cash_effect_minor > 0` e `title_effect_minor > 0`.
+- Desconto/abatimento comercial que reduz o pagamento, mas extingue o principal integralmente: `cash_effect_minor < 0`, `title_effect_minor = 0`.
+- Desconto que reduz também a obrigação reconhecida: `cash_effect_minor < 0`, `title_effect_minor < 0`; exige tipo/justificativa e regra aprovada.
+- Tarifa bancária não é ajuste do título: é movimento bancário/encargo separado, não altera principal nem saldo do título.
+- Retenções tributárias, compensações e pagamentos a múltiplos beneficiários ficam fora do MVP até haver modelo fiscal e de múltiplos destinos; não simular como desconto genérico.
+
+A soma dos efeitos deve ser fechada no comando de confirmação, por alocação e por liquidação. A UI deve exibir separadamente principal baixado, ajustes sobre o título e valor de caixa. O saldo do título é reduzido por `title_extinguished_minor`, nunca por mera igualdade com o valor bancário.
+
+## 13.5 B04 — Estornos parciais e totais
+
+**Decisão:** `settlement_reversals` é evento compensatório append-only. Uma liquidação confirmada nunca é editada ou excluída para correção.
+
+Adicionar `settlement_reversal_allocations`:
+- `id`, `organization_id`, `reversal_id`, `original_allocation_id`;
+- `reversed_title_amount_minor bigint NOT NULL CHECK > 0`;
+- `reversed_cash_amount_minor bigint NOT NULL CHECK >= 0`;
+- `created_at timestamptz NOT NULL`;
+- UNIQUE `(organization_id,id)`;
+- FKs compostas para reversão e alocação original;
+- UNIQUE idempotente por `(organization_id,reversal_id,original_allocation_id)`.
+
+Adicionar `bank_settlement_allocation_reversals`:
+- `id`, `organization_id`, `reversal_id`, `bank_settlement_allocation_id`;
+- `released_amount_minor bigint NOT NULL CHECK > 0`;
+- `created_at timestamptz NOT NULL`;
+- FKs compostas para reversão e alocação bancária original;
+- UNIQUE por organização + ID; índice por alocação bancária.
+
+Regras:
+1. A soma revertida por alocação original nunca supera o valor originalmente aplicado.
+2. A soma liberada de cada alocação bancária nunca supera seu valor ativo.
+3. Estorno parcial pode ocorrer em múltiplos eventos; estorno total é o evento que completa o saldo reversível.
+4. Uma reversão deve declarar alocações originais afetadas e, quando houve vínculo bancário, a parcela bancária liberada.
+5. Reversão de caixa não presume que o banco já devolveu o dinheiro: o evento de estorno financeiro e o novo movimento bancário de retorno são fatos distintos.
+6. Recalcular saldo do título e saldo conciliável em uma transação com bloqueios de linha.
+7. Idempotência por chave da reversão; repetir comando não duplica efeitos.
+8. A decisão de conciliação original permanece no histórico; uma nova decisão pode registrar o estado após estorno.
+
+## 13.6 B05 — Divisão de movimentações bancárias
+
+**Decisão:** uma linha `financial_records` pode ser alocada parcialmente a uma ou várias liquidações. A tabela `bank_settlement_allocations` é o ledger quantitativo dessa relação; `reconciliation_links` permanece apenas evidência/relacionamento.
+
+Definições:
+- `available_minor = financial_records.amount_minor - SUM(active allocated_amount_minor) + SUM(released_amount_minor)`.
+- `available_minor` nunca pode ser negativo.
+- Soma de alocações ativas não supera `amount_minor`.
+- Direção `entrada` só financia `receipt`; direção `saída` só financia `payment`.
+- A moeda deve coincidir; no MVP, BRL.
+- Um movimento pode ser consumido por múltiplas liquidações, mas cada parcela consumida é única e auditável.
+- O status de movimento só pode ser `conciliado` quando o saldo disponível chegar a zero conforme a política. Se houver consumo parcial, manter status parcial/pendente (a projeção atual D02 pode precisar de extensão; não reutilizar `conciliado` para parcial).
+- Tarifas, estornos bancários, chargebacks e movimentos compostos são registros próprios ou extensões de papel; não subtrair silenciosamente do valor original.
+
+O comando de alocação bloqueia a linha de `financial_records` e as liquidações relacionadas, valida saldo, direção, moeda, organização, política e permissão, grava a alocação e a auditoria na mesma transação.
+
+## 13.7 B06 — Liquidação sem alocação, adiantamentos e créditos
+
+**Decisão de escopo:** liquidação confirmada sem alocação é **proibida no MVP F01**. Não existe ainda ledger de crédito/adiantamento suficientemente especificado no RSBUILD ou no Core.
+
+Consequências:
+- `settlements` em rascunho podem ser preparados sem alocações.
+- Confirmação exige alocação completa, com composição matemática fechada.
+- Saldo excedente não é descartado, não reduz outro título automaticamente e não é marcado como crédito por inferência.
+- Pagamento/recebimento excedente ou antecipado deve permanecer em fluxo de exceção não confirmado até a fase de créditos.
+- P02/P04 da configuração não podem habilitar uma capacidade que o produto ainda não implementa. No MVP, essas políticas são fixas como `false` para não alocado/adiantamento; a UI deve mostrar “não disponível nesta versão”, não uma opção enganosa.
+
+Fase posterior, fora do F01 MVP: ledger de créditos por contraparte, com origem, saldo, titularidade, aplicação parcial, devolução, expiração quando juridicamente aplicável e auditoria. Só então será possível habilitar `settlement_without_allocation`.
+
+## 13.8 B07 — Identificadores e atualização pelo ERP
+
+**Decisão:** Omie permanece read-only no v0.1 conforme o contrato do Symbeon Financial Core. RSBUILD pode importar arquivos de títulos fornecidos por processo autorizado, mas isso não equivale a conector Omie operacional nem autoriza baixa/write-back.
+
+Identidade:
+1. Preferir identificador interno estável do ERP, com origem explícita: `source_system + external_id`.
+2. Para Omie, preservar `nCodTitulo` e `cCodIntTitulo` como identificadores distintos quando presentes; a chave de negócio externa deve registrar o campo efetivamente estável e sua semântica após confirmação em amostras/documentação.
+3. Não assumir que número de documento, nome de cliente, vencimento e valor formam uma chave única.
+4. Sem identificador estável, não fazer deduplicação automática. Encaminhar para revisão/manual matching.
+5. Persistir `source_system`, `external_id`, `source_payload_hash`, `mapping_version`, `import_batch_id` e referência ao artefato original.
+6. Mesmo ID externo com payload diferente significa atualização/revisão, não duplicata silenciosa.
+
+Política de atualização:
+- Título em rascunho: atualização idempotente pode atualizar campos mapeados antes da confirmação.
+- Título confirmado: payload de origem não sobrescreve campos financeiros; criar proposta de alteração/revisão com diff e origem.
+- Alteração de vencimento, contraparte, principal, moeda ou status requer revisão autorizada e evento auditável.
+- Liquidações e conciliações confirmadas nunca são alteradas pelo ERP importador.
+- Toda divergência entre estado interno e origem fica registrada como conflito/revisão pendente.
+- Nenhuma chamada de escrita ao Omie é permitida no escopo atual.
+
+## 13.9 B08 — Datas, timezone e vigência de política
+
+**Decisão temporal:**
+- Datas civis de emissão, competência e vencimento: PostgreSQL `date`; não converter em UTC.
+- Instantes de criação, confirmação, pagamento/recebimento efetivo, decisão e auditoria: `timestamptz`, armazenados e comparados como instantes absolutos.
+- Cada organização terá `time_zone` IANA obrigatório na configuração operacional. Para o piloto brasileiro, valor inicial sugerido `America/Sao_Paulo`; pode ser alterado por administrador autorizado, com auditoria.
+- A data operacional exibida é derivada do instante + timezone da organização. Não usar timezone do navegador como autoridade.
+- Payloads externos devem preservar timestamp/offset original quando fornecido e a transformação aplicada.
+
+**Vigência de política:**
+- `effective_from` inclusivo e `effective_until` exclusivo: intervalo `[from, until)`.
+- `effective_from` é obrigatório em versão aprovada; default de ativação é instante da aprovação/ativação.
+- Uma organização/módulo não pode ter duas versões ativas em intervalos sobrepostos.
+- Aprovação de versão futura não a torna vigente antes do instante definido.
+- Comando financeiro seleciona exatamente uma versão vigente usando o instante efetivo da operação e timezone apenas para converter datas civis, quando aplicável.
+- Mudanças de timezone não reescrevem instantes ou datas já persistidos.
+- A implementação deve usar exclusion constraint GiST sobre `tstzrange(effective_from,effective_until,'[)')` por organização/configuração, ou serialização transacional equivalente se a constraint não for viável. Não confiar apenas em validação de frontend.
+
+## 13.10 Alterações físicas resultantes
+
+O desenho físico deve incorporar antes da migration:
+1. `financial_counterparty_external_ids`.
+2. `financial_authorizations` ou integração equivalente com RBAC central, sem duplicar a fonte de autoridade.
+3. `cash_effect_minor` e `title_effect_minor` em `settlement_adjustments`, substituindo convenção de sinal implícita.
+4. `settlement_reversal_allocations`.
+5. `bank_settlement_allocation_reversals`.
+6. `time_zone` em configuração da organização ou entidade de configuração operacional já existente.
+7. Intervalos de vigência semiabertos e exclusão de sobreposição em versões de política.
+8. Estados/projeções para conciliação parcial; não forçar parcial em `conciliado`.
+
+**Remover do escopo físico do MVP:** qualquer caminho que confirme liquidação sem alocação, adiantamento ou crédito não aplicado.
+
+## 13.11 Critérios para considerar B01–B08 fechadas
+
+- [ ] B01: ownership do cadastro e chave de identidade externa definidos; inspeção de outros módulos RSBUILD pendente antes da migration.
+- [ ] B02: permissões por ação e segregação definidas; integração concreta ao backend/RBAC ainda exige implementação e testes.
+- [ ] B03: fórmulas e convenções de sinal definidas; implementar fixtures aritméticas por tipo de ajuste.
+- [ ] B04: estornos parciais/totais e liberação de split definidos; implementar testes concorrentes e idempotentes.
+- [ ] B05: split quantitativo e saldo disponível definidos; estado parcial requer extensão de projeção.
+- [ ] B06: não alocado/adiantamento explicitamente fora do MVP; não expor toggle configurável que sugira suporte.
+- [ ] B07: Omie read-only; chave estável por campo externo exige validação com amostras autorizadas reais.
+- [ ] B08: DATE/TIMESTAMPTZ, timezone e intervalos definidos; validar timezone e constraint em testes.
+
+**Conclusão:** B01–B08 deixam de ser perguntas abertas de arquitetura. Permanecem tarefas de verificação e implementação, explicitamente listadas acima. Nenhuma dessas decisões comprova que o código, banco, Core ou Omie já implementam os comportamentos.
