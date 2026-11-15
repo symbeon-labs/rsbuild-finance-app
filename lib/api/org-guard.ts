@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { recordAuditEvent } from "@/lib/api/audit";
+import { consumeRateLimit } from "@/lib/api/rate-limit";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -44,6 +45,11 @@ export async function requireOrgContext(
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return deny(401, "unauthenticated");
+
+  const pathname = new URL(request.url).pathname;
+  if (!consumeRateLimit(`${user.id}:${pathname}`)) {
+    return deny(429, "rate_limited");
+  }
 
   const { data: membership, error: membershipError } = await supabase
     .from("organization_memberships")

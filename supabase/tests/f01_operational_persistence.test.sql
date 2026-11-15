@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(12);
+select plan(16);
 
 -- Fixtures: dois tenants, um operador por tenant, um viewer no tenant A, um admin no tenant A.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
@@ -139,6 +139,42 @@ select lives_ok(
     (organization_id, document_number, customer_name, amount_minor, settlement_date)
     values ('11111111-1111-4111-8111-111111111111','NF-9001','Cliente A',150000,'2026-12-02')$$,
   'admin pode registrar baixa no próprio tenant'
+);
+
+-- settlements: DELETE não é permitido — correção é via status 'estornada'
+select lives_ok(
+  $$delete from public.settlements where organization_id='11111111-1111-4111-8111-111111111111'$$,
+  'admin não recebe erro ao tentar deletar baixa (RLS filtra)'
+);
+select is(
+  (select count(*)::int from public.settlements),
+  1,
+  'baixa permanece após tentativa de delete — trilha financeira preservada'
+);
+
+-- updated_at trigger: modificação registra horário real posterior ao created_at
+update public.receivable_titles set customer_name='Cliente A Atualizado'
+  where id='55555555-5555-4555-8555-555555555555';
+select cmp_ok(
+  (select t.updated_at from public.receivable_titles t
+    where t.id='55555555-5555-4555-8555-555555555555'),
+  '>',
+  (select t.created_at from public.receivable_titles t
+    where t.id='55555555-5555-4555-8555-555555555555'),
+  'trigger updated_at marca modificação posterior ao created_at'
+);
+
+-- actor guard: created_by forjado via PostgREST é substituído por auth.uid()
+select set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
+insert into public.whatsapp_orders
+  (organization_id, raw_message, customer_name, payment_method, created_by)
+  values ('11111111-1111-4111-8111-111111111111','pedido forjado','Cliente A','pix',
+          'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
+select is(
+  (select created_by from public.whatsapp_orders
+    where raw_message='pedido forjado'),
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,
+  'created_by forjado é substituído pelo usuário autenticado'
 );
 
 -- =====================================================================

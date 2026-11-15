@@ -6,6 +6,7 @@ import { parseCsv, parseOfx } from "@/lib/finance";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 import { recordAuditEvent } from "@/lib/api/audit";
+import { consumeRateLimit } from "@/lib/api/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,9 @@ export async function GET(request: Request) {
   const userClient = await createClient();
   const { data: { user }, error: authError } = await userClient.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  if (!consumeRateLimit(`${user.id}:/api/imports`)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(organizationId)) {
     return NextResponse.json({ error: "invalid_organization" }, { status: 400 });
@@ -72,6 +76,9 @@ export async function POST(request: Request) {
   const userClient = await createClient();
   const { data: { user }, error: authError } = await userClient.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  if (!consumeRateLimit(`${user.id}:/api/imports`)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   let form: FormData;
   try { form = await request.formData(); }

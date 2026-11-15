@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditEvent } from "@/lib/api/audit";
+import { consumeRateLimit } from "@/lib/api/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,9 @@ export async function POST(request: Request) {
   const session = await createClient();
   const { data: { user }, error: authError } = await session.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  if (!consumeRateLimit(`${user.id}:/api/organization-invitations`)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   let body: { organizationId?: string; email?: string; role?: string };
   try { body = await request.json(); } catch {
@@ -76,16 +80,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invite_created_membership_failed", invitedUserId: invitation.user.id }, { status: 502 });
   }
 
-  const { error: auditError } = await admin.from("organization_invitations").upsert({
-    organization_id: organizationId,
-    email,
-    role,
-    invited_by: user.id,
-    invited_user_id: invitation.user.id,
-    status: "sent"
-  }, { onConflict: "organization_id,email" });
-  if (auditError) {
-    return NextResponse.json({ error: "invite_created_audit_failed", invitedUserId: invitation.user.id }, { status: 502 });
+  // Trilha append-only: reenvio atualiza apenas status/usuário convidado,
+  // preservando invited_by, role e created_at originais.
+  const { data: existing } = await admin.from("organization_invitations")
+    .select("id")
+    .eq("organization_id", organizationId).eq("email", email).maybeSingle();
+
+  if (existing) {
+    const { error: updateError } = await admin.from("organization_invitations")
+      .update({ invited_user_id: invitation.user.id, status: "sent" })
+      .eq("id", existing.id);
+    if (updateError) {
+      return NextResponse.json({ error: "invite_resent_failed", invitedUserId: invitation.user.id }, { status: 502 });
+    }
+  } else {
+    const { error: auditError } = await admin.from("organization_invitations").insert({
+      organization_id: organizationId,
+      email,
+      role,
+      invited_by: user.id,
+      invited_user_id: invitation.user.id,
+      status: "sent"
+    });
+    if (auditError) {
+      return NextResponse.json({ error: "invite_created_audit_failed", invitedUserId: invitation.user.id }, { status: 502 });
+    }
   }
 
   await recordAuditEvent({

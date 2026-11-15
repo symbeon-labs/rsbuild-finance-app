@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
 import { recordAuditEvent } from "@/lib/api/audit";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -112,8 +113,15 @@ export async function POST(request: Request) {
 
   const { error } = await supabase.from("erp_movements").insert(rows);
   if (error) {
+    // Compensação: remove o snapshot órfão via service role (RLS não concede DELETE a usuários).
+    // O insert de movements é atômico — se falhou, nenhum movimento foi gravado.
+    const admin = createAdminClient();
+    const { error: cleanupError } = await admin.from("erp_snapshots").delete().eq("id", snapshot.id);
+    if (cleanupError) {
+      console.error(JSON.stringify({ event: "rsbuild_erp_snapshot_cleanup_failed", organizationId, snapshotId: snapshot.id, code: cleanupError.code }));
+    }
     console.error(JSON.stringify({ event: "rsbuild_erp_movements_import_failed", organizationId, code: error.code }));
-    return NextResponse.json({ error: "erp_movements_import_failed" }, { status: 502 });
+    return NextResponse.json({ error: "erp_movements_import_failed", orphanSnapshotId: cleanupError ? snapshot.id : undefined }, { status: 502 });
   }
 
   await recordAuditEvent({
