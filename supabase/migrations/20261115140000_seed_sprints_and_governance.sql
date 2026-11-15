@@ -3,8 +3,8 @@
 
 do $$
 declare
-  v_ms_id uuid := 'df440f97-3b47-4932-9f27-129b642762d9';
-  v_ha_id uuid := '73221251-9730-4840-be5f-b5b2a46846c2';
+  v_ms_id uuid;
+  v_ha_id uuid;
 
   v_sprint_a1 uuid;
   v_sprint_a2 uuid;
@@ -16,6 +16,24 @@ declare
   v_sprint_h3 uuid;
   v_sprint_h4 uuid;
 begin
+  -- Resolve os projetos pelo project_key canônico + slug do cliente,
+  -- pois os UUIDs são gerados por gen_random_uuid() em cada ambiente.
+  select p.id into v_ms_id
+  from public.projects p
+  join public.organizations client on client.id = p.client_organization_id
+  where p.project_key = 'mundo-do-sabor' and client.slug = 'mundo_sabor'
+  limit 1;
+
+  select p.id into v_ha_id
+  from public.projects p
+  join public.organizations client on client.id = p.client_organization_id
+  where p.project_key = 'hub-acai' and client.slug = 'hub_acai'
+  limit 1;
+
+  if v_ms_id is null or v_ha_id is null then
+    raise exception 'Seed de sprints requer os projetos mundo-do-sabor e hub-acai provisionados pela migration do portfólio';
+  end if;
+
   -- -------------------------------------------------------------
   -- 1. SPRINTS MUNDO DO SABOR (Frente A · Ciclo 01)
   -- -------------------------------------------------------------
