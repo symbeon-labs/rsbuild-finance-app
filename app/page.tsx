@@ -113,6 +113,12 @@ export default async function Home({ searchParams }: Props) {
         organizationName={selected.display_name}
         membershipRole={selectedMembership?.role ?? "viewer"}
         userEmail={user.email ?? ""}
+        userFullName={
+          typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
+          typeof user.user_metadata?.name === "string" ? user.user_metadata.name : undefined
+        }
+        userRoleTitle={typeof user.user_metadata?.role_title === "string" ? user.user_metadata.role_title : undefined}
+        preferredTheme={user.user_metadata?.theme === "dark" || user.user_metadata?.theme === "sand" ? user.user_metadata.theme : undefined}
       />
     </Suspense>
   );

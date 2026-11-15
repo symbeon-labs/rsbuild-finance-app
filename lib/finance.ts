@@ -238,6 +238,23 @@ export function parseCsv(text: string): ImportResult {
   return { records, errors };
 }
 
+/**
+ * Parser de lançamentos do Omie ERP (exportação de movimentos/contas).
+ * Reutiliza o parser CSV tolerante e converte para OmieRecord.
+ */
+export function parseOmieMovementsCsv(text: string): { records: OmieRecord[]; errors: string[] } {
+  const parsed = parseCsv(text);
+  const records: OmieRecord[] = parsed.records.map((record) => ({
+    id: `omie-erp-${record.id}`,
+    date: record.date,
+    description: record.description,
+    amount: record.amount,
+    direction: record.direction,
+    category: record.category === "Não classificado" ? undefined : record.category
+  }));
+  return { records, errors: parsed.errors };
+}
+
 export function parseOfx(text: string): ImportResult {
   if (!/<OFX[>\s]/i.test(text)) return { records: [], errors: ["O arquivo não possui uma estrutura OFX reconhecida."] };
 

@@ -200,6 +200,10 @@ export default function EnterpriseWorkspace({
 
   // Pedidos WhatsApp
   const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>([]);
+
+  // Dados de demonstração por organização — sobrevivem a reload via localStorage
+  // (títulos, canhotos, pedidos e lançamentos Omie não têm persistência oficial no servidor)
+  const [sessionHydratedOrgId, setSessionHydratedOrgId] = useState<string | null>(null);
   const [whatsAppText, setWhatsAppText] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedWhatsAppOrder | null>(null);
 
@@ -265,10 +269,38 @@ export default function EnterpriseWorkspace({
       const savedEnd = localStorage.getItem(`rsbuild_period_end_${organizationId}`);
       if (savedEnd) setCustomEndDate(savedEnd);
 
+      // Hidratação dos dados de sessão da organização (demonstração local)
+      const hydrateSession = <T,>(key: string): T[] => {
+        try {
+          const raw = localStorage.getItem(key);
+          const parsed = raw ? JSON.parse(raw) : [];
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
+      setTitles(hydrateSession(`rsbuild_session_titles_${organizationId}`));
+      setProofs(hydrateSession(`rsbuild_session_proofs_${organizationId}`));
+      setOrders(hydrateSession(`rsbuild_session_orders_${organizationId}`));
+      setOmieRecords(hydrateSession(`rsbuild_session_omie_${organizationId}`));
+      setSessionHydratedOrgId(organizationId);
+
     } catch {
       // Ignora falhas em sandbox restrito / SSR
     }
   }, [organizationId, currentOrgId]);
+
+  // Persiste os dados de sessão sempre que mudam, somente após a hidratação da org ativa.
+  // Evita gravar dados da organização anterior sob a chave da nova organização.
+  useEffect(() => {
+    if (sessionHydratedOrgId !== organizationId) return;
+    try {
+      localStorage.setItem(`rsbuild_session_titles_${organizationId}`, JSON.stringify(titles));
+      localStorage.setItem(`rsbuild_session_proofs_${organizationId}`, JSON.stringify(proofs));
+      localStorage.setItem(`rsbuild_session_orders_${organizationId}`, JSON.stringify(orders));
+      localStorage.setItem(`rsbuild_session_omie_${organizationId}`, JSON.stringify(omieRecords));
+    } catch {}
+  }, [sessionHydratedOrgId, organizationId, titles, proofs, orders, omieRecords]);
 
 
   function handleSaveCompanyConfig(
@@ -338,6 +370,7 @@ export default function EnterpriseWorkspace({
       localStorage.removeItem(`rsbuild_session_titles_${organizationId}`);
       localStorage.removeItem(`rsbuild_session_proofs_${organizationId}`);
       localStorage.removeItem(`rsbuild_session_orders_${organizationId}`);
+      localStorage.removeItem(`rsbuild_session_omie_${organizationId}`);
     } catch {}
     setNotice("Dados temporários desta sessão foram limpos. Registros financeiros persistidos não foram alterados.");
   }
@@ -715,6 +748,7 @@ export default function EnterpriseWorkspace({
               author={currentUserEmail}
               role={effectiveRole}
               onRecordsUpdated={setRecords}
+              onImportOmieRecords={setOmieRecords}
             />
           )}
           {section === "baixas" && (

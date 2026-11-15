@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   FinancialRecord,
   OmieRecord,
@@ -8,6 +8,7 @@ import {
   manualMatch,
   unmatchRecord,
   formatCurrency,
+  parseOmieMovementsCsv,
   MatchResult
 } from "@/lib/finance";
 import { detectInternalTransfers } from "@/lib/internal-transfers";
@@ -23,6 +24,7 @@ interface ConciliacaoViewProps {
   author: string;
   role?: string;
   onRecordsUpdated: (records: FinancialRecord[]) => void;
+  onImportOmieRecords?: (records: OmieRecord[]) => void;
 }
 
 export function ConciliacaoView({
@@ -30,12 +32,15 @@ export function ConciliacaoView({
   omieRecords,
   author,
   role,
-  onRecordsUpdated
+  onRecordsUpdated,
+  onImportOmieRecords
 }: ConciliacaoViewProps) {
   const [selectedTab, setSelectedTab] = useState<"summary" | "matched" | "unmatched" | "transfers">("summary");
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
   const [selectedOmieId, setSelectedOmieId] = useState<string | null>(null);
   const [manualJustification, setManualJustification] = useState("");
+  const [omieImportFeedback, setOmieImportFeedback] = useState("");
+  const omieInputRef = useRef<HTMLInputElement>(null);
   const canMatch = canPerformManualMatch(role);
   const canApproveDiscrepancy = canApproveDiscrepantMatch(role);
   const roleMeta = getRoleMetadata(role);
@@ -114,6 +119,20 @@ export function ConciliacaoView({
     onRecordsUpdated(updatedRecords);
   };
 
+  const handleOmieFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !onImportOmieRecords) return;
+    const text = await file.text();
+    const result = parseOmieMovementsCsv(text);
+    if (result.records.length) {
+      onImportOmieRecords(result.records);
+      setOmieImportFeedback(`${result.records.length} lançamento(s) Omie carregado(s). A lista substitui a anterior.`);
+    } else {
+      setOmieImportFeedback(result.errors[0] || "Nenhum lançamento Omie reconhecido no arquivo.");
+    }
+  };
+
   return (
     <>
       <div className="page-heading">
@@ -122,6 +141,30 @@ export function ConciliacaoView({
           <h1>Conciliação Bancária Multicontas</h1>
           <p>Motor autônomo de conferência de extratos bancários contra lançamentos e títulos do Omie ERP com trilha de auditoria imutável.</p>
         </div>
+        {onImportOmieRecords && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+            <input
+              ref={omieInputRef}
+              type="file"
+              accept=".csv,.txt,text/csv"
+              className="hidden-input"
+              onChange={handleOmieFile}
+            />
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => omieInputRef.current?.click()}
+              title="Importa exportação de movimentos do Omie (CSV). Substitui os lançamentos Omie atuais da sessão."
+            >
+              Importar lançamentos Omie (CSV)
+            </button>
+            {omieImportFeedback && (
+              <span style={{ fontSize: "11px", color: "var(--muted)", maxWidth: "320px", textAlign: "right" }}>
+                {omieImportFeedback}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="tabs">
