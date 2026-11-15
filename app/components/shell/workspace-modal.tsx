@@ -545,7 +545,7 @@ export function WorkspaceModal({
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}>⚖️ 4. Auditoria & Agente RS</strong>
+                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}>🛡️ 4. Auditoria & RS Guardião</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.audit ? "var(--green-text, #10B981)" : "var(--muted)" }}>
                             {activeModulesState.audit ? "● ATIVO" : "○ INATIVO"}
                           </span>

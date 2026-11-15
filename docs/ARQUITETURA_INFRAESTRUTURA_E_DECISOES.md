@@ -31,7 +31,7 @@ Para manter o alinhamento orçamentário e a transparência entre as partes, o e
 | **Ciclo 01 (Base)** | `ENG-HA-01` | **Contratado & Ativo** (Ciclo 01) | Pipeline logístico Hub Açaí + Integração preliminar de estoque/vendas. |
 | **Produto 2 (Upgrade)** | `PROD-02-RECON` | *Planejado (Ciclo 02)* | Motor autônomo de conciliação bancária bancária avançada (AI matcher para divergências parciais e juros compostos). |
 | **Produto 3 (Upgrade)** | `PROD-03-LOG` | *Planejado (Ciclo 02)* | Algoritmo de cubagem e roteirização inteligente de frotas com rastreio de motoristas. |
-| **Produto 4 (Upgrade)** | `PROD-04-AUDIT` | *Planejado (Ciclo 03)* | Agente RS de auditoria forense contínua no Omie (alertas preditivos de fraude e anomalias). |
+| **Produto 4 (Upgrade)** | `PROD-04-AUDIT` | *Planejado (Ciclo 03)* | RS Guardião de auditoria pericial e governança contínua no Omie (alertas preditivos e conformidade). |
 | **Produto 5 (Upgrade)** | `PROD-05-FOUNDRY` | *Planejado (Ciclo 04)* | Conectores multi-ERP e esteira de automações customizadas da holding. |
 
 ---

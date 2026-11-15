@@ -1,24 +1,25 @@
-# Especificação de Arquitetura: Agente RS & Futuro MCP Server
+# Especificação de Arquitetura: RS Guardião (Governança Cognitiva & MCP Server)
 
-> **Status:** Ativo / Em Produção (v1.1.0)  
-> **Classificação:** Inteligência de Governança Operacional e Sincronização Assistida com ERP  
-> **Propósito:** Atuar como o cérebro operacional do **RSBUILD OS**, adaptando-se às regras de negócio específicas de cada cliente (distribuidoras, indústrias e atacados), auditando fluxos em tempo real e orquestrando integrações seguras com ERPs (Omie, Totvs, SAP).
+> **Status:** Ativo / Em Produção (v2.0.0)  
+> **Classificação:** Governança Cognitiva, Auditoria Pericial e Sincronização Assistida com ERP  
+> **Posicionamento Estratégico:** Ponto de engate institucional à plataforma conceitual de governança de agentes do escritório RSBUILD.
+> **Propósito:** Atuar como o guardião pericial e analítico do **RSBUILD OS**, adaptando-se às regras de negócio específicas de cada organização, auditando fluxos em tempo real com barreira Human-in-the-Loop (HITL) e orquestrando integrações seguras com ERPs (Omie, Totvs, SAP).
 
 ---
 
-## 1. Visão Geral e Filosofia do Agente RS
+## 1. Visão Geral e Filosofia do RS Guardião
 
-O **Agente RS** não é um chatbot de conversação genérico. Ele é um **Agente de Execução Assistida (*Human-in-the-Loop*)** desenhado para resolver o abismo entre:
+O **RS Guardião** (anteriormente concebido como *Agente RS*) não é um chatbot de conversação genérico nem um agente autônomo sem supervisão. Ele é uma **Solução de Governança Cognitiva & Execução Assistida (*Human-in-the-Loop*)** desenhada para resolver o abismo entre:
 1. **A Realidade Humana da Operação:** Mensagens informais no WhatsApp, canhotos físicos de papel assinados na doca, extratos bancários com descrições truncadas.
 2. **A Rigidez Burocrática do ERP:** Cadastros complexos de produtos, regras fiscais rígidas, amarrações de plano de contas e exigência de dados estruturados.
 
-O Agente RS absorve o atrito da operação, traduz e valida os dados através de algoritmos determinísticos e apresenta **planos de ação já mastigados** para a alçada humana do gestor ou operador responsável.
+O RS Guardião absorve o atrito da operação, traduz e valida os dados através de algoritmos determinísticos e apresenta **planos de ação periciais e auditáveis** para a alçada humana do gestor ou operador responsável.
 
 ```mermaid
 flowchart LR
-    A["Operação Real (WhatsApp, Doca, Extratos)"] --> B["Agente RS (Contexto & Auditoria)"]
+    A["Operação Real (WhatsApp, Doca, Extratos)"] --> B["RS Guardião (Governança Cognitiva & Auditoria)"]
     B --> C["Plano de Ação Assistido"]
-    C --> D["Aprovação do Operador Humano"]
+    C --> D["Aprovação Obrigatória do Gestor (HITL)"]
     D --> E["Sincronização ERP (Omie)"]
 ```
 

@@ -211,7 +211,7 @@ export function Sidebar({
                   color: "var(--rsbuild-terracotta)"
                 }}
               >
-                AGENTE RS
+                RS GUARDIÃO
               </span>
             )}
           </button>

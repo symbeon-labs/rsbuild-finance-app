@@ -174,7 +174,7 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱", module: "logistics" },
   { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" },
 
-  // 4. Módulo Auditoria & Inteligência Jurídica (Agente RS / JEV)
+  // 4. Módulo Auditoria & Inteligência Jurídica (RS Guardião / JEV)
   { id: "torre-controle", label: "Governança & Controle", icon: "⎈", module: "audit" },
   { id: "auditoria", label: "Auditoria & Acessos", icon: "🛡", module: "audit" }
 ];

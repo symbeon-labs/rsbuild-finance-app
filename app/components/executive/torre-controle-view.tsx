@@ -108,8 +108,8 @@ export function TorreControleView({
       .sort((a, b) => b.total - a.total);
   }, [titles]);
 
-  // Síntese calculada a partir dos dados disponíveis
-  const rsAgentDiagnosis = useMemo(() => {
+  // Síntese calculada a partir dos dados disponíveis (RS Guardião)
+  const rsGuardiaoDiagnosis = useMemo(() => {
     if (healthScore === null) {
       return {
         status: "Dados insuficientes",
@@ -211,7 +211,7 @@ export function TorreControleView({
       `Valor dos pedidos na sessão: ${formatCurrency(hubAcaiMetrics.totalRevenue)} (${hubAcaiMetrics.totalBoxes} caixas)\n` +
       `Ocupação estimada da HR: ${hubAcaiMetrics.hrOccupancy}%\n` +
       `Pendências documentais: ${formatCurrency(deliveryMetrics.atRiskProtestAmount)}\n\n` +
-      `*Síntese do painel:*\n${rsAgentDiagnosis.summary}\n\n` +
+      `*Síntese do painel:*\n${rsGuardiaoDiagnosis.summary}\n\n` +
       `_Documento gerado a partir dos dados disponíveis no workspace; não representa aprovação ou sincronização externa._`;
 
     navigator.clipboard.writeText(memoText);
@@ -344,7 +344,7 @@ export function TorreControleView({
               label="Indicador experimental"
               value={healthScore === null ? "—" : `${healthScore}%`}
               tone={healthScore === null ? "neutral" : healthScore >= 75 ? "positive" : healthScore >= 50 ? "neutral" : "negative"}
-              detail={`Faixa provisória: ${rsAgentDiagnosis.status}. Critérios ainda não homologados.`}
+              detail={`Faixa provisória: ${rsGuardiaoDiagnosis.status}. Critérios ainda não homologados.`}
               icon="⎈"
             />
             {isHubAcai ? (
@@ -431,7 +431,7 @@ export function TorreControleView({
                   fontWeight: 700
                 }}
               >
-                {rsAgentDiagnosis.status.toUpperCase()}
+                {rsGuardiaoDiagnosis.status.toUpperCase()}
               </span>
             </div>
 
@@ -447,7 +447,7 @@ export function TorreControleView({
                 border: "1px solid var(--line)"
               }}
             >
-              {rsAgentDiagnosis.summary}
+              {rsGuardiaoDiagnosis.summary}
             </div>
 
             <h3 style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1.2px", color: "var(--muted)", marginBottom: "12px" }}>
@@ -455,7 +455,7 @@ export function TorreControleView({
             </h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
-              {rsAgentDiagnosis.recommendations.map((rec, i) => (
+              {rsGuardiaoDiagnosis.recommendations.map((rec, i) => (
                 <div
                   key={i}
                   style={{
