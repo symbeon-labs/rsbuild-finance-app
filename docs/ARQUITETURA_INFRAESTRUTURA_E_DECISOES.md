@@ -26,7 +26,7 @@ Para manter o alinhamento orçamentário e a transparência entre as partes, o e
 
 | Ciclo / Produto | Código de Referência | Status Contratual | Descrição Funcional |
 | :--- | :--- | :--- | :--- |
-| **Ciclo 01 (Base)** | `ENG-MS-01` | **Contratado & Ativo** (R$ 6.000 em 3x R$ 2.000) | Normalização de pedidos WhatsApp Mundo do Sabor + Protocolo digital de canhotos. |
+| **Ciclo 01 (Base)** | `ENG-MS-01` | **Contratado & Ativo** (Ciclo 01) | Normalização de pedidos WhatsApp Mundo do Sabor + Protocolo digital de canhotos. |
 | **Ciclo 01 (Base)** | `ENG-MS-02` | **Contratado & Ativo** (Ciclo 01) | Padronização de catálogo, regras de faturamento e esteira de expedição. |
 | **Ciclo 01 (Base)** | `ENG-HA-01` | **Contratado & Ativo** (Ciclo 01) | Pipeline logístico Hub Açaí + Integração preliminar de estoque/vendas. |
 | **Produto 2 (Upgrade)** | `PROD-02-RECON` | *Planejado (Ciclo 02)* | Motor autônomo de conciliação bancária bancária avançada (AI matcher para divergências parciais e juros compostos). |
