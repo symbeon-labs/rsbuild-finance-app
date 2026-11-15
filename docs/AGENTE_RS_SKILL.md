@@ -25,9 +25,9 @@ flowchart LR
 
 ---
 
-## 2. Contexto Operacional por Cliente (Personalização Dinâmica)
+## 2. Contexto Operacional por Organização (Personalização Dinâmica)
 
-Cada organização possui dinâmicas operacionais distintas. O Agente RS armazena e respeita o perfil do cliente:
+Cada organização possui dinâmicas operacionais distintas. O RS Guardião armazena e respeita o perfil do cliente e da holding:
 
 ### Caso 1: Hub Açaí (Distribuição de Sorvetes e Polpas)
 * **Regras de Negócio do Catálogo:**
@@ -45,11 +45,11 @@ Cada organização possui dinâmicas operacionais distintas. O Agente RS armazen
   * Títulos a receber emitidos contra supermercados, padarias e mercearias.
 * **Blindagem Jurídica de Cobrança (Lei nº 5.474/1968, Art. 15):**
   * Toda duplicata mercantil para protesto exige comprovação de entrega (canhoto assinado).
-  * O Agente RS aplica **bloqueio preventivo** para qualquer título vencido cujo canhoto de NF-e não esteja registrado na doca.
+  * O RS Guardião aplica **bloqueio preventivo** para qualquer título vencido cujo canhoto de NF-e não esteja registrado na doca.
 
 ---
 
-## 3. Matriz de Capacidades do Agente RS
+## 3. Matriz de Capacidades do RS Guardião
 
 | Capacidade | Tipo | Entrada | Saída / Ação |
 | :--- | :--- | :--- | :--- |
@@ -65,13 +65,13 @@ Cada organização possui dinâmicas operacionais distintas. O Agente RS armazen
 
 ## 4. Governança e Transição para MCP Server (Model Context Protocol)
 
-O Agente RS foi estruturado para ser desacoplado da interface visual e transformado em um **MCP Server Oficial**, permitindo que LLMs corporativas externas (Claude, Gemini, ChatGPT) interajam diretamente com o RSBUILD OS através de ferramentas padronizadas.
+O RS Guardião foi estruturado para ser desacoplado da interface visual e atuar como um **MCP Server Corporativo**, permitindo que LLMs de governança do escritório RSBUILD interajam com o ecossistema através de ferramentas padronizadas e seguras.
 
 ### Ferramentas Expostas no Protocolo MCP:
 
 ```typescript
-// Exemplo de Tools expostas pelo Agente RS via MCP:
-interface RSBuildMcpTools {
+// Exemplo de Tools expostas pelo RS Guardião via MCP:
+interface RSGuardiaoMcpTools {
   // 1. Ingestão de pedidos via WhatsApp
   parseOrderMessage(params: { rawText: string; customerHint?: string }): Promise<ParsedOrderResult>;
 
@@ -88,8 +88,9 @@ interface RSBuildMcpTools {
 
 ---
 
-## 5. Princípios de Confiança Operacional
-1. **Nunca executar escrituração no ERP sem confirmação humana:** O Agente RS prepara o lote com precisão de centavos, mas a decisão de envio ao ERP permanece sob alçada do operador ou diretor.
-2. **Auditabilidade Total:** Toda recomendação do Agente RS traz a fundamentação (ex: citação do artigo da lei de duplicatas, divergência de valor no extrato bancário).
-3. **Resiliência a Falhas:** Se o ERP estiver indisponível ou fora do ar, o Agente RS opera normalmente em modo de contingência através de arquivos canônicos `.OFX` e `.CSV`.
+## 5. Princípios de Confiança e Governança Pericial
+1. **Ponto de Engate Estratégico:** Projetado para integrar-se à plataforma conceitual de governança de agentes da RSBUILD, servindo como o sentinela local de conformidade.
+2. **Nunca executar escrituração no ERP sem confirmação humana:** O RS Guardião prepara o lote com precisão de centavos, mas a decisão de envio ao ERP permanece sob alçada exclusiva do gestor ou diretor (HITL).
+3. **Auditabilidade e Fundamentação:** Toda recomendação do RS Guardião traz fundamentação legal, documental ou matemática (ex: Lei 5.474/68, discrepância de centavos em extrato bancário).
+4. **Resiliência a Falhas:** Se o ERP estiver indisponível ou fora do ar, o RS Guardião opera em modo de contingência através de arquivos canônicos `.OFX` e `.CSV`.
 
