@@ -10,6 +10,7 @@ import {
   formatCurrency,
   MatchResult
 } from "@/lib/finance";
+import { detectInternalTransfers } from "@/lib/internal-transfers";
 import {
   canPerformManualMatch,
   canApproveDiscrepantMatch,
@@ -31,7 +32,7 @@ export function ConciliacaoView({
   role,
   onRecordsUpdated
 }: ConciliacaoViewProps) {
-  const [selectedTab, setSelectedTab] = useState<"summary" | "matched" | "unmatched">("summary");
+  const [selectedTab, setSelectedTab] = useState<"summary" | "matched" | "unmatched" | "transfers">("summary");
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
   const [selectedOmieId, setSelectedOmieId] = useState<string | null>(null);
   const [manualJustification, setManualJustification] = useState("");
@@ -44,6 +45,13 @@ export function ConciliacaoView({
   }, [bankRecords, omieRecords, author]);
 
   const { matched, unmatchedBank, unmatchedOmie } = matchResults;
+
+  const internalTransfers = useMemo(
+    () => detectInternalTransfers(bankRecords),
+    [bankRecords]
+  );
+  const suggestedTransfers = internalTransfers.filter((item) => item.status === "suggested");
+  const ambiguousTransfers = internalTransfers.filter((item) => item.status === "ambiguous");
 
   // Totais por conta
   const accountTotals = useMemo(() => {
@@ -135,6 +143,12 @@ export function ConciliacaoView({
         >
           Pendentes / Não Casados ({unmatchedBank.length + unmatchedOmie.length})
         </button>
+        <button
+          className={selectedTab === "transfers" ? "tab-active" : "tab"}
+          onClick={() => setSelectedTab("transfers")}
+        >
+          Transferências sugeridas ({internalTransfers.length})
+        </button>
       </div>
 
       {selectedTab === "summary" && (
@@ -185,6 +199,73 @@ export function ConciliacaoView({
               )}
             </tbody>
           </table>
+        </section>
+      )}
+
+      {selectedTab === "transfers" && (
+        <section className="panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
+            <div>
+              <h2>Possíveis transferências entre contas próprias</h2>
+              <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "6px" }}>
+                O detector compara saídas e entradas pendentes em contas diferentes, considerando valor e proximidade das datas.
+                As correspondências são sugestões; não alteram saldos, classificações ou conciliações.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <span className="badge badge-green">{suggestedTransfers.length} candidatas</span>
+              <span className="badge badge-blue">{ambiguousTransfers.length} ambíguas</span>
+            </div>
+          </div>
+
+          {internalTransfers.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--muted)", padding: "28px 12px" }}>
+              Nenhuma possível transferência encontrada nos movimentos pendentes carregados.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: "12px", marginTop: "18px" }}>
+              {internalTransfers.map((transfer) => {
+                const outgoingAccount = [transfer.outgoing.bankName || transfer.outgoing.bankCode || "Banco não identificado", transfer.outgoing.accountId || "Conta não identificada"].join(" · ");
+                const incomingAccount = [transfer.incoming.bankName || transfer.incoming.bankCode || "Banco não identificado", transfer.incoming.accountId || "Conta não identificada"].join(" · ");
+                return (
+                  <article key={transfer.id} style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "14px", background: "var(--surface)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "12px" }}>
+                      <strong style={{ fontSize: "12px" }}>Par de movimentações</strong>
+                      <span className={transfer.status === "ambiguous" ? "badge badge-blue" : "badge badge-green"}>
+                        {transfer.status === "ambiguous" ? "Revisão necessária · múltiplos pares" : transfer.confidence === "high" ? "Boa aderência" : "Revisar"}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+                      <div style={{ padding: "10px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.04))" }}>
+                        <div className="eyebrow">SAÍDA</div>
+                        <strong style={{ display: "block", margin: "5px 0" }}>{formatCurrency(transfer.outgoing.amount)}</strong>
+                        <div style={{ fontSize: "11px", color: "var(--muted)" }}>{transfer.outgoing.date} · {outgoingAccount}</div>
+                        <div style={{ fontSize: "12px", marginTop: "6px" }}>{transfer.outgoing.description}</div>
+                      </div>
+                      <div style={{ padding: "10px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.04))" }}>
+                        <div className="eyebrow">ENTRADA</div>
+                        <strong style={{ display: "block", margin: "5px 0" }}>{formatCurrency(transfer.incoming.amount)}</strong>
+                        <div style={{ fontSize: "11px", color: "var(--muted)" }}>{transfer.incoming.date} · {incomingAccount}</div>
+                        <div style={{ fontSize: "12px", marginTop: "6px" }}>{transfer.incoming.description}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", marginTop: "10px", fontSize: "11px", color: "var(--muted)" }}>
+                      <span>Diferença de valor: {formatCurrency(transfer.amountDifference)}</span>
+                      <span>Distância entre datas: {transfer.dateDifferenceDays} dia(s)</span>
+                    </div>
+                    <ul style={{ margin: "10px 0 0", paddingLeft: "18px", fontSize: "11px", color: "var(--muted)" }}>
+                      {transfer.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                    </ul>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="inline-note" style={{ marginTop: "16px" }}>
+            Nesta etapa, o sistema apenas apresenta candidatos. Aprovar ou rejeitar exige uma operação auditável no servidor;
+            por isso, nenhuma movimentação é reclassificada automaticamente nesta tela.
+          </div>
         </section>
       )}
 
