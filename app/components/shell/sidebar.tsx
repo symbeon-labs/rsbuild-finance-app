@@ -18,6 +18,8 @@ interface SidebarProps {
   section: NavSection;
   enabledModules: EnabledModulesConfig;
   currentOrgId?: OrganizationId;
+  /** Portfólio de projetos/sprints é restrito ao workspace de gestão RSBUILD */
+  showProjectPortfolio?: boolean;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
@@ -97,6 +99,7 @@ export function Sidebar({
   section,
   enabledModules,
   currentOrgId = "rsbuild",
+  showProjectPortfolio = false,
   onSelectModule,
   onSelectSection,
   onOpenConfig,
@@ -183,6 +186,7 @@ export function Sidebar({
 
       <nav className="nav-list" aria-label="Navegação principal">
         {ALL_NAV_ITEMS.filter((item) => {
+          if (item.id === "projetos" && !showProjectPortfolio) return false;
           if (item.module === "all") return true;
           // Verifica se o módulo do item está contratado
           if (!enabledModules[item.module]) return false;

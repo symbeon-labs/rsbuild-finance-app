@@ -88,10 +88,15 @@ export default function EnterpriseWorkspace({
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
 
+  // Portfólio de projetos/sprints é informação interna da gestão RSBUILD.
+  const canViewProjectPortfolio = organizationSlug === "rsbuild";
+
   // URL Sync para Seção e Módulo
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
+    urlTab &&
+    ["visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab) &&
+    (urlTab !== "projetos" || canViewProjectPortfolio)
       ? urlTab
       : "visao-geral";
 
@@ -107,11 +112,12 @@ export default function EnterpriseWorkspace({
   const [activeModule, setActiveModule] = useState<ModuleType>(getModuleForSection(initialSection));
 
   function navigateTo(nextSection: NavSection) {
-    setSection(nextSection);
-    if (nextSection !== "visao-geral") {
-      setActiveModule(getModuleForSection(nextSection));
+    const safeSection = nextSection === "projetos" && !canViewProjectPortfolio ? "visao-geral" : nextSection;
+    setSection(safeSection);
+    if (safeSection !== "visao-geral") {
+      setActiveModule(getModuleForSection(safeSection));
     }
-    router.push(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${nextSection}`, { scroll: false });
+    router.push(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${safeSection}`, { scroll: false });
   }
 
   // Estados Financeiros & Sessão
@@ -603,6 +609,7 @@ export default function EnterpriseWorkspace({
         section={section}
         enabledModules={enabledModules}
         currentOrgId={currentOrgId}
+        showProjectPortfolio={canViewProjectPortfolio}
         onSelectModule={(mod) => {
           setActiveModule(mod);
           if (mod === "finance") navigateTo("visao-geral");
@@ -654,7 +661,7 @@ export default function EnterpriseWorkspace({
               <button onClick={() => setNotice("")}>×</button>
             </div>
           )}
-          {section === "projetos" && <ProjectPortfolioView canManage={organizationSlug === "rsbuild" && ["owner", "admin", "operator"].includes(membershipRole)} />}
+          {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
           {section === "visao-geral" && (
             <VisaoGeralView
               records={filteredRecords}

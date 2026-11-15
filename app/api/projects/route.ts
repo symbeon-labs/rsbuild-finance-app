@@ -15,6 +15,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
 
+  // Portfólio de projetos é informação interna da gestão RSBUILD.
+  // Clientes finais não acessam mesmo possuindo grants de leitura em projetos próprios.
+  const { data: rsbuildMembership, error: membershipError } = await supabase
+    .from("organization_memberships")
+    .select("role, organizations!inner(slug)")
+    .eq("user_id", user.id)
+    .eq("organizations.slug", "rsbuild")
+    .maybeSingle();
+  if (membershipError || !rsbuildMembership) {
+    return NextResponse.json({ error: "project_portfolio_forbidden" }, { status: 403 });
+  }
+
   const { data, error } = await supabase
     .from("projects")
     .select(`
