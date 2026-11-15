@@ -17,9 +17,9 @@ test("GOV-01: Os 4 produtos do portfólio estão definidos e tipados nos presets
   assert.ok(hubAcai, "Hub Açaí deve estar cadastrado");
   assert.ok(mundoSabor, "Mundo do Sabor deve estar cadastrado");
 
-  // RSBUILD: 1-Finanças, 2-Reconciliação e 4-Auditoria
-  assert.equal(rsbuild.enabledModules.finance, true);
-  assert.equal(rsbuild.enabledModules.reconciliation, true);
+  // RSBUILD: Central de Controle (apenas 4-Auditoria/Governança)
+  assert.equal(rsbuild.enabledModules.finance, false);
+  assert.equal(rsbuild.enabledModules.reconciliation, false);
   assert.equal(rsbuild.enabledModules.logistics, false);
   assert.equal(rsbuild.enabledModules.audit, true);
 

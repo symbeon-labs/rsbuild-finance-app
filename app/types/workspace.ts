@@ -71,16 +71,16 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     tagline: "Holding & Obras Corporativas",
     logoUrl: "",
     badge: "🏢 HOLDING",
-    defaultModule: "finance",
+    defaultModule: "audit",
     enabledModules: {
-      finance: true,
-      reconciliation: true,
+      finance: false,
+      reconciliation: false,
       logistics: false,
       audit: true
     },
     hasExecutiveTower: true,
     hasSprintZone: true, // Zona das Sprints apenas para RSBUILD
-    description: "Holding corporativa e obras. Foco em conciliação financeira multibanco (Itaú/XP/BNB/Inter), reconciliação de títulos e auditoria contínua.",
+    description: "Holding corporativa e obras. Central de controle e observabilidade de empresas integradas. Portfólio de projetos e governança.",
     // Cor padrão RSBUILD: terracotta laranja — cor global do sistema
     brandColor: "#B5583C",
     brandColorHover: "#9A4B33",

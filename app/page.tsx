@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import EnterpriseWorkspace from "./enterprise-workspace";
+import ControlTowerWorkspace from "./workspaces/control-tower-workspace";
+import OperationalWorkspace from "./workspaces/operational-workspace";
 import { OrgCookieSetter } from "@/app/components/org-cookie-setter";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
@@ -104,22 +106,40 @@ export default async function Home({ searchParams }: Props) {
     );
   }
   const organizationSlug = selected.slug as OrganizationId;
+  const isRsbuild = organizationSlug === "rsbuild";
+
   return (
     <Suspense fallback={null}>
       <OrgCookieSetter organizationId={selected.id} />
-      <EnterpriseWorkspace
-        organizationId={selected.id}
-        organizationSlug={organizationSlug}
-        organizationName={selected.display_name}
-        membershipRole={selectedMembership?.role ?? "viewer"}
-        userEmail={user.email ?? ""}
-        userFullName={
-          typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
-          typeof user.user_metadata?.name === "string" ? user.user_metadata.name : undefined
-        }
-        userRoleTitle={typeof user.user_metadata?.role_title === "string" ? user.user_metadata.role_title : undefined}
-        preferredTheme={user.user_metadata?.theme === "dark" || user.user_metadata?.theme === "sand" ? user.user_metadata.theme : undefined}
-      />
+      {isRsbuild ? (
+        <ControlTowerWorkspace
+          organizationId={selected.id}
+          organizationSlug={organizationSlug}
+          organizationName={selected.display_name}
+          membershipRole={selectedMembership?.role ?? "viewer"}
+          userEmail={user.email ?? ""}
+          userFullName={
+            typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
+            typeof user.user_metadata?.name === "string" ? user.user_metadata.name : undefined
+          }
+          userRoleTitle={typeof user.user_metadata?.role_title === "string" ? user.user_metadata.role_title : undefined}
+          preferredTheme={user.user_metadata?.theme === "dark" || user.user_metadata?.theme === "sand" ? user.user_metadata.theme : undefined}
+        />
+      ) : (
+        <OperationalWorkspace
+          organizationId={selected.id}
+          organizationSlug={organizationSlug}
+          organizationName={selected.display_name}
+          membershipRole={selectedMembership?.role ?? "viewer"}
+          userEmail={user.email ?? ""}
+          userFullName={
+            typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
+            typeof user.user_metadata?.name === "string" ? user.user_metadata.name : undefined
+          }
+          userRoleTitle={typeof user.user_metadata?.role_title === "string" ? user.user_metadata.role_title : undefined}
+          preferredTheme={user.user_metadata?.theme === "dark" || user.user_metadata?.theme === "sand" ? user.user_metadata.theme : undefined}
+        />
+      )}
     </Suspense>
   );
 }
