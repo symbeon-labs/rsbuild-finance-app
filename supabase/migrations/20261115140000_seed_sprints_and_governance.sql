@@ -30,8 +30,11 @@ begin
   where p.project_key = 'hub-acai' and client.slug = 'hub_acai'
   limit 1;
 
+  -- Bancos de teste vazios não possuem as organizações provisionadas;
+  -- o seed só roda onde os projetos do portfólio existem (ex.: remoto).
   if v_ms_id is null or v_ha_id is null then
-    raise exception 'Seed de sprints requer os projetos mundo-do-sabor e hub-acai provisionados pela migration do portfólio';
+    raise warning 'Seed de sprints ignorado: projetos mundo-do-sabor/hub-acai não provisionados neste banco';
+    return;
   end if;
 
   -- -------------------------------------------------------------
