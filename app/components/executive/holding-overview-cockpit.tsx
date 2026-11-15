@@ -611,7 +611,7 @@ export function HoldingOverviewCockpit({
               Testar contenção de acesso e validar expiração temporal do link compartilhado.
             </p>
             <div style={{ fontSize: "11px", color: "var(--rsbuild-muted)" }}>
-              Responsáveis: <strong>Flávio &amp; Liderança Técnica</strong>
+              Responsáveis: <strong>Flávio &amp; João (Liderança Técnica)</strong>
             </div>
           </div>
 

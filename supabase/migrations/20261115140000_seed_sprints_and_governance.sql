@@ -201,13 +201,13 @@ begin
   insert into public.project_tasks (
     project_id, sprint_id, title, description, acceptance_criteria, status, priority, responsible_label, sort_order
   ) values
-  (v_ms_id, v_sprint_a1, 'A1.1 Viabilizar acesso autorizado ao ambiente de teste/API Omie', 'Identificar administrador do Omie e obter credenciais de integração', 'Credenciais e endpoint de teste validados com sucesso', 'in_progress', 'high', 'Liderança técnica · Direção', 1),
+  (v_ms_id, v_sprint_a1, 'A1.1 Viabilizar acesso autorizado ao ambiente de teste/API Omie', 'Identificar administrador do Omie e obter credenciais de integração', 'Credenciais e endpoint de teste validados com sucesso', 'in_progress', 'high', 'João · Liderança Técnica', 1),
   (v_ms_id, v_sprint_a1, 'A1.2 Relação de contas bancárias ativas e restrições', 'Disponibilizar relação das contas bancárias ativas, divisões contábeis e restrições', 'Lista validada com bancos, agências e contas', 'in_progress', 'high', 'Vitor · Financeiro', 2),
   (v_ms_id, v_sprint_a1, 'A1.3 Disponibilizar extrato real de uma conta ativa (Itaú)', 'Extrair extrato OFX real da conta Itaú para homologação ponta a ponta', 'Arquivo OFX entregue e íntegro para o período acordado', 'todo', 'critical', 'Financeiro Mundo do Sabor', 3),
-  (v_ms_id, v_sprint_a1, 'A1.4 Parser e normalizador OFX para o leiaute priorizado', 'Implementação do parser OFX robusto para padrão brasileiro e formato Itaú/Inter', 'Parser extrai lançamentos com datas, FITID e valores exatos', 'done', 'high', 'Desenvolvimento', 4),
-  (v_ms_id, v_sprint_a1, 'A1.5 Motor de correspondência v1 (valor, data, documento)', 'Motor de conciliação automática com correspondência direta e tolerâncias', 'Associa títulos e extratos sem perda de lançamentos', 'done', 'high', 'Desenvolvimento', 5),
-  (v_ms_id, v_sprint_a1, 'A1.6 Tela de conciliação: itens conciliados, pendentes e totais', 'Interface de conciliação bancária ponta a ponta com totais conferidos', 'Totais batem com extrato; nenhum lançamento se perde', 'done', 'high', 'Desenvolvimento', 6),
-  (v_ms_id, v_sprint_a1, 'A1.7 Registro de autor e horário em ações de alteração de dados', 'Trilha de auditoria para todas as conciliações e desconciliações', 'Histórico exibe quem alterou, quando e o motivo', 'done', 'high', 'Desenvolvimento', 7),
+  (v_ms_id, v_sprint_a1, 'A1.4 Parser e normalizador OFX para o leiaute priorizado', 'Implementação do parser OFX robusto para padrão brasileiro e formato Itaú/Inter', 'Parser extrai lançamentos com datas, FITID e valores exatos', 'done', 'high', 'João · Engenharia', 4),
+  (v_ms_id, v_sprint_a1, 'A1.5 Motor de correspondência v1 (valor, data, documento)', 'Motor de conciliação automática com correspondência direta e tolerâncias', 'Associa títulos e extratos sem perda de lançamentos', 'done', 'high', 'João · Engenharia', 5),
+  (v_ms_id, v_sprint_a1, 'A1.6 Tela de conciliação: itens conciliados, pendentes e totais', 'Interface de conciliação bancária ponta a ponta com totais conferidos', 'Totais batem com extrato; nenhum lançamento se perde', 'done', 'high', 'João · Engenharia', 6),
+  (v_ms_id, v_sprint_a1, 'A1.7 Registro de autor e horário em ações de alteração de dados', 'Trilha de auditoria para todas as conciliações e desconciliações', 'Histórico exibe quem alterou, quando e o motivo', 'done', 'high', 'João · Engenharia', 7),
   (v_ms_id, v_sprint_a1, 'A1.8 Levantamento do fluxo físico de canhotos', 'Mapear recebimento físico de notas e canhotos sem desenvolvimento nesta sprint', 'Fluxo documentado com etapas, gargalos e responsáveis', 'todo', 'normal', 'Vitor', 8);
 
   -- -------------------------------------------------------------
@@ -216,12 +216,12 @@ begin
   insert into public.project_tasks (
     project_id, sprint_id, title, description, acceptance_criteria, status, priority, responsible_label, sort_order
   ) values
-  (v_ha_id, v_sprint_h1, 'H1.1 Verificar e conter fluxo de aprovação por link compartilhado', 'Reproduzir vulnerabilidade de link e implementar link autenticado, único e com validade', 'Link exige autenticação ou expira; não permite acesso irrestrito', 'in_progress', 'critical', 'Desenvolvimento · Equipe interna', 1),
-  (v_ha_id, v_sprint_h1, 'H1.2 Diagnóstico de infraestrutura e persistência da plataforma', 'Mapear servidores, persistência de dados e segregação de código/configuração', 'Diagnóstico técnico entregue documentando estado atual', 'done', 'high', 'Liderança técnica', 2),
-  (v_ha_id, v_sprint_h1, 'H1.3 Mapear objetos, permissões e limites da API Omie', 'Levantamento de endpoints, rate-limits e permissões de leitura/escrita do Omie', 'Matriz de compatibilidade da API entregue', 'in_progress', 'high', 'Liderança técnica', 3),
+  (v_ha_id, v_sprint_h1, 'H1.1 Verificar e conter fluxo de aprovação por link compartilhado', 'Reproduzir vulnerabilidade de link e implementar link autenticado, único e com validade', 'Link exige autenticação ou expira; não permite acesso irrestrito', 'in_progress', 'critical', 'João · Engenharia', 1),
+  (v_ha_id, v_sprint_h1, 'H1.2 Diagnóstico de infraestrutura e persistência da plataforma', 'Mapear servidores, persistência de dados e segregação de código/configuração', 'Diagnóstico técnico entregue documentando estado atual', 'done', 'high', 'João · Liderança Técnica', 2),
+  (v_ha_id, v_sprint_h1, 'H1.3 Mapear objetos, permissões e limites da API Omie', 'Levantamento de endpoints, rate-limits e permissões de leitura/escrita do Omie', 'Matriz de compatibilidade da API entregue', 'in_progress', 'high', 'João · Liderança Técnica', 3),
   (v_ha_id, v_sprint_h1, 'H1.4 Proposta de escopo e sequência para ciclo de estoque Omie', 'Definir regras de negócio para entradas, saídas e transferências de estoque', 'Proposta formalizada e validada com a operação', 'in_progress', 'high', 'RSBUILD · Vitor', 4),
   (v_ha_id, v_sprint_h1, 'H1.5 Inventário de agentes em operação e dados processados', 'Listagem de bots, webhooks e automações ativas com dados manipulados', 'Inventário completo de agentes em produção', 'in_progress', 'normal', 'Vitor · Equipe interna', 5),
-  (v_ha_id, v_sprint_h1, 'H1.6 Verificação de hospedagem, backup e política de retenção', 'Auditoria dos backups existentes e tempos de recuperação', 'Rotina de backup automatizada e validada', 'done', 'high', 'Liderança técnica', 6);
+  (v_ha_id, v_sprint_h1, 'H1.6 Verificação de hospedagem, backup e política de retenção', 'Auditoria dos backups existentes e tempos de recuperação', 'Rotina de backup automatizada e validada', 'done', 'high', 'João · Liderança Técnica', 6);
 
   -- -------------------------------------------------------------
   -- 5. DEPENDÊNCIAS DE INSUMOS CRÍTICOS
@@ -257,7 +257,7 @@ begin
     v_ha_id, v_sprint_h1,
     'Credenciais e alçadas da API Omie (Hub Açaí)',
     'Acesso homologado para leitura de pedidos, compras e estoque no Omie',
-    'access', 'waiting', 'Liderança Técnica', '2026-11-16'
+    'access', 'waiting', 'João · Liderança Técnica', '2026-11-16'
   );
 
 end $$;
