@@ -796,6 +796,50 @@ export default function OperationalWorkspace({
           onResetSession={resetSession}
           onOpenConfig={() => setIsConfigOpen(true)}
         />
+        {/* Faixa de Retorno à Holding RSBUILD */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "8px 20px",
+            background: "linear-gradient(90deg, rgba(181,88,60,0.08) 0%, rgba(181,88,60,0.03) 100%)",
+            borderBottom: "1px solid rgba(181,88,60,0.15)",
+            fontSize: "12px",
+            gap: "10px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--muted)" }}>
+            <span style={{ fontSize: "14px" }}>🏢</span>
+            <span>Workspace operacional de <strong style={{ color: "var(--ink)" }}>{companyName}</strong></span>
+            <span style={{ color: "var(--line)" }}>·</span>
+            <span>Gerenciado pela Holding RSBUILD</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              document.cookie = `rsbuild_selected_org=${encodeURIComponent("0269fe05-0990-41a8-a28c-2919691eaf0f")}; path=/; max-age=31536000; SameSite=Lax`;
+              window.location.href = `/?organizationId=0269fe05-0990-41a8-a28c-2919691eaf0f&tab=visao-geral`;
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "5px 12px",
+              borderRadius: "6px",
+              border: "1px solid rgba(181,88,60,0.3)",
+              background: "rgba(181,88,60,0.08)",
+              color: "var(--rsbuild-terracotta, #B5583C)",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span>←</span>
+            <span>Voltar à Central de Controle RSBUILD</span>
+          </button>
+        </div>
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
           <div className="inline-note" role="note">
@@ -929,6 +973,7 @@ export default function OperationalWorkspace({
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
+        currentOrgRealId={organizationId}
         isSuperAdmin={isSuperAdmin}
         enabledModules={enabledModules}
         brandColor={brandColor}

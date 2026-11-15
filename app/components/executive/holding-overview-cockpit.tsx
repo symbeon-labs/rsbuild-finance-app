@@ -35,6 +35,21 @@ interface HoldingOverviewCockpitProps {
   userFullName?: string;
 }
 
+const PROJECT_TO_ORG: Record<string, string> = {
+  "mundo-do-sabor": "c5356414-adce-4fdc-941b-15cfe26b991e",
+  "hub-acai": "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76",
+};
+
+const PROJECT_ACCENT: Record<string, string> = {
+  "mundo-do-sabor": "#2563EB",
+  "hub-acai": "#7C3AED",
+};
+
+const PROJECT_BADGE: Record<string, { label: string; bg: string; text: string }> = {
+  "mundo-do-sabor": { label: "FRENTE A · INDÚSTRIA ALIMENTÍCIA", bg: "#EFF6FF", text: "#2563EB" },
+  "hub-acai": { label: "FRENTE B · DISTRIBUIÇÃO & EXPEDIÇÃO", bg: "#F5F3FF", text: "#7C3AED" },
+};
+
 export function HoldingOverviewCockpit({
   onNavigateToTab,
   userRole = "owner",
@@ -44,6 +59,8 @@ export function HoldingOverviewCockpit({
   const [isPending, startTransition] = useTransition();
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("Todos");
 
   useEffect(() => {
     async function loadPortfolio() {
@@ -66,6 +83,7 @@ export function HoldingOverviewCockpit({
 
   function handleSwitchToOrg(orgId: string) {
     startTransition(() => {
+      document.cookie = `rsbuild_selected_org=${encodeURIComponent(orgId)}; path=/; max-age=31536000; SameSite=Lax`;
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(orgId)}; path=/; max-age=31536000; SameSite=Lax`;
       try {
         localStorage.setItem("rsbuild_selected_organization", orgId);
@@ -82,8 +100,24 @@ export function HoldingOverviewCockpit({
   const allDependencies = projects.flatMap((p) => p.project_dependencies || []);
   const waitingDeps = allDependencies.filter((d) => d.status === "waiting" || d.status === "open").length;
 
-  const mdsProject = projects.find((p) => p.project_key === "mundo-do-sabor");
-  const haProject = projects.find((p) => p.project_key === "hub-acai");
+  const STATUS_FILTER_OPTIONS = ["Todos", "Em Andamento", "Concluído", "Planejamento"];
+
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch =
+      !searchTerm ||
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.client_display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.project_key.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "Todos" ||
+      (statusFilter === "Em Andamento" && p.status === "in_progress") ||
+      (statusFilter === "Concluído" && p.status === "done") ||
+      (statusFilter === "Planejamento" && p.status === "planning");
+    return matchesSearch && matchesStatus;
+  });
+
+  void userRole;
+  void inProgressTasks;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingBottom: "40px" }}>
@@ -122,7 +156,7 @@ export function HoldingOverviewCockpit({
             </span>
           </div>
           <h1 style={{ fontSize: "24px", fontWeight: 700, margin: 0, color: "var(--foreground, #1F2937)" }}>
-            Central de Controle & Observabilidade RSBUILD
+            Central de Controle &amp; Observabilidade RSBUILD
           </h1>
           <p style={{ fontSize: "14px", color: "var(--rsbuild-muted, #666)", margin: "4px 0 0" }}>
             Monitoramento executivo de frentes operacionais, esteira de homologação e fluxo de insumos críticos.
@@ -206,7 +240,7 @@ export function HoldingOverviewCockpit({
 
         <div className="card" style={{ padding: "18px 20px" }}>
           <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-muted)", letterSpacing: "0.5px" }}>
-            INSUMOS & HOMOLOGAÇÃO
+            INSUMOS &amp; HOMOLOGAÇÃO
           </span>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
             <span style={{ fontSize: "28px", fontWeight: 800, color: waitingDeps > 0 ? "#F59E0B" : "#10B981" }}>
@@ -220,7 +254,7 @@ export function HoldingOverviewCockpit({
         </div>
       </div>
 
-      {/* 3. RADAR DE EMPRESAS INTEGRADAS (CARDS RICOS COM SWITCH EM 1 CLIQUE) */}
+      {/* 3. RADAR DE EMPRESAS INTEGRADAS (CARDS DINÂMICOS) */}
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
           <div>
@@ -229,269 +263,273 @@ export function HoldingOverviewCockpit({
               Acesso direto aos ambientes operacionais e status executivo do Ciclo 01
             </p>
           </div>
-          <span style={{ fontSize: "11px", color: "var(--rsbuild-muted)" }}>
-            Clique para entrar diretamente no workspace de cada empresa
-          </span>
+          <button
+            type="button"
+            onClick={() => alert("Solicite ao administrador a integração de uma nova empresa no ecossistema RSBUILD.")}
+            className="secondary-button"
+            style={{ fontSize: "11px", display: "flex", alignItems: "center", gap: "5px" }}
+          >
+            <span>＋</span>
+            <span>Integrar Nova Empresa</span>
+          </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "20px" }}>
-          {/* CARD 1: MUNDO DO SABOR */}
-          <div
-            className="card"
+        {/* Busca e Filtros */}
+        <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center" }}>
+          <input
+            type="text"
+            placeholder="Buscar por empresa ou projeto..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             style={{
-              padding: "24px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "18px",
-              borderTop: "4px solid #2563EB"
+              flex: 1,
+              minWidth: "200px",
+              height: "36px",
+              border: "1px solid var(--line)",
+              borderRadius: "6px",
+              padding: "0 12px",
+              fontSize: "12px",
+              background: "var(--bg)",
+              color: "var(--ink)"
             }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <span
+          />
+          <div style={{ display: "flex", gap: "6px" }}>
+            {STATUS_FILTER_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setStatusFilter(opt)}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: "20px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  border: statusFilter === opt ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
+                  background: statusFilter === opt ? "var(--rsbuild-terracotta-soft, rgba(181,88,60,0.08))" : "transparent",
+                  color: statusFilter === opt ? "var(--rsbuild-terracotta)" : "var(--muted)",
+                  cursor: "pointer"
+                }}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div style={{ display: "flex", justifyContent: "center", padding: "40px", color: "var(--muted)", fontSize: "13px" }}>
+            <span>Carregando portfólio de projetos...</span>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && filteredProjects.length === 0 && (
+          <div style={{ textAlign: "center", padding: "40px", color: "var(--muted)", fontSize: "13px" }}>
+            {projects.length === 0
+              ? "Nenhum projeto integrado encontrado. Integre a primeira empresa usando o botão acima."
+              : "Nenhum projeto corresponde aos filtros selecionados."}
+          </div>
+        )}
+
+        {/* Dynamic Project Cards */}
+        {!loading && filteredProjects.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "20px" }}>
+            {filteredProjects.map((project) => {
+              const activeSprint =
+                project.project_sprints?.find((s) => s.status === "in_progress") ||
+                project.project_sprints?.[0];
+              const projectAllTasks = project.project_sprints?.flatMap((s) => s.project_tasks) || [];
+              const projectDoneTasks = projectAllTasks.filter((t) => t.status === "done").length;
+              const pct =
+                projectAllTasks.length > 0
+                  ? Math.round((projectDoneTasks / projectAllTasks.length) * 100)
+                  : 0;
+              const blockingDeps = (project.project_dependencies || []).filter(
+                (d) => d.status === "waiting" || d.status === "open"
+              );
+              const orgId = PROJECT_TO_ORG[project.project_key] || "";
+              const accent = PROJECT_ACCENT[project.project_key] || "#6B7280";
+              const badge = PROJECT_BADGE[project.project_key];
+
+              return (
+                <div
+                  key={project.id}
+                  className="card"
                   style={{
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    letterSpacing: "0.6px",
-                    color: "#2563EB",
-                    background: "#EFF6FF",
-                    padding: "3px 8px",
-                    borderRadius: "4px"
+                    padding: "24px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "18px",
+                    borderTop: `4px solid ${accent}`
                   }}
                 >
-                  FRENTE A · INDÚSTRIA ALIMENTÍCIA
-                </span>
-                <h3 style={{ fontSize: "20px", fontWeight: 700, margin: "8px 0 4px" }}>
-                  Mundo do Sabor Alimentos
-                </h3>
-                <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)" }}>
-                  Conciliação bancária Itaú/Inter, baixas ERP em lote e canhotos SEFAZ
-                </span>
-              </div>
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 10px",
-                  borderRadius: "20px",
-                  background: "#ECFDF5",
-                  color: "#059669"
-                }}
-              >
-                ● Sprint A1 Ativa
-              </span>
-            </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      {badge && (
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            letterSpacing: "0.6px",
+                            color: badge.text,
+                            background: badge.bg,
+                            padding: "3px 8px",
+                            borderRadius: "4px"
+                          }}
+                        >
+                          {badge.label}
+                        </span>
+                      )}
+                      <h3 style={{ fontSize: "20px", fontWeight: 700, margin: "8px 0 4px" }}>
+                        {project.name}
+                      </h3>
+                      <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)" }}>
+                        {project.client_display_name}
+                      </span>
+                    </div>
+                    {activeSprint && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "4px 10px",
+                          borderRadius: "20px",
+                          background: "#ECFDF5",
+                          color: "#059669",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        ● Sprint {activeSprint.title || `#${activeSprint.sprint_number}`} Ativa
+                      </span>
+                    )}
+                  </div>
 
-            {/* Progresso da Sprint Ativa */}
-            <div
-              style={{
-                background: "var(--surface-raised, rgba(0,0,0,0.02))",
-                padding: "14px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--rsbuild-border)"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "8px" }}>
-                <strong>Sprint A1: Uma conta bancária conciliada ponta a ponta</strong>
-                <span style={{ color: "var(--rsbuild-terracotta)", fontWeight: 600 }}>75% concluída</span>
-              </div>
-              <div
-                style={{
-                  height: "6px",
-                  background: "var(--line, rgba(0,0,0,0.08))",
-                  borderRadius: "3px",
-                  overflow: "hidden"
-                }}
-              >
-                <div style={{ width: "75%", height: "100%", background: "#2563EB", borderRadius: "3px" }} />
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--rsbuild-muted)", marginTop: "6px" }}>
-                <span>Janela: 09/11 a 13/11</span>
-                <span>Motor v1 e Auditoria Prontos</span>
-              </div>
-            </div>
+                  {/* Progresso */}
+                  <div
+                    style={{
+                      background: "var(--surface-raised, rgba(0,0,0,0.02))",
+                      padding: "14px 16px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--rsbuild-border)"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "8px" }}>
+                      <strong>
+                        {activeSprint ? (activeSprint.title || `Sprint #${activeSprint.sprint_number}`) : "Sem sprint ativa"}
+                      </strong>
+                      <span style={{ color: accent, fontWeight: 600 }}>{pct}% concluída</span>
+                    </div>
+                    <div
+                      style={{
+                        height: "6px",
+                        background: "var(--line, rgba(0,0,0,0.08))",
+                        borderRadius: "3px",
+                        overflow: "hidden"
+                      }}
+                    >
+                      <div style={{ width: `${pct}%`, height: "100%", background: accent, borderRadius: "3px" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--rsbuild-muted)", marginTop: "6px" }}>
+                      <span>{projectDoneTasks} de {projectAllTasks.length} tarefas concluídas</span>
+                      {activeSprint?.start_date && activeSprint?.end_date && (
+                        <span>
+                          {activeSprint.start_date.slice(5)} a {activeSprint.end_date.slice(5)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-            {/* Insumo Crítico Pendente */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 14px",
-                borderRadius: "6px",
-                background: "#FFFBEB",
-                border: "1px solid #FDE68A",
-                fontSize: "12px",
-                color: "#92400E"
-              }}
-            >
-              <span style={{ fontSize: "16px" }}>⚠️</span>
-              <div>
-                <strong>Insumo Aguardado:</strong> Extrato bancário real da conta Itaú (OFX) para teste assistido com Flávio/Vitor.
-              </div>
-            </div>
+                  {/* Dependências bloqueantes */}
+                  {blockingDeps.length > 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "10px 14px",
+                        borderRadius: "6px",
+                        background: "#FFFBEB",
+                        border: "1px solid #FDE68A",
+                        fontSize: "12px",
+                        color: "#92400E"
+                      }}
+                    >
+                      <span style={{ fontSize: "16px" }}>⚠️</span>
+                      <div>
+                        <strong>{blockingDeps.length} dependência{blockingDeps.length > 1 ? "s" : ""} aguardando:</strong>{" "}
+                        {blockingDeps[0].title}
+                        {blockingDeps.length > 1 ? ` e mais ${blockingDeps.length - 1}` : ""}
+                      </div>
+                    </div>
+                  )}
 
-            {/* Botões de Ação */}
-            <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => handleSwitchToOrg("c5356414-adce-4fdc-941b-15cfe26b991e")}
-                className="primary-button"
-                style={{
-                  flex: 1,
-                  background: "#2563EB",
-                  borderColor: "#2563EB",
-                  height: "40px",
-                  fontSize: "13px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px"
-                }}
-              >
-                <span>Acessar Workspace Mundo do Sabor</span>
-                <span>→</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigateToTab("projetos")}
-                className="secondary-button"
-                style={{ height: "40px", fontSize: "12px" }}
-              >
-                Ver Sprints
-              </button>
-            </div>
+                  {/* Botões de Ação */}
+                  <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
+                    {orgId ? (
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => handleSwitchToOrg(orgId)}
+                        className="primary-button"
+                        style={{
+                          flex: 1,
+                          background: accent,
+                          borderColor: accent,
+                          height: "40px",
+                          fontSize: "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <span>Acessar Workspace {project.name}</span>
+                        <span>→</span>
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToTab("projetos")}
+                      className="secondary-button"
+                      style={{ height: "40px", fontSize: "12px" }}
+                    >
+                      Ver Sprints
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        )}
 
-          {/* CARD 2: HUB AÇAÍ SALVADOR */}
-          <div
-            className="card"
-            style={{
-              padding: "24px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "18px",
-              borderTop: "4px solid #7C3AED"
-            }}
+        {/* + Integrar Nova Empresa CTA */}
+        <div
+          style={{
+            border: "1.5px dashed rgba(181,88,60,0.3)",
+            borderRadius: "12px",
+            padding: "24px",
+            textAlign: "center",
+            color: "var(--muted)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "12px",
+            marginTop: "20px"
+          }}
+        >
+          <span style={{ fontSize: "28px" }}>＋</span>
+          <div>
+            <strong style={{ display: "block", color: "var(--ink)", fontSize: "14px" }}>Integrar Nova Empresa ao Ecossistema</strong>
+            <span style={{ fontSize: "12px" }}>Expanda o portfólio RSBUILD com novos projetos operacionais</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => alert("Solicite ao administrador a integração de uma nova empresa no ecossistema RSBUILD.")}
+            style={{ padding: "8px 20px", borderRadius: "6px", border: "1px solid rgba(181,88,60,0.3)", background: "rgba(181,88,60,0.06)", color: "var(--rsbuild-terracotta, #B5583C)", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <span
-                  style={{
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    letterSpacing: "0.6px",
-                    color: "#7C3AED",
-                    background: "#F5F3FF",
-                    padding: "3px 8px",
-                    borderRadius: "4px"
-                  }}
-                >
-                  FRENTE B · DISTRIBUIÇÃO & EXPEDIÇÃO
-                </span>
-                <h3 style={{ fontSize: "20px", fontWeight: 700, margin: "8px 0 4px" }}>
-                  Hub Açaí Salvador
-                </h3>
-                <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)" }}>
-                  Entrada de pedidos WhatsApp, cubagem de caminhão HR e reconciliação
-                </span>
-              </div>
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "4px 10px",
-                  borderRadius: "20px",
-                  background: "#ECFDF5",
-                  color: "#059669"
-                }}
-              >
-                ● Sprint H1 Ativa
-              </span>
-            </div>
-
-            {/* Progresso da Sprint Ativa */}
-            <div
-              style={{
-                background: "var(--surface-raised, rgba(0,0,0,0.02))",
-                padding: "14px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--rsbuild-border)"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "8px" }}>
-                <strong>Sprint H1: Diagnóstico de segurança e fluxo de aprovação</strong>
-                <span style={{ color: "var(--rsbuild-terracotta)", fontWeight: 600 }}>60% concluída</span>
-              </div>
-              <div
-                style={{
-                  height: "6px",
-                  background: "var(--line, rgba(0,0,0,0.08))",
-                  borderRadius: "3px",
-                  overflow: "hidden"
-                }}
-              >
-                <div style={{ width: "60%", height: "100%", background: "#7C3AED", borderRadius: "3px" }} />
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--rsbuild-muted)", marginTop: "6px" }}>
-                <span>Janela: 09/11 a 13/11</span>
-                <span>Infra mapeada · Backup validado</span>
-              </div>
-            </div>
-
-            {/* Insumo Crítico Pendente */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 14px",
-                borderRadius: "6px",
-                background: "#FFFBEB",
-                border: "1px solid #FDE68A",
-                fontSize: "12px",
-                color: "#92400E"
-              }}
-            >
-              <span style={{ fontSize: "16px" }}>🛡️</span>
-              <div>
-                <strong>Ação Prioritária:</strong> Teste assistido da solução de link autenticado de compras com a Direção.
-              </div>
-            </div>
-
-            {/* Botões de Ação */}
-            <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => handleSwitchToOrg("ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76")}
-                className="primary-button"
-                style={{
-                  flex: 1,
-                  background: "#7C3AED",
-                  borderColor: "#7C3AED",
-                  height: "40px",
-                  fontSize: "13px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px"
-                }}
-              >
-                <span>Acessar Workspace Hub Açaí</span>
-                <span>→</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigateToTab("projetos")}
-                className="secondary-button"
-                style={{ height: "40px", fontSize: "12px" }}
-              >
-                Ver Sprints
-              </button>
-            </div>
-          </div>
+            Solicitar Integração
+          </button>
         </div>
       </div>
 
@@ -509,7 +547,7 @@ export function HoldingOverviewCockpit({
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "14px" }}>🎯</span>
               <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>
-                Esteira de Homologação Executiva · Flávio & Vitor
+                Esteira de Homologação Executiva · Flávio &amp; Vitor
               </h3>
             </div>
             <p style={{ fontSize: "12px", color: "var(--rsbuild-muted)", margin: "4px 0 0" }}>
@@ -550,7 +588,7 @@ export function HoldingOverviewCockpit({
               Importar arquivo OFX real e conferir que totais batem e nenhum lançamento se perde.
             </p>
             <div style={{ fontSize: "11px", color: "var(--rsbuild-muted)" }}>
-              Responsáveis: <strong>Flávio & Vitor</strong>
+              Responsáveis: <strong>Flávio &amp; Vitor</strong>
             </div>
           </div>
 
@@ -573,7 +611,7 @@ export function HoldingOverviewCockpit({
               Testar contenção de acesso e validar expiração temporal do link compartilhado.
             </p>
             <div style={{ fontSize: "11px", color: "var(--rsbuild-muted)" }}>
-              Responsáveis: <strong>Flávio & Liderança Técnica</strong>
+              Responsáveis: <strong>Flávio &amp; Liderança Técnica</strong>
             </div>
           </div>
 

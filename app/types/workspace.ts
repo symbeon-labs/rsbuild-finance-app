@@ -8,6 +8,13 @@ export type ModuleType = "finance" | "reconciliation" | "logistics" | "audit";
 // Slugs são provisionados no banco por tenant; presets conhecidos continuam tipados pelo mesmo identificador.
 export type OrganizationId = string;
 
+export interface WorkspaceOrgInfo {
+  id: string;
+  name: string;
+  slug: string;
+  isHolding: boolean;
+}
+
 export interface EnabledModulesConfig {
   finance: boolean;
   reconciliation: boolean;

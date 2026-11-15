@@ -274,6 +274,7 @@ export default function ControlTowerWorkspace({
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
+        currentOrgRealId={organizationId}
         isSuperAdmin={isSuperAdmin}
         enabledModules={enabledModules}
         brandColor={brandColor}

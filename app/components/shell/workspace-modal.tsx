@@ -3,11 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
 
+const ORG_ID_BY_SLUG: Record<string, string> = {
+  rsbuild: "0269fe05-0990-41a8-a28c-2919691eaf0f",
+  hub_acai: "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76",
+  mundo_sabor: "c5356414-adce-4fdc-941b-15cfe26b991e",
+};
+
 interface WorkspaceModalProps {
   isOpen: boolean;
   companyName: string;
   companyLogoUrl: string;
   currentOrgId?: OrganizationId;
+  currentOrgRealId?: string;
   isSuperAdmin: boolean;
   enabledModules: EnabledModulesConfig;
   brandColor?: string;
@@ -21,6 +28,7 @@ export function WorkspaceModal({
   companyName,
   companyLogoUrl,
   currentOrgId = "rsbuild",
+  currentOrgRealId,
   isSuperAdmin,
   enabledModules,
   brandColor = "#B5583C",
@@ -189,6 +197,17 @@ export function WorkspaceModal({
 
             const targetName = nameInput ? nameInput.value : typedName;
             const targetLogo = urlInput ? (urlInput.value || companyLogoUrl) : companyLogoUrl;
+
+            // Tenant switching: if the selected org differs from the current one, navigate directly
+            const selectedOrgRealId = ORG_ID_BY_SLUG[selectedOrg];
+            const isOrgChange = currentOrgRealId
+              ? selectedOrgRealId && selectedOrgRealId !== currentOrgRealId
+              : selectedOrg !== currentOrgId;
+            if (isOrgChange && selectedOrgRealId) {
+              document.cookie = `rsbuild_selected_org=${encodeURIComponent(selectedOrgRealId)}; path=/; max-age=31536000; SameSite=Lax`;
+              window.location.href = `/?organizationId=${selectedOrgRealId}&tab=visao-geral`;
+              return;
+            }
 
             onSave(targetName, targetLogo, nextModules, selectedOrg, currentColor);
           }}

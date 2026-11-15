@@ -2,19 +2,24 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import EnterpriseWorkspace from "./enterprise-workspace";
-import ControlTowerWorkspace from "./workspaces/control-tower-workspace";
-import OperationalWorkspace from "./workspaces/operational-workspace";
-import { OrgCookieSetter } from "@/app/components/org-cookie-setter";
+import { OnboardingExperience } from "@/app/components/auth/onboarding-experience";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import type { OrganizationId } from "@/app/types/workspace";
 
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ organizationId?: string }> };
+type Props = {
+  searchParams: Promise<{
+    organizationId?: string;
+    setup?: string;
+    tab?: string;
+  }>;
+};
 
 export default async function Home({ searchParams }: Props) {
   const params = await searchParams;
+  const cookieStore = await cookies();
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) redirect("/login");
@@ -57,15 +62,52 @@ export default async function Home({ searchParams }: Props) {
     );
   }
 
-  // Prioridade de seleção: URL > cookie persistido > única organização
-  const cookieStore = await cookies();
-  const savedOrgId = cookieStore.get("rsbuild_selected_org")?.value;
+  // Prioridade de seleção: URL > cookie persistido > última org > única organização
+  const savedOrgId =
+    cookieStore.get("rsbuild_selected_org")?.value ||
+    cookieStore.get("rsbuild_last_org_id")?.value;
 
+  // Onboarding: apenas para novos usuários sem onboarding_completed
+  const onboardingCompleted = user.user_metadata?.onboarding_completed as boolean | undefined;
+  const shouldShowOnboarding = onboardingCompleted !== true && !params.setup;
+
+  if (shouldShowOnboarding) {
+    return (
+      <OnboardingExperience
+        userEmail={user.email ?? ""}
+        organizations={organizations}
+        defaultFullName={user.user_metadata?.full_name}
+        defaultRoleTitle={user.user_metadata?.role_title}
+        defaultTheme={user.user_metadata?.preferred_theme}
+      />
+    );
+  }
+
+  // =========================================================================
+  // FLUXO DE ACESSO DIRETO (CONTAS EXISTENTES / RECORRENTES)
+  // =========================================================================
+  // 1. Prioridade: Parâmetro explícito na URL (se for uma organização autorizada)
   let selected = organizations.find((organization) => organization.id === params.organizationId);
+
+  // 2. Cookie de última organização utilizada (rsbuild_selected_org ou rsbuild_last_org_id)
   if (!selected && savedOrgId) {
     selected = organizations.find((organization) => organization.id === savedOrgId);
   }
+
+  // 3. Metadata do usuário salvo no Supabase Auth
+  const metaLastOrgId = user.user_metadata?.last_organization_id as string | undefined;
+  if (!selected && metaLastOrgId) {
+    selected = organizations.find((organization) => organization.id === metaLastOrgId);
+  }
+
+  // 4. Se pertencer a apenas 1 organização, usa ela diretamente
   if (!selected && organizations.length === 1) {
+    selected = organizations[0];
+  }
+
+  // 5. Fallback seguro para contas já logadas com múltiplas organizações:
+  //    Seleciona a primeira organização vinculada para garantir entrada direta
+  if (!selected && organizations.length > 0) {
     selected = organizations[0];
   }
 
@@ -73,28 +115,17 @@ export default async function Home({ searchParams }: Props) {
     return (
       <main className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <section className="panel" style={{ width: "min(100%, 560px)", padding: 32 }}>
-          <div className="eyebrow">RSBUILD OS</div>
-          <h1 style={{ marginTop: 12 }}>Selecione a organização</h1>
-          <p>Escolha o espaço de trabalho vinculado à sua conta.</p>
-          <form action="/" method="get" style={{ display: "grid", gap: 16, marginTop: 20 }}>
-            <label style={{ display: "grid", gap: 6 }}>Organização
-              <select name="organizationId" required defaultValue="">
-                <option value="" disabled>Selecione...</option>
-                {organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.display_name}</option>)}
-              </select>
-            </label>
-            <button className="primary-button" type="submit">Continuar</button>
-          </form>
-          <form action={signOut} style={{ marginTop: 12 }}><button className="secondary-button" type="submit">Sair</button></form>
+          <h1>Nenhum espaço de trabalho ativo encontrado</h1>
+          <p>Sua conta possui credenciais ativas mas nenhuma organização pôde ser selecionada.</p>
+          <form action={signOut}><button className="secondary-button" type="submit">Sair</button></form>
         </section>
       </main>
     );
   }
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
-  // Tenant slugs são definidos no banco e não devem depender de uma allowlist de empresas no frontend.
-  // Mantemos apenas a validação estrutural do identificador canônico.
-  if (!selected.slug || !/^[a-z][a-z0-9_]{1,62}$/.test(selected.slug)) {
+  const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor"];
+  if (!validOrganizationSlugs.includes(selected.slug as OrganizationId)) {
     return (
       <main className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <section className="panel" style={{ width: "min(100%, 560px)", padding: 32 }}>
@@ -105,41 +136,20 @@ export default async function Home({ searchParams }: Props) {
       </main>
     );
   }
-  const organizationSlug = selected.slug as OrganizationId;
-  const isRsbuild = organizationSlug === "rsbuild";
 
+  const organizationSlug = selected.slug as OrganizationId;
   return (
     <Suspense fallback={null}>
-      <OrgCookieSetter organizationId={selected.id} />
-      {isRsbuild ? (
-        <ControlTowerWorkspace
-          organizationId={selected.id}
-          organizationSlug={organizationSlug}
-          organizationName={selected.display_name}
-          membershipRole={selectedMembership?.role ?? "viewer"}
-          userEmail={user.email ?? ""}
-          userFullName={
-            typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
-            typeof user.user_metadata?.name === "string" ? user.user_metadata.name : undefined
-          }
-          userRoleTitle={typeof user.user_metadata?.role_title === "string" ? user.user_metadata.role_title : undefined}
-          preferredTheme={user.user_metadata?.theme === "dark" || user.user_metadata?.theme === "sand" ? user.user_metadata.theme : undefined}
-        />
-      ) : (
-        <OperationalWorkspace
-          organizationId={selected.id}
-          organizationSlug={organizationSlug}
-          organizationName={selected.display_name}
-          membershipRole={selectedMembership?.role ?? "viewer"}
-          userEmail={user.email ?? ""}
-          userFullName={
-            typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
-            typeof user.user_metadata?.name === "string" ? user.user_metadata.name : undefined
-          }
-          userRoleTitle={typeof user.user_metadata?.role_title === "string" ? user.user_metadata.role_title : undefined}
-          preferredTheme={user.user_metadata?.theme === "dark" || user.user_metadata?.theme === "sand" ? user.user_metadata.theme : undefined}
-        />
-      )}
+      <EnterpriseWorkspace
+        organizationId={selected.id}
+        organizationSlug={organizationSlug}
+        organizationName={selected.display_name}
+        membershipRole={selectedMembership?.role ?? "viewer"}
+        userEmail={user.email ?? ""}
+        userFullName={user.user_metadata?.full_name}
+        userRoleTitle={user.user_metadata?.role_title}
+        preferredTheme={user.user_metadata?.preferred_theme}
+      />
     </Suspense>
   );
 }
