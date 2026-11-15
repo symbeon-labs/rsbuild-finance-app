@@ -20,6 +20,7 @@ import { TorreControleView } from "@/app/components/executive/torre-controle-vie
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
+import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
 
 type ControlTowerWorkspaceProps = {
   organizationId: string;
@@ -242,34 +243,11 @@ export default function ControlTowerWorkspace({
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
           {section === "visao-geral" && (
-            <div style={{ padding: "24px", textAlign: "center" }}>
-              <h2 style={{ fontSize: "20px", marginBottom: "16px" }}>Central de Controle RSBUILD</h2>
-              <p style={{ color: "var(--rsbuild-terracotta)", marginBottom: "24px" }}>
-                Visão governamental e observabilidade de empresas integradas
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-                <div style={{ padding: "20px", border: "1px solid var(--rsbuild-border)", borderRadius: "8px" }}>
-                  <h3 style={{ fontSize: "16px", marginBottom: "12px" }}>Empresas Integradas</h3>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                    <li style={{ padding: "8px 0", borderBottom: "1px solid var(--rsbuild-border)" }}>
-                      <strong>Hub Açaí Salvador</strong> — Logística & Reconciliação
-                    </li>
-                    <li style={{ padding: "8px 0" }}>
-                      <strong>Mundo do Sabor</strong> — Finanças & Logística
-                    </li>
-                  </ul>
-                </div>
-                <div style={{ padding: "20px", border: "1px solid var(--rsbuild-border)", borderRadius: "8px" }}>
-                  <h3 style={{ fontSize: "16px", marginBottom: "12px" }}>Acesso Rápido</h3>
-                  <p style={{ fontSize: "14px", color: "var(--rsbuild-muted)", marginBottom: "12px" }}>
-                    Use o seletor de organização no topo para alternar entre empresas integradas.
-                  </p>
-                  <p style={{ fontSize: "14px", color: "var(--rsbuild-muted)" }}>
-                    Como observador, você terá acesso limitado às operações contratadas.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <HoldingOverviewCockpit
+              onNavigateToTab={navigateTo}
+              userRole={effectiveRole}
+              userFullName={userFullName}
+            />
           )}
           {section === "torre-controle" && (
             <TorreControleView
