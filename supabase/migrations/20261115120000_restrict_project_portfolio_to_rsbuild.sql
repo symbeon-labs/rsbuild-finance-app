@@ -1,0 +1,12 @@
+-- Restringe o portfólio de projetos/sprints à gestão RSBUILD.
+--
+-- O portfólio é uma ferramenta interna de gestão da RSBUILD. Até o desenho
+-- de um portal do cliente (visão curada de status), organizações clientes
+-- não devem ler projetos, sprints, tarefas, dependências ou entregáveis —
+-- nem mesmo os projetos semeados para elas.
+--
+-- Remove os grants de acesso em nível de organização criados pela migration
+-- 20261111220000_project_portfolio_and_sprints.sql. As policies de RLS
+-- permanecem inalteradas: um grant futuro só deve ser criado quando a
+-- experiência do cliente for formalmente definida.
+delete from public.project_organization_access;
