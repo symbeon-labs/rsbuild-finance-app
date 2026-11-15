@@ -37,7 +37,8 @@ export async function GET(request: Request) {
     totalAmount: Number(row.total_amount_minor) / 100,
     confidence: row.confidence,
     unrecognizedLines: row.unrecognized_lines,
-    status: row.status
+    status: row.status,
+    createdAt: row.created_at
   }));
 
   return NextResponse.json({ orders, count: orders.length }, {

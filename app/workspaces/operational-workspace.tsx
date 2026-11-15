@@ -603,7 +603,15 @@ export default function OperationalWorkspace({
       setNotice("Não há títulos com correspondência bancária pronta para baixa.");
       return;
     }
-    const settlements = buildSettlementItems(target);
+    const settlements = buildSettlementItems(target).map((item) => ({
+      receivableTitleId: item.titleId,
+      documentNumber: item.documentNumber,
+      customerName: item.customerName,
+      amount: item.amountPaid,
+      settlementDate: item.settlementDate,
+      sourceRecordId: item.sourceRecordId,
+      observation: item.observation
+    }));
     try {
       const response = await fetch(`/api/settlements?organizationId=${encodeURIComponent(organizationId)}`, {
         method: "POST",

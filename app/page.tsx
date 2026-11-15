@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import EnterpriseWorkspace from "./enterprise-workspace";
+import ControlTowerWorkspace from "./workspaces/control-tower-workspace";
+import OperationalWorkspace from "./workspaces/operational-workspace";
 import { OnboardingExperience } from "@/app/components/auth/onboarding-experience";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
@@ -138,18 +139,22 @@ export default async function Home({ searchParams }: Props) {
   }
 
   const organizationSlug = selected.slug as OrganizationId;
+  const isRsbuild = organizationSlug === "rsbuild";
+  const workspaceProps = {
+    organizationId: selected.id,
+    organizationSlug,
+    organizationName: selected.display_name,
+    membershipRole: selectedMembership?.role ?? "viewer",
+    userEmail: user.email ?? "",
+    userFullName:
+      typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
+      typeof user.user_metadata?.name === "string" ? user.user_metadata.name : undefined,
+    userRoleTitle: typeof user.user_metadata?.role_title === "string" ? user.user_metadata.role_title : undefined,
+    preferredTheme: user.user_metadata?.preferred_theme === "dark" || user.user_metadata?.preferred_theme === "sand" ? user.user_metadata.preferred_theme : undefined
+  };
   return (
     <Suspense fallback={null}>
-      <EnterpriseWorkspace
-        organizationId={selected.id}
-        organizationSlug={organizationSlug}
-        organizationName={selected.display_name}
-        membershipRole={selectedMembership?.role ?? "viewer"}
-        userEmail={user.email ?? ""}
-        userFullName={user.user_metadata?.full_name}
-        userRoleTitle={user.user_metadata?.role_title}
-        preferredTheme={user.user_metadata?.preferred_theme}
-      />
+      {isRsbuild ? <ControlTowerWorkspace {...workspaceProps} /> : <OperationalWorkspace {...workspaceProps} />}
     </Suspense>
   );
 }
