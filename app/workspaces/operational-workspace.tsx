@@ -180,7 +180,6 @@ export default function OperationalWorkspace({
   const [titles, setTitles] = useState<ReceivableTitle[]>([]);
   const [proofs, setProofs] = useState<DeliveryProof[]>([]);
   const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>([]);
-  const [sessionHydratedOrgId, setSessionHydratedOrgId] = useState<string | null>(null);
   const [whatsAppText, setWhatsAppText] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedWhatsAppOrder | null>(null);
 
@@ -258,6 +257,23 @@ export default function OperationalWorkspace({
   }, [organizationId]);
 
   useEffect(() => {
+    let active = true;
+    fetch(`/api/erp-movements?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Não foi possível carregar lançamentos ERP.");
+        return payload;
+      })
+      .then((payload) => {
+        if (active && Array.isArray(payload.movements)) setOmieRecords(payload.movements);
+      })
+      .catch((error) => {
+        if (active) console.error("Falha ao carregar lançamentos ERP:", error);
+      });
+    return () => { active = false; };
+  }, [organizationId]);
+
+  useEffect(() => {
     try {
       localStorage.setItem("rsbuild_selected_organization", organizationId);
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
@@ -293,34 +309,9 @@ export default function OperationalWorkspace({
       const savedEnd = localStorage.getItem(`rsbuild_period_end_${organizationId}`);
       if (savedEnd) setCustomEndDate(savedEnd);
 
-      const hydrateSession = <T,>(key: string): T[] => {
-        try {
-          const raw = localStorage.getItem(key);
-          const parsed = raw ? JSON.parse(raw) : [];
-          return Array.isArray(parsed) ? parsed : [];
-        } catch {
-          return [];
-        }
-      };
-      setTitles(hydrateSession(`rsbuild_session_titles_${organizationId}`));
-      setProofs(hydrateSession(`rsbuild_session_proofs_${organizationId}`));
-      setOrders(hydrateSession(`rsbuild_session_orders_${organizationId}`));
-      setOmieRecords(hydrateSession(`rsbuild_session_omie_${organizationId}`));
-      setSessionHydratedOrgId(organizationId);
-
     } catch {
     }
   }, [organizationId, currentOrgId]);
-
-  useEffect(() => {
-    if (sessionHydratedOrgId !== organizationId) return;
-    try {
-      localStorage.setItem(`rsbuild_session_titles_${organizationId}`, JSON.stringify(titles));
-      localStorage.setItem(`rsbuild_session_proofs_${organizationId}`, JSON.stringify(proofs));
-      localStorage.setItem(`rsbuild_session_orders_${organizationId}`, JSON.stringify(orders));
-      localStorage.setItem(`rsbuild_session_omie_${organizationId}`, JSON.stringify(omieRecords));
-    } catch {}
-  }, [sessionHydratedOrgId, organizationId, titles, proofs, orders, omieRecords]);
 
   function handleSaveCompanyConfig(
     name: string,
@@ -372,24 +363,15 @@ export default function OperationalWorkspace({
   }
 
   function resetSession() {
-    if (typeof window !== "undefined" && !window.confirm("Limpar os dados temporários desta sessão? Os registros financeiros persistidos não serão alterados.")) {
+    if (typeof window !== "undefined" && !window.confirm("Limpar dados temporários desta sessão? Dados persistidos no servidor não serão alterados.")) {
       return;
     }
     setOmieRecords([]);
-    setTitles([]);
-    setProofs([]);
-    setOrders([]);
     setPendingImport([]);
     setPendingMetadata(null);
     setImportErrors([]);
     setFileName("");
-    try {
-      localStorage.removeItem(`rsbuild_session_titles_${organizationId}`);
-      localStorage.removeItem(`rsbuild_session_proofs_${organizationId}`);
-      localStorage.removeItem(`rsbuild_session_orders_${organizationId}`);
-      localStorage.removeItem(`rsbuild_session_omie_${organizationId}`);
-    } catch {}
-    setNotice("Dados temporários desta sessão foram limpos. Registros financeiros persistidos não foram alterados.");
+    setNotice("Dados temporários desta sessão foram limpos. Dados persistidos no servidor não foram alterados.");
   }
 
   const filteredRecords = useMemo(() => {
@@ -495,6 +477,56 @@ export default function OperationalWorkspace({
     setNotice("Importação cancelada.");
   }
 
+  async function handleOmieImportPersist(newRecords: OmieRecord[]) {
+    try {
+      const response = await fetch(`/api/erp-movements?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceLabel: "Importação CSV Omie",
+          movements: newRecords.map((r) => ({
+            date: r.date,
+            description: r.description,
+            amount: r.amount,
+            direction: r.direction,
+            documentNumber: r.documentNumber,
+            category: r.category
+          }))
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao persistir lançamentos ERP.");
+      setNotice(`${payload.insertedCount ?? 0} lançamento(s) ERP persistido(s) como novo snapshot.`);
+      const refresh = await fetch(`/api/erp-movements?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const refreshed = await refresh.json();
+      if (refresh.ok && Array.isArray(refreshed.movements)) setOmieRecords(refreshed.movements);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao persistir lançamentos ERP.");
+    }
+  }
+
+  async function handleReconciliationDecision(
+    recordId: string,
+    decisionType: "manual_match" | "unmatch",
+    counterpartLabel?: string,
+    justification?: string
+  ) {
+    try {
+      await fetch(`/api/reconciliation-decisions?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decisions: [{ financialRecordId: recordId, decisionType, counterpartLabel, justification }]
+        })
+      });
+      const refresh = await fetch(`/api/imports?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const refreshed = await refresh.json();
+      if (refresh.ok && Array.isArray(refreshed.records)) setRecords(refreshed.records);
+    } catch {
+      // Decisão já aplicada localmente; falha de persistência não deve quebrar a UI
+    }
+  }
+
   function handleExportOmie(targetRecords?: FinancialRecord[]) {
     const list = targetRecords && targetRecords.length ? targetRecords : filteredRecords.length ? filteredRecords : records;
     if (!list.length) return;
@@ -517,9 +549,22 @@ export default function OperationalWorkspace({
     const result = parseReceivablesCsv(text);
     if (result.errors.length > 0) {
       setNotice(`Aviso: ${result.errors[0]}`);
-    } else {
-      setTitles((curr) => [...result.titles, ...curr]);
-      setNotice(`${result.titles.length} título(s) a receber carregado(s) com sucesso.`);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titles: result.titles })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao importar títulos.");
+      setNotice(`${payload.insertedCount ?? 0} título(s) persistido(s) com sucesso.`);
+      const refresh = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const refreshed = await refresh.json();
+      if (refresh.ok) setTitles(Array.isArray(refreshed.titles) ? refreshed.titles : []);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao importar títulos.");
     }
   }
 
@@ -548,16 +593,33 @@ export default function OperationalWorkspace({
     setNotice(`Arquivo CSV gerado para conferência e eventual importação manual no Omie (${settlements.length} itens). Nenhum título foi baixado pelo RSBUILD OS.`);
   }
 
-  function handleConfirmSettlementInSession() {
+  async function handleConfirmSettlementInSession() {
     if (!canApproveBatchSettlement(membershipRole)) {
       setNotice("Ação bloqueada: somente Owner ou Admin pode confirmar baixas.");
       return;
     }
-    const matchedTitleIds = new Set(matchStats.ready.map((m) => m.title.id));
-    setTitles((curr) =>
-      curr.map((t) => (matchedTitleIds.has(t.id) ? { ...t, status: "baixado" as const } : t))
-    );
-    setNotice(`${matchedTitleIds.size} título(s) marcados como baixados na sessão.`);
+    const target = matchStats.ready;
+    if (!target.length) {
+      setNotice("Não há títulos com correspondência bancária pronta para baixa.");
+      return;
+    }
+    const settlements = buildSettlementItems(target);
+    try {
+      const response = await fetch(`/api/settlements?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settlements })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao persistir baixas.");
+      setNotice(`${payload.insertedCount ?? 0} baixa(s) persistida(s) com sucesso.`);
+      const matchedTitleIds = new Set(target.map((m) => m.title.id));
+      setTitles((curr) =>
+        curr.map((t) => (matchedTitleIds.has(t.id) ? { ...t, status: "baixado" as const } : t))
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao persistir baixas.");
+    }
   }
 
   async function handleImportProofsFileData(file: File) {
@@ -565,10 +627,22 @@ export default function OperationalWorkspace({
     const result = parseDeliveryCsv(text);
     if (result.errors.length > 0) {
       setNotice(`Aviso na importação de canhotos: ${result.errors[0]}`);
+      return;
     }
-    if (result.proofs.length > 0) {
-      setProofs((curr) => [...result.proofs, ...curr]);
-      setNotice(`${result.proofs.length} comprovante(s) de entrega importado(s) com sucesso.`);
+    try {
+      const response = await fetch(`/api/proofs?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proofs: result.proofs })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao importar canhotos.");
+      setNotice(`${payload.insertedCount ?? 0} comprovante(s) importado(s) com sucesso.`);
+      const refresh = await fetch(`/api/proofs?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const refreshed = await refresh.json();
+      if (refresh.ok) setProofs(Array.isArray(refreshed.proofs) ? refreshed.proofs : []);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao importar canhotos.");
     }
   }
 
@@ -591,7 +665,7 @@ export default function OperationalWorkspace({
     setNotice(`Relatório CSV exportado (${evaluations.length} registros analisados). O arquivo não constitui parecer jurídico nem comprova autenticidade documental.`);
   }
 
-  function handleConfirmReceipt(proofId: string) {
+  async function handleConfirmReceipt(proofId: string) {
     const proof = proofs.find((item) => item.id === proofId);
     if (!proof) {
       setNotice("Comprovante não encontrado nesta sessão.");
@@ -601,12 +675,29 @@ export default function OperationalWorkspace({
       setNotice("Conferência bloqueada: informe data de entrega, nome, documento do recebedor e referência do arquivo de evidência original. O sistema não pode inventar esses dados.");
       return;
     }
-    setProofs((curr) =>
-      curr.map((item) => item.id === proofId
-        ? { ...item, status: "comprovado" }
-        : item)
-    );
-    setNotice("Conferência registrada apenas nesta sessão. Isso não autentica a assinatura, não altera o ERP e não libera cobrança ou protesto.");
+    try {
+      const response = await fetch(`/api/proofs/${proofId}?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "comprovado",
+          deliveryDate: proof.deliveryDate,
+          receiverName: proof.receiverName,
+          receiverDocument: proof.receiverDocument,
+          proofFileUrl: proof.proofFileUrl
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao atualizar canhoto.");
+      setProofs((curr) =>
+        curr.map((item) => item.id === proofId
+          ? { ...item, status: "comprovado" }
+          : item)
+      );
+      setNotice("Conferência registrada com sucesso no servidor.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao atualizar canhoto.");
+    }
   }
 
   function handleParseWhatsApp() {
@@ -619,12 +710,25 @@ export default function OperationalWorkspace({
     setNotice(`Mensagem decifrada: ${result.customerName} (${result.totalBoxes} caixas identificadas).`);
   }
 
-  function handleConfirmParsedOrder() {
+  async function handleConfirmParsedOrder() {
     if (!parsedPreview) return;
-    setOrders((curr) => [parsedPreview, ...curr]);
-    setNotice(`Pedido de ${parsedPreview.customerName} adicionado à fila temporária desta sessão. A fila não foi persistida nem enviada ao ERP.`);
-    setParsedPreview(null);
-    setWhatsAppText("");
+    try {
+      const response = await fetch(`/api/orders?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orders: [parsedPreview] })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao persistir pedido.");
+      setNotice(`Pedido de ${parsedPreview.customerName} persistido com sucesso.`);
+      const refresh = await fetch(`/api/orders?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const refreshed = await refresh.json();
+      if (refresh.ok) setOrders(Array.isArray(refreshed.orders) ? refreshed.orders : []);
+      setParsedPreview(null);
+      setWhatsAppText("");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao persistir pedido.");
+    }
   }
 
   function handleExportOmieSalesOrders() {
@@ -695,7 +799,7 @@ export default function OperationalWorkspace({
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
           <div className="inline-note" role="note">
-            Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
+            Títulos, canhotos e pedidos são persistidos no Supabase com isolamento por organização.
           </div>
           {isLoadingRecords && <div className="inline-note" role="status">Carregando movimentos financeiros da organização...</div>}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
@@ -761,7 +865,8 @@ export default function OperationalWorkspace({
               author={currentUserEmail}
               role={effectiveRole}
               onRecordsUpdated={setRecords}
-              onImportOmieRecords={setOmieRecords}
+              onImportOmieRecordsPersist={handleOmieImportPersist}
+              onReconciliationDecision={handleReconciliationDecision}
             />
           )}
           {section === "baixas" && (

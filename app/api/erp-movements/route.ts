@@ -5,6 +5,59 @@ export const dynamic = "force-dynamic";
 
 const MOVEMENT_DIRECTIONS = ["entrada", "saída"];
 
+export async function GET(request: Request) {
+  const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
+  const guard = await requireOrgContext(request, organizationId);
+  if (!guard.ok) return guard.response;
+  const { supabase } = guard.ctx;
+
+  const { data: snapshot, error: snapshotError } = await supabase
+    .from("erp_snapshots")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (snapshotError) {
+    console.error(JSON.stringify({ event: "rsbuild_erp_snapshot_read_failed", organizationId, code: snapshotError.code }));
+    return NextResponse.json({ error: "erp_movements_unavailable" }, { status: 502 });
+  }
+
+  if (!snapshot) {
+    return NextResponse.json({ movements: [], snapshot: null }, {
+      status: 200, headers: { "Cache-Control": "private, no-store" }
+    });
+  }
+
+  const { data, error } = await supabase
+    .from("erp_movements")
+    .select("id, movement_date, description, amount_minor, direction, document_number, category, created_at")
+    .eq("organization_id", organizationId)
+    .eq("snapshot_id", snapshot.id)
+    .order("movement_date", { ascending: true })
+    .limit(10000);
+
+  if (error) {
+    console.error(JSON.stringify({ event: "rsbuild_erp_movements_read_failed", organizationId, code: error.code }));
+    return NextResponse.json({ error: "erp_movements_unavailable" }, { status: 502 });
+  }
+
+  const movements = (data ?? []).map((row: any) => ({
+    id: row.id,
+    date: row.movement_date,
+    description: row.description,
+    amount: Number(row.amount_minor) / 100,
+    direction: row.direction,
+    documentNumber: row.document_number ?? undefined,
+    category: row.category ?? undefined
+  }));
+
+  return NextResponse.json({ movements, snapshot }, {
+    status: 200, headers: { "Cache-Control": "private, no-store" }
+  });
+}
+
 export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);

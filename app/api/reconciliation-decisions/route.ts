@@ -43,6 +43,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "decisions_import_failed" }, { status: 502 });
   }
 
+  // Sincroniza o status do registro financeiro: match → conciliado, unmatch → pendente
+  const recordIds = [...new Set(inputs.map((d) => d.financialRecordId).filter((id): id is string => typeof id === "string" && id.length > 0))];
+  if (recordIds.length) {
+    const statusMap = new Map<string, string>();
+    for (const d of inputs) {
+      if (typeof d.financialRecordId !== "string") continue;
+      const type = DECISION_TYPES.includes(String(d.decisionType)) ? String(d.decisionType) : "manual_match";
+      statusMap.set(d.financialRecordId, type === "unmatch" ? "pendente" : "conciliado");
+    }
+    for (const [recordId, status] of statusMap) {
+      const { error: statusError } = await supabase
+        .from("financial_records")
+        .update({ status })
+        .eq("id", recordId)
+        .eq("organization_id", organizationId);
+      if (statusError) {
+        console.error(JSON.stringify({ event: "rsbuild_decision_status_sync_failed", organizationId, recordId, code: statusError.code }));
+      }
+    }
+  }
+
   return NextResponse.json({ insertedCount: rows.length }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }
   });
