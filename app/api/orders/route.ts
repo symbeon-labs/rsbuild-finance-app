@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
   if (!guard.ok) return guard.response;
-  const { supabase, userId } = guard.ctx;
+  const { supabase, userId, userEmail } = guard.ctx;
 
   let body: { orders?: OrderInput[] };
   try { body = await request.json(); }
@@ -100,6 +101,12 @@ export async function POST(request: Request) {
     console.error(JSON.stringify({ event: "rsbuild_orders_import_failed", organizationId, code: error.code }));
     return NextResponse.json({ error: "orders_import_failed" }, { status: 502 });
   }
+
+  await recordAuditEvent({
+    organizationId, actorId: userId, actorEmail: userEmail,
+    eventType: "orders.created", entityType: "whatsapp_order",
+    metadata: { insertedCount: rows.length }
+  });
 
   return NextResponse.json({ insertedCount: rows.length }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }

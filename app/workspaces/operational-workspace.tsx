@@ -57,6 +57,7 @@ import { RelatoriosDreView } from "@/app/components/finance/relatorios-dre-view"
 import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
+import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 
@@ -93,14 +94,14 @@ export default function OperationalWorkspace({
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
     urlTab &&
-    ["visao-geral", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
+    ["visao-geral", "torre-controle", "auditoria", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
   function getModuleForSection(s: NavSection): ModuleType {
     if (s === "baixas" || s === "conciliacao") return "reconciliation";
     if (s === "pedidos-ha" || s === "canhotos") return "logistics";
-    if (s === "torre-controle") return "audit";
+    if (s === "torre-controle" || s === "auditoria") return "audit";
     return "finance";
   }
 
@@ -798,7 +799,7 @@ export default function OperationalWorkspace({
           userEmail={currentUserEmail}
           userFullName={userFullName}
           userRoleTitle={userRoleTitle}
-          showPeriodSelector={!["torre-controle", "pedidos-ha", "canhotos"].includes(section)}
+          showPeriodSelector={!["torre-controle", "auditoria", "pedidos-ha", "canhotos"].includes(section)}
           onPeriodChange={handlePeriodChange}
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}
@@ -889,6 +890,9 @@ export default function OperationalWorkspace({
               hasSprintZone={canAccessSprintZone(effectiveRole, organizationSlug) || isDeveloperAuthorized}
               onNavigateToTab={navigateTo}
             />
+          )}
+          {section === "auditoria" && (
+            <AuditTrailView organizationId={organizationId} organizationName={companyName} />
           )}
           {section === "movimentacoes" && (
             <MovimentacoesView

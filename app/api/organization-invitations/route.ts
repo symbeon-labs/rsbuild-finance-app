@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,9 +34,27 @@ export async function POST(request: Request) {
     .from("organization_memberships").select("role")
     .eq("organization_id", organizationId).eq("user_id", user.id).maybeSingle();
   if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) {
+    await recordAuditEvent({
+      organizationId,
+      actorId: user.id,
+      actorEmail: user.email ?? null,
+      eventType: "access.denied",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: { reason: "insufficient_role", requiredRoles: ["owner", "admin"], actualRole: membership?.role ?? null, path: "/api/organization-invitations", method: "POST" }
+    });
     return NextResponse.json({ error: "organization_admin_required" }, { status: 403 });
   }
   if (role === "admin" && membership.role !== "owner") {
+    await recordAuditEvent({
+      organizationId,
+      actorId: user.id,
+      actorEmail: user.email ?? null,
+      eventType: "access.denied",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: { reason: "role_escalation_attempt", attemptedRole: role, path: "/api/organization-invitations", method: "POST" }
+    });
     return NextResponse.json({ error: "only_owner_can_invite_admin" }, { status: 403 });
   }
 
@@ -68,6 +87,16 @@ export async function POST(request: Request) {
   if (auditError) {
     return NextResponse.json({ error: "invite_created_audit_failed", invitedUserId: invitation.user.id }, { status: 502 });
   }
+
+  await recordAuditEvent({
+    organizationId,
+    actorId: user.id,
+    actorEmail: user.email ?? null,
+    eventType: "invitation.sent",
+    entityType: "organization_invitation",
+    entityId: invitation.user.id,
+    metadata: { invitedEmail: email, role }
+  });
 
   return NextResponse.json({ ok: true, email, role }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
 }

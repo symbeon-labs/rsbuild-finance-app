@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ title
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
   if (!guard.ok) return guard.response;
-  const { supabase } = guard.ctx;
+  const { supabase, userId, userEmail } = guard.ctx;
 
   let body: { status?: string };
   try { body = await request.json(); }
@@ -35,6 +36,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ title
     return NextResponse.json({ error: "title_update_failed" }, { status: 502 });
   }
   if (!data) return NextResponse.json({ error: "title_not_found" }, { status: 404 });
+
+  await recordAuditEvent({
+    organizationId, actorId: userId, actorEmail: userEmail,
+    eventType: "title.status_changed", entityType: "receivable_title", entityId: titleId,
+    metadata: { status: body.status }
+  });
 
   return NextResponse.json({ title: data }, { headers: { "Cache-Control": "private, no-store" } });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
   if (!guard.ok) return guard.response;
-  const { supabase, userId } = guard.ctx;
+  const { supabase, userId, userEmail } = guard.ctx;
 
   let body: { titles?: TitleInput[] };
   try { body = await request.json(); }
@@ -98,6 +99,12 @@ export async function POST(request: Request) {
     console.error(JSON.stringify({ event: "rsbuild_titles_import_failed", organizationId, code: error.code }));
     return NextResponse.json({ error: "titles_import_failed" }, { status: 502 });
   }
+
+  await recordAuditEvent({
+    organizationId, actorId: userId, actorEmail: userEmail,
+    eventType: "titles.imported", entityType: "receivable_title",
+    metadata: { receivedCount: rows.length, insertedCount: data?.length ?? 0 }
+  });
 
   return NextResponse.json({ insertedCount: data?.length ?? 0, receivedCount: rows.length }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -51,9 +52,31 @@ export async function requireOrgContext(
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (membershipError || !membership) return deny(403, "organization_access_denied");
+  if (membershipError || !membership) {
+    await recordAuditEvent({
+      organizationId,
+      actorId: user.id,
+      actorEmail: user.email ?? null,
+      eventType: "access.denied",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: { reason: "organization_access_denied", path: new URL(request.url).pathname, method: request.method }
+    });
+    return deny(403, "organization_access_denied");
+  }
   const role = membership.role as OrgRole;
-  if (!allowedRoles.includes(role)) return deny(403, "insufficient_role");
+  if (!allowedRoles.includes(role)) {
+    await recordAuditEvent({
+      organizationId,
+      actorId: user.id,
+      actorEmail: user.email ?? null,
+      eventType: "access.denied",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: { reason: "insufficient_role", requiredRoles: allowedRoles, actualRole: role, path: new URL(request.url).pathname, method: request.method }
+    });
+    return deny(403, "insufficient_role");
+  }
 
   return { ok: true, ctx: { supabase, userId: user.id, userEmail: user.email ?? "", role } };
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
   if (!guard.ok) return guard.response;
-  const { supabase, userId } = guard.ctx;
+  const { supabase, userId, userEmail } = guard.ctx;
 
   let body: { sourceLabel?: string; movements?: Array<{ date?: unknown; description?: unknown; amount?: unknown; direction?: unknown; documentNumber?: unknown; category?: unknown }> };
   try { body = await request.json(); }
@@ -114,6 +115,12 @@ export async function POST(request: Request) {
     console.error(JSON.stringify({ event: "rsbuild_erp_movements_import_failed", organizationId, code: error.code }));
     return NextResponse.json({ error: "erp_movements_import_failed" }, { status: 502 });
   }
+
+  await recordAuditEvent({
+    organizationId, actorId: userId, actorEmail: userEmail,
+    eventType: "erp.snapshot_imported", entityType: "erp_snapshot", entityId: snapshot.id,
+    metadata: { insertedCount: rows.length, sourceLabel: typeof body.sourceLabel === "string" ? body.sourceLabel.slice(0, 200) : null }
+  });
 
   return NextResponse.json({ insertedCount: rows.length, snapshotId: snapshot.id }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }

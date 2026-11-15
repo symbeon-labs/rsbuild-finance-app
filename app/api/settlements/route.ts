@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin"]);
   if (!guard.ok) return guard.response;
-  const { supabase, userId } = guard.ctx;
+  const { supabase, userId, userEmail } = guard.ctx;
 
   let body: { settlements?: Array<{ receivableTitleId?: unknown; documentNumber?: unknown; customerName?: unknown; amount?: unknown; settlementDate?: unknown; sourceRecordId?: unknown; observation?: unknown }> };
   try { body = await request.json(); }
@@ -46,6 +47,12 @@ export async function POST(request: Request) {
     console.error(JSON.stringify({ event: "rsbuild_settlements_import_failed", organizationId, code: error.code }));
     return NextResponse.json({ error: "settlements_import_failed" }, { status: 502 });
   }
+
+  await recordAuditEvent({
+    organizationId, actorId: userId, actorEmail: userEmail,
+    eventType: "settlements.created", entityType: "settlement",
+    metadata: { insertedCount: rows.length, totalAmountMinor: rows.reduce((sum, r) => sum + r.amount_minor, 0) }
+  });
 
   return NextResponse.json({ insertedCount: rows.length }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ proof
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
   if (!guard.ok) return guard.response;
-  const { supabase } = guard.ctx;
+  const { supabase, userId, userEmail } = guard.ctx;
 
   let body: Record<string, unknown>;
   try { body = await request.json(); }
@@ -41,6 +42,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ proof
     return NextResponse.json({ error: "proof_update_failed" }, { status: 502 });
   }
   if (!data) return NextResponse.json({ error: "proof_not_found" }, { status: 404 });
+
+  await recordAuditEvent({
+    organizationId, actorId: userId, actorEmail: userEmail,
+    eventType: "proof.updated", entityType: "delivery_proof", entityId: proofId,
+    metadata: { fields: Object.keys(update).filter((k) => k !== "updated_at") }
+  });
 
   return NextResponse.json({ proof: data }, { headers: { "Cache-Control": "private, no-store" } });
 }

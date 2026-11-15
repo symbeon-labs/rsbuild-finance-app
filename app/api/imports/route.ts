@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { parseCsv, parseOfx } from "@/lib/finance";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,18 @@ export async function GET(request: Request) {
   const { data: membership, error: membershipError } = await userClient
     .from("organization_memberships").select("role")
     .eq("organization_id", organizationId).eq("user_id", user.id).maybeSingle();
-  if (membershipError || !membership) return NextResponse.json({ error: "organization_access_denied" }, { status: 403 });
+  if (membershipError || !membership) {
+    await recordAuditEvent({
+      organizationId,
+      actorId: user.id,
+      actorEmail: user.email ?? null,
+      eventType: "access.denied",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: { reason: "organization_access_denied", path: "/api/imports", method: "GET" }
+    });
+    return NextResponse.json({ error: "organization_access_denied" }, { status: 403 });
+  }
   const { data, error } = await userClient.from("financial_records")
     .select("id, organization_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at")
     .eq("organization_id", organizationId)
@@ -81,6 +93,15 @@ export async function POST(request: Request) {
     .eq("user_id", user.id)
     .maybeSingle();
   if (membershipError || !membership || !["owner", "admin", "operator"].includes(membership.role)) {
+    await recordAuditEvent({
+      organizationId,
+      actorId: user.id,
+      actorEmail: user.email ?? null,
+      eventType: "access.denied",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: { reason: "insufficient_role", requiredRoles: ["owner", "admin", "operator"], actualRole: membership?.role ?? null, path: "/api/imports", method: "POST" }
+    });
     return NextResponse.json({ error: "organization_access_denied" }, { status: 403 });
   }
 
@@ -156,6 +177,14 @@ export async function POST(request: Request) {
 
   const result = data?.[0] ?? null;
   const counts = normalizeImportCounts(result);
+  await recordAuditEvent({
+    organizationId,
+    actorId: user.id,
+    actorEmail: user.email ?? null,
+    eventType: "import.committed",
+    entityType: "financial_record",
+    metadata: { fileName: safeName, fileHash, parsedCount: normalized.length, ...counts }
+  });
   return NextResponse.json({
     result,
     ...counts,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
   if (!guard.ok) return guard.response;
-  const { supabase, userId } = guard.ctx;
+  const { supabase, userId, userEmail } = guard.ctx;
 
   let body: { decisions?: Array<{ financialRecordId?: unknown; decisionType?: unknown; counterpartLabel?: unknown; justification?: unknown }> };
   try { body = await request.json(); }
@@ -63,6 +64,15 @@ export async function POST(request: Request) {
       }
     }
   }
+
+  await recordAuditEvent({
+    organizationId, actorId: userId, actorEmail: userEmail,
+    eventType: "reconciliation.decision", entityType: "reconciliation_decision",
+    metadata: {
+      insertedCount: rows.length,
+      decisionTypes: [...new Set(rows.map((r) => r.decision_type))]
+    }
+  });
 
   return NextResponse.json({ insertedCount: rows.length }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }
