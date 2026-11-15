@@ -138,7 +138,8 @@ export type NavSection =
   | "baixas"
   | "canhotos"
   | "pedidos-ha"
-  | "relatorios";
+  | "relatorios"
+  | "projetos";
 
 export interface NavItem {
   id: NavSection;
@@ -150,6 +151,7 @@ export interface NavItem {
 export const ALL_NAV_ITEMS: NavItem[] = [
   // Visão Global
   { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "all" },
+  { id: "projetos", label: "Projetos e Sprints", icon: "▦", module: "all" },
 
   // 1. Módulo Financeiro
   { id: "movimentacoes", label: "Movimentações", icon: "⇄", module: "finance" },

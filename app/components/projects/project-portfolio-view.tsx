@@ -1,0 +1,526 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+
+type ProjectTask = {
+  id: string;
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  responsible_label: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+};
+type ProjectSprint = {
+  id: string;
+  sprint_number: number;
+  title: string;
+  objective: string;
+  completion_criteria: string;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  project_tasks: ProjectTask[];
+  project_deliverables: { id: string; title: string; description: string; acceptance_criteria: string; version_label: string; status: string; resource_url: string | null }[];
+};
+type ProjectDependency = { id: string; title: string; description: string; dependency_type: string; status: string; responsible_label: string; due_date: string | null; evidence_url: string | null };
+type Project = {
+  id: string;
+  project_key: string;
+  name: string;
+  client_display_name: string;
+  description: string;
+  status: string;
+  start_date: string | null;
+  target_date: string | null;
+  project_sprints: ProjectSprint[];
+  project_dependencies: ProjectDependency[];
+};
+
+const dependencyTypeLabels: Record<string, string> = {
+  client_input: "Insumo do cliente", access: "Acesso / credencial", decision: "Decisão / aprovação",
+  external_service: "Fornecedor externo", technical: "Dependência técnica", other: "Outra"
+};
+
+const statusLabels: Record<string, string> = {
+  planning: "Planejamento",
+  active: "Em andamento",
+  blocked: "Bloqueado",
+  completed: "Concluído",
+  archived: "Arquivado",
+  planned: "Planejada",
+  cancelled: "Cancelada",
+  todo: "A fazer",
+  in_progress: "Em andamento",
+  review: "Em revisão",
+  done: "Concluída",
+  open: "Em aberto",
+  waiting: "Aguardando",
+  received: "Recebida",
+  waived: "Dispensada",
+  draft: "Rascunho",
+  submitted: "Submetido",
+  accepted: "Aceito",
+  changes_requested: "Ajustes solicitados"
+};
+
+export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [creatingSprintFor, setCreatingSprintFor] = useState<string | null>(null);
+  const [sprintTitle, setSprintTitle] = useState("");
+  const [sprintObjective, setSprintObjective] = useState("");
+  const [sprintCompletionCriteria, setSprintCompletionCriteria] = useState("");
+  const [sprintStart, setSprintStart] = useState("");
+  const [sprintEnd, setSprintEnd] = useState("");
+  const [savingSprint, setSavingSprint] = useState(false);
+  const [creatingTaskFor, setCreatingTaskFor] = useState<{ projectId: string; sprintId: string } | null>(null);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskAcceptanceCriteria, setTaskAcceptanceCriteria] = useState("");
+  const [taskResponsibleLabel, setTaskResponsibleLabel] = useState("");
+  const [taskPriority, setTaskPriority] = useState("normal");
+  const [savingTask, setSavingTask] = useState(false);
+  const [showDependencyForm, setShowDependencyForm] = useState(false);
+  const [dependencyTitle, setDependencyTitle] = useState("");
+  const [dependencyDescription, setDependencyDescription] = useState("");
+  const [dependencyType, setDependencyType] = useState("client_input");
+  const [dependencyResponsible, setDependencyResponsible] = useState("");
+  const [dependencyDueDate, setDependencyDueDate] = useState("");
+  const [savingDependency, setSavingDependency] = useState(false);
+  const [creatingDeliverableFor, setCreatingDeliverableFor] = useState<{ projectId: string; sprintId: string } | null>(null);
+  const [deliverableTitle, setDeliverableTitle] = useState("");
+  const [deliverableDescription, setDeliverableDescription] = useState("");
+  const [deliverableAcceptance, setDeliverableAcceptance] = useState("");
+  const [deliverableVersion, setDeliverableVersion] = useState("");
+  const [deliverableUrl, setDeliverableUrl] = useState("");
+  const [savingDeliverable, setSavingDeliverable] = useState(false);
+  const [statusUpdatingFor, setStatusUpdatingFor] = useState<string | null>(null);
+
+  const loadProjects = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/projects", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível carregar os projetos.");
+      setProjects(Array.isArray(payload.projects) ? payload.projects : []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao carregar o portfólio.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadProjects(); }, [loadProjects]);
+
+  useEffect(() => {
+    if (!selectedProjectId && projects.length > 0) setSelectedProjectId(projects[0].id);
+  }, [projects, selectedProjectId]);
+
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === selectedProjectId) ?? null,
+    [projects, selectedProjectId]
+  );
+
+  async function handleCreateSprint(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!creatingSprintFor || !sprintTitle.trim()) return;
+    const project = projects.find((item) => item.id === creatingSprintFor);
+    if (!project) return;
+    setSavingSprint(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${project.id}/sprints`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: sprintTitle,
+          objective: sprintObjective,
+          completionCriteria: sprintCompletionCriteria,
+          sprintNumber: Math.max(0, ...project.project_sprints.map((sprint) => sprint.sprint_number)) + 1,
+          startDate: sprintStart || null,
+          endDate: sprintEnd || null
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível criar a sprint.");
+      setSprintTitle("");
+      setSprintObjective("");
+      setSprintCompletionCriteria("");
+      setSprintStart("");
+      setSprintEnd("");
+      setCreatingSprintFor(null);
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao criar sprint.");
+    } finally {
+      setSavingSprint(false);
+    }
+  }
+
+  async function handleCreateTask(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!creatingTaskFor || !taskTitle.trim()) return;
+    setSavingTask(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `/api/projects/${creatingTaskFor.projectId}/sprints/${creatingTaskFor.sprintId}/tasks`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: taskTitle, description: taskDescription, acceptanceCriteria: taskAcceptanceCriteria, responsibleLabel: taskResponsibleLabel, priority: taskPriority })
+        }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível criar a atividade.");
+      setTaskTitle("");
+      setTaskDescription("");
+      setTaskAcceptanceCriteria("");
+      setTaskResponsibleLabel("");
+      setTaskPriority("normal");
+      setCreatingTaskFor(null);
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao criar atividade.");
+    } finally {
+      setSavingTask(false);
+    }
+  }
+
+  async function updateSprintStatus(projectId: string, sprintId: string, status: string) {
+    setStatusUpdatingFor(sprintId);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${projectId}/sprints`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sprintId, status })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar a sprint.");
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao atualizar sprint.");
+    } finally {
+      setStatusUpdatingFor(null);
+    }
+  }
+
+  async function updateTaskStatus(projectId: string, sprintId: string, taskId: string, status: string) {
+    setStatusUpdatingFor(taskId);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${projectId}/sprints/${sprintId}/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, status })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar a atividade.");
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao atualizar atividade.");
+    } finally {
+      setStatusUpdatingFor(null);
+    }
+  }
+
+  async function handleCreateDeliverable(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!creatingDeliverableFor || !deliverableTitle.trim()) return;
+    setSavingDeliverable(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `/api/projects/${creatingDeliverableFor.projectId}/sprints/${creatingDeliverableFor.sprintId}/deliverables`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: deliverableTitle,
+            description: deliverableDescription,
+            acceptanceCriteria: deliverableAcceptance,
+            versionLabel: deliverableVersion,
+            resourceUrl: deliverableUrl || null
+          })
+        }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar o entregável.");
+      setDeliverableTitle("");
+      setDeliverableDescription("");
+      setDeliverableAcceptance("");
+      setDeliverableVersion("");
+      setDeliverableUrl("");
+      setCreatingDeliverableFor(null);
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao registrar entregável.");
+    } finally {
+      setSavingDeliverable(false);
+    }
+  }
+
+  async function handleCreateDependency(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !dependencyTitle.trim()) return;
+    setSavingDependency(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${selectedProject.id}/dependencies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: dependencyTitle,
+          description: dependencyDescription,
+          dependencyType,
+          responsibleLabel: dependencyResponsible,
+          dueDate: dependencyDueDate || null
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar a dependência.");
+      setDependencyTitle("");
+      setDependencyDescription("");
+      setDependencyType("client_input");
+      setDependencyResponsible("");
+      setDependencyDueDate("");
+      setShowDependencyForm(false);
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao registrar dependência.");
+    } finally {
+      setSavingDependency(false);
+    }
+  }
+
+  const totalSprints = projects.reduce((sum, project) => sum + project.project_sprints.length, 0);
+  const totalTasks = projects.reduce(
+    (sum, project) => sum + project.project_sprints.reduce((sprintSum, sprint) => sprintSum + sprint.project_tasks.length, 0),
+    0
+  );
+  const completedTasks = projects.reduce(
+    (sum, project) => sum + project.project_sprints.reduce((sprintSum, sprint) => sprintSum + sprint.project_tasks.filter((task) => task.status === "done").length, 0),
+    0
+  );
+  const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">PORTFÓLIO OPERACIONAL</div>
+          <h1>Projetos e sprints</h1>
+          <p>Uma visão de execução dos projetos atendidos, com escopos organizacionais independentes.</p>
+        </div>
+        <button className="secondary-button" type="button" onClick={() => void loadProjects()} disabled={loading}>
+          Atualizar portfólio
+        </button>
+      </div>
+
+      <div className="metric-grid">
+        <div className="panel"><div className="eyebrow">PROJETOS VISÍVEIS</div><h2>{projects.length}</h2><p className="muted">Conforme suas permissões</p></div>
+        <div className="panel"><div className="eyebrow">SPRINTS</div><h2>{totalSprints}</h2><p className="muted">Planejadas e em execução</p></div>
+        <div className="panel"><div className="eyebrow">ATIVIDADES</div><h2>{totalTasks}</h2><p className="muted">Registradas nas sprints</p></div>
+        <div className="panel"><div className="eyebrow">CONCLUSÃO</div><h2>{totalTasks ? `${completionRate}%` : "—"}</h2><p className="muted">{completedTasks}/{totalTasks} atividades concluídas</p></div>
+      </div>
+
+      {error && <div className="notice" role="alert">{error}</div>}
+      {loading ? (
+        <div className="panel" role="status">Carregando portfólio autorizado...</div>
+      ) : projects.length === 0 ? (
+        <section className="panel">
+          <h2>Nenhum projeto disponível</h2>
+          <p>Este workspace ainda não possui projetos associados à sua conta. A RSBUILD administra o portfólio; empresas clientes visualizam somente projetos liberados explicitamente.</p>
+        </section>
+      ) : (
+        <div className="dashboard-grid">
+          <section className="panel">
+            <div className="panel-heading"><div><h2>Projetos</h2><p>Portfólio disponível neste workspace</p></div></div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {projects.map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => setSelectedProjectId(project.id)}
+                  className="secondary-button"
+                  style={{
+                    display: "block", textAlign: "left", padding: 14,
+                    borderColor: selectedProjectId === project.id ? "var(--rsbuild-terracotta)" : "var(--line)",
+                    whiteSpace: "normal"
+                  }}
+                >
+                  <span style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                    <strong>{project.client_display_name}</strong>
+                    <span className="subtle-tag">{statusLabels[project.status] || project.status}</span>
+                  </span>
+                  <span style={{ display: "block", marginTop: 6 }}>{project.name}</span>
+                  <span className="muted" style={{ display: "block", marginTop: 4, fontSize: 12 }}>
+                    {project.project_sprints.length} sprint(s) · {project.project_sprints.reduce((sum, sprint) => sum + sprint.project_tasks.filter((task) => task.status === "done").length, 0)}/{project.project_sprints.reduce((sum, sprint) => sum + sprint.project_tasks.length, 0)} atividades concluídas
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel">
+            {!selectedProject ? (
+              <div className="table-empty">Selecione um projeto para consultar suas sprints e atividades.</div>
+            ) : (
+              <>
+                <div className="panel-heading">
+                  <div>
+                    <div className="eyebrow">{selectedProject.client_display_name}</div>
+                    <h2>{selectedProject.name}</h2>
+                    <p>{selectedProject.description}</p>
+                  </div>
+                  <span className="subtle-tag">{statusLabels[selectedProject.status] || selectedProject.status}</span>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, margin: "16px 0" }}>
+                  <strong>Sprints do projeto</strong>
+                  {canManage && <button className="primary-button" type="button" onClick={() => setCreatingSprintFor(selectedProject.id)}>＋ Nova sprint</button>}
+                </div>
+
+                {canManage && creatingSprintFor === selectedProject.id && (
+                  <form className="panel" onSubmit={handleCreateSprint} style={{ display: "grid", gap: 10, marginBottom: 14 }}>
+                    <h3>Nova sprint</h3>
+                    <input required maxLength={140} value={sprintTitle} onChange={(event) => setSprintTitle(event.target.value)} placeholder="Nome da sprint" />
+                    <textarea maxLength={3000} value={sprintObjective} onChange={(event) => setSprintObjective(event.target.value)} placeholder="Objetivo e resultado esperado" rows={3} />
+                    <textarea maxLength={3000} value={sprintCompletionCriteria} onChange={(event) => setSprintCompletionCriteria(event.target.value)} placeholder="Critérios de conclusão da sprint" rows={2} />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <label>Início<input type="date" value={sprintStart} onChange={(event) => setSprintStart(event.target.value)} /></label>
+                      <label>Fim<input type="date" value={sprintEnd} onChange={(event) => setSprintEnd(event.target.value)} /></label>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button className="primary-button" type="submit" disabled={savingSprint}>{savingSprint ? "Salvando..." : "Criar sprint"}</button>
+                      <button className="secondary-button" type="button" onClick={() => setCreatingSprintFor(null)}>Cancelar</button>
+                    </div>
+                  </form>
+                )}
+
+                {selectedProject.project_sprints.length === 0 ? (
+                  <div className="table-empty">Nenhuma sprint cadastrada. Importe ou cadastre o plano de trabalho aprovado para este projeto.</div>
+                ) : (
+                  <div style={{ display: "grid", gap: 12 }}>
+                    {selectedProject.project_sprints.map((sprint) => (
+                      <article key={sprint.id} className="panel" style={{ padding: 14 }}>
+                        <div className="panel-heading">
+                          <div>
+                            <div className="eyebrow">SPRINT {String(sprint.sprint_number).padStart(2, "0")}</div>
+                            {(sprint.start_date || sprint.end_date) && <div className="muted" style={{ fontSize: 11 }}>{sprint.start_date || "—"} → {sprint.end_date || "—"}</div>}
+                            <h3>{sprint.title}</h3>
+                            <p>{sprint.objective}</p>
+                            {sprint.completion_criteria && <p className="muted" style={{ fontSize: 12 }}>Conclusão: {sprint.completion_criteria}</p>}
+                          </div>
+                          {canManage ? (
+                            <select aria-label={`Status da sprint ${sprint.title}`} value={sprint.status} disabled={statusUpdatingFor === sprint.id} onChange={(event) => void updateSprintStatus(selectedProject.id, sprint.id, event.target.value)}>
+                              <option value="planned">Planejada</option><option value="active">Em andamento</option><option value="blocked">Bloqueada</option><option value="completed">Concluída</option><option value="cancelled">Cancelada</option>
+                            </select>
+                          ) : <span className="subtle-tag">{statusLabels[sprint.status] || sprint.status}</span>}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10 }}>
+                          <span className="muted" style={{ fontSize: 12 }}>{sprint.project_tasks.length} atividade(s)</span>
+                          {canManage && <button className="text-button" type="button" onClick={() => setCreatingTaskFor({ projectId: selectedProject.id, sprintId: sprint.id })}>＋ Atividade</button>}
+                        </div>
+                        {canManage && creatingTaskFor?.sprintId === sprint.id && (
+                          <form onSubmit={handleCreateTask} style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                            <input required maxLength={180} value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} placeholder="Nome da atividade" />
+                            <textarea maxLength={3000} value={taskDescription} onChange={(event) => setTaskDescription(event.target.value)} placeholder="Descrição / contexto" rows={2} />
+                            <textarea maxLength={3000} value={taskAcceptanceCriteria} onChange={(event) => setTaskAcceptanceCriteria(event.target.value)} placeholder="Critérios de conclusão / aceite" rows={2} />
+                            <input maxLength={160} value={taskResponsibleLabel} onChange={(event) => setTaskResponsibleLabel(event.target.value)} placeholder="Responsável (nome / papel)" />
+                            <select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value)}>
+                              <option value="low">Baixa prioridade</option><option value="normal">Normal</option><option value="high">Alta prioridade</option><option value="critical">Crítica</option>
+                            </select>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button className="primary-button" type="submit" disabled={savingTask}>{savingTask ? "Salvando..." : "Adicionar atividade"}</button>
+                              <button className="secondary-button" type="button" onClick={() => setCreatingTaskFor(null)}>Cancelar</button>
+                            </div>
+                          </form>
+                        )}
+                {sprint.project_deliverables.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <strong style={{ fontSize: 12 }}>Entregáveis</strong>
+                    <ul style={{ margin: "6px 0 0", paddingLeft: 18, display: "grid", gap: 5 }}>
+                      {sprint.project_deliverables.map((deliverable) => (
+                        <li key={deliverable.id}>
+                          {deliverable.resource_url ? <a href={deliverable.resource_url} target="_blank" rel="noreferrer">{deliverable.title}</a> : deliverable.title}
+                          <span className="muted"> · {statusLabels[deliverable.status] || deliverable.status}{deliverable.version_label ? ` · ${deliverable.version_label}` : ""}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                        {sprint.project_tasks.length > 0 && (
+                          <ul style={{ margin: "12px 0 0", paddingLeft: 18, display: "grid", gap: 6 }}>
+                            {sprint.project_tasks.map((task) => (
+                              <li key={task.id}>
+                                <span>{task.title}</span> <span className="muted">· {task.priority}{task.responsible_label ? ` · ${task.responsible_label}` : ""}</span>
+                                {canManage ? (
+                                  <select aria-label={`Status da atividade ${task.title}`} value={task.status} disabled={statusUpdatingFor === task.id} onChange={(event) => void updateTaskStatus(selectedProject.id, sprint.id, task.id, event.target.value)}>
+                                    <option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="blocked">Bloqueada</option><option value="review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option>
+                                  </select>
+                                ) : <span className="muted">· {statusLabels[task.status] || task.status}</span>}
+                                {task.acceptance_criteria && <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{task.acceptance_criteria}</div>}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+                <section style={{ marginTop: 20 }}>
+                  <div className="panel-heading">
+                    <div><h3>Dependências e insumos</h3><p>Entradas externas, decisões e acessos que condicionam a execução.</p></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span className="subtle-tag">{selectedProject.project_dependencies.length}</span>
+                      {canManage && <button className="text-button" type="button" onClick={() => setShowDependencyForm((value) => !value)}>＋ Registrar</button>}
+                    </div>
+                  </div>
+                  {canManage && showDependencyForm && (
+                    <form onSubmit={handleCreateDependency} style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+                      <input required maxLength={180} value={dependencyTitle} onChange={(event) => setDependencyTitle(event.target.value)} placeholder="Insumo, acesso ou decisão necessária" />
+                      <textarea maxLength={3000} value={dependencyDescription} onChange={(event) => setDependencyDescription(event.target.value)} placeholder="Descrição e impacto no cronograma" rows={2} />
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <select value={dependencyType} onChange={(event) => setDependencyType(event.target.value)}>
+                          <option value="client_input">Insumo do cliente</option><option value="access">Acesso / credencial</option><option value="decision">Decisão / aprovação</option><option value="external_service">Fornecedor externo</option><option value="technical">Dependência técnica</option><option value="other">Outra</option>
+                        </select>
+                        <input maxLength={160} value={dependencyResponsible} onChange={(event) => setDependencyResponsible(event.target.value)} placeholder="Responsável" />
+                      </div>
+                      <label>Prazo necessário<input type="date" value={dependencyDueDate} onChange={(event) => setDependencyDueDate(event.target.value)} /></label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button className="primary-button" type="submit" disabled={savingDependency}>{savingDependency ? "Salvando..." : "Registrar dependência"}</button>
+                        <button className="secondary-button" type="button" onClick={() => setShowDependencyForm(false)}>Cancelar</button>
+                      </div>
+                    </form>
+                  )}
+                  {selectedProject.project_dependencies.length === 0 ? (
+                    <div className="table-empty">Nenhuma dependência registrada para este projeto.</div>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8 }}>
+                      {selectedProject.project_dependencies.map((dependency) => (
+                        <li key={dependency.id}>
+                          <strong>{dependency.title}</strong>
+                          <span className="muted"> · {dependencyTypeLabels[dependency.dependency_type] || dependency.dependency_type} · {statusLabels[dependency.status] || dependency.status}{dependency.responsible_label ? ` · ${dependency.responsible_label}` : ""}</span>
+                          {dependency.description && <div className="muted" style={{ fontSize: 12 }}>{dependency.description}</div>}
+                          {dependency.due_date && <div className="muted" style={{ fontSize: 12 }}>Necessário até {dependency.due_date}</div>}
+                          {dependency.evidence_url && <a href={dependency.evidence_url} target="_blank" rel="noreferrer">Abrir evidência</a>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
