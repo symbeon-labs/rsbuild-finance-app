@@ -219,6 +219,7 @@ export default function ControlTowerWorkspace({
           userEmail={currentUserEmail}
           userFullName={userFullName}
           userRoleTitle={userRoleTitle}
+          showPeriodSelector={false}
           onPeriodChange={() => {}}
           onToggleTheme={toggleTheme}
           onResetSession={() => {}}

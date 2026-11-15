@@ -207,6 +207,57 @@ export default function OperationalWorkspace({
   }, [organizationId]);
 
   useEffect(() => {
+    let active = true;
+    fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Não foi possível carregar títulos.");
+        return payload;
+      })
+      .then((payload) => {
+        if (active) setTitles(Array.isArray(payload.titles) ? payload.titles : []);
+      })
+      .catch((error) => {
+        if (active) console.error("Falha ao carregar títulos:", error);
+      });
+    return () => { active = false; };
+  }, [organizationId]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/proofs?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Não foi possível carregar canhotos.");
+        return payload;
+      })
+      .then((payload) => {
+        if (active) setProofs(Array.isArray(payload.proofs) ? payload.proofs : []);
+      })
+      .catch((error) => {
+        if (active) console.error("Falha ao carregar canhotos:", error);
+      });
+    return () => { active = false; };
+  }, [organizationId]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/orders?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Não foi possível carregar pedidos.");
+        return payload;
+      })
+      .then((payload) => {
+        if (active) setOrders(Array.isArray(payload.orders) ? payload.orders : []);
+      })
+      .catch((error) => {
+        if (active) console.error("Falha ao carregar pedidos:", error);
+      });
+    return () => { active = false; };
+  }, [organizationId]);
+
+  useEffect(() => {
     try {
       localStorage.setItem("rsbuild_selected_organization", organizationId);
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
@@ -635,6 +686,7 @@ export default function OperationalWorkspace({
           userEmail={currentUserEmail}
           userFullName={userFullName}
           userRoleTitle={userRoleTitle}
+          showPeriodSelector={!["torre-controle", "pedidos-ha", "canhotos"].includes(section)}
           onPeriodChange={handlePeriodChange}
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}
