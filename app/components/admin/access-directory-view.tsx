@@ -479,8 +479,8 @@ export function AccessDirectoryView() {
                         <tbody>
                           {org.members.map((m) => {
                             const meta = ROLE_METADATA[m.role] ?? ROLE_METADATA.viewer;
-                            // Personalização para desenvolvedor principal
-                            const customLabel = m.email === "neo.shlw4@gmail.com" && m.role === "owner"
+                            // Personalização global para desenvolvedor principal
+                            const displayLabel = m.email === "neo.shlw4@gmail.com" && m.role === "owner"
                               ? "Head DevOps"
                               : meta.label;
                             return (
@@ -507,7 +507,7 @@ export function AccessDirectoryView() {
                                       border: `1px solid ${meta.border}`
                                     }}
                                   >
-                                    {customLabel}
+                                    {displayLabel}
                                   </span>
                                 </td>
                                 <td style={{ padding: "12px 18px", color: "var(--muted)", fontSize: 12 }}>
