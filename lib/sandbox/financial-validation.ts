@@ -34,7 +34,9 @@ const erpRecords = (): OmieRecord[] => [
 export function runFinancialValidation(caseCode: string): ValidationOutcome {
  const checks: ValidationOutcome["checks"] = [];
  const check=(name:string,passed:boolean,detail:string)=>checks.push({name,passed,detail});
- if(caseCode==="A1.4-OFX-PARSER" || caseCode==="A2.1-BNB-LAYOUT" || caseCode==="A2.2-INTER-LAYOUT") {
+ if(caseCode==="A2.1-BNB-LAYOUT" || caseCode==="A2.2-INTER-LAYOUT") {
+   return {status:"blocked",summary:"Fixture bancário específico ainda não foi disponibilizado; OFX genérico não comprova compatibilidade do leiaute BNB/Inter.",checks:[{name:"Amostra de leiaute",passed:false,detail:"Não executar teste de banco específico sem fixture autorizado e sanitizado."}]};
+ } else if(caseCode==="A1.4-OFX-PARSER") {
    const bankId=caseCode==="A2.1-BNB-LAYOUT"?"0004":caseCode==="A2.2-INTER-LAYOUT"?"0077":"0341";
    const org=caseCode==="A2.1-BNB-LAYOUT"?"BNB":caseCode==="A2.2-INTER-LAYOUT"?"INTER":"ITAU";
    const result=parseOfx(fixture(bankId,org,"12345-6"));
@@ -60,7 +62,9 @@ export function runFinancialValidation(caseCode: string): ValidationOutcome {
    check("Volume preservado",result.matched.length+result.unmatchedBank.length===bank.length,"Nenhum lançamento bancário desaparece na classificação.");
    check("Totais de entrada",incoming===1250.75,`Total calculado: ${incoming.toFixed(2)}.`);
    check("Totais de saída",outgoing===270.4,`Total calculado: ${outgoing.toFixed(2)}.`);
- } else if(caseCode==="A1.7-AUDIT-MANUAL" || caseCode==="A2.5-MANUAL-MATCH-JUSTIFICATION") {
+ } else if(caseCode==="A1.7-AUDIT-MANUAL") {
+   return {status:"blocked",summary:"A lógica local preserva metadados de autoria, mas a aceitação A1.7 exige comprovar trilha persistida e consulta de histórico integrada.",checks:[{name:"Auditoria integrada",passed:false,detail:"Requer validação do registro persistido, autor, horário e justificativa no ambiente Sandbox."}]};
+ } else if(caseCode==="A2.5-MANUAL-MATCH-JUSTIFICATION") {
    const bank=bankRecords()[0], erp=erpRecords()[0];
    const matched=manualMatch(bank,erp,"Correspondência confirmada no cenário sintético.","sandbox-validator");
    const unmatched=unmatchRecord(matched,"sandbox-validator");
