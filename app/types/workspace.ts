@@ -177,14 +177,14 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱", module: "logistics" },
   { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" },
 
-  // 4. Módulo Auditoria & Inteligência Jurídica (RS Guardião / JEV)
-  { id: "torre-controle", label: "Governança & Controle", icon: "⎈", module: "audit" },
-  { id: "agentes", label: "Agentes & IA", icon: "🤖", module: "audit" },
+  // 4. Sandbox (Ambiente de Testes) — acesso controlado no workspace RSBUILD
+  { id: "sandbox", label: "Sandbox", icon: "🧪", module: "all" },
+
+  // 5. Módulo Auditoria & Inteligência Jurídica (RS Guardião / JEV)
   { id: "auditoria", label: "Auditoria & Acessos", icon: "🛡", module: "audit" },
   { id: "acessos", label: "Acessos & Identidades", icon: "🔑", module: "audit" },
-
-  // 5. Sandbox (Ambiente de Testes)
-  { id: "sandbox", label: "Sandbox", icon: "🧪", module: "all" }
+  { id: "agentes", label: "Agentes & IA", icon: "🤖", module: "audit" },
+  { id: "torre-controle", label: "Governança & Controle", icon: "⎈", module: "audit" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
