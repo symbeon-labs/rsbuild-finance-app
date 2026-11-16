@@ -861,7 +861,15 @@ export default function OperationalWorkspace({
           </div>
           {isLoadingRecords && <div className="inline-note" role="status">Carregando movimentos financeiros da organização...</div>}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-            <button className="secondary-button" type="button" onClick={() => setIsAdminPanelOpen((open) => !open)}>{isAdminPanelOpen ? "Fechar administração" : "Equipe e identidade"}</button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => setIsAdminPanelOpen((open) => !open)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+            >
+              <span>{isAdminPanelOpen ? "✕" : "⚙️"}</span>
+              <span>{isAdminPanelOpen ? "Fechar Gestão da Empresa" : "Equipe & Identidade da Empresa"}</span>
+            </button>
           </div>
           {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={effectiveRole} />}
           {notice && (

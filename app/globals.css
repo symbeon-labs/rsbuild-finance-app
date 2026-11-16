@@ -1589,6 +1589,131 @@ tbody tr:last-child td { border-bottom: 0; }
   border-color: #383B42;
 }
 
+/* ==========================================================================
+   ADMINISTRAÇÃO DA ORGANIZAÇÃO (EQUIPE & IDENTIDADE VISUAL RSBUILD)
+   ========================================================================== */
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.admin-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-tab-btn:hover {
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.admin-tab-btn.active {
+  background: var(--rsbuild-terracotta-soft);
+  color: var(--rsbuild-terracotta);
+  border-color: rgba(181, 88, 60, 0.25);
+}
+
+/* Range Slider Premium (Substitui o padrão azul sem estilo do SO) */
+.rsbuild-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--line);
+  outline: none;
+  transition: background 0.2s ease;
+  cursor: pointer;
+  margin: 8px 0;
+}
+
+.rsbuild-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--rsbuild-terracotta);
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.rsbuild-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: var(--rsbuild-terracotta-hover);
+}
+
+.rsbuild-range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--rsbuild-terracotta);
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.rsbuild-range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  background: var(--rsbuild-terracotta-hover);
+}
+
+[data-theme="dark"] .rsbuild-range-slider::-webkit-slider-thumb {
+  border-color: #1E2024;
+}
+
+[data-theme="dark"] .rsbuild-range-slider::-moz-range-thumb {
+  border-color: #1E2024;
+}
+
+/* Banner Upload Dropzone & Live Preview */
+.banner-upload-dropzone {
+  border: 1.5px dashed var(--line);
+  background: var(--surface-raised);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.banner-upload-dropzone:hover {
+  border-color: var(--rsbuild-terracotta);
+  background: var(--rsbuild-terracotta-soft);
+}
+
+.banner-preview-box {
+  width: 100%;
+  height: 180px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--line);
+  background: #141517;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
 [data-theme="dark"] body {
   background-color: var(--bg);
   color: var(--ink);
