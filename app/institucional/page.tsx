@@ -227,7 +227,7 @@ export default function InstitucionalPage() {
             <a href="#como-funciona">Como funciona</a>
             <a href="#aplicacoes">Aplicações</a>
             <a href="#governanca">Governança</a>
-            <a href="https://rsbuild.com.br/" target="_blank" rel="noopener noreferrer" className="inst-nav-external">
+            <a href="https://rsbuild.com.br/" target="_blank" rel="noopener noreferrer" className="inst-nav-external" aria-label="Acessar o site oficial RSBUILD em nova aba">
               Site oficial RSBUILD <ExternalLinkIcon />
             </a>
           </nav>
