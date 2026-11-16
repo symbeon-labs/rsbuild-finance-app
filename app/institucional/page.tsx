@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { DiagnosticForm } from "./diagnostic-form";
-import { FlowDiagram, GovernanceFlow, HeroNetwork, Reveal } from "./diagrams";
+import { ArchitectureDiagram, FlowDiagram, GovernanceFlow, HeroNetwork, OperationalFlow, Reveal } from "./diagrams";
 import { HeroAmbientAtmosphere } from "./hero-ambient";
 import { FrentesBanner } from "./frentes-banner";
 
@@ -312,6 +312,18 @@ export default function InstitucionalPage() {
             core="RSBUILD OS"
             dark
           />
+          <details className="rs-architecture-details">
+            <summary>
+              <span>
+                <strong>O que existe por trás da operação</strong>
+                <small>Explore as camadas que organizam as capacidades do RSBUILD OS.</small>
+              </span>
+              <span className="rs-architecture-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div className="rs-architecture-details-content">
+              <ArchitectureDiagram />
+            </div>
+          </details>
         </div>
       </section>
 
@@ -320,20 +332,7 @@ export default function InstitucionalPage() {
         <div className="inst-container">
           <span className="inst-eyebrow">Modelo Operacional</span>
           <h2>Da informação à operação governada.</h2>
-          <Reveal className="inst-reveal-target">
-            <div className="inst-steps" style={{ marginTop: 40 }}>
-              {STEPS.map((s) => (
-                <div key={s.num} className="inst-step">
-                  <div className="num">{s.num}</div>
-                  <div className="inst-step-icon">
-                    <StepIcon name={s.icon} />
-                  </div>
-                  <h3>{s.title}</h3>
-                  <p>{s.text}</p>
-                </div>
-              ))}
-            </div>
-          </Reveal>
+          <OperationalFlow />
         </div>
       </section>
 
@@ -415,11 +414,23 @@ export default function InstitucionalPage() {
             necessidade específica, considerando os sistemas, processos e
             condições de integração disponíveis.
           </p>
-          <FlowDiagram
-            top={["ERP / Sistemas", "Documentos", "Dados"]}
-            bottom={["Processos", "Validações", "Governança", "Acompanhamento"]}
-            core="RSBUILD OS"
-          />
+          <div className="inst-grid-3 rs-integration-principles">
+            <article className="inst-card">
+              <span className="inst-card-icon">01</span>
+              <h3>Coexistir</h3>
+              <p>Preservar os sistemas e as rotinas que já sustentam a operação.</p>
+            </article>
+            <article className="inst-card">
+              <span className="inst-card-icon">02</span>
+              <h3>Conectar</h3>
+              <p>Aproximar informações e fluxos conforme as integrações disponíveis.</p>
+            </article>
+            <article className="inst-card">
+              <span className="inst-card-icon">03</span>
+              <h3>Evoluir</h3>
+              <p>Ampliar a organização operacional por etapas e escopos definidos.</p>
+            </article>
+          </div>
         </div>
       </section>
 
