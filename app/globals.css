@@ -3458,53 +3458,21 @@ canvas {
 .inst-cta.ghost:hover { border-color: var(--rsbuild-terracotta-light); color: #fff; }
 .inst-menu-btn { display: none; background: none; border: none; color: var(--rsbuild-warm-beige); cursor: pointer; padding: 8px; }
 
-/* ---------- Hero ---------- */
+/* ---------- Hero com Fundo Atmosférico Vivo & Fluido ---------- */
 .inst-hero {
   position: relative;
   overflow: hidden;
   padding: 104px 0 96px;
   background-color: var(--rsbuild-charcoal);
   background-image:
-    radial-gradient(circle, rgba(217, 204, 181, 0.12) 1.2px, transparent 1.2px),
-    linear-gradient(to bottom, rgba(43, 44, 46, 0.5) 0%, rgba(43, 44, 46, 0.95) 100%);
+    radial-gradient(circle, rgba(217, 204, 181, 0.08) 1.2px, transparent 1.2px),
+    linear-gradient(to bottom, rgba(43, 44, 46, 0.7) 0%, rgba(43, 44, 46, 0.98) 100%);
   background-size: 32px 32px, 100% 100%;
-}
-
-/* Orbe 1 de Luz Atmosférica Viva: Terracota Superior Direito (Atrás do Diagrama) */
-.inst-hero::before {
-  content: "";
-  position: absolute;
-  top: -10%;
-  right: -5%;
-  width: 720px;
-  height: 720px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(181, 88, 60, 0.28) 0%, rgba(194, 105, 74, 0.12) 42%, transparent 70%);
-  filter: blur(65px);
-  pointer-events: none;
-  z-index: 0;
-  animation: instAuroraBreathe 18s ease-in-out infinite alternate;
-}
-
-/* Orbe 2 de Luz Atmosférica Viva: Âmbar/Deep Brown Inferior Esquerdo (Atrás do Título) */
-.inst-hero::after {
-  content: "";
-  position: absolute;
-  bottom: -15%;
-  left: -8%;
-  width: 640px;
-  height: 640px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(97, 73, 67, 0.35) 0%, rgba(181, 88, 60, 0.08) 45%, transparent 70%);
-  filter: blur(75px);
-  pointer-events: none;
-  z-index: 0;
-  animation: instAuroraDrift 24s ease-in-out infinite alternate;
 }
 
 .inst-hero-grid {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 56px;

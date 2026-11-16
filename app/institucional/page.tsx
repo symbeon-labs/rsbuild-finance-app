@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { DiagnosticForm } from "./diagnostic-form";
 import { FlowDiagram, GovernanceFlow, HeroNetwork, Reveal } from "./diagrams";
+import { HeroAmbientAtmosphere } from "./hero-ambient";
 
 export const metadata = {
   title: "RSBUILD OS | Governança e Inteligência Operacional",
@@ -235,6 +236,7 @@ export default function InstitucionalPage() {
 
       {/* SECTION 02 — HERO */}
       <section className="inst-hero">
+        <HeroAmbientAtmosphere />
         <div className="inst-container inst-hero-grid">
           <div>
             <span className="inst-eyebrow">Inteligência Operacional · Governança</span>
