@@ -183,9 +183,9 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 
   // 5. Módulo Auditoria & Inteligência Jurídica (RS Guardião / JEV)
   { id: "auditoria", label: "Auditoria & Acessos", icon: "audit", module: "audit" },
-  { id: "acessos", label: "Acessos & Identidades", icon: "users", module: "audit" },
   { id: "agentes", label: "Agentes & IA", icon: "integration", module: "audit" },
-  { id: "torre-controle", label: "Governança & Controle", icon: "control-tower", module: "audit" }
+  { id: "torre-controle", label: "Governança & Controle", icon: "control-tower", module: "audit" },
+  { id: "acessos", label: "Acessos & Identidades", icon: "users", module: "audit" },
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
