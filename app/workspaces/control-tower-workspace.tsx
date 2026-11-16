@@ -21,6 +21,7 @@ import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { AccessDirectoryView } from "@/app/components/admin/access-directory-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
+import { SandboxView } from "@/app/components/admin/sandbox-view";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
@@ -53,10 +54,11 @@ export default function ControlTowerWorkspace({
   const [, startSignOutTransition] = useTransition();
 
   const canViewProjectPortfolio = true;
+  const canAccessSandbox = ["owner", "admin"].includes(membershipRole);
 
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "torre-controle", "auditoria", "acessos"].includes(urlTab)
+    urlTab && ["visao-geral", "projetos", "torre-controle", "auditoria", "acessos", "sandbox"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -197,6 +199,7 @@ export default function ControlTowerWorkspace({
         enabledModules={enabledModules}
         currentOrgId={currentOrgId}
         showProjectPortfolio={canViewProjectPortfolio}
+        canAccessSandbox={canAccessSandbox}
         onSelectModule={(mod) => {
           setActiveModule(mod);
           if (mod === "audit") navigateTo("torre-controle");
@@ -290,6 +293,9 @@ export default function ControlTowerWorkspace({
           )}
           {section === "acessos" && (
             <AccessDirectoryView />
+          )}
+          {section === "sandbox" && (
+            <SandboxView />
           )}
         </div>
       </section>

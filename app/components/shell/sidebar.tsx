@@ -21,6 +21,8 @@ interface SidebarProps {
   currentOrgId?: OrganizationId;
   /** Portfólio de projetos/sprints é restrito ao workspace de gestão RSBUILD */
   showProjectPortfolio?: boolean;
+  /** Sandbox é restrito a admins/owners da RSBUILD */
+  canAccessSandbox?: boolean;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
@@ -78,6 +80,7 @@ export function Sidebar({
   enabledModules,
   currentOrgId = "rsbuild",
   showProjectPortfolio = false,
+  canAccessSandbox = false,
   onSelectModule,
   onSelectSection,
   onOpenConfig,
@@ -167,6 +170,8 @@ export function Sidebar({
           if (item.id === "projetos" && !showProjectPortfolio) return false;
           // Diretório central de acessos é exclusivo do workspace RSBUILD
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
+          // Sandbox é restrito a admins/owners da RSBUILD
+          if (item.id === "sandbox" && !canAccessSandbox) return false;
           if (item.module === "all") return true;
           // Verifica se o módulo do item está contratado
           if (!enabledModules[item.module]) return false;

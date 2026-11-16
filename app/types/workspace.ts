@@ -148,7 +148,8 @@ export type NavSection =
   | "relatorios"
   | "auditoria"
   | "acessos"
-  | "projetos";
+  | "projetos"
+  | "sandbox";
 
 export interface NavItem {
   id: NavSection;
@@ -178,7 +179,10 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   // 4. Módulo Auditoria & Inteligência Jurídica (RS Guardião / JEV)
   { id: "torre-controle", label: "Governança & Controle", icon: "⎈", module: "audit" },
   { id: "auditoria", label: "Auditoria & Acessos", icon: "🛡", module: "audit" },
-  { id: "acessos", label: "Acessos & Identidades", icon: "🔑", module: "audit" }
+  { id: "acessos", label: "Acessos & Identidades", icon: "🔑", module: "audit" },
+
+  // 5. Sandbox (Ambiente de Testes)
+  { id: "sandbox", label: "Sandbox", icon: "🧪", module: "all" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
