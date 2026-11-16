@@ -153,7 +153,7 @@ export function Sidebar({
         </div>
       ) : availableModules.length === 1 ? (
         <div className="module-badge-single">
-          {availableModules[0].icon}
+          <RsbuildIcon name={availableModules[0].icon} size={18} tone="secondary" />
           <span>MÓDULO {availableModules[0].label.toUpperCase()}</span>
         </div>
       ) : null}
