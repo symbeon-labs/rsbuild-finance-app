@@ -362,6 +362,7 @@ export function ProductTourModal({
           </div>
 
           <button
+            className="rsbuild-tour-close"
             onClick={handleComplete}
             style={{
               background: "transparent",
@@ -493,6 +494,7 @@ export function ProductTourModal({
           }}
         >
           <button
+            className="rsbuild-tour-skip"
             type="button"
             onClick={handleComplete}
             style={{
@@ -510,6 +512,7 @@ export function ProductTourModal({
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {currentStep.actionLabel && currentStep.targetSection && (
               <button
+                className="rsbuild-tour-action"
                 type="button"
                 onClick={handleGoToSection}
                 style={{
@@ -532,6 +535,7 @@ export function ProductTourModal({
 
             {!isFirst && (
               <button
+                className="rsbuild-tour-secondary"
                 type="button"
                 onClick={handlePrev}
                 style={{
@@ -549,6 +553,7 @@ export function ProductTourModal({
             )}
 
             <button
+              className="rsbuild-tour-primary"
               type="button"
               onClick={handleNext}
               style={{
