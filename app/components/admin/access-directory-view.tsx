@@ -479,9 +479,9 @@ export function AccessDirectoryView() {
                         <tbody>
                           {org.members.map((m) => {
                             const meta = ROLE_METADATA[m.role] ?? ROLE_METADATA.viewer;
-                            // Personalização global para desenvolvedor principal
+                            // Personalização global para CTO
                             const displayLabel = m.email === "neo.shlw4@gmail.com" && m.role === "owner"
-                              ? "Head DevOps"
+                              ? "CTO"
                               : meta.label;
                             return (
                               <tr
