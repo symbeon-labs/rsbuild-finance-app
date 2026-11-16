@@ -406,16 +406,23 @@ export default function InstitucionalPage() {
               sobre as decisões. Toda automação opera dentro de critérios,
               limites e supervisão definidos.
             </p>
-            <div className="inst-governance-list">
-              {GOVERNANCE_ITEMS.map((item) => (
-                <div key={item.text} className="inst-governance-item">
-                  <span className="inst-gov-icon">
+            <Reveal className="inst-governance-list">
+              {GOVERNANCE_ITEMS.map((item, i) => (
+                <div
+                  key={item.text}
+                  className="inst-governance-item"
+                  style={{
+                    transitionDelay: `${0.1 + i * 0.12}s`,
+                    animationDelay: `${i * 0.8}s`
+                  }}
+                >
+                  <span className="inst-gov-icon" style={{ transitionDelay: `${0.18 + i * 0.12}s` }}>
                     <StepIcon name={item.icon} />
                   </span>
                   {item.text}
                 </div>
               ))}
-            </div>
+            </Reveal>
             <div className="inst-message">
               A inteligência deve ampliar a capacidade operacional das pessoas,
               não eliminar a responsabilidade sobre as decisões.
