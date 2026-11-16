@@ -187,6 +187,8 @@ export function Sidebar({
       <nav className="nav-list" aria-label="Navegação principal">
         {ALL_NAV_ITEMS.filter((item) => {
           if (item.id === "projetos" && !showProjectPortfolio) return false;
+          // Diretório central de acessos é exclusivo do workspace RSBUILD
+          if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
           if (item.module === "all") return true;
           // Verifica se o módulo do item está contratado
           if (!enabledModules[item.module]) return false;

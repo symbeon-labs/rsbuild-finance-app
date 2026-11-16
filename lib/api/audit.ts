@@ -48,3 +48,48 @@ export async function recordAuditEvent(input: AuditEventInput): Promise<void> {
     }));
   }
 }
+
+/**
+ * Registra session.login / session.logout em audit_events para cada
+ * organização da qual o usuário é membro. Um evento por org mantém a
+ * trilha visível no canal de auditoria do próprio tenant.
+ */
+export async function recordSessionEvent(input: {
+  userId: string;
+  userEmail?: string | null;
+  eventType: "session.login" | "session.logout";
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data: memberships, error } = await admin
+      .from("organization_memberships")
+      .select("organization_id")
+      .eq("user_id", input.userId);
+    if (error) {
+      console.error(JSON.stringify({
+        event: "session_audit_membership_failed",
+        userId: input.userId,
+        code: error.code
+      }));
+      return;
+    }
+    for (const membership of memberships ?? []) {
+      await recordAuditEvent({
+        organizationId: membership.organization_id,
+        actorId: input.userId,
+        actorEmail: input.userEmail ?? null,
+        eventType: input.eventType,
+        entityType: "session",
+        metadata: input.metadata ?? {}
+      });
+    }
+  } catch (err) {
+    console.error(JSON.stringify({
+      event: "session_audit_exception",
+      userId: input.userId,
+      eventType: input.eventType,
+      error: err instanceof Error ? err.message : "unknown"
+    }));
+  }
+}

@@ -147,6 +147,7 @@ export type NavSection =
   | "pedidos-ha"
   | "relatorios"
   | "auditoria"
+  | "acessos"
   | "projetos";
 
 export interface NavItem {
@@ -176,7 +177,8 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 
   // 4. Módulo Auditoria & Inteligência Jurídica (RS Guardião / JEV)
   { id: "torre-controle", label: "Governança & Controle", icon: "⎈", module: "audit" },
-  { id: "auditoria", label: "Auditoria & Acessos", icon: "🛡", module: "audit" }
+  { id: "auditoria", label: "Auditoria & Acessos", icon: "🛡", module: "audit" },
+  { id: "acessos", label: "Acessos & Identidades", icon: "🔑", module: "audit" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [

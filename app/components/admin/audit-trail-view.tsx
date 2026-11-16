@@ -26,7 +26,11 @@ const EVENT_LABELS: Record<string, string> = {
   "erp.snapshot_imported": "Movimentos ERP importados",
   "settlements.created": "Baixas registradas",
   "reconciliation.decision": "Decisão de conciliação",
-  "invitation.sent": "Convite enviado"
+  "invitation.sent": "Convite enviado",
+  "session.login": "Login realizado",
+  "session.logout": "Logout realizado",
+  "project.access_granted": "Acesso a projeto concedido",
+  "project.access_revoked": "Acesso a projeto revogado"
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -38,7 +42,9 @@ const ENTITY_LABELS: Record<string, string> = {
   settlement: "Baixa",
   reconciliation_decision: "Decisão",
   organization_invitation: "Convite",
-  financial_record: "Registro financeiro"
+  financial_record: "Registro financeiro",
+  session: "Sessão",
+  project: "Projeto"
 };
 
 function eventLabel(type: string) {

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { recordSessionEvent } from "@/lib/api/audit";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -11,8 +12,16 @@ export async function signIn(formData: FormData) {
   if (!email || !password || password.length > 256) redirect("/login?error=invalid");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) redirect("/login?error=credentials");
+  if (user) {
+    await recordSessionEvent({
+      userId: user.id,
+      userEmail: user.email ?? email,
+      eventType: "session.login",
+      metadata: { method: "password" }
+    });
+  }
 
   const destination = next.startsWith("/") && !next.startsWith("//") ? next : "/";
   redirect(destination);
@@ -20,6 +29,15 @@ export async function signIn(formData: FormData) {
 
 export async function signOut() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await recordSessionEvent({
+      userId: user.id,
+      userEmail: user.email ?? null,
+      eventType: "session.logout",
+      metadata: { method: "explicit" }
+    });
+  }
   await supabase.auth.signOut();
   redirect("/login");
 }

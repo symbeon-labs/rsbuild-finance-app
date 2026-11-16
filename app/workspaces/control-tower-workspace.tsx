@@ -18,6 +18,7 @@ import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
 import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
+import { AccessDirectoryView } from "@/app/components/admin/access-directory-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
@@ -54,7 +55,7 @@ export default function ControlTowerWorkspace({
 
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "torre-controle", "auditoria"].includes(urlTab)
+    urlTab && ["visao-geral", "projetos", "torre-controle", "auditoria", "acessos"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -270,6 +271,9 @@ export default function ControlTowerWorkspace({
           )}
           {section === "auditoria" && (
             <AuditTrailView organizationId={organizationId} organizationName={organizationName} />
+          )}
+          {section === "acessos" && (
+            <AccessDirectoryView />
           )}
         </div>
       </section>
