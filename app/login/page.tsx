@@ -49,6 +49,16 @@ function ArrowIcon() {
   );
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 3h6v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 14 21 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -189,11 +199,12 @@ export default function LoginPage() {
             Acesso restrito a usuários autorizados.
           </p>
 
-          <p style={{ textAlign: "center", marginTop: 14, fontSize: 12 }}>
-            <a href="/institucional" style={{ color: "var(--rsbuild-terracotta, #B5583C)", fontWeight: 600 }}>
-              Conheça o RSBUILD OS — posicionamento, módulos e filosofia →
+          <div className="login-institutional-cta">
+            <a href="/institucional" className="login-cta-link">
+              <span>Conheça o RSBUILD OS</span>
+              <ArrowIcon />
             </a>
-          </p>
+          </div>
         </div>
 
         <footer className="login-copyright">

@@ -9,12 +9,36 @@ export const metadata = {
 };
 
 const PROBLEMS = [
-  { title: "Processos manuais", text: "Tarefas operacionais dependem de planilhas, e-mails e retrabalho manual." },
-  { title: "Informações fragmentadas", text: "Dados espalhados entre ERP, banco, planilhas e mensageria sem visão única." },
-  { title: "Reconciliações demoradas", text: "Conferências que consomem horas e atrasam decisões financeiras." },
-  { title: "Aprovações descentralizadas", text: "Alçadas informais, sem registro de quem aprovou o quê e quando." },
-  { title: "Dependência de conhecimento individual", text: "Processos que vivem na cabeça de poucas pessoas — risco de continuidade." },
-  { title: "Baixa rastreabilidade", text: "Dificuldade de provar o que aconteceu, quem fez e com qual autorização." }
+  {
+    title: "Processos manuais",
+    text: "Tarefas operacionais dependem de planilhas, e-mails e retrabalho manual.",
+    stat: "40% do tempo de equipes financeiras é gasto em tarefas manuais repetitivas (McKinsey, 2023)"
+  },
+  {
+    title: "Informações fragmentadas",
+    text: "Dados espalhados entre ERP, banco, planilhas e mensageria sem visão única.",
+    stat: "Empresas com dados fragmentados perdem em média 30h/mês em cruzamentos manuais (Gartner)"
+  },
+  {
+    title: "Reconciliações demoradas",
+    text: "Conferências que consomem horas e atrasam decisões financeiras.",
+    stat: "68% das empresas reportam atrasos em fechamentos por divergências não detectadas (PwC)"
+  },
+  {
+    title: "Aprovações descentralizadas",
+    text: "Alçadas informais, sem registro de quem aprovou o quê e quando.",
+    stat: "Sem rastro de aprovações, 42% das decisões não têm justificativa documentada (Deloitte)"
+  },
+  {
+    title: "Dependência de conhecimento individual",
+    text: "Processos que vivem na cabeça de poucas pessoas — risco de continuidade.",
+    stat: "75% do conhecimento tácito é perdido quando funcionários-chave saem (Harvard BR)"
+  },
+  {
+    title: "Baixa rastreabilidade",
+    text: "Dificuldade de provar o que aconteceu, quem fez e com qual autorização.",
+    stat: "Empresas sem rastreabilidade clara têm 3x mais incidentes de não-conformidade (KPMG)"
+  }
 ];
 
 const MODULES = [
@@ -78,6 +102,16 @@ function LineIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+    </svg>
+  );
+}
+
 export default function InstitucionalPage() {
   return (
     <div className="inst-page">
@@ -92,6 +126,9 @@ export default function InstitucionalPage() {
             <a href="#como-funciona">Como funciona</a>
             <a href="#aplicacoes">Aplicações</a>
             <a href="#governanca">Governança</a>
+            <a href="https://rsbuild.com.br/" target="_blank" rel="noopener noreferrer" className="inst-nav-external">
+              Site oficial RSBUILD <ExternalLinkIcon />
+            </a>
           </nav>
           <a href="#diagnostico" className="inst-cta">Solicitar diagnóstico</a>
         </div>
@@ -133,7 +170,7 @@ export default function InstitucionalPage() {
           </p>
           <div className="inst-grid-3">
             {PROBLEMS.map((p, i) => (
-              <div key={p.title} className="inst-card">
+              <div key={p.title} className="inst-card inst-expandable-card">
                 <span className="icon">
                   <LineIcon>
                     {i === 0 && <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 13h6M9 17h6" /></>}
@@ -146,6 +183,10 @@ export default function InstitucionalPage() {
                 </span>
                 <h3>{p.title}</h3>
                 <p>{p.text}</p>
+                <div className="inst-stat-box">
+                  <span className="inst-stat-label">Dado de mercado</span>
+                  <span className="inst-stat-text">{p.stat}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -336,6 +377,9 @@ export default function InstitucionalPage() {
               <a href="#diagnostico">Solicitar diagnóstico</a>
               <a href="mailto:suporte@rsbuild.com.br">suporte@rsbuild.com.br</a>
               <a href="/login">Acesso à plataforma</a>
+              <a href="https://rsbuild.com.br/" target="_blank" rel="noopener noreferrer">
+                Site oficial RSBUILD <ExternalLinkIcon />
+              </a>
             </div>
           </div>
           <div className="inst-footer-bottom">

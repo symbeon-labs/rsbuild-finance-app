@@ -3839,3 +3839,169 @@ canvas {
   .inst-reveal-target .inst-step { opacity: 1; transform: none; }
   .inst-reveal-target.is-visible .inst-step { animation: none; }
 }
+
+/* ==========================================================================
+   Botão institucional no login — UI/UX melhorada
+   ========================================================================== */
+.login-institutional-cta {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.login-cta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--rsbuild-terracotta) 0%, var(--rsbuild-terracotta-hover) 100%);
+  color: #fff;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(181, 88, 60, 0.24);
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-cta-link:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 16px rgba(181, 88, 60, 0.32);
+  background: linear-gradient(135deg, var(--rsbuild-terracotta-hover) 0%, #8A422A 100%);
+}
+
+.login-cta-link:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(181, 88, 60, 0.2);
+}
+
+.login-cta-link svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.28s ease;
+}
+
+.login-cta-link:hover svg {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-cta-link {
+    transition: none;
+    transform: none;
+  }
+  .login-cta-link:hover {
+    transform: none;
+  }
+  .login-cta-link svg {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   Link externo no nav institucional
+   ========================================================================== */
+.inst-nav-external {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--rsbuild-deep-brown) !important;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dashed var(--rsbuild-terracotta-light);
+  padding-bottom: 1px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.inst-nav-external:hover {
+  color: var(--rsbuild-terracotta) !important;
+  border-color: var(--rsbuild-terracotta);
+}
+
+.inst-nav-external svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.inst-nav-external:hover svg {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Cards da seção 03 — dados estratégicos + efeito Mac
+   ========================================================================== */
+.inst-expandable-card {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transform-origin: center center;
+  transition: all 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.inst-expandable-card:hover {
+  border-color: var(--rsbuild-terracotta);
+  background: #FFFDF9;
+  transform: scale(1.04);
+  box-shadow: 0 12px 36px rgba(181, 88, 60, 0.14);
+}
+
+.inst-expandable-card:active {
+  transform: scale(0.98);
+  transition: transform 0.12s ease;
+}
+
+.inst-stat-box {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(181, 88, 60, 0.12);
+  background: linear-gradient(180deg, rgba(217, 204, 181, 0.08) 0%, transparent 100%);
+  border-radius: 5px;
+  padding: 10px 12px;
+}
+
+.inst-stat-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--rsbuild-terracotta);
+  margin-bottom: 4px;
+}
+
+.inst-stat-text {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5C5650;
+  font-style: italic;
+}
+
+/* Efeito Mac — abertura de conteúdo com scale e fade */
+.inst-expandable-card .inst-stat-box {
+  opacity: 0.85;
+  transform: scale(0.92);
+  transform-origin: top center;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.inst-expandable-card:hover .inst-stat-box {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inst-expandable-card {
+    transition: none;
+    transform: none;
+  }
+  .inst-expandable-card:hover {
+    transform: none;
+  }
+  .inst-expandable-card .inst-stat-box {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
