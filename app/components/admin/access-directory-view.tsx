@@ -6,6 +6,7 @@ type DirectoryMember = {
   userId: string;
   email: string | null;
   role: string;
+  customTitle: string | null;
   lastSignInAt: string | null;
   memberSince: string;
 };
@@ -106,6 +107,8 @@ export function AccessDirectoryView() {
   const [grantOrgLevel, setGrantOrgLevel] = useState("viewer");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [editingTitle, setEditingTitle] = useState<{ orgId: string; userId: string; current: string } | null>(null);
+  const [newTitle, setNewTitle] = useState("");
 
   async function load() {
     setLoading(true);
@@ -217,6 +220,32 @@ export function AccessDirectoryView() {
       await load();
     } catch (e) {
       setNotice({ message: e instanceof Error ? e.message : "Falha ao revogar acesso.", type: "error" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateCustomTitle(organizationId: string, userId: string, customTitle: string | null) {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/member-titles", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId, userId, customTitle })
+      });
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {}
+      if (!res.ok) throw new Error(data.error || data.message || "Falha ao atualizar título.");
+      setNotice({ message: customTitle ? "Título personalizado definido." : "Título personalizado removido.", type: "success" });
+      setEditingTitle(null);
+      setNewTitle("");
+      await load();
+    } catch (e) {
+      setNotice({ message: e instanceof Error ? e.message : "Falha ao atualizar título.", type: "error" });
     } finally {
       setBusy(false);
     }
@@ -479,10 +508,8 @@ export function AccessDirectoryView() {
                         <tbody>
                           {org.members.map((m) => {
                             const meta = ROLE_METADATA[m.role] ?? ROLE_METADATA.viewer;
-                            // Personalização global para CTO
-                            const displayLabel = m.email === "neo.shlw4@gmail.com" && m.role === "owner"
-                              ? "CTO"
-                              : meta.label;
+                            const isEditing = editingTitle?.orgId === org.id && editingTitle?.userId === m.userId;
+                            const displayLabel = m.customTitle || meta.label;
                             return (
                               <tr
                                 key={m.userId}
@@ -495,20 +522,96 @@ export function AccessDirectoryView() {
                                   {m.email ?? `${m.userId.slice(0, 12)}…`}
                                 </td>
                                 <td style={{ padding: "12px 18px" }}>
-                                  <span
-                                    style={{
-                                      display: "inline-block",
-                                      padding: "3px 10px",
-                                      borderRadius: 6,
-                                      fontSize: 11,
-                                      fontWeight: 600,
-                                      background: meta.bg,
-                                      color: meta.color,
-                                      border: `1px solid ${meta.border}`
-                                    }}
-                                  >
-                                    {displayLabel}
-                                  </span>
+                                  {isEditing ? (
+                                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                      <input
+                                        type="text"
+                                        value={newTitle}
+                                        onChange={(e) => setNewTitle(e.target.value)}
+                                        placeholder="Título personalizado"
+                                        maxLength={100}
+                                        style={{
+                                          padding: "4px 8px",
+                                          fontSize: 11,
+                                          borderRadius: 6,
+                                          border: "1px solid var(--line)",
+                                          background: "var(--surface)",
+                                          color: "var(--ink)",
+                                          width: 140
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => updateCustomTitle(org.id, m.userId, newTitle.trim() || null)}
+                                        disabled={busy}
+                                        style={{
+                                          padding: "4px 8px",
+                                          fontSize: 10,
+                                          borderRadius: 6,
+                                          background: "var(--rsbuild-terracotta)",
+                                          color: "#fff",
+                                          border: "none",
+                                          cursor: "pointer"
+                                        }}
+                                      >
+                                        Salvar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingTitle(null);
+                                          setNewTitle("");
+                                        }}
+                                        style={{
+                                          padding: "4px 8px",
+                                          fontSize: 10,
+                                          borderRadius: 6,
+                                          background: "var(--surface)",
+                                          color: "var(--muted)",
+                                          border: "1px solid var(--line)",
+                                          cursor: "pointer"
+                                        }}
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                      <span
+                                        style={{
+                                          display: "inline-block",
+                                          padding: "3px 10px",
+                                          borderRadius: 6,
+                                          fontSize: 11,
+                                          fontWeight: 600,
+                                          background: meta.bg,
+                                          color: meta.color,
+                                          border: `1px solid ${meta.border}`
+                                        }}
+                                      >
+                                        {displayLabel}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingTitle({ orgId: org.id, userId: m.userId, current: m.customTitle || "" });
+                                          setNewTitle(m.customTitle || "");
+                                        }}
+                                        style={{
+                                          padding: "2px 6px",
+                                          fontSize: 10,
+                                          borderRadius: 4,
+                                          background: "transparent",
+                                          color: "var(--muted)",
+                                          border: "1px solid var(--line)",
+                                          cursor: "pointer"
+                                        }}
+                                        title="Editar título personalizado"
+                                      >
+                                        ✏️
+                                      </button>
+                                    </div>
+                                  )}
                                 </td>
                                 <td style={{ padding: "12px 18px", color: "var(--muted)", fontSize: 12 }}>
                                   {formatDateTime(m.lastSignInAt)}

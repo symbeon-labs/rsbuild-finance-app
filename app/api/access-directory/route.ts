@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
     const [orgsRes, membershipsRes, invitesRes, userGrantsRes, orgGrantsRes, projectsRes] = await Promise.all([
       queryClient.from("organizations").select("id, slug, display_name").order("display_name"),
-      queryClient.from("organization_memberships").select("organization_id, user_id, role, created_at").limit(20000),
+      queryClient.from("organization_memberships").select("organization_id, user_id, role, custom_title, created_at").limit(20000),
       queryClient.from("organization_invitations").select("organization_id, email, role, status, invited_by, invited_user_id, created_at").limit(10000),
       queryClient.from("project_memberships").select("project_id, managing_organization_id, user_id, access_level, created_at").limit(20000),
       queryClient.from("project_organization_access").select("project_id, managing_organization_id, client_organization_id, access_level, created_at").limit(20000),
@@ -109,6 +109,7 @@ export async function GET(request: Request) {
         userId: m.user_id,
         email: usersById.get(m.user_id)?.email ?? null,
         role: m.role,
+        customTitle: m.custom_title ?? null,
         lastSignInAt: usersById.get(m.user_id)?.lastSignInAt ?? null,
         memberSince: m.created_at
       })),
