@@ -42,7 +42,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Finanças",
     title: "Módulo Financeiro & Livro Caixa",
     menuLabel: "MENU FINANCEIRO",
-    icon: <RsbuildIcon name="finance" size={18} tone="primary" />
+    icon: <RsbuildIcon name="finance" size={18} tone="secondary" />
   },
   {
     id: "reconciliation",
@@ -50,7 +50,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Reconcil.",
     title: "Conciliação e revisão de títulos",
     menuLabel: "MENU CONCILIAÇÃO",
-    icon: <RsbuildIcon name="reconciliation" size={18} tone="primary" />
+    icon: <RsbuildIcon name="reconciliation" size={18} tone="secondary" />
   },
   {
     id: "logistics",
@@ -58,7 +58,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Logística",
     title: "Módulo Logística & Expedição",
     menuLabel: "MENU LOGÍSTICA & EXPEDIÇÃO",
-    icon: <RsbuildIcon name="logistics" size={18} tone="primary" />
+    icon: <RsbuildIcon name="logistics" size={18} tone="secondary" />
   },
   {
     id: "audit",
@@ -66,7 +66,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Auditoria",
     title: "Governança e auditoria operacional",
     menuLabel: "MENU GOVERNANÇA",
-    icon: <RsbuildIcon name="guardian" size={18} tone="primary" />
+    icon: <RsbuildIcon name="guardian" size={18} tone="secondary" />
   }
 ];
 
@@ -145,7 +145,9 @@ export function Sidebar({
                   letterSpacing: "0.5px"
                 }}
               >
-                {mod.icon}
+                {isActive ? (
+                  <RsbuildIcon name={mod.id === "finance" ? "finance" : mod.id === "reconciliation" ? "reconciliation" : mod.id === "logistics" ? "logistics" : "guardian"} size={18} tone="accent" />
+                ) : mod.icon}
                 <span>{availableModules.length > 2 ? mod.shortLabel : mod.label}</span>
               </button>
             );
