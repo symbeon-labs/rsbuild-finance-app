@@ -5121,3 +5121,57 @@ canvas {
     transform: none !important;
   }
 }
+
+
+/* Institutional governance flow — tablet and mobile overflow correction */
+.inst-split {
+  min-width: 0;
+}
+.inst-split > * {
+  min-width: 0;
+}
+.inst-governance-flow {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  overflow: visible;
+  margin-inline: auto;
+}
+.inst-governance-list,
+.inst-governance-item {
+  min-width: 0;
+}
+.inst-governance-item {
+  align-items: flex-start;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.inst-governance-item > span,
+.inst-gov-icon {
+  flex: 0 0 auto;
+}
+@media (max-width: 1100px) {
+  .inst-split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+    align-items: start;
+  }
+  .inst-split > div:last-child {
+    min-height: 0 !important;
+    width: 100%;
+  }
+  .inst-governance-flow {
+    max-width: 680px;
+  }
+}
+@media (max-width: 600px) {
+  .inst-governance-flow {
+    max-width: 100%;
+  }
+  .inst-governance-item {
+    padding: 13px 14px;
+    font-size: 13px;
+    gap: 11px;
+  }
+}
