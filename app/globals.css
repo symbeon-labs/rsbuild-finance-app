@@ -4483,6 +4483,20 @@ canvas {
   animation: instIconPopGlow 1.2s ease-in-out infinite;
 }
 
+/* Hotspots HTML acompanham o viewBox sem interferir no SVG animado */
+.inst-hero-art .inst-hero-visual { position: relative; width: 100%; aspect-ratio: 820 / 460; }
+.inst-hero-art .inst-hero-visual > .inst-hero-prism { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.inst-hero-module-layer { position: absolute; inset: 0; pointer-events: none; }
+.inst-hero-module-hit { position: absolute; width: 48px; height: 48px; z-index: 5; transform: translate(-50%, -50%); pointer-events: auto; }
+.inst-hero-module-trigger { position: absolute; inset: 0; display: block; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.inst-hero-module-trigger:focus-visible { outline: 2px solid var(--module-accent, #B5583C); outline-offset: 4px; }
+.inst-hero-module-tooltip { position: absolute; top: 50%; left: calc(100% + 14px); display: flex; flex-direction: column; gap: 5px; width: max-content; max-width: min(205px, 26vw); padding: 12px 15px; border: 1px solid rgba(181, 88, 60, 0.78); border-radius: 9px; background: rgba(24, 25, 28, 0.97); box-shadow: 0 10px 28px rgba(0,0,0,.28); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-50%) translateX(-4px); transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease; }
+.inst-hero-module-left .inst-hero-module-tooltip { left: auto; right: calc(100% + 14px); transform: translateY(-50%) translateX(4px); }
+.inst-hero-module-hit.is-active .inst-hero-module-tooltip, .inst-hero-module-hit:focus-within .inst-hero-module-tooltip { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(-50%) translateX(0); }
+.inst-hero-module-title { color: #F5F1EA; font-family: var(--font-brand, 'Libre Franklin', Arial, sans-serif); font-size: 11px; line-height: 1.3; font-weight: 800; letter-spacing: .035em; white-space: normal; }
+.inst-hero-module-sub { color: rgba(217,204,181,.86); font-family: var(--font-brand, 'Libre Franklin', Arial, sans-serif); font-size: 10px; line-height: 1.4; }
+@media (max-width: 640px) { .inst-hero-module-tooltip { max-width: min(190px,40vw); padding: 10px 12px; } .inst-hero-module-hit:nth-child(n + 3) .inst-hero-module-tooltip { top: auto; bottom: calc(100% + 12px); transform: translateX(-4px); } .inst-hero-module-hit:nth-child(n + 3).inst-hero-module-left .inst-hero-module-tooltip { transform: translateX(4px); } .inst-hero-module-hit:nth-child(n + 3).is-active .inst-hero-module-tooltip, .inst-hero-module-hit:nth-child(n + 3):focus-within .inst-hero-module-tooltip { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .inst-hero-module-tooltip { transition: none; } }
 /* Quando o Núcleo de Governança está ATIVO (hover no prisma central): Todos os 4 satélites reagem sincronizados */
 .inst-hero-prism.is-core-active .inst-satellite-group {
   filter: drop-shadow(0 8px 24px rgba(194, 105, 74, 0.4));

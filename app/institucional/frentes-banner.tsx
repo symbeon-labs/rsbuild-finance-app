@@ -56,7 +56,7 @@ export function FrentesBanner() {
               Frentes de Aplicação
             </strong>
             <span className="inst-frentes-sub">
-              Exemplos de contextos operacionais atendidos pela plataforma, sem identificação de clientes.
+              Exemplos ilustrativos de contextos em que a plataforma pode ser aplicada, sem identificação de clientes.
             </span>
           </div>
         </div>
