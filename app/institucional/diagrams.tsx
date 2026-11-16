@@ -151,10 +151,11 @@ export function FlowDiagram({ top, bottom, core, dark = false }: FlowDiagramProp
 
 /**
  * Hero: Prisma Isométrico de Governança RSBUILD.
- * Representação artística e executiva do ecossistema RSBUILD OS:
- * Cubo de governança 3D, monograma oficial no núcleo central,
- * e 4 cartões de domínios operacionais com ícones dedicados de alta definição,
- * tipografia executiva e animação sincronizada ao passar o mouse sobre o núcleo.
+ * Diagramação executiva de alta resolução:
+ * Cubo de governança 3D ao centro, monograma oficial no núcleo,
+ * e 4 cartões amplos e arejados (285×72px) que comportam perfeitamente
+ * a tipografia executiva, ícones dedicados e status operacionais,
+ * com animação sincronizada ao passar o mouse sobre o núcleo.
  */
 export function HeroNetwork() {
   const { ref, visible } = useInView<SVGSVGElement>(0.1);
@@ -165,23 +166,25 @@ export function HeroNetwork() {
     {
       id: "financas",
       title: "FINANÇAS & CAIXA",
-      sub: "Fluxo, extratos & liquidez",
-      x: 15,
+      sub: "Fluxo de caixa, extratos & liquidez",
+      x: 18,
       y: 44,
+      width: 285,
+      height: 72,
       iconColor: "#10B981",
       statusColor: "#10B981",
       delay: "0.8s",
-      anchorX: 215,
-      anchorY: 74,
-      cubeX: 245,
-      cubeY: 172,
-      path: "M 215 74 L 245 172 L 320 220",
-      revPath: "M 320 220 L 245 172 L 215 74",
+      anchorX: 303,
+      anchorY: 80,
+      cubeX: 335,
+      cubeY: 180,
+      path: "M 303 80 L 335 180 L 410 230",
+      revPath: "M 410 230 L 335 180 L 303 80",
       icon: (
-        <g className="inst-sat-icon-shape" style={{ transformOrigin: "45px 74px" }}>
-          <rect x="36" y="66" width="18" height="15" rx="2.5" fill="none" stroke="#10B981" strokeWidth="1.6" />
-          <circle cx="45" cy="73.5" r="3.2" fill="none" stroke="#10B981" strokeWidth="1.6" />
-          <path d="M39 73.5h1.5M49.5 73.5H51" stroke="#10B981" strokeWidth="1.8" strokeLinecap="round" />
+        <g className="inst-sat-icon-shape" style={{ transformOrigin: "54px 80px" }}>
+          <rect x="44" y="71" width="20" height="17" rx="3" fill="none" stroke="#10B981" strokeWidth="1.7" />
+          <circle cx="54" cy="79.5" r="3.6" fill="none" stroke="#10B981" strokeWidth="1.7" />
+          <path d="M47 79.5h1.5M59.5 79.5H61" stroke="#10B981" strokeWidth="1.8" strokeLinecap="round" />
         </g>
       )
     },
@@ -189,23 +192,25 @@ export function HeroNetwork() {
       id: "reconciliacao",
       title: "RECONCILIAÇÃO ERP",
       sub: "Omie & conciliação de baixas",
-      x: 425,
+      x: 517,
       y: 44,
+      width: 285,
+      height: 72,
       iconColor: "#34D399",
       statusColor: "#10B981",
       delay: "0.95s",
-      anchorX: 425,
-      anchorY: 74,
-      cubeX: 395,
-      cubeY: 172,
-      path: "M 425 74 L 395 172 L 320 220",
-      revPath: "M 320 220 L 395 172 L 425 74",
+      anchorX: 517,
+      anchorY: 80,
+      cubeX: 485,
+      cubeY: 180,
+      path: "M 517 80 L 485 180 L 410 230",
+      revPath: "M 410 230 L 485 180 L 517 80",
       icon: (
-        <g className="inst-sat-icon-shape" style={{ transformOrigin: "455px 74px" }}>
-          <path d="M462 70A6.5 6.5 0 0 0 450.5 67.5L448 69.5" fill="none" stroke="#34D399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points="448 65 448 69.5 452.5 69.5" fill="none" stroke="#34D399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M448 77A6.5 6.5 0 0 0 459.5 79.5L462 77.5" fill="none" stroke="#34D399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points="462 82 462 77.5 457.5 77.5" fill="none" stroke="#34D399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <g className="inst-sat-icon-shape" style={{ transformOrigin: "553px 80px" }}>
+          <path d="M561 75A7.5 7.5 0 0 0 547.5 72.2L545 74.5" fill="none" stroke="#34D399" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="545 69.5 545 74.5 550 74.5" fill="none" stroke="#34D399" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M545 84A7.5 7.5 0 0 0 558.5 86.8L561 84.5" fill="none" stroke="#34D399" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="561 89.5 561 84.5 556 84.5" fill="none" stroke="#34D399" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         </g>
       )
     },
@@ -213,23 +218,25 @@ export function HeroNetwork() {
       id: "expedicao",
       title: "EXPEDIÇÃO & PROVAS",
       sub: "Canhotos, NF-e & tracking",
-      x: 15,
-      y: 330,
+      x: 18,
+      y: 344,
+      width: 285,
+      height: 72,
       iconColor: "#F59E0B",
       statusColor: "#F59E0B",
       delay: "1.1s",
-      anchorX: 215,
-      anchorY: 360,
-      cubeX: 245,
-      cubeY: 268,
-      path: "M 215 360 L 245 268 L 320 220",
-      revPath: "M 320 220 L 245 268 L 215 360",
+      anchorX: 303,
+      anchorY: 380,
+      cubeX: 335,
+      cubeY: 280,
+      path: "M 303 380 L 335 280 L 410 230",
+      revPath: "M 410 230 L 335 280 L 303 380",
       icon: (
-        <g className="inst-sat-icon-shape" style={{ transformOrigin: "45px 360px" }}>
-          <rect x="36" y="352" width="11" height="9.5" rx="1.2" fill="none" stroke="#F59E0B" strokeWidth="1.6" />
-          <path d="M47 355h4.5l3 3v3.5h-7.5V355z" fill="none" stroke="#F59E0B" strokeWidth="1.6" strokeLinejoin="round" />
-          <circle cx="40" cy="364" r="2.2" fill="none" stroke="#F59E0B" strokeWidth="1.6" />
-          <circle cx="51.5" cy="364" r="2.2" fill="none" stroke="#F59E0B" strokeWidth="1.6" />
+        <g className="inst-sat-icon-shape" style={{ transformOrigin: "54px 380px" }}>
+          <rect x="44" y="371" width="12.5" height="11" rx="1.5" fill="none" stroke="#F59E0B" strokeWidth="1.7" />
+          <path d="M56.5 374.5h5l3.5 3.5v4h-8.5v-7.5z" fill="none" stroke="#F59E0B" strokeWidth="1.7" strokeLinejoin="round" />
+          <circle cx="48.5" cy="385" r="2.5" fill="none" stroke="#F59E0B" strokeWidth="1.7" />
+          <circle cx="61.5" cy="385" r="2.5" fill="none" stroke="#F59E0B" strokeWidth="1.7" />
         </g>
       )
     },
@@ -237,21 +244,23 @@ export function HeroNetwork() {
       id: "auditoria",
       title: "AUDITORIA & ALÇADAS",
       sub: "Regra Raquel & governança",
-      x: 425,
-      y: 330,
+      x: 517,
+      y: 344,
+      width: 285,
+      height: 72,
       iconColor: "#C2694A",
       statusColor: "#F59E0B",
       delay: "1.25s",
-      anchorX: 425,
-      anchorY: 360,
-      cubeX: 395,
-      cubeY: 268,
-      path: "M 425 360 L 395 268 L 320 220",
-      revPath: "M 320 220 L 395 268 L 425 360",
+      anchorX: 517,
+      anchorY: 380,
+      cubeX: 485,
+      cubeY: 280,
+      path: "M 517 380 L 485 280 L 410 230",
+      revPath: "M 410 230 L 485 280 L 517 380",
       icon: (
-        <g className="inst-sat-icon-shape" style={{ transformOrigin: "455px 360px" }}>
-          <path d="M455 351l6.5 2.5v5c0 4.5-3.5 7.5-6.5 8.5-3-1-6.5-4-6.5-8.5v-5l6.5-2.5z" fill="none" stroke="#C2694A" strokeWidth="1.6" strokeLinejoin="round" />
-          <path d="M452 358.5l2 2 4.5-4.5" fill="none" stroke="#C2694A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <g className="inst-sat-icon-shape" style={{ transformOrigin: "553px 380px" }}>
+          <path d="M553 370l7.5 2.8v5.6c0 5-4 8.4-7.5 9.6-3.5-1.2-7.5-4.6-7.5-9.6v-5.6l7.5-2.8z" fill="none" stroke="#C2694A" strokeWidth="1.7" strokeLinejoin="round" />
+          <path d="M549.5 378.5l2.4 2.4 5.2-5.2" fill="none" stroke="#C2694A" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
         </g>
       )
     }
@@ -260,7 +269,7 @@ export function HeroNetwork() {
   return (
     <svg
       ref={ref}
-      viewBox="0 0 640 440"
+      viewBox="0 0 820 460"
       className={`inst-svg inst-hero-prism${visible ? " is-visible" : ""}${isCoreHovered ? " is-core-active" : ""}`}
       role="img"
       aria-label="Prisma Isométrico de Governança RSBUILD OS e seus 4 domínios operacionais"
@@ -284,36 +293,31 @@ export function HeroNetwork() {
           <feGaussianBlur stdDeviation="9" result="blur" />
           <feComposite in="SourceGraphic" in2="blur" operator="over" />
         </filter>
-        <radialGradient id="coreHaloGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#C2694A" stopOpacity="0.9" />
-          <stop offset="60%" stopColor="#B5583C" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#2B2C2E" stopOpacity="0" />
-        </radialGradient>
       </defs>
 
       {/* Anéis Orbitais Elípticos */}
-      <g className="inst-orbital-rings" style={{ transformOrigin: "320px 220px" }}>
+      <g className="inst-orbital-rings" style={{ transformOrigin: "410px 230px" }}>
         <ellipse
-          cx="320"
-          cy="220"
-          rx="195"
-          ry="76"
+          cx="410"
+          cy="230"
+          rx="235"
+          ry="85"
           fill="none"
           stroke="rgba(217, 204, 181, 0.16)"
           strokeWidth="1.2"
           strokeDasharray="4 6"
-          transform="rotate(-18 320 220)"
+          transform="rotate(-16 410 230)"
         />
         <ellipse
-          cx="320"
-          cy="220"
-          rx="185"
-          ry="68"
+          cx="410"
+          cy="230"
+          rx="220"
+          ry="78"
           fill="none"
           stroke="rgba(194, 105, 74, 0.22)"
           strokeWidth="1.2"
           strokeDasharray="6 8"
-          transform="rotate(22 320 220)"
+          transform="rotate(20 410 230)"
         />
       </g>
 
@@ -366,16 +370,16 @@ export function HeroNetwork() {
       {/* O PRISMA ISOMÉTRICO RSBUILD (Cubo de Governança 3D Interativo) */}
       <g
         className="inst-prism-body inst-core-trigger"
-        style={{ transformOrigin: "320px 220px" }}
+        style={{ transformOrigin: "410px 230px" }}
         onMouseEnter={() => setIsCoreHovered(true)}
         onMouseLeave={() => setIsCoreHovered(false)}
         tabIndex={0}
         role="button"
-        aria-label="Núcleo de Governança RSBUILD OS — Passe o mouse para ativar a sincronização dos satélites"
+        aria-label="Núcleo de Governança RSBUILD OS — Passe o mouse para sincronizar os 4 domínios"
       >
         {/* Face Superior */}
         <polygon
-          points="320,125 395,172 320,220 245,172"
+          points="410,135 485,180 410,230 335,180"
           fill="url(#faceTop)"
           stroke="#C2694A"
           strokeWidth="1.6"
@@ -385,7 +389,7 @@ export function HeroNetwork() {
         />
         {/* Face Esquerda */}
         <polygon
-          points="245,172 320,220 320,315 245,268"
+          points="335,180 410,230 410,325 335,280"
           fill="url(#faceLeft)"
           stroke="#B5583C"
           strokeWidth="1.6"
@@ -395,7 +399,7 @@ export function HeroNetwork() {
         />
         {/* Face Direita */}
         <polygon
-          points="320,220 395,172 395,268 320,315"
+          points="410,230 485,180 485,280 410,325"
           fill="url(#faceRight)"
           stroke="#C2694A"
           strokeWidth="1.6"
@@ -406,10 +410,10 @@ export function HeroNetwork() {
 
         {/* Eixo Central Vertical de Sustentação */}
         <line
-          x1="320"
-          y1="125"
-          x2="320"
-          y2="315"
+          x1="410"
+          y1="135"
+          x2="410"
+          y2="325"
           stroke="rgba(217, 204, 181, 0.45)"
           strokeWidth="1.2"
           strokeDasharray="2 3"
@@ -418,9 +422,9 @@ export function HeroNetwork() {
         {/* Halo de irradiação concêntrica ativo no hover do núcleo */}
         {isCoreHovered && (
           <circle
-            cx="320"
-            cy="220"
-            r="48"
+            cx="410"
+            cy="230"
+            r="52"
             fill="none"
             stroke="#C2694A"
             strokeWidth="1.8"
@@ -432,16 +436,16 @@ export function HeroNetwork() {
         {/* NÚCLEO CENTRAL DE GOVERNANÇA: Monograma Oficial da RSBUILD */}
         <g filter="url(#coreGlow)">
           <circle
-            cx="320"
-            cy="220"
-            r="40"
+            cx="410"
+            cy="230"
+            r="42"
             fill="#1E2024"
             stroke={isCoreHovered ? "#FFFFFF" : "#C2694A"}
             strokeWidth={isCoreHovered ? "2.4" : "2"}
             className="inst-node-glow"
           />
-          {/* Monograma Oficial da RSBUILD centrado e refinado */}
-          <g transform="translate(320, 220) scale(0.245) translate(-276, -623)">
+          {/* Monograma Oficial da RSBUILD centrado e perfeitamente dimensionado */}
+          <g transform="translate(410, 230) scale(0.26) translate(-276, -623)">
             <path
               d="m251.99 528.35-0.43359 0.23828v63.031c0 4.5898 2.5312 8.8516 6.6992 11.266l55.5 32.133c3.9453 2.2812 6.3438 6.3164 6.3438 10.66v63.328l13.676-7.3516c3.3555-1.8008 5.4258-5.1523 5.4258-8.7773v-57.324c0-4.3281-2.3906-8.3516-6.3203-10.625l-55.844-32.328c-3.9688-2.3008-6.3828-6.3594-6.3828-10.734v-42.223c4.7188-2.6875 10.641-2.6914 15.367-0.007812l1.4609 0.832-0.1875 38.219c-0.015625 2.6172 1.4844 5.0352 3.9141 6.3281l14.453 7.6914c2.8711 1.5312 6.5156 0.59766 8.168-2.082l16.133-26.188c5.2422-8.5117 2.1328-19.402-6.9531-24.316l-19.078 30.973 0.4648-41.883c-15.98-9.2656-36.094-9.5938-52.406-0.85938"
               fill="#FFFFFF"
@@ -457,8 +461,9 @@ export function HeroNetwork() {
       {/* OS 4 SATÉLITES OPERACIONAIS (CARDS EXECUTIVOS ESPAÇOSOS E ÍCONES ANIMADOS) */}
       {SATELLITES.map((sat, i) => {
         const isHovered = hoveredSat === i;
-        const iconCx = sat.x + 30;
-        const iconCy = sat.y + 30;
+        const iconCx = sat.x + 36;
+        const iconCy = sat.y + 36;
+        const textStartX = sat.x + 70;
         return (
           <g
             key={sat.id}
@@ -471,9 +476,9 @@ export function HeroNetwork() {
             <rect
               x={sat.x}
               y={sat.y}
-              width="200"
-              height="60"
-              rx="12"
+              width={sat.width}
+              height={sat.height}
+              rx="14"
               fill="#18191C"
               stroke={isHovered || isCoreHovered ? "#C2694A" : "rgba(194, 105, 74, 0.45)"}
               strokeWidth={isHovered || isCoreHovered ? "1.8" : "1.3"}
@@ -485,7 +490,7 @@ export function HeroNetwork() {
             <circle
               cx={iconCx}
               cy={iconCy}
-              r="17"
+              r="21"
               fill="#222428"
               stroke="rgba(217, 204, 181, 0.22)"
               strokeWidth="1.2"
@@ -498,24 +503,24 @@ export function HeroNetwork() {
               className="inst-sat-icon-halo"
               cx={iconCx}
               cy={iconCy}
-              r="17"
+              r="21"
               fill="none"
               stroke={sat.iconColor}
-              strokeWidth="1.6"
-              opacity={isCoreHovered || isHovered ? "0.9" : "0.35"}
+              strokeWidth="1.8"
+              opacity={isCoreHovered || isHovered ? "0.95" : "0.35"}
             />
 
             {/* O Ícone Vetorial Dedicado com Animação */}
             {sat.icon}
 
-            {/* Título Principal com Tipografia Nítida */}
+            {/* Título Principal com Tipografia Nítida e Ampla */}
             <text
-              x={sat.x + 58}
-              y={sat.y + 27}
-              fontSize="12.5"
+              x={textStartX}
+              y={sat.y + 32}
+              fontSize="13.5"
               fontWeight="800"
               fill="#FFFFFF"
-              letterSpacing="0.05em"
+              letterSpacing="0.04em"
               fontFamily="Libre Franklin, Arial, sans-serif"
               className="inst-node-label"
               style={{ animationDelay: `${parseFloat(sat.delay) + 0.15}s` }}
@@ -523,13 +528,13 @@ export function HeroNetwork() {
               {sat.title}
             </text>
 
-            {/* Subtítulo Explicativo */}
+            {/* Subtítulo Operacional Explicativo */}
             <text
-              x={sat.x + 58}
-              y={sat.y + 45}
-              fontSize="10"
+              x={textStartX}
+              y={sat.y + 53}
+              fontSize="11"
               fontWeight="500"
-              fill="rgba(217, 204, 181, 0.78)"
+              fill="rgba(217, 204, 181, 0.82)"
               letterSpacing="0.02em"
               fontFamily="Libre Franklin, Arial, sans-serif"
               className="inst-node-label"
@@ -538,17 +543,17 @@ export function HeroNetwork() {
               {sat.sub}
             </text>
 
-            {/* Led de Status no canto superior direito */}
+            {/* Led de Status no canto superior direito com respiro generoso */}
             <circle
-              cx={sat.x + 185}
-              cy={sat.y + 17}
-              r="6.5"
+              cx={sat.x + sat.width - 20}
+              cy={sat.y + 20}
+              r="8"
               fill={sat.statusColor}
               opacity="0.22"
             />
             <circle
-              cx={sat.x + 185}
-              cy={sat.y + 17}
+              cx={sat.x + sat.width - 20}
+              cy={sat.y + 20}
               r="3.5"
               fill={sat.statusColor}
             />
@@ -557,13 +562,13 @@ export function HeroNetwork() {
       })}
 
       {/* Rótulo Institucional de Base */}
-      <g className="inst-node" style={{ transformOrigin: "320px 420px" }}>
+      <g className="inst-node" style={{ transformOrigin: "410px 440px" }}>
         <text
-          x="320"
-          y="422"
+          x="410"
+          y="444"
           textAnchor="middle"
           fill={isCoreHovered ? "#FFFFFF" : TERRA_LIGHT}
-          fontSize="11.5"
+          fontSize="12"
           fontWeight="800"
           letterSpacing="2.5"
           fontFamily="Libre Franklin, Arial, sans-serif"
