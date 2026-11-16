@@ -10,9 +10,13 @@
   --rsbuild-terracotta-light: #C2694A;
   --bg: #F8F6F2;
   --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
   --ink: #2B2C2E;
+  --foreground: #1F2937;
   --muted: #7E7873;
+  --rsbuild-muted: #7E7873;
   --line: #E5E1D8;
+  --rsbuild-border: #E5E1D8;
   --green: #16845c;
   --green-soft: #eaf7f1;
   --red: #c15b5b;
@@ -1523,13 +1527,66 @@ tbody tr:last-child td { border-bottom: 0; }
   --bg: #141517;
   --surface: #1E2024;
   --surface-hover: #26292E;
-  --ink: #F4F1EA;
-  --muted: #9E988E;
+  --surface-raised: #26292E;
+  --ink: #FFFFFF;
+  --foreground: #FFFFFF;
+  --muted: #A8A298;
+  --rsbuild-muted: #A8A298;
   --line: #2E3036;
+  --rsbuild-border: #2E3036;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   --rsbuild-terracotta-soft: rgba(181, 88, 60, 0.18);
   --green-soft: rgba(22, 132, 92, 0.2);
   --red-soft: rgba(193, 91, 91, 0.2);
+}
+
+/* CARDS & CONTAINERS GERAIS */
+.card,
+.cockpit-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .cockpit-card {
+  background: #1E2024;
+  border-color: #2E3036;
+  color: #FFFFFF;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.38);
+}
+
+.cockpit-hero {
+  background: linear-gradient(135deg, rgba(181, 88, 60, 0.08) 0%, rgba(255, 255, 255, 0.6) 100%);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+[data-theme="dark"] .cockpit-hero {
+  background: linear-gradient(135deg, rgba(181, 88, 60, 0.16) 0%, #1A1C20 100%);
+  border-color: #2E3036;
+}
+
+[data-theme="dark"] .inline-note {
+  background: #18191C !important;
+  color: #D6D0C5 !important;
+  border: 1px solid #2E3036 !important;
+  border-left: 3px solid var(--rsbuild-terracotta) !important;
+}
+
+[data-theme="dark"] .subtle-tag {
+  background: #25282E;
+  color: #D6D0C5;
+  border-color: #383B42;
 }
 
 [data-theme="dark"] body {

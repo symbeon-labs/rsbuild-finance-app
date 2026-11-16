@@ -278,6 +278,25 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
     }
   }
 
+  async function updateDependencyStatus(projectId: string, dependencyId: string, status: string) {
+    setStatusUpdatingFor(dependencyId);
+    setError("");
+    try {
+      const response = await fetch(`/api/projects/${projectId}/dependencies`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dependencyId, status })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar o insumo/dependência.");
+      await loadProjects();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao atualizar dependência.");
+    } finally {
+      setStatusUpdatingFor(null);
+    }
+  }
+
   async function updateTaskStatus(projectId: string, sprintId: string, taskId: string, status: string) {
     setStatusUpdatingFor(taskId);
     setError("");
@@ -660,11 +679,26 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                                           fontWeight: 700,
                                           padding: "2px 8px",
                                           borderRadius: "12px",
-                                          background: "#ECFDF5",
-                                          color: "#059669"
+                                          background: "rgba(16, 185, 129, 0.12)",
+                                          color: "#059669",
+                                          border: "1px solid rgba(16, 185, 129, 0.3)"
                                         }}
                                       >
                                         ✓ CONCLUÍDA
+                                      </span>
+                                    ) : isBlocked ? (
+                                      <span
+                                        style={{
+                                          fontSize: "10px",
+                                          fontWeight: 700,
+                                          padding: "2px 8px",
+                                          borderRadius: "12px",
+                                          background: "rgba(245, 158, 11, 0.12)",
+                                          color: "#D97706",
+                                          border: "1px solid rgba(245, 158, 11, 0.3)"
+                                        }}
+                                      >
+                                        ⚠️ BLOQUEADA
                                       </span>
                                     ) : (
                                       <span
@@ -673,8 +707,9 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                                           fontWeight: 600,
                                           padding: "2px 8px",
                                           borderRadius: "12px",
-                                          background: "var(--surface-raised, rgba(0,0,0,0.04))",
-                                          color: "var(--muted)"
+                                          background: "rgba(99, 102, 241, 0.08)",
+                                          color: "#4F46E5",
+                                          border: "1px solid rgba(99, 102, 241, 0.2)"
                                         }}
                                       >
                                         PLANEJADA
@@ -712,7 +747,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                                 <div>
                                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "4px" }}>
                                     <span style={{ color: "var(--muted)" }}>{sDone}/{sTotal} tarefas</span>
-                                    <span style={{ fontWeight: 700, color: isCompleted ? "#10B981" : isSprintActive ? "var(--rsbuild-terracotta)" : "var(--muted)" }}>
+                                    <span style={{ fontWeight: 700, color: isCompleted ? "#10B981" : isSprintActive ? "var(--rsbuild-terracotta)" : isBlocked ? "#F59E0B" : "var(--muted)" }}>
                                       {sProgress}%
                                     </span>
                                   </div>
@@ -728,7 +763,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                                       style={{
                                         width: `${sProgress}%`,
                                         height: "100%",
-                                        background: isCompleted ? "#10B981" : isSprintActive ? "var(--rsbuild-terracotta)" : "var(--muted)",
+                                        background: isCompleted ? "#10B981" : isSprintActive ? "var(--rsbuild-terracotta)" : isBlocked ? "#F59E0B" : "rgba(99, 102, 241, 0.4)",
                                         borderRadius: "3px"
                                       }}
                                     />
@@ -1104,7 +1139,45 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                           <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--rsbuild-terracotta)", background: "var(--rsbuild-terracotta-soft)", padding: "1px 6px", borderRadius: "4px" }}>
                             {dependencyTypeLabels[dependency.dependency_type] || dependency.dependency_type}
                           </span>
-                          <span className="subtle-tag">{statusLabels[dependency.status] || dependency.status}</span>
+                          {canManage ? (
+                            <select
+                              aria-label={`Status do insumo ${dependency.title}`}
+                              value={dependency.status}
+                              disabled={statusUpdatingFor === dependency.id}
+                              onChange={(e) => void updateDependencyStatus(selectedProject.id, dependency.id, e.target.value)}
+                              style={{
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                padding: "2px 6px",
+                                borderRadius: "6px",
+                                height: "24px",
+                                border: "1px solid var(--line)",
+                                background: dependency.status === "received" ? "rgba(16, 185, 129, 0.15)" : dependency.status === "waiting" ? "rgba(245, 158, 11, 0.15)" : "var(--surface)",
+                                color: dependency.status === "received" ? "#059669" : dependency.status === "waiting" ? "#D97706" : "var(--ink)",
+                                cursor: "pointer"
+                              }}
+                            >
+                              <option value="waiting">⏳ Aguardando</option>
+                              <option value="received">✓ Recebida</option>
+                              <option value="blocked">⚠️ Bloqueada</option>
+                              <option value="open">Aberto</option>
+                              <option value="cancelled">Cancelada</option>
+                            </select>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                padding: "2px 8px",
+                                borderRadius: "12px",
+                                background: dependency.status === "received" ? "rgba(16, 185, 129, 0.12)" : dependency.status === "waiting" ? "rgba(245, 158, 11, 0.12)" : "var(--surface)",
+                                color: dependency.status === "received" ? "#059669" : dependency.status === "waiting" ? "#D97706" : "var(--muted)",
+                                border: dependency.status === "received" ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid var(--line)"
+                              }}
+                            >
+                              {dependency.status === "received" ? "✓ Recebida" : (statusLabels[dependency.status] || dependency.status)}
+                            </span>
+                          )}
                         </div>
                         <strong style={{ fontSize: "13px", display: "block", margin: "4px 0" }}>
                           {dependency.title}

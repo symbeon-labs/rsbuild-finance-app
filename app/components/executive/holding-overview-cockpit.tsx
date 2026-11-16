@@ -64,8 +64,8 @@ const PROJECT_ACCENT: Record<string, string> = {
 };
 
 const PROJECT_BADGE: Record<string, { label: string; bg: string; text: string }> = {
-  "mundo-do-sabor": { label: "FRENTE A · INDÚSTRIA ALIMENTÍCIA", bg: "#EFF6FF", text: "#2563EB" },
-  "hub-acai": { label: "FRENTE B · DISTRIBUIÇÃO & EXPEDIÇÃO", bg: "#F5F3FF", text: "#7C3AED" },
+  "mundo-do-sabor": { label: "FRENTE A · INDÚSTRIA ALIMENTÍCIA", bg: "rgba(37, 99, 235, 0.12)", text: "#3B82F6" },
+  "hub-acai": { label: "FRENTE B · DISTRIBUIÇÃO & EXPEDIÇÃO", bg: "rgba(124, 58, 237, 0.12)", text: "#8B5CF6" },
 };
 
 export function HoldingOverviewCockpit({
@@ -158,19 +158,7 @@ export function HoldingOverviewCockpit({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingBottom: "40px" }}>
       {/* 1. HERO HEADER: VISÃO DE COMANDO */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, rgba(181, 88, 60, 0.08) 0%, rgba(255, 255, 255, 0.4) 100%)",
-          border: "1px solid var(--rsbuild-border, rgba(0,0,0,0.08))",
-          borderRadius: "12px",
-          padding: "24px 28px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "16px"
-        }}
-      >
+      <div className="cockpit-hero">
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
             <span
@@ -187,14 +175,14 @@ export function HoldingOverviewCockpit({
             >
               Holding Cockpit · Ciclo 01
             </span>
-            <span style={{ fontSize: "12px", color: "var(--rsbuild-muted, #666)" }}>
+            <span style={{ fontSize: "12px", color: "var(--muted)" }}>
               Sessão de Governança Ativa
             </span>
           </div>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, margin: 0, color: "var(--foreground, #1F2937)" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: 700, margin: 0, color: "var(--ink)" }}>
             Central de Controle &amp; Observabilidade RSBUILD
           </h1>
-          <p style={{ fontSize: "14px", color: "var(--rsbuild-muted, #666)", margin: "4px 0 0" }}>
+          <p style={{ fontSize: "14px", color: "var(--muted)", margin: "4px 0 0" }}>
             Monitoramento executivo de frentes operacionais, esteira de homologação e fluxo de insumos críticos.
           </p>
         </div>
@@ -230,53 +218,53 @@ export function HoldingOverviewCockpit({
           gap: "16px"
         }}
       >
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-muted)", letterSpacing: "0.5px" }}>
+        <div className="card cockpit-card" style={{ padding: "18px 20px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", letterSpacing: "0.5px" }}>
             EMPRESAS NO RADAR
           </span>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
-            <span style={{ fontSize: "28px", fontWeight: 800, color: "var(--foreground)" }}>2</span>
+            <span style={{ fontSize: "28px", fontWeight: 800, color: "var(--ink)" }}>2</span>
             <span style={{ fontSize: "12px", color: "var(--rsbuild-terracotta)", fontWeight: 600 }}>100% integradas</span>
           </div>
-          <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)", marginTop: "4px", display: "block" }}>
+          <span style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px", display: "block" }}>
             Mundo do Sabor + Hub Açaí Salvador
           </span>
         </div>
 
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-muted)", letterSpacing: "0.5px" }}>
+        <div className="card cockpit-card" style={{ padding: "18px 20px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", letterSpacing: "0.5px" }}>
             SPRINTS PLANEJADAS / ATIVAS
           </span>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
-            <span style={{ fontSize: "28px", fontWeight: 800, color: "var(--foreground)" }}>
+            <span style={{ fontSize: "28px", fontWeight: 800, color: "var(--ink)" }}>
               {loading ? "..." : `${totalSprints || 8}`}
             </span>
             <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 600 }}>2 em execução</span>
           </div>
-          <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)", marginTop: "4px", display: "block" }}>
+          <span style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px", display: "block" }}>
             Ciclo 01: Sprints A1 e H1 em andamento
           </span>
         </div>
 
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-muted)", letterSpacing: "0.5px" }}>
+        <div className="card cockpit-card" style={{ padding: "18px 20px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", letterSpacing: "0.5px" }}>
             ENTREGAS TÉCNICAS PRONTAS
           </span>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
             <span style={{ fontSize: "28px", fontWeight: 800, color: "#10B981" }}>
               {loading ? "..." : `${doneTasks || 7}`}
             </span>
-            <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)" }}>
+            <span style={{ fontSize: "12px", color: "var(--muted)" }}>
               de {allTasks.length || 14} atividades
             </span>
           </div>
-          <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)", marginTop: "4px", display: "block" }}>
+          <span style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px", display: "block" }}>
             Motor v1, OFX Parser, Trilha de Auditoria e RBAC
           </span>
         </div>
 
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-muted)", letterSpacing: "0.5px" }}>
+        <div className="card cockpit-card" style={{ padding: "18px 20px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", letterSpacing: "0.5px" }}>
             INSUMOS &amp; HOMOLOGAÇÃO
           </span>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
@@ -285,7 +273,7 @@ export function HoldingOverviewCockpit({
             </span>
             <span style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 600 }}>Requer ação</span>
           </div>
-          <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)", marginTop: "4px", display: "block" }}>
+          <span style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px", display: "block" }}>
             Extrato Itaú, API Omie e link de compras
           </span>
         </div>
@@ -295,8 +283,8 @@ export function HoldingOverviewCockpit({
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
           <div>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}>Empresas Integradas no Ecossistema</h2>
-            <p style={{ fontSize: "13px", color: "var(--rsbuild-muted)", margin: "2px 0 0" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "var(--ink)" }}>Empresas Integradas no Ecossistema</h2>
+            <p style={{ fontSize: "13px", color: "var(--muted)", margin: "2px 0 0" }}>
               Acesso direto aos ambientes operacionais e status executivo do Ciclo 01
             </p>
           </div>
@@ -393,7 +381,7 @@ export function HoldingOverviewCockpit({
               return (
                 <div
                   key={project.id}
-                  className="card"
+                  className="card cockpit-card"
                   style={{
                     padding: "24px",
                     display: "flex",
@@ -419,10 +407,10 @@ export function HoldingOverviewCockpit({
                           {badge.label}
                         </span>
                       )}
-                      <h3 style={{ fontSize: "20px", fontWeight: 700, margin: "8px 0 4px" }}>
+                      <h3 style={{ fontSize: "20px", fontWeight: 700, margin: "8px 0 4px", color: "var(--ink)" }}>
                         {project.name}
                       </h3>
-                      <span style={{ fontSize: "12px", color: "var(--rsbuild-muted)" }}>
+                      <span style={{ fontSize: "12px", color: "var(--muted)" }}>
                         {project.client_display_name}
                       </span>
                     </div>
@@ -433,8 +421,8 @@ export function HoldingOverviewCockpit({
                           fontWeight: 700,
                           padding: "4px 10px",
                           borderRadius: "20px",
-                          background: "#ECFDF5",
-                          color: "#059669",
+                          background: "rgba(16, 185, 129, 0.15)",
+                          color: "#10B981",
                           whiteSpace: "nowrap"
                         }}
                       >
@@ -449,11 +437,11 @@ export function HoldingOverviewCockpit({
                       background: "var(--surface-raised, rgba(0,0,0,0.02))",
                       padding: "14px 16px",
                       borderRadius: "8px",
-                      border: "1px solid var(--rsbuild-border)"
+                      border: "1px solid var(--line)"
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "8px" }}>
-                      <strong>
+                      <strong style={{ color: "var(--ink)" }}>
                         {activeSprint ? (activeSprint.title || `Sprint #${activeSprint.sprint_number}`) : "Sem sprint ativa"}
                       </strong>
                       <span style={{ color: accent, fontWeight: 600 }}>{pct}% concluída</span>
@@ -468,7 +456,7 @@ export function HoldingOverviewCockpit({
                     >
                       <div style={{ width: `${pct}%`, height: "100%", background: accent, borderRadius: "3px" }} />
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--rsbuild-muted)", marginTop: "6px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--muted)", marginTop: "6px" }}>
                       <span>{projectDoneTasks} de {projectAllTasks.length} tarefas concluídas</span>
                       {activeSprint?.start_date && activeSprint?.end_date && (
                         <span>
@@ -487,17 +475,19 @@ export function HoldingOverviewCockpit({
                         gap: "10px",
                         padding: "10px 14px",
                         borderRadius: "6px",
-                        background: "#FFFBEB",
-                        border: "1px solid #FDE68A",
+                        background: "rgba(245, 158, 11, 0.12)",
+                        border: "1px solid rgba(245, 158, 11, 0.35)",
                         fontSize: "12px",
-                        color: "#92400E"
+                        color: "var(--ink)"
                       }}
                     >
                       <span style={{ fontSize: "16px" }}>⚠️</span>
                       <div>
-                        <strong>{blockingDeps.length} dependência{blockingDeps.length > 1 ? "s" : ""} aguardando:</strong>{" "}
-                        {blockingDeps[0].title}
-                        {blockingDeps.length > 1 ? ` e mais ${blockingDeps.length - 1}` : ""}
+                        <strong style={{ color: "#F59E0B" }}>{blockingDeps.length} dependência{blockingDeps.length > 1 ? "s" : ""} aguardando:</strong>{" "}
+                        <span style={{ color: "var(--ink)" }}>
+                          {blockingDeps[0].title}
+                          {blockingDeps.length > 1 ? ` e mais ${blockingDeps.length - 1}` : ""}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -512,7 +502,7 @@ export function HoldingOverviewCockpit({
                         padding: "12px 14px",
                         borderRadius: "8px",
                         background: "var(--surface-raised, rgba(0,0,0,0.02))",
-                        border: "1px solid var(--rsbuild-border)"
+                        border: "1px solid var(--line)"
                       }}
                     >
                       {[
@@ -522,10 +512,10 @@ export function HoldingOverviewCockpit({
                         { label: "Eventos 7d", value: ops.auditEvents7d, warn: ops.accessDenied7d > 0 }
                       ].map((m) => (
                         <div key={m.label} style={{ textAlign: "center" }}>
-                          <div style={{ fontSize: "16px", fontWeight: 800, color: m.warn ? "#F59E0B" : "var(--foreground)" }}>
+                          <div style={{ fontSize: "16px", fontWeight: 800, color: m.warn ? "#F59E0B" : "var(--ink)" }}>
                             {m.value}
                           </div>
-                          <div style={{ fontSize: "10px", color: "var(--rsbuild-muted)", letterSpacing: "0.3px" }}>
+                          <div style={{ fontSize: "10px", color: "var(--muted)", letterSpacing: "0.3px" }}>
                             {m.label.toUpperCase()}
                           </div>
                         </div>
@@ -604,10 +594,8 @@ export function HoldingOverviewCockpit({
 
       {/* 4. ESTEIRA DE HOMOLOGAÇÃO HUMANA (HITL - FLÁVIO & VITOR) */}
       <div
+        className="card cockpit-card"
         style={{
-          background: "var(--card-bg, #FFFFFF)",
-          border: "1px solid var(--rsbuild-border)",
-          borderRadius: "12px",
           padding: "24px"
         }}
       >
@@ -615,11 +603,11 @@ export function HoldingOverviewCockpit({
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "14px" }}>🎯</span>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--ink)" }}>
                 Esteira de Homologação Executiva · Flávio &amp; Vitor
               </h3>
             </div>
-            <p style={{ fontSize: "12px", color: "var(--rsbuild-muted)", margin: "4px 0 0" }}>
+            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "4px 0 0" }}>
               Checkpoints obrigatórios de validação humana antes de liberar os módulos para as equipes operacionais
             </p>
           </div>
@@ -642,22 +630,22 @@ export function HoldingOverviewCockpit({
             style={{
               padding: "16px",
               borderRadius: "8px",
-              border: "1px solid var(--rsbuild-border)",
+              border: "1px solid var(--line)",
               background: "var(--surface-raised, rgba(0,0,0,0.01))"
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#2563EB" }}>MUNDO DO SABOR · A1.3</span>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#3B82F6" }}>MUNDO DO SABOR · A1.3</span>
               <span style={{ fontSize: "10px", fontWeight: 700, color: "#F59E0B" }}>EM ESPERA</span>
             </div>
-            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px" }}>
+            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px", color: "var(--ink)" }}>
               Homologar Conciliação Conta Itaú
             </strong>
-            <p style={{ fontSize: "12px", color: "var(--rsbuild-muted)", margin: "0 0 10px" }}>
+            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 10px" }}>
               Importar arquivo OFX real e conferir que totais batem e nenhum lançamento se perde.
             </p>
-            <div style={{ fontSize: "11px", color: "var(--rsbuild-muted)" }}>
-              Responsáveis: <strong>Flávio &amp; Vitor</strong>
+            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+              Responsáveis: <strong style={{ color: "var(--ink)" }}>Flávio &amp; Vitor</strong>
             </div>
           </div>
 
@@ -665,22 +653,22 @@ export function HoldingOverviewCockpit({
             style={{
               padding: "16px",
               borderRadius: "8px",
-              border: "1px solid var(--rsbuild-border)",
+              border: "1px solid var(--line)",
               background: "var(--surface-raised, rgba(0,0,0,0.01))"
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#7C3AED" }}>HUB AÇAÍ · H1.1</span>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#8B5CF6" }}>HUB AÇAÍ · H1.1</span>
               <span style={{ fontSize: "10px", fontWeight: 700, color: "#10B981" }}>PRONTO P/ TESTE</span>
             </div>
-            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px" }}>
+            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px", color: "var(--ink)" }}>
               Aceite de Link Seguro de Compras
             </strong>
-            <p style={{ fontSize: "12px", color: "var(--rsbuild-muted)", margin: "0 0 10px" }}>
+            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 10px" }}>
               Testar contenção de acesso e validar expiração temporal do link compartilhado.
             </p>
-            <div style={{ fontSize: "11px", color: "var(--rsbuild-muted)" }}>
-              Responsáveis: <strong>Flávio &amp; João (Liderança Técnica)</strong>
+            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+              Responsáveis: <strong style={{ color: "var(--ink)" }}>Flávio &amp; João (Liderança Técnica)</strong>
             </div>
           </div>
 
@@ -688,7 +676,7 @@ export function HoldingOverviewCockpit({
             style={{
               padding: "16px",
               borderRadius: "8px",
-              border: "1px solid var(--rsbuild-border)",
+              border: "1px solid var(--line)",
               background: "var(--surface-raised, rgba(0,0,0,0.01))"
             }}
           >
@@ -696,14 +684,14 @@ export function HoldingOverviewCockpit({
               <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)" }}>GOVERNANÇA · RBAC</span>
               <span style={{ fontSize: "10px", fontWeight: 700, color: "#10B981" }}>APLICADO</span>
             </div>
-            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px" }}>
+            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px", color: "var(--ink)" }}>
               Alçadas de Baixa ERP (Regra Raquel)
             </strong>
-            <p style={{ fontSize: "12px", color: "var(--rsbuild-muted)", margin: "0 0 10px" }}>
+            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 10px" }}>
               Garantir que apenas a Diretoria aprove baixas em lote e divergências com deságio/juros.
             </p>
-            <div style={{ fontSize: "11px", color: "var(--rsbuild-muted)" }}>
-              Regra de Segurança: <strong>100% Ativa</strong>
+            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+              Regra de Segurança: <strong style={{ color: "var(--ink)" }}>100% Ativa</strong>
             </div>
           </div>
         </div>
@@ -719,9 +707,9 @@ export function HoldingOverviewCockpit({
           padding: "16px 20px",
           background: "var(--surface-raised, rgba(0,0,0,0.02))",
           borderRadius: "8px",
-          border: "1px solid var(--rsbuild-border)",
+          border: "1px solid var(--line)",
           fontSize: "12px",
-          color: "var(--rsbuild-muted)"
+          color: "var(--muted)"
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -737,7 +725,7 @@ export function HoldingOverviewCockpit({
         </div>
         <div>
           <span>Google Drive Sprints: </span>
-          <strong style={{ color: "var(--foreground)" }}>v2.2 CONSOLIDADO</strong>
+          <strong style={{ color: "var(--ink)" }}>v2.2 CONSOLIDADO</strong>
         </div>
       </div>
     </div>

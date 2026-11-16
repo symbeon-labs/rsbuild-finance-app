@@ -57,3 +57,46 @@ export async function POST(request: Request, context: RouteContext) {
 
   return NextResponse.json({ dependency: data }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
 }
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) {
+    return NextResponse.json({ error: "origin_forbidden" }, { status: 403 });
+  }
+
+  const { projectId } = await context.params;
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuid.test(projectId)) {
+    return NextResponse.json({ error: "invalid_project" }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+
+  let body: Record<string, unknown>;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: "invalid_json" }, { status: 400 }); }
+
+  const dependencyId = typeof body.dependencyId === "string" ? body.dependencyId : "";
+  const status = typeof body.status === "string" ? body.status : "";
+
+  if (!uuid.test(dependencyId) || !["open", "waiting", "received", "blocked", "cancelled"].includes(status)) {
+    return NextResponse.json({ error: "invalid_dependency_status" }, { status: 400 });
+  }
+
+  const { data, error } = await supabase.from("project_dependencies")
+    .update({ status })
+    .eq("id", dependencyId)
+    .eq("project_id", projectId)
+    .select("id, status")
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.code === "42501" ? "project_access_denied" : "dependency_update_failed" }, {
+      status: error.code === "42501" ? 403 : 404
+    });
+  }
+
+  return NextResponse.json({ dependency: data }, { status: 200, headers: { "Cache-Control": "private, no-store" } });
+}
