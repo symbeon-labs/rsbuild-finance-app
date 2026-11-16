@@ -5491,3 +5491,50 @@ canvas {
   .rs-integration-principles { grid-template-columns: 1fr; }
   .rs-integration-principles .inst-card { min-height: 0; }
 }
+
+
+/* Progressive disclosure: keep the simple integration diagram as the hero */
+.rs-architecture-details {
+  margin-top: 28px;
+  border: 1px solid rgba(217,204,181,.28);
+  border-radius: 14px;
+  background: rgba(97,73,67,.055);
+  overflow: hidden;
+}
+.rs-architecture-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 22px;
+  cursor: pointer;
+  list-style: none;
+}
+.rs-architecture-details > summary::-webkit-details-marker { display: none; }
+.rs-architecture-details > summary > span:first-child { display: grid; gap: 4px; }
+.rs-architecture-details > summary strong { color: #614943; font-size: 14px; }
+.rs-architecture-details > summary small { color: #77716B; font-size: 12px; line-height: 1.45; }
+.rs-architecture-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(181,88,60,.45);
+  border-radius: 50%;
+  color: #B5583C;
+  font-size: 21px;
+  line-height: 1;
+  transition: transform .25s ease, background .25s ease;
+}
+.rs-architecture-details[open] .rs-architecture-toggle {
+  transform: rotate(45deg);
+  background: rgba(181,88,60,.08);
+}
+.rs-architecture-details-content { padding: 0 14px 14px; }
+.rs-architecture-details-content .rs-architecture { margin-top: 0; }
+@media (max-width: 600px) {
+  .rs-architecture-details > summary { padding: 15px; }
+  .rs-architecture-details > summary small { max-width: 260px; }
+  .rs-architecture-details-content { padding: 0 8px 8px; }
+}
