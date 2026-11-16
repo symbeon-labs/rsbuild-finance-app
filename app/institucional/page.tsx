@@ -45,32 +45,32 @@ export const metadata = {
 const PROBLEMS = [
   {
     title: "Processos manuais",
-    text: "Tarefas operacionais dependem de planilhas, e-mails e retrabalho manual.",
+    text: "Atividades repetitivas que consomem tempo e dificultam a padronização.",
     stat: "40% do tempo de equipes financeiras é gasto em tarefas manuais repetitivas (McKinsey, 2023)"
   },
   {
     title: "Informações fragmentadas",
-    text: "Dados espalhados entre ERP, banco, planilhas e mensageria sem visão única.",
+    text: "Dados distribuídos entre sistemas, planilhas, documentos e equipes.",
     stat: "Empresas com dados fragmentados perdem em média 30h/mês em cruzamentos manuais (Gartner)"
   },
   {
     title: "Reconciliações demoradas",
-    text: "Conferências que consomem horas e atrasam decisões financeiras.",
+    text: "Reconciliações e verificações que dependem de esforço manual.",
     stat: "68% das empresas reportam atrasos em fechamentos por divergências não detectadas (PwC)"
   },
   {
     title: "Aprovações descentralizadas",
-    text: "Alçadas informais, sem registro de quem aprovou o quê e quando.",
+    text: "Responsabilidades e decisões difíceis de acompanhar ao longo do processo.",
     stat: "Sem rastro de aprovações, 42% das decisões não têm justificativa documentada (Deloitte)"
   },
   {
     title: "Dependência de conhecimento individual",
-    text: "Processos que vivem na cabeça de poucas pessoas — risco de continuidade.",
+    text: "Processos críticos que permanecem concentrados na experiência de poucas pessoas.",
     stat: "75% do conhecimento tácito é perdido quando funcionários-chave saem (Harvard BR)"
   },
   {
     title: "Baixa rastreabilidade",
-    text: "Dificuldade de provar o que aconteceu, quem fez e com qual autorização.",
+    text: "Dificuldade para compreender o contexto e o andamento de cada atividade.",
     stat: "Empresas sem rastreabilidade clara têm 3x mais incidentes de não-conformidade (KPMG)"
   }
 ];
@@ -80,52 +80,52 @@ const MODULES = [
     badge: "Disponível",
     badgeClass: "ok",
     title: "Finanças & Caixa",
-    text: "Organização de informações financeiras, movimentações e indicadores.",
+    text: "Organização de informações financeiras, movimentações e indicadores para ampliar a visibilidade sobre o caixa.",
     items: ["Extratos", "Fluxo de caixa", "Indicadores", "Rastreabilidade"]
   },
   {
     badge: "Disponível",
     badgeClass: "ok",
     title: "Reconciliação & Baixas",
-    text: "Conferência assistida entre movimentações, títulos e registros operacionais.",
+    text: "Conferência assistida entre movimentações, títulos e registros operacionais, com tratamento de divergências.",
     items: ["Correspondências", "Divergências", "Encargos", "Aprovações"]
   },
   {
     badge: "Em validação",
     badgeClass: "review",
     title: "Logística & Expedição",
-    text: "Organização e acompanhamento de processos relacionados à expedição e entrega.",
+    text: "Organização e acompanhamento de informações relacionadas a pedidos, expedições e entregas.",
     items: ["Pedidos", "Expedições", "Comprovantes", "Ocorrências"]
   },
   {
     badge: "Em validação",
     badgeClass: "review",
     title: "Auditoria & Governança",
-    text: "Estruturação de responsabilidades, permissões e mecanismos de acompanhamento.",
+    text: "Estruturação de responsabilidades, permissões e mecanismos de acompanhamento dos processos.",
     items: ["Identidade", "Alçadas", "Eventos", "Histórico"]
   }
 ];
 
 const STEPS = [
-  { num: "01", title: "Conectar", text: "Organizar informações provenientes de sistemas e fontes operacionais.", icon: "connect" },
-  { num: "02", title: "Interpretar", text: "Contextualizar informações, identificar padrões e aplicar critérios.", icon: "analyze" },
-  { num: "03", title: "Verificar", text: "Submeter informações e ações a mecanismos de validação e conferência.", icon: "check" },
-  { num: "04", title: "Governar", text: "Organizar responsabilidades, aprovações e registros operacionais.", icon: "shield" }
+  { num: "01", title: "Conectar", text: "Organizar informações provenientes de sistemas e fontes operacionais, conforme as condições de integração de cada projeto.", icon: "connect" },
+  { num: "02", title: "Interpretar", text: "Contextualizar informações, identificar padrões e aplicar critérios definidos para cada processo.", icon: "analyze" },
+  { num: "03", title: "Verificar", text: "Apoiar conferências e validações, destacando inconsistências e situações que exigem atenção.", icon: "check" },
+  { num: "04", title: "Governar", text: "Estruturar responsabilidades, aprovações e registros para acompanhar a operação com mais clareza.", icon: "shield" }
 ];
 
 const IMPLEMENTATION = [
-  { num: "01", title: "Diagnóstico operacional", text: "Entender a operação real, os sistemas e os gargalos antes de propor qualquer solução.", icon: "search" },
-  { num: "02", title: "Definição de escopo", text: "Delimitar o problema prioritário, as áreas envolvidas e os resultados esperados.", icon: "scope" },
-  { num: "03", title: "Projeto-piloto", text: "Implementar em recorte controlado, com acompanhamento próximo e ajustes contínuos.", icon: "pilot" },
-  { num: "04", title: "Avaliação e evolução", text: "Medir resultados, consolidar aprendizados e expandir gradualmente.", icon: "growth" }
+  { num: "01", title: "Diagnóstico", text: "Compreender os processos, os sistemas utilizados e os principais pontos de atenção.", icon: "search" },
+  { num: "02", title: "Definição de escopo", text: "Delimitar o processo prioritário, os responsáveis e os critérios de avaliação.", icon: "scope" },
+  { num: "03", title: "Projeto-piloto", text: "Avaliar a aplicação em um contexto controlado e com objetivos previamente definidos.", icon: "pilot" },
+  { num: "04", title: "Evolução", text: "Analisar os resultados e estabelecer os próximos passos de adoção.", icon: "growth" }
 ];
 
 const GOVERNANCE_ITEMS = [
-  { text: "Critérios de atuação explícitos", icon: "rule" },
-  { text: "Limites de autonomia por operação", icon: "limit" },
-  { text: "Supervisão humana obrigatória", icon: "human" },
-  { text: "Validação antes da execução", icon: "check" },
-  { text: "Registro de todos os eventos", icon: "log" }
+  { text: "Regras e parâmetros orientam a análise e o encaminhamento dos processos.", icon: "rule" },
+  { text: "A automação deve respeitar o escopo e as permissões estabelecidas.", icon: "limit" },
+  { text: "Decisões relevantes permanecem sujeitas à responsabilidade e aprovação das pessoas.", icon: "human" },
+  { text: "As ações e etapas precisam ser acompanháveis dentro do escopo implementado.", icon: "check" },
+  { text: "Registro de todos os eventos para rastreabilidade completa.", icon: "log" }
 ];
 
 function LineIcon({ children }: { children: React.ReactNode }) {
