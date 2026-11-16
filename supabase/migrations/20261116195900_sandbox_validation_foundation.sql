@@ -1,4 +1,5 @@
 -- Sandbox validation foundation: sprint-linked, synthetic-only financial checks.
+create schema if not exists sandbox;
 create table if not exists sandbox.validation_cases (
   id uuid primary key default gen_random_uuid(),
   case_code text not null unique,
