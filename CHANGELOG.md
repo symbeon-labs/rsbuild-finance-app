@@ -62,12 +62,12 @@ Primeiro lançamento estável em produção da plataforma integrada de inteligê
   - Colunas de ações fixas à direita (`position: sticky; right: 0`) nas tabelas de grande largura.
 - **Segurança e White-Label:**
   - Customização de razão social e logotipo da empresa contratante.
-  - Ativação/desativação de módulos restrita exclusivamente ao Superadmin (`neo.sh1w4@gmail.com`).
+  - Ativação/desativação de módulos restrita exclusivamente ao Superadmin (conta definida via variável de ambiente).
 
 ---
 
 ### 🧪 Garantia de Qualidade
-- **43 Testes Unitários Automatizados (`npm test`):**
+- **71 Testes Unitários Automatizados (`npm test`):**
   - 100% de cobertura nos motores fiscais, parsers de extrato, validadores SEFAZ, matching de títulos e interpretação de pedidos.
 - **TypeScript Strict:**
   - Compilação limpa com 0 erros (`tsc --noEmit`).
