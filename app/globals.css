@@ -3813,6 +3813,31 @@ canvas {
   }
 }
 
+/* Animação do Prisma de Governança Isométrica (Hero Art) */
+@keyframes instPrismFloat {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(0.6deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes instRingRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.inst-hero-prism .inst-prism-body {
+  animation: instPrismFloat 8s ease-in-out infinite;
+}
+
+.inst-hero-prism .inst-orbital-rings {
+  animation: instRingRotate 50s linear infinite;
+  transform-origin: 260px 210px;
+}
+
+.inst-hero-prism:hover .inst-prism-body {
+  filter: drop-shadow(0 0 24px rgba(181, 88, 60, 0.45));
+}
+
 @keyframes instDraw {
   to { stroke-dashoffset: 0; }
 }
