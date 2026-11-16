@@ -22,9 +22,9 @@
 
 ## Visão Geral
 
-O **RSBUILD OS** é uma plataforma corporativa SaaS multi-tenant construída para resolver os desafios críticos de **holdings que gerenciam múltiplas operações** — da visibilidade financeira em tempo real à blindagem de processos contra erros e fraudes no ERP.
+O **RSBUILD OS** é uma plataforma corporativa SaaS multi-tenant construída para resolver os desafios críticos de **holdings que gerenciam múltiplas operações e subsidiárias** — da visibilidade financeira em tempo real à blindagem de processos contra erros e fraudes no ERP.
 
-A plataforma já opera em produção para a holding **RSBUILD**, consolidando a gestão financeira e logística das empresas **Mundo do Sabor** (indústria e distribuição de sorvetes) e **Hub Açaí / Bluemix Foods** (distribuição de açaí e polpas).
+A plataforma opera consolidando a gestão financeira, conciliação e esteira operacional de múltiplas unidades de negócio (indústria, distribuição e logística B2B), garantindo segregação total de dados e integridade contábil.
 
 ### O Problema que Resolvemos
 
