@@ -7,20 +7,20 @@ import { FrentesBanner } from "./frentes-banner";
 
 export const metadata = {
   title: "RSBUILD OS | Governança e Inteligência Operacional",
-  description: "Plataforma concebida para conectar sistemas, organizar fluxos e governar processos empresariais com auditoria pericial e inteligência assistida.",
+  description: "Uma camada complementar para organizar informações, contextualizar processos e apoiar a supervisão de operações empresariais.",
   keywords: [
     "RSBUILD OS",
     "governança operacional",
     "inteligência operacional",
     "conciliação bancária",
-    "auditoria pericial",
+    "supervisão operacional",
     "holding",
     "ERP"
   ],
   authors: [{ name: "RSBUILD Inovação Corporativa" }],
   openGraph: {
     title: "RSBUILD OS | Governança e Inteligência Operacional",
-    description: "Uma camada de governança entre seus sistemas e a operação real. Conecte dados, regras e decisões com rastreabilidade total.",
+    description: "Uma camada complementar para organizar informações, contextualizar processos e apoiar a supervisão de operações empresariais.",
     url: "https://rsbuild-os.vercel.app/institucional",
     siteName: "RSBUILD OS",
     locale: "pt_BR",
@@ -46,59 +46,59 @@ const PROBLEMS = [
   {
     title: "Processos manuais",
     text: "Atividades repetitivas que consomem tempo e dificultam a padronização.",
-    stat: "40% do tempo de equipes financeiras é gasto em tarefas manuais repetitivas (McKinsey, 2023)"
+    stat: "Ponto de atenção: atividades repetitivas podem consumir tempo das equipes e dificultar a padronização."
   },
   {
     title: "Informações fragmentadas",
     text: "Dados distribuídos entre sistemas, planilhas, documentos e equipes.",
-    stat: "Empresas com dados fragmentados perdem em média 30h/mês em cruzamentos manuais (Gartner)"
+    stat: "Ponto de atenção: informações distribuídas podem dificultar a visão integrada da operação."
   },
   {
     title: "Reconciliações demoradas",
     text: "Reconciliações e verificações que dependem de esforço manual.",
-    stat: "68% das empresas reportam atrasos em fechamentos por divergências não detectadas (PwC)"
+    stat: "Ponto de atenção: divergências podem ampliar o esforço de conferência e atrasar fechamentos."
   },
   {
     title: "Aprovações descentralizadas",
     text: "Responsabilidades e decisões difíceis de acompanhar ao longo do processo.",
-    stat: "Sem rastro de aprovações, 42% das decisões não têm justificativa documentada (Deloitte)"
+    stat: "Ponto de atenção: responsabilidades pouco claras dificultam acompanhar aprovações."
   },
   {
     title: "Dependência de conhecimento individual",
     text: "Processos críticos que permanecem concentrados na experiência de poucas pessoas.",
-    stat: "75% do conhecimento tácito é perdido quando funcionários-chave saem (Harvard BR)"
+    stat: "Ponto de atenção: processos concentrados em poucas pessoas elevam a dependência de conhecimento individual."
   },
   {
     title: "Baixa rastreabilidade",
     text: "Dificuldade para compreender o contexto e o andamento de cada atividade.",
-    stat: "Empresas sem rastreabilidade clara têm 3x mais incidentes de não-conformidade (KPMG)"
+    stat: "Ponto de atenção: registros dispersos dificultam reconstruir o contexto das atividades."
   }
 ];
 
 const MODULES = [
   {
-    badge: "Disponível",
-    badgeClass: "ok",
+    badge: "Frente de aplicação",
+    badgeClass: "review",
     title: "Finanças & Caixa",
     text: "Organização de informações financeiras, movimentações e indicadores para ampliar a visibilidade sobre o caixa.",
     items: ["Extratos", "Fluxo de caixa", "Indicadores", "Rastreabilidade"]
   },
   {
-    badge: "Disponível",
-    badgeClass: "ok",
+    badge: "Frente de aplicação",
+    badgeClass: "review",
     title: "Reconciliação & Baixas",
     text: "Conferência assistida entre movimentações, títulos e registros operacionais, com tratamento de divergências.",
     items: ["Correspondências", "Divergências", "Encargos", "Aprovações"]
   },
   {
-    badge: "Em validação",
+    badge: "Aplicação conforme escopo",
     badgeClass: "review",
     title: "Logística & Expedição",
     text: "Organização e acompanhamento de informações relacionadas a pedidos, expedições e entregas.",
     items: ["Pedidos", "Expedições", "Comprovantes", "Ocorrências"]
   },
   {
-    badge: "Em validação",
+    badge: "Aplicação conforme escopo",
     badgeClass: "review",
     title: "Auditoria & Governança",
     text: "Estruturação de responsabilidades, permissões e mecanismos de acompanhamento dos processos.",
@@ -109,8 +109,8 @@ const MODULES = [
 const STEPS = [
   { num: "01", title: "Conectar", text: "Organizar informações provenientes de sistemas e fontes operacionais, conforme as condições de integração de cada projeto.", icon: "connect" },
   { num: "02", title: "Interpretar", text: "Contextualizar informações, identificar padrões e aplicar critérios definidos para cada processo.", icon: "analyze" },
-  { num: "03", title: "Verificar", text: "Apoiar conferências e validações, destacando inconsistências e situações que exigem atenção.", icon: "check" },
-  { num: "04", title: "Governar", text: "Estruturar responsabilidades, aprovações e registros para acompanhar a operação com mais clareza.", icon: "shield" }
+  { num: "03", title: "Verificar", text: "Apoiar conferências e validações, destacando pontos que merecem atenção.", icon: "check" },
+  { num: "04", title: "Governar", text: "Apoiar a organização de responsabilidades, aprovações e registros de acompanhamento.", icon: "shield" }
 ];
 
 const IMPLEMENTATION = [
@@ -125,7 +125,7 @@ const GOVERNANCE_ITEMS = [
   { text: "A automação deve respeitar o escopo e as permissões estabelecidas.", icon: "limit" },
   { text: "Decisões relevantes permanecem sujeitas à responsabilidade e aprovação das pessoas.", icon: "human" },
   { text: "As ações e etapas precisam ser acompanháveis dentro do escopo implementado.", icon: "check" },
-  { text: "Registro de todos os eventos para rastreabilidade completa.", icon: "log" }
+  { text: "Registros e informações de acompanhamento conforme os recursos implementados em cada ambiente.", icon: "log" }
 ];
 
 function LineIcon({ children }: { children: React.ReactNode }) {
@@ -240,15 +240,15 @@ export default function InstitucionalPage() {
         <HeroAmbientAtmosphere />
         <div className="inst-container inst-hero-grid">
           <div>
-            <span className="inst-eyebrow">Operação real. Dados rastreáveis. Decisões auditadas.</span>
+            <span className="inst-eyebrow">Organização operacional. Contexto integrado. Supervisão humana.</span>
             <h1>
               Sua operação<br />
-              sob <em>controle total.</em>
+              com <em>mais clareza.</em>
             </h1>
             <p className="sub">
-              Não é só sobre automatizar — é sobre saber exatamente o que acontece,
-              quem fez, com qual autorização e o que está pendente.
-              O RSBUILD OS coloca governança no centro da operação.
+              Mais do que automatizar tarefas, é importante organizar informações,
+              contextualizar processos e apoiar o acompanhamento das atividades.
+              O RSBUILD OS atua como uma camada complementar aos sistemas existentes.
             </p>
             <div className="inst-hero-ctas">
               <a href="#diagnostico" className="inst-cta">Solicitar diagnóstico</a>
@@ -287,7 +287,7 @@ export default function InstitucionalPage() {
                 <h3>{p.title}</h3>
                 <p>{p.text}</p>
                 <div className="inst-stat-box">
-                  <span className="inst-stat-label">Dado de mercado</span>
+                  <span className="inst-stat-label">Contexto operacional</span>
                   <span className="inst-stat-text">{p.stat}</span>
                 </div>
               </div>
@@ -302,9 +302,9 @@ export default function InstitucionalPage() {
           <span className="inst-eyebrow">A Plataforma</span>
           <h2>Uma camada de governança entre seus sistemas e a operação real.</h2>
           <p className="lead">
-            O RSBUILD OS conecta dados, regras operacionais, fluxos de trabalho e
-            recursos de inteligência em uma estrutura concebida para organizar,
-            acompanhar e governar processos empresariais.
+            O RSBUILD OS apoia a organização de informações e o acompanhamento de processos
+            junto aos sistemas existentes, conforme as condições de integração,
+            os recursos disponíveis e o escopo de cada aplicação.
           </p>
           <FlowDiagram
             top={["ERP", "Bancos", "Documentos", "Dados"]}
@@ -342,8 +342,9 @@ export default function InstitucionalPage() {
           <span className="inst-eyebrow">Domínios Operacionais</span>
           <h2>Uma estrutura modular para diferentes necessidades.</h2>
           <p className="lead">
-            Cada empresa pode ativar apenas as frentes relevantes para sua operação,
-            com o nível de maturidade de cada módulo comunicado com transparência.
+            As frentes abaixo representam contextos de aplicação. A disponibilidade de
+            cada capacidade depende do estágio de desenvolvimento, das condições
+            técnicas e do escopo definido para cada projeto.
           </p>
           <div className="inst-grid-4">
             {MODULES.map((m) => (
@@ -370,10 +371,10 @@ export default function InstitucionalPage() {
             <span className="inst-eyebrow">Inteligência com Governança</span>
             <h2>Automatizar não é suficiente. É preciso saber o que está sendo executado.</h2>
             <p className="lead" style={{ opacity: 0.85 }}>
-              O RSBUILD OS foi concebido para que recursos de inteligência ampliem
-              a capacidade das pessoas — nunca substituam a responsabilidade
-              sobre as decisões. Toda automação opera dentro de critérios,
-              limites e supervisão definidos.
+              O RSBUILD OS pode incorporar recursos de inteligência para apoiar análises
+              e atividades operacionais. O uso desses recursos deve respeitar
+              o escopo, as permissões e os mecanismos de supervisão definidos
+              para cada aplicação.
             </p>
             <Reveal className="inst-governance-list">
               {GOVERNANCE_ITEMS.map((item, i) => (
@@ -393,8 +394,8 @@ export default function InstitucionalPage() {
               ))}
             </Reveal>
             <div className="inst-message">
-              A inteligência deve ampliar a capacidade operacional das pessoas,
-              não eliminar a responsabilidade sobre as decisões.
+              Recursos de inteligência devem apoiar as pessoas. A responsabilidade
+              pelas decisões permanece com os responsáveis pela operação.
             </div>
           </div>
           <div style={{ minHeight: 300 }}>
@@ -479,8 +480,8 @@ export default function InstitucionalPage() {
             <span className="inst-eyebrow" style={{ color: "var(--rsbuild-terracotta-light)" }}>Diagnóstico Operacional</span>
             <h2 style={{ color: "#F5F1EA" }}>Conte-nos sobre sua operação.</h2>
             <p className="lead" style={{ margin: "0 auto", color: "rgba(217, 204, 181, 0.85)" }}>
-              Cinco etapas curtas. Solicitamos apenas o necessário para uma
-              avaliação inicial — nunca credenciais, extratos ou documentos
+              Cinco etapas curtas para entendermos o contexto da operação. Não envie
+              credenciais, dados pessoais de terceiros, extratos ou documentos
               confidenciais.
             </p>
           </div>
@@ -509,9 +510,8 @@ export default function InstitucionalPage() {
             <div>
               <Image src="/brand/rsbuild-logo-dark.svg" alt="RSBUILD" width={130} height={42} />
               <p className="desc" style={{ marginTop: 14 }}>
-                RSBUILD OS — Governança para operações que precisam evoluir.
-                Camada de inteligência e controle entre seus sistemas e a
-                operação real.
+                RSBUILD OS — Camada complementar para organizar informações, contextualizar processos
+                e apoiar a supervisão de operações empresariais.
               </p>
             </div>
             <div>
