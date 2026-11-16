@@ -100,7 +100,10 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
         const textFallback = await response.text().catch(() => "");
         throw new Error(textFallback || `Erro HTTP ${response.status}: Falha na comunicação com o servidor.`);
       }
-      if (!response.ok) throw new Error(data?.detail || data?.error || data?.message || "Falha ao enviar convite.");
+      if (!response.ok) {
+        const errDetail = data?.detail || data?.message || data?.error;
+        throw new Error(errDetail ? `Erro (${response.status}): ${errDetail}` : `Erro HTTP ${response.status}: Falha ao enviar convite.`);
+      }
       setMessage({
         text: `Convite enviado com sucesso para ${email}. O acesso está vinculado exclusivamente a ${organizationName}.`,
         type: "success"
