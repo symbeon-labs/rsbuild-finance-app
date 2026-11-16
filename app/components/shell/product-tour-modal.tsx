@@ -3,13 +3,25 @@
 import { useState } from "react";
 import { NavSection } from "@/app/types/workspace";
 
+type CapabilityStatus = "Disponível" | "Em validação" | "Em desenvolvimento" | "Planejado";
+
+interface TourCapability {
+  icon: string;
+  title: string;
+  desc: string;
+  status: CapabilityStatus;
+}
+
 interface TourStep {
   step: number;
   badge: string;
   title: string;
   subtitle: string;
   description: string;
-  bullets: { icon: string; title: string; desc: string }[];
+  bullets: TourCapability[];
+  userCanDo: string;
+  operationalNote?: string;
+  maturity: CapabilityStatus;
   targetSection?: NavSection;
   actionLabel?: string;
   tag: string;
@@ -20,144 +32,178 @@ const TOUR_STEPS: TourStep[] = [
     step: 1,
     badge: "VISÃO EXECUTIVA",
     title: "Torre de Controle da Holding",
-    subtitle: "Consolidação em tempo real de todas as operações e empresas",
+    subtitle: "Visibilidade executiva por organização",
     description:
-      "O RSBUILD OS foi construído para dar visibilidade executiva sem misturar dados. A diretoria acompanha o faturamento, caixas diários e indicadores consolidados em uma visão única.",
+      "A Torre de Controle reúne indicadores e informações operacionais disponíveis no workspace para apoiar o acompanhamento da empresa. A consolidação entre diferentes organizações depende das fontes, dos acessos e das integrações habilitadas.",
     bullets: [
       {
         icon: "🏛️",
-        title: "Isolamento Multi-Tenant com RLS",
-        desc: "Cada empresa opera em silo fechado; a holding enxerga tudo consolidado sem risco de vazamento."
+        title: "Visão por organização",
+        desc: "Acompanhamento das informações disponíveis no workspace ativo.",
+        status: "Em validação"
       },
       {
         icon: "👑",
-        title: "Matriz de Alçadas (RBAC)",
-        desc: "4 níveis de permissão (Proprietário, Diretoria, Operador e Auditoria) com travas de segurança."
+        title: "Papéis e alçadas de acesso",
+        desc: "Ações e aprovações são condicionadas ao perfil e às permissões configuradas.",
+        status: "Disponível"
       },
       {
         icon: "📊",
-        title: "Gestão por Indicadores",
-        desc: "Acompanhamento reativo de entradas, saídas, resultado líquido e cobertura operacional."
+        title: "Indicadores executivos",
+        desc: "Leitura de indicadores financeiros e operacionais conforme a disponibilidade das fontes.",
+        status: "Em validação"
       }
     ],
-    targetSection: "visao-geral",
+    userCanDo: "Explore os indicadores disponíveis e identifique quais fontes de dados ainda precisam ser importadas ou configuradas.",
+    operationalNote:
+      "A visão apresentada é limitada aos dados disponíveis no workspace. Não representa, por si só, consolidação automática em tempo real de todas as empresas da holding.",
+    maturity: "Em validação",
+    targetSection: "torre-controle",
     actionLabel: "Explorar Torre de Controle",
     tag: "Holding & Governança"
   },
   {
     step: 2,
-    badge: "MÓDULO 01 · ENTREGUE",
-    title: "Finanças & Ingestão Multibanco",
-    subtitle: "Normalização inteligente de extratos OFX e CSV",
+    badge: "FINANÇAS",
+    title: "Finanças & Ingestão de Extratos",
+    subtitle: "Importação e organização de arquivos OFX e CSV",
     description:
-      "Elimine a digitação manual de extratos. O motor financeiro reconhece layouts bancários nacionais, detecta duplicidades e recalcula o fluxo de caixa com precisão em centavos.",
+      "O módulo permite carregar extratos bancários, revisar os registros reconhecidos e acompanhar as movimentações financeiras disponíveis no workspace.",
     bullets: [
       {
         icon: "💳",
-        title: "Leitor Inteligente OFX/CSV",
-        desc: "Ingestão transacional com hash SHA-256 de lote, garantindo rastreabilidade e idempotência."
+        title: "Importação OFX/CSV",
+        desc: "Leitura de arquivos e apresentação de uma prévia para conferência antes da confirmação.",
+        status: "Disponível"
       },
       {
-        icon: "📅",
-        title: "Seletor Contábil Reativo",
-        desc: "Filtros rápidos (Mês Atual, Mês Anterior, Ano) ou períodos customizados de conferência."
+        icon: "🔎",
+        title: "Consulta de movimentações",
+        desc: "Busca e visualização dos registros carregados, com filtros e recortes por período.",
+        status: "Disponível"
       },
       {
         icon: "📈",
-        title: "Demonstrativo DRE Gerencial",
-        desc: "Visão estruturada de receitas, custos e margem operacional por unidade de negócio."
+        title: "Visão gerencial",
+        desc: "Acompanhamento de entradas, saídas e resultado com base nos registros disponíveis.",
+        status: "Disponível"
       }
     ],
-    targetSection: "movimentacoes",
-    actionLabel: "Ver Movimentações & Extratos",
+    userCanDo: "Selecione um arquivo OFX ou CSV, confira a prévia e confirme a importação para consultar as movimentações.",
+    operationalNote:
+      "A leitura depende da estrutura e da qualidade do arquivo recebido. Confira os registros antes de confirmar a importação.",
+    maturity: "Disponível",
+    targetSection: "importacoes",
+    actionLabel: "Importar extrato",
     tag: "Finanças & Tesouraria"
   },
   {
     step: 3,
-    badge: "MÓDULO 02 · ENTREGUE",
-    title: "Reconciliação & Baixas no ERP",
-    subtitle: "Cruzamento algorítmico assistido e baixas em lote sem erro humano",
+    badge: "RECONCILIAÇÃO",
+    title: "Reconciliação & Baixas",
+    subtitle: "Correspondência assistida entre extratos e títulos",
     description:
-      "A solução para a fragilidade operacional: cruze as entradas bancárias com os títulos a receber do sistema de gestão, apure juros/multas e gere o arquivo oficial de baixa em lote.",
+      "A área de reconciliação permite comparar movimentações bancárias com lançamentos e títulos importados, identificar possíveis correspondências e destacar divergências para revisão.",
     bullets: [
       {
         icon: "🔄",
-        title: "Motor de Matching Assistido",
-        desc: "Cruzamento automático por valor exato, CNPJ/CPF e documento fiscal com sugestão de correspondência."
+        title: "Correspondência assistida",
+        desc: "Sugestões de relacionamento entre registros bancários e lançamentos disponíveis.",
+        status: "Em validação"
       },
       {
         icon: "⚖️",
-        title: "Cálculo Automático de Encargos",
-        desc: "Apuração precisa de juros, multas e abatimentos para pagamentos fora do vencimento."
+        title: "Análise de divergências",
+        desc: "Visualização de diferenças e necessidade de revisão antes de confirmar uma correspondência.",
+        status: "Em validação"
       },
       {
         icon: "📦",
-        title: "Remessa de Baixa em Lote",
-        desc: "Exportação em lote padronizada para o ERP, com aprovação restrita à diretoria."
+        title: "Exportação de lote",
+        desc: "Geração de arquivo CSV para conferência e eventual utilização no sistema de origem.",
+        status: "Em validação"
       }
     ],
+    userCanDo: "Importe os lançamentos de referência, examine as correspondências sugeridas e revise divergências antes de qualquer decisão.",
+    operationalNote:
+      "O workspace não executa baixa diretamente no ERP nem sincroniza automaticamente com ele. A exportação gera um arquivo para conferência e eventual importação manual.",
+    maturity: "Em validação",
     targetSection: "conciliacao",
-    actionLabel: "Abrir Central de Reconciliação",
+    actionLabel: "Abrir Conciliação",
     tag: "Reconciliação ERP"
   },
   {
     step: 4,
-    badge: "MÓDULO 03 · OPERACIONAL",
-    title: "Logística & Blindagem de Canhotos",
-    subtitle: "Protocolo digital de entregas e parser de pedidos de mensageria",
+    badge: "LOGÍSTICA",
+    title: "Logística & Comprovantes de Entrega",
+    subtitle: "Organização de pedidos, entregas e ocorrências",
     description:
-      "Proteja a operação contra perdas e cobranças indevidas: digitalize os canhotos assinados, monitore o risco de protesto e converta pedidos informais de clientes em registros estruturados.",
+      "As ferramentas logísticas ajudam a estruturar informações de pedidos e comprovantes, relacionar registros e acompanhar pendências documentais da operação.",
     bullets: [
       {
         icon: "📜",
-        title: "Custódia Digital de Canhotos",
-        desc: "Upload e vinculação de comprovantes de entrega às notas fiscais para resguardo jurídico."
+        title: "Comprovantes e canhotos",
+        desc: "Importação e consulta de registros de entrega e seus dados associados.",
+        status: "Em validação"
       },
       {
         icon: "⚠️",
-        title: "Alerta de Risco de Protesto",
-        desc: "Identificação proativa de títulos faturados sem comprovante de entrega anexado."
+        title: "Pendências documentais",
+        desc: "Visualização de registros que precisam de conferência ou complemento.",
+        status: "Em validação"
       },
       {
         icon: "💬",
-        title: "Parser NLP de Pedidos",
-        desc: "Interpretação automática de mensagens de WhatsApp e geração de pedido formatado."
+        title: "Interpretação de pedidos",
+        desc: "Leitura assistida de mensagens e organização dos itens identificados em uma prévia.",
+        status: "Em validação"
       }
     ],
+    userCanDo: "Consulte os comprovantes ou experimente a interpretação de uma mensagem de pedido, revisando os dados estruturados antes de confirmar.",
+    operationalNote:
+      "Os registros de canhotos e pedidos deste ambiente são dados locais de demonstração e não representam persistência oficial no servidor.",
+    maturity: "Em validação",
     targetSection: "canhotos",
-    actionLabel: "Conferir Canhotos de Entrega",
+    actionLabel: "Consultar Comprovantes",
     tag: "Expedição & Logística"
   },
   {
     step: 5,
-    badge: "MÓDULO 04 · GOVERNANÇA",
-    title: "Auditoria Pericial & O RS Guardião",
-    subtitle: "Governança Cognitiva com Supervisão Humana (HITL)",
+    badge: "AUDITORIA & GOVERNANÇA",
+    title: "RS Guardião",
+    subtitle: "Apoio à análise, rastreabilidade e supervisão humana",
     description:
-      "O RS Guardião atua como uma sentinela pericial contínua: diagnostica a integridade dos processos, audita cada ação de usuário e garante que decisões críticas permaneçam sob alçada humana.",
+      "O RS Guardião representa a frente de governança do RSBUILD OS. No ambiente atual, o painel reúne informações disponíveis e apresenta análises experimentais para apoiar a identificação de pontos que exigem revisão humana.",
     bullets: [
       {
         icon: "🛡️",
-        title: "Sentinela de Integridade",
-        desc: "Score pericial e diagnóstico contínuo de conformidade contábil, fiscal e processual."
+        title: "Diagnóstico operacional",
+        desc: "Síntese calculada somente quando as fontes necessárias estão disponíveis; não equivale a certificação de conformidade.",
+        status: "Em validação"
       },
       {
         icon: "👁️",
-        title: "Trilha Imutável de Eventos (Audit Trail)",
-        desc: "Registro forense com ator, data, hora e metadados de toda importação, baixa e exclusão."
+        title: "Rastreabilidade de ações",
+        desc: "Consulta dos registros e informações de auditoria efetivamente disponibilizados pelo workspace.",
+        status: "Em validação"
       },
       {
         icon: "🤝",
-        title: "Human-in-the-Loop (HITL)",
-        desc: "A inteligência apoia e audita, mas a validação de crédito e baixas é sempre da diretoria."
+        title: "Supervisão humana",
+        desc: "Correspondências, divergências e decisões críticas requerem revisão e permissões adequadas.",
+        status: "Disponível"
       }
     ],
+    userCanDo: "Explore o painel, verifique a suficiência das fontes e trate as recomendações como pontos de revisão — não como decisões automáticas.",
+    operationalNote:
+      "Os indicadores são experimentais e dependem da cobertura e da qualidade dos dados. O painel não certifica conformidade contábil, fiscal ou jurídica e não substitui auditoria profissional.",
+    maturity: "Em validação",
     targetSection: "torre-controle",
-    actionLabel: "Ver Diagnóstico do RS Guardião",
+    actionLabel: "Ver Painel de Governança",
     tag: "Auditoria & Governança"
   }
 ];
-
 interface ProductTourModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -341,6 +387,36 @@ export function ProductTourModal({
             {currentStep.description}
           </p>
 
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--muted, #9B9A97)" }}>
+              MATURIDADE DO MÓDULO
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                border: "1px solid rgba(181, 88, 60, 0.35)",
+                background: "rgba(181, 88, 60, 0.10)",
+                color: "var(--rsbuild-terracotta, #B5583C)",
+                borderRadius: "999px",
+                padding: "3px 9px",
+                fontSize: "10px",
+                fontWeight: 700
+              }}
+            >
+              {currentStep.maturity}
+            </span>
+          </div>
+
+          <div style={{ marginBottom: "14px", padding: "11px 13px", borderRadius: "8px", background: "rgba(255,255,255,0.025)", border: "1px solid var(--line, #2E3036)" }}>
+            <strong style={{ display: "block", fontSize: "11px", color: "var(--ink, #F4F1EA)", marginBottom: "4px" }}>
+              O que você pode fazer
+            </strong>
+            <span style={{ fontSize: "12px", lineHeight: "1.45", color: "var(--ink-secondary, #D5D2CB)" }}>
+              {currentStep.userCanDo}
+            </span>
+          </div>
+
           {/* Grid de Destaques / Bullets */}
           <div
             style={{
@@ -356,14 +432,44 @@ export function ProductTourModal({
               <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
                 <span style={{ fontSize: "16px", marginTop: "1px" }}>{b.icon}</span>
                 <div style={{ fontSize: "12px", lineHeight: "1.4" }}>
-                  <strong style={{ color: "var(--ink, #F4F1EA)", display: "block" }}>
-                    {b.title}
-                  </strong>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
+                    <strong style={{ color: "var(--ink, #F4F1EA)" }}>{b.title}</strong>
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 700,
+                        padding: "2px 6px",
+                        borderRadius: "999px",
+                        border: "1px solid var(--line, #2E3036)",
+                        color: b.status === "Disponível" ? "var(--green, #16A34A)" : "var(--muted, #9B9A97)"
+                      }}
+                    >
+                      {b.status.toUpperCase()}
+                    </span>
+                  </div>
                   <span style={{ color: "var(--muted, #9B9A97)" }}>{b.desc}</span>
                 </div>
               </div>
             ))}
           </div>
+          {currentStep.operationalNote && (
+            <div
+              role="note"
+              style={{
+                marginTop: "12px",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid rgba(217, 204, 181, 0.18)",
+                background: "rgba(217, 204, 181, 0.045)",
+                color: "var(--muted, #B8B3AA)",
+                fontSize: "11px",
+                lineHeight: "1.45"
+              }}
+            >
+              <strong style={{ color: "var(--ink-secondary, #D5D2CB)" }}>Nota operacional: </strong>
+              {currentStep.operationalNote}
+            </div>
+          )}
         </div>
 
         {/* Footer com Navegação e Ações */}
