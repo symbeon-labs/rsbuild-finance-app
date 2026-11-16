@@ -72,6 +72,11 @@ export function runFinancialValidation(caseCode: string): ValidationOutcome {
    check("Autor e justificativa preservados",matched.matchAuthor==="sandbox-validator" && matched.matchJustification==="Correspondência confirmada no cenário sintético.","Autoria e justificativa presentes.");
    check("Data/hora registrada",!!matched.matchDate && !!matched.updatedAt,"Timestamp de decisão presente.");
    check("Desfazer retorna a pendente",unmatched.status==="pendente" && !unmatched.matchedWith,"Desconciliação remove o vínculo e retorna ao estado pendente.");
+   if(caseCode==="A2.5-MANUAL-MATCH-JUSTIFICATION") {
+     let rejectedBlank=false;
+     try { manualMatch(bank,erp,"   ","sandbox-validator"); } catch { rejectedBlank=true; }
+     check("Justificativa vazia rejeitada",rejectedBlank,"O domínio rejeita correspondência manual sem justificativa.");
+   }
  } else if(caseCode==="A2.4-MANUAL-AUDIT-VIEW" || caseCode==="A2.W02-PERSISTENCE") {
    return {status:"blocked",summary:caseCode==="A2.4-MANUAL-AUDIT-VIEW"?"Validação visual/manual ainda exige revisão da tela e da trilha persistida.":"Persistência end-to-end ainda não foi comprovada pelo harness; não aprovar sem teste de nova sessão e banco.",checks:[{name:"Validação pendente",passed:false,detail:"Requer validação integrada/manual; nenhum resultado foi presumido."}]};
  } else {
