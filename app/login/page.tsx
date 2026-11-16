@@ -188,6 +188,12 @@ export default function LoginPage() {
             <span aria-hidden="true">◆</span>
             Acesso restrito a usuários autorizados.
           </p>
+
+          <p style={{ textAlign: "center", marginTop: 14, fontSize: 12 }}>
+            <a href="/institucional" style={{ color: "var(--rsbuild-terracotta, #B5583C)", fontWeight: 600 }}>
+              Conheça o RSBUILD OS — posicionamento, módulos e filosofia →
+            </a>
+          </p>
         </div>
 
         <footer className="login-copyright">

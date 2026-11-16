@@ -221,6 +221,21 @@ export function Sidebar({
       </nav>
 
       <div className="sidebar-bottom">
+        <a
+          href="/institucional"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "block",
+            fontSize: 11,
+            color: "var(--rsbuild-muted, #6b7280)",
+            textAlign: "center",
+            padding: "6px 0 2px",
+            textDecoration: "none"
+          }}
+        >
+          Sobre o RSBUILD OS ↗
+        </a>
         <div
           className="sidebar-user-row"
           style={{ cursor: "pointer" }}
