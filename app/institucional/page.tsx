@@ -3,6 +3,7 @@ import Image from "next/image";
 import { DiagnosticForm } from "./diagnostic-form";
 import { FlowDiagram, GovernanceFlow, HeroNetwork, Reveal } from "./diagrams";
 import { HeroAmbientAtmosphere } from "./hero-ambient";
+import { FrentesBanner } from "./frentes-banner";
 
 export const metadata = {
   title: "RSBUILD OS | Governança e Inteligência Operacional",
@@ -219,7 +220,7 @@ export default function InstitucionalPage() {
       <header className="inst-header">
         <div className="inst-container inst-header-inner">
           <Link href="/institucional" className="inst-logo" aria-label="RSBUILD OS — página inicial">
-            <Image src="/brand/rsbuild-logo-dark.svg" alt="RSBUILD" width={140} height={44} priority />
+            <Image src="/brand/rsbuild-logo-dark.svg" alt="RSBUILD" width={168} height={52} priority />
           </Link>
           <nav className="inst-nav" aria-label="Navegação institucional">
             <a href="#produto">O produto</a>
@@ -239,14 +240,15 @@ export default function InstitucionalPage() {
         <HeroAmbientAtmosphere />
         <div className="inst-container inst-hero-grid">
           <div>
-            <span className="inst-eyebrow">Inteligência Operacional · Governança</span>
+            <span className="inst-eyebrow">Operação real. Dados rastreáveis. Decisões auditadas.</span>
             <h1>
-              Governança e inteligência<br />
-              para operações <em>empresariais.</em>
+              Sua operação<br />
+              sob <em>controle total.</em>
             </h1>
             <p className="sub">
-              Transforme processos, dados e decisões em operações mais
-              organizadas, rastreáveis e governáveis.
+              Não é só sobre automatizar — é sobre saber exatamente o que acontece,
+              quem fez, com qual autorização e o que está pendente.
+              O RSBUILD OS coloca governança no centro da operação.
             </p>
             <div className="inst-hero-ctas">
               <a href="#diagnostico" className="inst-cta">Solicitar diagnóstico</a>
@@ -355,38 +357,9 @@ export default function InstitucionalPage() {
             ))}
           </div>
 
-          {/* Prova Social & Frentes Operacionais Ativas */}
+          {/* Prova Social & Frentes Operacionais Ativas — componente interativo */}
           <Reveal>
-            <div className="inst-frentes-banner">
-              <div className="inst-frentes-left">
-                <div className="inst-frentes-icon-wrap">
-                  🏭
-                  <span className="inst-frentes-live-dot" aria-hidden="true" />
-                </div>
-                <div>
-                  <strong className="inst-frentes-title">
-                    Frentes Ativas em Produção &amp; Validação Prática
-                  </strong>
-                  <span className="inst-frentes-sub">
-                    Operações pioneiras atendidas na indústria de alimentos, distribuição logística e governança financeira de holdings.
-                  </span>
-                </div>
-              </div>
-              <div className="inst-frentes-tags">
-                <span className="inst-frentes-tag">
-                  <span className="inst-frentes-tag-dot" aria-hidden="true" />
-                  Indústria Alimentícia
-                </span>
-                <span className="inst-frentes-tag">
-                  <span className="inst-frentes-tag-dot" aria-hidden="true" />
-                  Distribuição &amp; Logística
-                </span>
-                <span className="inst-frentes-tag">
-                  <span className="inst-frentes-tag-dot" aria-hidden="true" />
-                  Governança de Holding
-                </span>
-              </div>
-            </div>
+            <FrentesBanner />
           </Reveal>
         </div>
       </section>
