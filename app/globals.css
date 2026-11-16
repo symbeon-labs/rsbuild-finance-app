@@ -5455,3 +5455,39 @@ canvas {
     opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important;
   }
 }
+
+
+/* Integration principles: replace the repeated legacy system diagram */
+.rs-integration-principles { margin-top: 42px; }
+.rs-integration-principles .inst-card {
+  position: relative;
+  min-height: 190px;
+  padding: 25px;
+  border: 1px solid rgba(97,73,67,.18);
+  border-radius: 15px;
+  background: rgba(255,255,255,.58);
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.rs-integration-principles .inst-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(181,88,60,.55);
+  box-shadow: 0 12px 28px rgba(97,73,67,.09);
+}
+.rs-integration-principles .inst-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 17px;
+  border: 1px solid rgba(181,88,60,.4);
+  border-radius: 9px;
+  color: #B5583C;
+  font-size: 11px;
+  font-weight: 800;
+}
+.rs-integration-principles .inst-card h3 { margin: 0 0 8px; }
+.rs-integration-principles .inst-card p { margin: 0; line-height: 1.55; }
+@media (max-width: 700px) {
+  .rs-integration-principles { grid-template-columns: 1fr; }
+  .rs-integration-principles .inst-card { min-height: 0; }
+}
