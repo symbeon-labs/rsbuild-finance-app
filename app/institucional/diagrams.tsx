@@ -425,9 +425,9 @@ export function HeroNetwork() {
       {SATELLITES.map((sat, i) => {
         const positions = [
           { left: "6.59%", top: "17.17%", placement: "right" },
-          { left: "67.56%", top: "17.17%", placement: "left" },
+          { left: "67.56%", top: "17.17%", placement: "right" },
           { left: "6.59%", top: "82.83%", placement: "right" },
-          { left: "67.56%", top: "82.83%", placement: "left" },
+          { left: "67.56%", top: "82.83%", placement: "right" },
         ];
         const pos = positions[i];
         const active = hoveredSat === i;
