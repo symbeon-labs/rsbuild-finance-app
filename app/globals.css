@@ -3474,7 +3474,7 @@ canvas {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
+  grid-template-columns: 0.82fr 1.18fr;
   gap: 44px;
   align-items: center;
 }
@@ -3505,7 +3505,7 @@ canvas {
   margin: 0 0 32px;
 }
 .inst-hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; }
-.inst-hero-art { position: relative; min-height: 320px; }
+.inst-hero-art { position: relative; min-height: 360px; }
 .inst-hero-art svg { width: 100%; height: auto; display: block; }
 
 /* ---------- Sections ---------- */
@@ -4058,7 +4058,7 @@ canvas {
 
 .inst-hero-prism .inst-orbital-rings {
   animation: instRingRotate 50s linear infinite;
-  transform-origin: 400px 230px;
+  transform-origin: 410px 230px;
 }
 
 .inst-hero-prism:hover .inst-prism-body,
