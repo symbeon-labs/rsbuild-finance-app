@@ -37,15 +37,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "sandbox_forbidden" }, { status: 403 });
     }
 
-    // Usar client normal com schema sandbox (RLS permite owner/admin da RSBUILD)
+    // Usar views públicas security_invoker — RLS do schema sandbox continua valendo
     const [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes] = await Promise.all([
-      supabase.schema("sandbox").from("organizations").select("*").order("display_name"),
-      supabase.schema("sandbox").from("organization_memberships").select("*").limit(1000),
-      supabase.schema("sandbox").from("financial_accounts").select("*").limit(1000),
-      supabase.schema("sandbox").from("financial_records").select("*").order("transaction_date", { ascending: false }).limit(1000),
-      supabase.schema("sandbox").from("receivable_titles").select("*").order("due_date").limit(1000),
-      supabase.schema("sandbox").from("delivery_proofs").select("*").order("delivery_date", { ascending: false }).limit(1000),
-      supabase.schema("sandbox").from("audit_events").select("*").order("created_at", { ascending: false }).limit(1000)
+      supabase.from("sandbox_organizations").select("*").order("display_name"),
+      supabase.from("sandbox_organization_memberships").select("*").limit(1000),
+      supabase.from("sandbox_financial_accounts").select("*").limit(1000),
+      supabase.from("sandbox_financial_records").select("*").order("transaction_date", { ascending: false }).limit(1000),
+      supabase.from("sandbox_receivable_titles").select("*").order("due_date").limit(1000),
+      supabase.from("sandbox_delivery_proofs").select("*").order("delivery_date", { ascending: false }).limit(1000),
+      supabase.from("sandbox_audit_events").select("*").order("created_at", { ascending: false }).limit(1000)
     ]);
 
     const firstError = [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes]
