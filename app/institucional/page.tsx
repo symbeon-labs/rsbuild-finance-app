@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { DiagnosticForm } from "./diagnostic-form";
-import { FlowDiagram, GovernanceFlow, HeroNetwork, Reveal } from "./diagrams";
+import { ArchitectureDiagram, GovernanceFlow, HeroNetwork, OperationalFlow, Reveal } from "./diagrams";
 import { HeroAmbientAtmosphere } from "./hero-ambient";
 import { FrentesBanner } from "./frentes-banner";
 
@@ -306,12 +306,7 @@ export default function InstitucionalPage() {
             recursos de inteligência em uma estrutura concebida para organizar,
             acompanhar e governar processos empresariais.
           </p>
-          <FlowDiagram
-            top={["ERP", "Bancos", "Documentos", "Dados"]}
-            bottom={["Processos organizados", "Verificação", "Governança", "Decisões acompanhadas"]}
-            core="RSBUILD OS"
-            dark
-          />
+          <ArchitectureDiagram />
         </div>
       </section>
 
@@ -320,20 +315,7 @@ export default function InstitucionalPage() {
         <div className="inst-container">
           <span className="inst-eyebrow">Modelo Operacional</span>
           <h2>Da informação à operação governada.</h2>
-          <Reveal className="inst-reveal-target">
-            <div className="inst-steps" style={{ marginTop: 40 }}>
-              {STEPS.map((s) => (
-                <div key={s.num} className="inst-step">
-                  <div className="num">{s.num}</div>
-                  <div className="inst-step-icon">
-                    <StepIcon name={s.icon} />
-                  </div>
-                  <h3>{s.title}</h3>
-                  <p>{s.text}</p>
-                </div>
-              ))}
-            </div>
-          </Reveal>
+          <OperationalFlow />
         </div>
       </section>
 
