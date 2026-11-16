@@ -533,8 +533,7 @@ export default function InstitucionalPage() {
           <div className="inst-footer-bottom">
             <span>© {new Date().getFullYear()} RSBUILD · Todos os direitos reservados.</span>
             <span>
-              <a href="/institucional">Privacidade</a>
-              <a href="/institucional">Termos de uso</a>
+              <a href="mailto:suporte@rsbuild.com.br?subject=Privacidade%20e%20tratamento%20de%20dados">Privacidade e informações sobre dados</a>
             </span>
           </div>
         </div>
