@@ -31,9 +31,9 @@ A plataforma opera consolidando a gestão financeira, conciliação e esteira op
 | Desafio | Antes | Com o RSBUILD OS |
 |:--------|:------|:------------------|
 | **Visibilidade financeira** | Planilhas isoladas, sem torre de controle | Dashboard unificado com fluxo de caixa diário por empresa |
-| **Fraude e erro no ERP** | Operadores com acesso irrestrito ao Omie | RBAC com 4 níveis de alçada + trilha de auditoria completa |
+| **Fraude e erro no ERP** | Operadores com acessos sem travas de alçada no ERP legado | RBAC com 4 níveis de alçada + trilha de auditoria completa |
 | **Conciliação bancária** | Centenas de PIX, boletos e cartões reconciliados manualmente | Motor algorítmico de correspondência assistida com exportação para baixa em lote |
-| **Processos logísticos** | Pedidos via WhatsApp, canhotos perdidos | Parser NLP de pedidos + protocolo digital de provas de entrega |
+| **Processos logísticos** | Pedidos informais via mensageria, canhotos físicos dispersos | Parser NLP de pedidos estruturados + protocolo digital de provas de entrega |
 
 ---
 
@@ -56,10 +56,11 @@ A plataforma opera consolidando a gestão financeira, conciliação e esteira op
         │ SQL / RLS        │ REST API         │ Webhooks
         ▼                  ▼                  ▼
   ┌───────────┐     ┌───────────┐     ┌──────────────┐
-  │ Supabase  │     │ Omie ERP  │     │  WhatsApp    │
-  │ PostgreSQL│     │ (Títulos, │     │  Business    │
-  │ Multi-    │     │  Baixas,  │     │  (Pedidos,   │
-  │ tenant    │     │  Alçadas) │     │   Canhotos)  │
+  │  BANCO DE │     │CONECTORES │     │  MENSAGERIA  │
+  │   DADOS   │     │  DE ERP   │     │ CORPORATIVA  │
+  │ PostgreSQL│     │ (Títulos, │     │ (Pedidos,    │
+  │ Multi-    │     │  Baixas,  │     │  Canhotos,   │
+  │ tenant    │     │  Alçadas) │     │  Notificação)│
   └───────────┘     └───────────┘     └──────────────┘
 ```
 
@@ -82,7 +83,7 @@ A plataforma opera consolidando a gestão financeira, conciliação e esteira op
 
 ### 💼 Financeiro & Controladoria
 
-- **Ingestão Multibanco** — Parser inteligente de extratos OFX (v100/102, Windows-1252) e CSV brasileiro (`;` como separador, vírgula decimal). Identificação automática de instituições (Itaú, BNB, Inter, XP).
+- **Ingestão Multibanco** — Parser inteligente de extratos OFX (v100/102, Windows-1252) e CSV brasileiro (`;` como separador, vírgula decimal). Identificação automática de layouts dos principais bancos nacionais e adquirentes.
 - **Movimentações** — Visualização consolidada com filtros por período, conta e categoria. Presets contábeis e seletor customizado de datas.
 - **Visão Geral** — KPIs de entradas, saídas, resultado líquido e indicadores de cobertura.
 - **Importações** — Rastreabilidade completa: hash de arquivo, lotes, deduplicação, validação e trilha de auditoria.
@@ -90,14 +91,14 @@ A plataforma opera consolidando a gestão financeira, conciliação e esteira op
 
 ### 🔄 Conciliação & Baixas ERP
 
-- **Motor de Correspondência** — Matching algorítmico entre lançamentos bancários e títulos a receber do Omie.
+- **Motor de Correspondência** — Matching algorítmico entre lançamentos bancários e títulos a receber do ERP.
 - **Cálculo Automático** — Juros, multas e deduções de títulos em atraso.
-- **Baixa em Lote** — Geração de planilha oficial para o ERP (`lote_baixas_omie_*.csv`).
+- **Baixa em Lote** — Geração de arquivo estruturado para baixa em lote e automações via API/webhook no ERP.
 - **Reconciliation Decisions** — Persistência auditável de aprovações e justificativas.
 
 ### 📦 Logística & Canhotos
 
-- **Parser NLP de Pedidos** — Interpreta mensagens de WhatsApp e converte em pedidos estruturados para o ERP.
+- **Parser NLP de Pedidos** — Interpreta mensagens de canais de mensageria corporativa e converte em pedidos estruturados para o ERP.
 - **Protocolo Digital de Canhotos** — Upload e rastreio de provas de entrega para blindagem jurídica.
 - **Métricas de Entrega** — Cobertura, risco de protesto e geração de CSV de blindagem.
 
@@ -146,7 +147,7 @@ rsbuild-finance-app/
 │   │   ├── audit-events/       # Trilha de auditoria
 │   │   ├── erp-movements/      # Movimentações ERP
 │   │   ├── imports/            # Importação de extratos
-│   │   ├── orders/             # Pedidos WhatsApp
+│   │   ├── orders/             # Pedidos estruturados via mensageria
 │   │   ├── projects/           # Portfólio de sprints
 │   │   ├── proofs/             # Canhotos de entrega
 │   │   ├── reconciliation-decisions/
@@ -168,7 +169,7 @@ rsbuild-finance-app/
 │   ├── finance.ts              # Motor financeiro (OFX/CSV parser)
 │   ├── reconciliation.ts       # Motor de conciliação
 │   ├── delivery.ts             # Motor de canhotos
-│   ├── orders.ts               # Parser de pedidos WhatsApp
+│   ├── orders.ts               # Parser de pedidos de mensageria
 │   ├── permissions.ts          # Matriz RBAC (4 níveis)
 │   └── finance-persistence.ts  # Persistência financeira (centavos)
 ├── supabase/
@@ -252,7 +253,7 @@ npm run build      # Build de produção — sucesso
 | `finance-persistence.test.ts` | Conversão reais/centavos, persistência |
 | `reconciliation.test.ts` | Motor de matching, juros, baixa em lote |
 | `delivery.test.ts` | Canhotos, métricas, risco de protesto |
-| `orders.test.ts` | Parser NLP de pedidos WhatsApp |
+| `orders.test.ts` | Parser NLP de pedidos via mensageria |
 | `permissions.test.ts` | Matriz RBAC, alçadas, segregação |
 | `internal-transfers.test.ts` | Transferências entre contas |
 | `workspace.test.ts` | Multi-tenant, roteamento, módulos |
@@ -284,7 +285,7 @@ npm run build      # Build de produção — sucesso
 |:------|:-------|:----------|
 | **01 — Visibilidade Financeira** | ✅ Produção | Importação, movimentações, KPIs |
 | **02 — Gestão Financeira** | ✅ Produção | Conciliação, baixas, títulos, DRE |
-| **03 — Integração Operacional** | 🔧 Em progresso | Conector ERP Omie bidirecional |
+| **03 — Integração Operacional** | 🔧 Em progresso | Conectores ERP bidirecionais (APIs & Webhooks) |
 | **04 — Governança Avançada** | 📋 Planejado | RS Guardião — alertas preditivos |
 | **05 — Foundry** | 📋 Planejado | Conectores multi-ERP e automações |
 
