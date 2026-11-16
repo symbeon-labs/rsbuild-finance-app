@@ -134,13 +134,17 @@ O **RSBUILD OS** é estruturado sobre **4 Módulos Operacionais Fundamentais**, 
 
 ### 🛡️ Módulo 4: Auditoria & RS Guardião
 *Status de Maturidade: Operacional / Em Expansão Analítica*
-- **Trilha de Auditoria (Audit Trail):** Registro pericial imutável de todos os eventos (importações, conciliações, aprovações e exclusões) com identificação de ator, organização e timestamps.
+- **Trilha de Auditoria (Audit Trail):** Registro pericial imutável de todos os eventos (importações, conciliações, aprovações, exclusões, sessões) com identificação de ator, organização e timestamps — append-only, gravada apenas server-side.
+- **Rastreabilidade de Sessões:** Eventos `session.login`/`session.logout` por organização em todos os fluxos de autenticação (senha, link de convite, logout explícito), complementados por `last_sign_in_at` do provedor de identidade.
+- **Detecção de Acesso Negado:** Tentativas de acesso sem membership ou com alçada insuficiente são registradas (`access.denied`) antes do retorno 403 — o cliente enxerga quem tentou o quê sem autorização.
 - **RS Guardião (Governança Cognitiva):** Motor de diagnóstico da saúde operacional e conformidade com Human-in-the-Loop (HITL), avaliando integridade fiscal e processos.
 - **Painel de Governança Pericial:** Visualização centralizada dos registros de auditoria para compliance e suporte contábil.
 
 ### 🏢 Camada Transversal: Torre de Controle Executiva
 *Status de Maturidade: Produção / Homologado*
 - **Holding Overview:** Painel consolidado multi-empresa com saldos, volumes transacionados e alertas em visão única para a diretoria.
+- **Observabilidade Cross-Tenant em Tempo Real:** Métricas operacionais agregadas das empresas integradas (títulos pendentes, baixas, pedidos, eventos de auditoria, acessos negados) consumidas via API server-side — a holding observa sem membership nos tenants e sem expor dados operacionais brutos.
+- **Central de Acessos & Identidades:** Diretório consolidado de membros, convites e permissões por projeto em todas as organizações, com último login e gestão de grants (`viewer`/`contributor`) por pessoa e por organização cliente.
 - **Sprint Zone:** Módulo exclusivo para governança de projetos de tecnologia e acompanhamento de entregas evolutivas da plataforma.
 
 ---
@@ -148,6 +152,8 @@ O **RSBUILD OS** é estruturado sobre **4 Módulos Operacionais Fundamentais**, 
 ## Multi-Tenancy & RBAC
 
 O sistema opera com **isolamento completo por organização** usando Row Level Security (RLS) no PostgreSQL. Cada dado pertence a exatamente um tenant, e as queries são automaticamente filtradas.
+
+A organização **RSBUILD** atua como camada de governança: seu workspace (`ControlTowerWorkspace`) agrega observabilidade e identidades de todos os tenants via APIs server-side com service role — leitura controlada que **não afrouxa o RLS** dos clientes e não exige membership da holding nas operacionais. O workspace de cada tenant (`OperationalWorkspace`) permanece isolado e dono de seus dados.
 
 ### Níveis de Alçada
 
@@ -157,6 +163,17 @@ O sistema opera com **isolamento completo por organização** usando Row Level S
 | **Admin** | 🏛 Diretoria / Gestão | Aprova baixas, conciliações com divergência, crédito |
 | **Operator** | ⚡ Operador | Importa arquivos, sugere conciliações, registra canhotos |
 | **Viewer** | 👁 Consulta / Auditoria | Somente leitura — conferência contábil e pericial |
+
+### Acesso por Projeto
+
+Independente do papel organizacional, projetos do portfólio RSBUILD podem conceder acesso granular:
+
+| Grant | Escopo |
+|:------|:-------|
+| **Pessoal** (`project_memberships`) | Uma pessoa específica acessa o projeto como `viewer` ou `contributor` |
+| **Organizacional** (`project_organization_access`) | Todos os membros da organização cliente do projeto acessam com `viewer` ou `contributor` |
+
+A gestão de grants é restrita a `owner`/`admin` da RSBUILD e cada concessão/revogação é registrada na trilha de auditoria.
 
 ### White-Label
 
@@ -172,18 +189,23 @@ Cada organização pode customizar:
 ```
 rsbuild-finance-app/
 ├── app/
-│   ├── api/                    # 13 Route Handlers (REST API)
-│   │   ├── audit-events/       # Trilha de auditoria
+│   ├── api/                    # 20 Route Handlers (REST API)
+│   │   ├── access-directory/   # Diretório central de acessos (RSBUILD)
+│   │   ├── audit-events/       # Trilha de auditoria por tenant
 │   │   ├── erp-movements/      # Movimentações ERP
 │   │   ├── imports/            # Importação de extratos
+│   │   ├── observability/      # Métricas cross-tenant (RSBUILD)
 │   │   ├── orders/             # Pedidos estruturados via mensageria
-│   │   ├── projects/           # Portfólio de sprints
+│   │   ├── organization-branding/      # White-label por tenant
+│   │   ├── organization-invitations/   # Convites de equipe
+│   │   ├── project-access/     # Grants de projeto (pessoa/org)
+│   │   ├── projects/           # Portfólio + sprints/tarefas/deliverables
 │   │   ├── proofs/             # Canhotos de entrega
 │   │   ├── reconciliation-decisions/
 │   │   ├── settlements/        # Baixas ERP
 │   │   └── titles/             # Títulos financeiros
 │   ├── components/
-│   │   ├── admin/              # Painel admin, branding, auditoria
+│   │   ├── admin/              # Painel admin, branding, auditoria, acessos
 │   │   ├── auth/               # Onboarding
 │   │   ├── executive/          # Torre de Controle, Holding Overview
 │   │   ├── finance/            # Visão geral, movimentações, DRE, baixas
@@ -191,7 +213,10 @@ rsbuild-finance-app/
 │   │   ├── projects/           # Portfólio de projetos
 │   │   └── shell/              # Sidebar, Topbar, Workspace Modal
 │   ├── types/                  # Tipos do workspace e organização
-│   └── enterprise-workspace.tsx # Componente raiz do workspace
+│   ├── workspaces/
+│   │   ├── control-tower-workspace.tsx   # Workspace RSBUILD (governança)
+│   │   └── operational-workspace.tsx    # Workspaces dos tenants operacionais
+│   └── enterprise-workspace.tsx # Workspace legado/unificado
 ├── lib/
 │   ├── api/                    # Org Guard, Audit, Rate Limiter
 │   ├── supabase/               # Clients SSR/browser
@@ -202,7 +227,8 @@ rsbuild-finance-app/
 │   ├── permissions.ts          # Matriz RBAC (4 níveis)
 │   └── finance-persistence.ts  # Persistência financeira (centavos)
 ├── supabase/
-│   └── migrations/             # 16 migrations versionadas (RLS em tudo)
+│   ├── migrations/             # 17 migrations versionadas (RLS em tudo)
+│   └── tests/                  # Suítes pgTAP de isolamento e grants
 ├── tests/                      # 71 testes (8 suítes)
 ├── docs/                       # 20 documentos de arquitetura e QA
 └── public/brand/               # Assets de marca (logo, favicon)
@@ -286,6 +312,8 @@ npm run build      # Build de produção — sucesso
 | `permissions.test.ts` | Matriz RBAC, alçadas, segregação |
 | `internal-transfers.test.ts` | Transferências entre contas |
 | `workspace.test.ts` | Multi-tenant, roteamento, módulos |
+
+Além das suítes unitárias, o repositório mantém **testes pgTAP** em `supabase/tests/` cobrindo isolamento RLS, persistência operacional F01 e grants de projeto (executados no CI via `supabase test db`).
 
 ---
 
