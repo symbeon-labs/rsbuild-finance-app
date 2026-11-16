@@ -65,15 +65,20 @@ export function SandboxView() {
     <section style={{ display: "grid", gap: 20 }}>
       {/* Header */}
       <div className="card cockpit-card" style={{ padding: "20px 24px", borderLeft: "4px solid #7C3AED" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 24 }}>🧪</span>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>
-              Sandbox - Ambiente de Testes
-            </h2>
-            <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--muted)" }}>
-              Dados sintéticos isolados para testes seguros. Nenhum dado real de clientes.
-            </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 24 }}>🧪</span>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>
+                Sandbox - Ambiente de Testes
+              </h2>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--muted)" }}>
+                Dados sintéticos isolados para testes seguros. Nenhum dado real de clientes.
+              </p>
+            </div>
+          </div>
+          <div style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, background: "rgba(16, 185, 129, 0.12)", color: "#10B981", fontWeight: 600 }}>
+            Schema isolado
           </div>
         </div>
       </div>

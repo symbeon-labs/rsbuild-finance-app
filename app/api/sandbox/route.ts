@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/api/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -38,21 +37,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "sandbox_forbidden" }, { status: 403 });
     }
 
-    // Usar service role para acessar schema sandbox (bypass RLS para admin)
-    const admin = getAdminClient();
-    if (!admin) {
-      return NextResponse.json({ error: "admin_client_unavailable" }, { status: 503 });
-    }
-
-    // Buscar dados da sandbox
+    // Usar client normal com schema sandbox (RLS permite owner/admin da RSBUILD)
     const [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes] = await Promise.all([
-      admin.schema("sandbox").from("organizations").select("*").order("display_name"),
-      admin.schema("sandbox").from("organization_memberships").select("*").limit(1000),
-      admin.schema("sandbox").from("financial_accounts").select("*").limit(1000),
-      admin.schema("sandbox").from("financial_records").select("*").order("transaction_date", { ascending: false }).limit(1000),
-      admin.schema("sandbox").from("receivable_titles").select("*").order("due_date").limit(1000),
-      admin.schema("sandbox").from("delivery_proofs").select("*").order("delivery_date", { ascending: false }).limit(1000),
-      admin.schema("sandbox").from("audit_events").select("*").order("created_at", { ascending: false }).limit(1000)
+      supabase.schema("sandbox").from("organizations").select("*").order("display_name"),
+      supabase.schema("sandbox").from("organization_memberships").select("*").limit(1000),
+      supabase.schema("sandbox").from("financial_accounts").select("*").limit(1000),
+      supabase.schema("sandbox").from("financial_records").select("*").order("transaction_date", { ascending: false }).limit(1000),
+      supabase.schema("sandbox").from("receivable_titles").select("*").order("due_date").limit(1000),
+      supabase.schema("sandbox").from("delivery_proofs").select("*").order("delivery_date", { ascending: false }).limit(1000),
+      supabase.schema("sandbox").from("audit_events").select("*").order("created_at", { ascending: false }).limit(1000)
     ]);
 
     const firstError = [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes]
