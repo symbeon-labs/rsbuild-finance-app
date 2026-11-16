@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { DiagnosticForm } from "./diagnostic-form";
-import { ArchitectureDiagram, GovernanceFlow, HeroNetwork, OperationalFlow, Reveal } from "./diagrams";
+import { ArchitectureDiagram, FlowDiagram, GovernanceFlow, HeroNetwork, OperationalFlow, Reveal } from "./diagrams";
 import { HeroAmbientAtmosphere } from "./hero-ambient";
 import { FrentesBanner } from "./frentes-banner";
 
@@ -306,7 +306,23 @@ export default function InstitucionalPage() {
             recursos de inteligência em uma estrutura concebida para organizar,
             acompanhar e governar processos empresariais.
           </p>
-          <ArchitectureDiagram />
+          <FlowDiagram
+            top={["ERP", "Bancos", "Documentos", "Dados"]}
+            bottom={["Processos organizados", "Verificação", "Governança", "Decisões acompanhadas"]}
+            core="RSBUILD OS"
+          />
+          <details className="rs-architecture-details">
+            <summary>
+              <span>
+                <strong>O que existe por trás da operação</strong>
+                <small>Explore as camadas que organizam as capacidades do RSBUILD OS.</small>
+              </span>
+              <span className="rs-architecture-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div className="rs-architecture-details-content">
+              <ArchitectureDiagram />
+            </div>
+          </details>
         </div>
       </section>
 
