@@ -171,19 +171,19 @@ export function HeroNetwork() {
       id: "financas",
       title: "FINANÇAS & CAIXA",
       sub: "Fluxo de caixa, extratos & liquidez",
-      x: 12,
-      y: 38,
+      x: 149,
+      y: 49,
       width: 295,
       height: 82,
       iconColor: "#10B981",
       statusColor: "#10B981",
       delay: "0.8s",
-      anchorX: 54,
-      anchorY: 79,
+      anchorX: 190,
+      anchorY: 90,
       cubeX: 335,
       cubeY: 180,
-      path: "M 54 79 L 335 180 L 410 230",
-      revPath: "M 410 230 L 335 180 L 54 79",
+      path: "M 190 90 L 335 180 L 410 230",
+      revPath: "M 410 230 L 335 180 L 190 90",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "54px 79px" }}>
           <rect x="43" y="68" width="22" height="20" rx="3" fill="none" stroke="#10B981" strokeWidth="1.9" />
@@ -196,19 +196,19 @@ export function HeroNetwork() {
       id: "reconciliacao",
       title: "RECONCILIAÇÃO ERP",
       sub: "ERP & conciliação de baixas",
-      x: 513,
-      y: 38,
+      x: 589,
+      y: 49,
       width: 295,
       height: 82,
       iconColor: "#34D399",
       statusColor: "#10B981",
       delay: "0.95s",
-      anchorX: 551,
-      anchorY: 79,
+      anchorX: 630,
+      anchorY: 90,
       cubeX: 485,
       cubeY: 180,
-      path: "M 551 79 L 485 180 L 410 230",
-      revPath: "M 410 230 L 485 180 L 551 79",
+      path: "M 630 90 L 485 180 L 410 230",
+      revPath: "M 410 230 L 485 180 L 630 90",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "551px 79px" }}>
           <path d="M561 73A7.5 7.5 0 0 0 547.5 70.2L545 72.5" fill="none" stroke="#34D399" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
@@ -222,19 +222,19 @@ export function HeroNetwork() {
       id: "expedicao",
       title: "EXPEDIÇÃO & PROVAS",
       sub: "Canhotos, NF-e & tracking",
-      x: 12,
-      y: 340,
+      x: 149,
+      y: 329,
       width: 295,
       height: 82,
       iconColor: "#F59E0B",
       statusColor: "#F59E0B",
       delay: "1.1s",
-      anchorX: 54,
-      anchorY: 381,
+      anchorX: 190,
+      anchorY: 370,
       cubeX: 335,
       cubeY: 280,
-      path: "M 54 381 L 335 280 L 410 230",
-      revPath: "M 410 230 L 335 280 L 54 381",
+      path: "M 190 370 L 335 280 L 410 230",
+      revPath: "M 410 230 L 335 280 L 190 370",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "54px 381px" }}>
           <rect x="43" y="371" width="13" height="12" rx="1.5" fill="none" stroke="#F59E0B" strokeWidth="1.9" />
@@ -248,19 +248,19 @@ export function HeroNetwork() {
       id: "auditoria",
       title: "AUDITORIA & ALÇADAS",
       sub: "Alçadas, compliance & governança",
-      x: 513,
-      y: 340,
+      x: 589,
+      y: 329,
       width: 295,
       height: 82,
       iconColor: "#C2694A",
       statusColor: "#F59E0B",
       delay: "1.25s",
-      anchorX: 551,
-      anchorY: 381,
+      anchorX: 630,
+      anchorY: 370,
       cubeX: 485,
       cubeY: 280,
-      path: "M 551 381 L 485 280 L 410 230",
-      revPath: "M 410 230 L 485 280 L 551 381",
+      path: "M 630 370 L 485 280 L 410 230",
+      revPath: "M 410 230 L 485 280 L 630 370",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "551px 381px" }}>
           <path d="M551 370l8 3v6c0 5.5-4.5 9.2-8 10.5-3.5-1.3-8-5-8-10.5v-6l8-3z" fill="none" stroke="#C2694A" strokeWidth="1.9" strokeLinejoin="round" />
@@ -402,7 +402,7 @@ export function HeroNetwork() {
           <g key={sat.id} className={`inst-satellite-group${isHovered ? " is-hovered" : ""}`} style={{ transformOrigin: `${iconCx}px ${iconCy}px` }}>
             <circle cx={iconCx} cy={iconCy} r="24" fill="#222428" stroke="rgba(217, 204, 181, 0.22)" strokeWidth="1.2" className="inst-node-pop" style={{ animationDelay: sat.delay }} />
             <circle className="inst-sat-icon-halo" cx={iconCx} cy={iconCy} r="24" fill="none" stroke={sat.iconColor} strokeWidth="1.8" opacity={isCoreHovered || isHovered ? "0.95" : "0.35"} />
-            {sat.icon}
+            <g transform={`translate(${sat.anchorX - (i % 2 === 0 ? 54 : 551)} ${sat.anchorY - (i < 2 ? 79 : 381)})`}>{sat.icon}</g>
           </g>
         );
       })}
@@ -424,10 +424,10 @@ export function HeroNetwork() {
     <div className="inst-hero-module-layer">
       {SATELLITES.map((sat, i) => {
         const positions = [
-          { left: "6.59%", top: "17.17%", placement: "right" },
-          { left: "67.56%", top: "17.17%", placement: "right" },
-          { left: "6.59%", top: "82.83%", placement: "right" },
-          { left: "67.56%", top: "82.83%", placement: "right" },
+          { left: "23.17%", top: "19.57%", placement: "right" },
+          { left: "76.83%", top: "19.57%", placement: "left" },
+          { left: "23.17%", top: "80.43%", placement: "right" },
+          { left: "76.83%", top: "80.43%", placement: "left" },
         ];
         const pos = positions[i];
         const active = hoveredSat === i;
