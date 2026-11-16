@@ -3740,3 +3740,102 @@ canvas {
   .inst-footer-grid { grid-template-columns: 1fr; }
   .inst-cta-final { padding: 64px 0; }
 }
+
+/* ==========================================================================
+   Animações institucionais — linguagem do site rsbuild.com.br
+   (draw-on-scroll de conexões SVG + nós com glow + fade-up escalonado)
+   ========================================================================== */
+
+@keyframes instDraw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes instNodePop {
+  0% { opacity: 0; transform: scale(0.15); }
+  65% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes instNodeGlow {
+  0% { opacity: 0; transform: scale(0.5); }
+  45% { opacity: 0.35; transform: scale(1.9); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+@keyframes instFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes instLabelIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Conectores SVG: estado inicial escondido, desenham ao .is-visible */
+.inst-svg .inst-conn {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+.inst-svg.is-visible .inst-conn {
+  animation: instDraw 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Nós: pop + anel de glow (uma única execução) */
+.inst-svg .inst-node-pop,
+.inst-svg .inst-node-glow,
+.inst-svg .inst-node-label {
+  opacity: 0;
+}
+.inst-svg.is-visible .inst-node-pop {
+  animation: instNodePop 0.55s ease forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.inst-svg.is-visible .inst-node-glow {
+  animation: instNodeGlow 0.9s ease forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.inst-svg.is-visible .inst-node-label {
+  animation: instLabelIn 0.5s ease forwards;
+}
+
+/* SVGs sempre visíveis sem JS (fallback de acessibilidade) */
+@media (prefers-reduced-motion: reduce) {
+  .inst-svg .inst-conn { stroke-dashoffset: 0; }
+  .inst-svg .inst-node-pop,
+  .inst-svg .inst-node-glow,
+  .inst-svg .inst-node-label { opacity: 1; animation: none; }
+}
+
+/* Hero: entrada escalonada dos blocos de texto */
+.inst-hero .inst-eyebrow,
+.inst-hero h1,
+.inst-hero p.sub,
+.inst-hero-ctas {
+  animation: instFadeUp 0.7s ease both;
+}
+.inst-hero .inst-eyebrow { animation-delay: 0.05s; }
+.inst-hero h1 { animation-delay: 0.15s; }
+.inst-hero p.sub { animation-delay: 0.3s; }
+.inst-hero-ctas { animation-delay: 0.45s; }
+@media (prefers-reduced-motion: reduce) {
+  .inst-hero .inst-eyebrow,
+  .inst-hero h1,
+  .inst-hero p.sub,
+  .inst-hero-ctas { animation: none; }
+}
+
+/* Steps: fade-up escalonado quando a seção entra na viewport */
+.inst-reveal-target .inst-step {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.inst-reveal-target.is-visible .inst-step {
+  animation: instFadeUp 0.6s ease forwards;
+}
+.inst-reveal-target.is-visible .inst-step:nth-child(1) { animation-delay: 0.1s; }
+.inst-reveal-target.is-visible .inst-step:nth-child(2) { animation-delay: 0.22s; }
+.inst-reveal-target.is-visible .inst-step:nth-child(3) { animation-delay: 0.34s; }
+.inst-reveal-target.is-visible .inst-step:nth-child(4) { animation-delay: 0.46s; }
+@media (prefers-reduced-motion: reduce) {
+  .inst-reveal-target .inst-step { opacity: 1; transform: none; }
+  .inst-reveal-target.is-visible .inst-step { animation: none; }
+}

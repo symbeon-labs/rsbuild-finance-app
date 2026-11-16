@@ -36,21 +36,55 @@ type ProjectGrant = {
   organizationGrants: Array<{ organizationId: string; organizationName: string | null; accessLevel: string; grantedAt: string }>;
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  owner: "Proprietário",
-  admin: "Administrador",
-  operator: "Operação",
-  viewer: "Visualização"
+const ROLE_METADATA: Record<string, { label: string; bg: string; color: string; border: string }> = {
+  owner: {
+    label: "Proprietário",
+    bg: "rgba(16, 185, 129, 0.12)",
+    color: "#059669",
+    border: "rgba(16, 185, 129, 0.28)"
+  },
+  admin: {
+    label: "Administrador",
+    bg: "rgba(181, 88, 60, 0.14)",
+    color: "#B5583C",
+    border: "rgba(181, 88, 60, 0.3)"
+  },
+  operator: {
+    label: "Operação",
+    bg: "rgba(37, 99, 235, 0.12)",
+    color: "#2563EB",
+    border: "rgba(37, 99, 235, 0.25)"
+  },
+  viewer: {
+    label: "Visualização",
+    bg: "rgba(100, 116, 139, 0.12)",
+    color: "#64748B",
+    border: "rgba(100, 116, 139, 0.22)"
+  }
 };
 
-const LEVEL_LABELS: Record<string, string> = {
-  viewer: "Visualização",
-  contributor: "Contribuição"
+const LEVEL_METADATA: Record<string, { label: string; bg: string; color: string }> = {
+  viewer: {
+    label: "Visualização",
+    bg: "rgba(100, 116, 139, 0.12)",
+    color: "#64748B"
+  },
+  contributor: {
+    label: "Contribuição",
+    bg: "rgba(37, 99, 235, 0.12)",
+    color: "#2563EB"
+  }
 };
 
 function formatDateTime(iso: string | null) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function formatDate(iso: string | null) {
@@ -61,245 +95,811 @@ function formatDate(iso: string | null) {
 export function AccessDirectoryView() {
   const [orgs, setOrgs] = useState<DirectoryOrg[]>([]);
   const [projects, setProjects] = useState<ProjectGrant[]>([]);
+  const [adminMode, setAdminMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"organizations" | "projects">("organizations");
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [grantUserId, setGrantUserId] = useState("");
   const [grantLevel, setGrantLevel] = useState("viewer");
   const [grantOrgLevel, setGrantOrgLevel] = useState("viewer");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   async function load() {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/access-directory", { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "access_directory_failed");
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(`Resposta do servidor não pôde ser interpretada (HTTP ${res.status}).`);
+      }
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `Erro de carregamento (HTTP ${res.status})`);
+      }
       setOrgs(data.organizations ?? []);
       setProjects(data.projects ?? []);
+      setAdminMode(Boolean(data.adminMode));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "access_directory_failed");
+      setError(e instanceof Error ? e.message : "Falha ao carregar diretório de acessos.");
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const allUsers = useMemo(() => {
     const map = new Map<string, string>();
-    for (const org of orgs) for (const m of org.members) map.set(m.userId, m.email ?? m.userId.slice(0, 8));
+    for (const org of orgs) {
+      for (const m of org.members) {
+        map.set(m.userId, m.email ?? m.userId.slice(0, 8));
+      }
+    }
     return [...map.entries()].map(([userId, email]) => ({ userId, email }));
   }, [orgs]);
 
+  const totalMembers = useMemo(() => {
+    return orgs.reduce((acc, o) => acc + o.members.length, 0);
+  }, [orgs]);
+
+  const totalInvites = useMemo(() => {
+    return orgs.reduce((acc, o) => acc + o.invitations.filter((i) => i.status !== "failed").length, 0);
+  }, [orgs]);
+
   const term = search.trim().toLowerCase();
-  const filteredOrgs = orgs.filter((o) =>
-    !term || o.displayName.toLowerCase().includes(term) || o.slug.includes(term)
-    || o.members.some((m) => (m.email ?? "").toLowerCase().includes(term))
-  );
-  const filteredProjects = projects.filter((p) =>
-    !term || p.name.toLowerCase().includes(term) || p.clientDisplayName.toLowerCase().includes(term)
-  );
+  const filteredOrgs = useMemo(() => {
+    return orgs.filter(
+      (o) =>
+        !term ||
+        o.displayName.toLowerCase().includes(term) ||
+        o.slug.includes(term) ||
+        o.members.some((m) => (m.email ?? "").toLowerCase().includes(term))
+    );
+  }, [orgs, term]);
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter(
+      (p) =>
+        !term ||
+        p.name.toLowerCase().includes(term) ||
+        p.clientDisplayName.toLowerCase().includes(term) ||
+        p.projectKey.toLowerCase().includes(term)
+    );
+  }, [projects, term]);
 
   async function grantAccess(projectId: string, targetType: "user" | "organization", targetId: string, accessLevel: string) {
     if (!targetId) return;
-    setBusy(true); setNotice("");
+    setBusy(true);
+    setNotice(null);
     try {
       const res = await fetch("/api/project-access", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId, targetType, targetId, accessLevel })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "grant_failed");
-      setNotice("Acesso concedido.");
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {}
+      if (!res.ok) throw new Error(data.message || data.error || "Falha ao conceder acesso.");
+      setNotice({ message: "Acesso concedido com sucesso.", type: "success" });
       await load();
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : "grant_failed");
+      setNotice({ message: e instanceof Error ? e.message : "Falha ao conceder acesso.", type: "error" });
     } finally {
       setBusy(false);
     }
   }
 
   async function revokeAccess(projectId: string, targetType: "user" | "organization", targetId: string) {
-    setBusy(true); setNotice("");
+    setBusy(true);
+    setNotice(null);
     try {
-      const res = await fetch(`/api/project-access?projectId=${projectId}&targetType=${targetType}&targetId=${targetId}`, { method: "DELETE" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "revoke_failed");
-      setNotice("Acesso revogado.");
+      const res = await fetch(`/api/project-access?projectId=${projectId}&targetType=${targetType}&targetId=${targetId}`, {
+        method: "DELETE"
+      });
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {}
+      if (!res.ok) throw new Error(data.message || data.error || "Falha ao revogar acesso.");
+      setNotice({ message: "Acesso revogado com sucesso.", type: "success" });
       await load();
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : "revoke_failed");
+      setNotice({ message: e instanceof Error ? e.message : "Falha ao revogar acesso.", type: "error" });
     } finally {
       setBusy(false);
     }
   }
 
-  return <section className="panel" style={{ padding: 22, display: "grid", gap: 20 }}>
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-      <div>
-        <div className="eyebrow">ACESSOS &amp; IDENTIDADES</div>
-        <h2 style={{ margin: "6px 0" }}>Central de Acessos RSBUILD</h2>
-        <p style={{ color: "var(--muted)", fontSize: 12, margin: 0 }}>
-          Membros, convites e permissões por projeto em todas as organizações — visão consolidada da holding.
-        </p>
-      </div>
-      <input type="search" placeholder="Buscar organização ou pessoa..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 240 }} />
-    </div>
-
-    {notice && <div className="notice" role="status">{notice}<button onClick={() => setNotice("")}>×</button></div>}
-    {loading && <p style={{ color: "var(--muted)", fontSize: 13 }}>Carregando diretório de acessos...</p>}
-    {error && <p style={{ color: "#B42318", fontSize: 13 }}>Não foi possível carregar: {error}</p>}
-
-    {!loading && !error && (
-      <>
-        {/* Organizações e membros */}
+  return (
+    <section style={{ display: "grid", gap: 20 }}>
+      {/* Hero Header */}
+      <div
+        className="card cockpit-card cockpit-hero"
+        style={{
+          padding: "24px 28px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: 16
+        }}
+      >
         <div>
-          <h3 style={{ fontSize: 15, margin: "0 0 10px" }}>Organizações &amp; Equipes</h3>
-          <div style={{ display: "grid", gap: 14 }}>
-            {filteredOrgs.map((org) => (
-              <div key={org.id} style={{ border: "1px solid var(--rsbuild-border)", borderRadius: 10, padding: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <strong>{org.displayName}</strong>
-                  <span style={{ fontSize: 11, color: "var(--rsbuild-muted)" }}>{org.slug} · {org.members.length} membro(s)</span>
-                </div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ textAlign: "left", color: "var(--rsbuild-muted)" }}>
-                      <th style={{ padding: "4px 8px" }}>E-mail</th>
-                      <th style={{ padding: "4px 8px" }}>Papel</th>
-                      <th style={{ padding: "4px 8px" }}>Último login</th>
-                      <th style={{ padding: "4px 8px" }}>Desde</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {org.members.map((m) => (
-                      <tr key={m.userId} style={{ borderTop: "1px solid var(--rsbuild-border)" }}>
-                        <td style={{ padding: "6px 8px" }}>{m.email ?? m.userId.slice(0, 8) + "…"}</td>
-                        <td style={{ padding: "6px 8px" }}>{ROLE_LABELS[m.role] ?? m.role}</td>
-                        <td style={{ padding: "6px 8px", color: "var(--rsbuild-muted)" }}>{formatDateTime(m.lastSignInAt)}</td>
-                        <td style={{ padding: "6px 8px", color: "var(--rsbuild-muted)" }}>{formatDate(m.memberSince)}</td>
-                      </tr>
-                    ))}
-                    {org.invitations.filter((i) => i.status !== "failed").map((i, idx) => (
-                      <tr key={`inv-${idx}`} style={{ borderTop: "1px solid var(--rsbuild-border)", opacity: 0.7 }}>
-                        <td style={{ padding: "6px 8px" }}>{i.email}</td>
-                        <td style={{ padding: "6px 8px" }}>Convite · {ROLE_LABELS[i.role] ?? i.role}</td>
-                        <td style={{ padding: "6px 8px", color: "var(--rsbuild-muted)" }}>—</td>
-                        <td style={{ padding: "6px 8px", color: "var(--rsbuild-muted)" }}>{formatDate(i.invitedAt)}</td>
-                      </tr>
-                    ))}
-                    {org.members.length === 0 && org.invitations.length === 0 && (
-                      <tr><td colSpan={4} style={{ padding: "8px", color: "var(--rsbuild-muted)" }}>Sem membros registrados.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            ))}
+          <div className="eyebrow" style={{ color: "var(--rsbuild-terracotta)", marginBottom: 6 }}>
+            GOVERNANÇA &amp; IDENTIDADES
           </div>
+          <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 700, color: "var(--ink)" }}>
+            Central de Acessos &amp; Matriz de Identidades
+          </h2>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", maxWidth: 640, lineHeight: 1.5 }}>
+            Diretório consolidado de organizações, operadores e matriz de permissões por projeto. Governança cross-tenant com auditoria pericial nativa.
+          </p>
         </div>
 
-        {/* Acesso por projeto */}
-        <div>
-          <h3 style={{ fontSize: 15, margin: "0 0 10px" }}>Acesso por Projeto</h3>
-          <p style={{ fontSize: 12, color: "var(--rsbuild-muted)", margin: "0 0 12px" }}>
-            Grants individuais (pessoa) e por organização. O acesso de projeto sempre exige membership válida na organização — nunca concede acesso organizacional por si só.
-          </p>
-          <div style={{ display: "grid", gap: 10 }}>
-            {filteredProjects.map((p) => {
-              const expanded = expandedProject === p.id;
-              return (
-                <div key={p.id} style={{ border: "1px solid var(--rsbuild-border)", borderRadius: 10, padding: 14 }}>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedProject(expanded ? null : p.id)}
-                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", width: "100%" }}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ position: "relative" }}>
+            <input
+              type="search"
+              placeholder="Buscar organização ou usuário…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                minWidth: 260,
+                padding: "8px 14px",
+                fontSize: 13,
+                borderRadius: 8,
+                border: "1px solid var(--line)",
+                background: "var(--surface)",
+                color: "var(--ink)",
+                outline: "none"
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="secondary-button"
+            style={{
+              padding: "8px 14px",
+              fontSize: 13,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              borderRadius: 8,
+              border: "1px solid var(--line)",
+              background: "var(--surface)",
+              color: "var(--ink)"
+            }}
+          >
+            {loading ? "Atualizando…" : "↻ Recarregar"}
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Summary Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
+        <div className="card cockpit-card" style={{ padding: "16px 20px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase" }}>
+            Organizações
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--ink)", margin: "4px 0" }}>{orgs.length}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>No radar da holding</div>
+        </div>
+
+        <div className="card cockpit-card" style={{ padding: "16px 20px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase" }}>
+            Membros Ativos
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--ink)", margin: "4px 0" }}>{totalMembers}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>Cadastrados no ecossistema</div>
+        </div>
+
+        <div className="card cockpit-card" style={{ padding: "16px 20px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase" }}>
+            Convites Pendentes
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: totalInvites > 0 ? "var(--rsbuild-terracotta)" : "var(--ink)", margin: "4px 0" }}>
+            {totalInvites}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>Aguardando ativação</div>
+        </div>
+
+        <div className="card cockpit-card" style={{ padding: "16px 20px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase" }}>
+            Projetos Governados
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--ink)", margin: "4px 0" }}>{projects.length}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>Com alçadas configuradas</div>
+        </div>
+      </div>
+
+      {/* Notice Banner */}
+      {notice && (
+        <div
+          style={{
+            padding: "12px 18px",
+            borderRadius: 8,
+            fontSize: 13,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: notice.type === "success" ? "rgba(16, 185, 129, 0.12)" : "rgba(220, 38, 38, 0.12)",
+            color: notice.type === "success" ? "#059669" : "#DC2626",
+            border: `1px solid ${notice.type === "success" ? "rgba(16, 185, 129, 0.3)" : "rgba(220, 38, 38, 0.3)"}`
+          }}
+        >
+          <span>{notice.message}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 16 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="card cockpit-card" style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 14 }}>
+          Carregando diretório de acessos e matriz de identidade…
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div
+          className="card cockpit-card"
+          style={{
+            padding: 24,
+            borderLeft: "4px solid #DC2626",
+            background: "var(--surface)",
+            display: "grid",
+            gap: 12
+          }}
+        >
+          <div style={{ fontWeight: 700, color: "#DC2626", fontSize: 15 }}>
+            Não foi possível carregar a Central de Acessos
+          </div>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>{error}</p>
+          <div>
+            <button
+              type="button"
+              onClick={load}
+              className="primary-button"
+              style={{
+                padding: "8px 16px",
+                fontSize: 13,
+                borderRadius: 8,
+                background: "var(--rsbuild-terracotta)",
+                color: "#FFFFFF",
+                border: "none"
+              }}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && (
+        <div className="card cockpit-card" style={{ padding: "20px 24px" }}>
+          {/* Navigation Tabs */}
+          <div className="admin-tabs" style={{ marginBottom: 20 }}>
+            <button
+              type="button"
+              className={`admin-tab-btn ${activeTab === "organizations" ? "active" : ""}`}
+              onClick={() => setActiveTab("organizations")}
+            >
+              🏢 Organizações &amp; Equipes ({filteredOrgs.length})
+            </button>
+            <button
+              type="button"
+              className={`admin-tab-btn ${activeTab === "projects" ? "active" : ""}`}
+              onClick={() => setActiveTab("projects")}
+            >
+              🔐 Acesso por Projeto ({filteredProjects.length})
+            </button>
+          </div>
+
+          {/* TAB 1: Organizações & Equipes */}
+          {activeTab === "organizations" && (
+            <div style={{ display: "grid", gap: 18 }}>
+              {filteredOrgs.map((org) => {
+                const isMDS = org.slug.includes("sabor") || org.slug.includes("mds");
+                const isHub = org.slug.includes("acai") || org.slug.includes("hub");
+                const accentColor = isMDS ? "#2563EB" : isHub ? "#7C3AED" : "var(--rsbuild-terracotta)";
+
+                return (
+                  <div
+                    key={org.id}
+                    style={{
+                      borderRadius: 10,
+                      border: "1px solid var(--line)",
+                      background: "var(--surface-raised)",
+                      overflow: "hidden",
+                      borderTop: `3px solid ${accentColor}`
+                    }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <strong>{p.name}</strong>
-                        <span style={{ fontSize: 12, color: "var(--rsbuild-muted)", marginLeft: 8 }}>{p.clientDisplayName}</span>
+                    <div
+                      style={{
+                        padding: "14px 18px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 10,
+                        borderBottom: "1px solid var(--line)"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <strong style={{ fontSize: 15, color: "var(--ink)" }}>{org.displayName}</strong>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            padding: "2px 8px",
+                            borderRadius: 6,
+                            background: "rgba(100, 116, 139, 0.12)",
+                            color: "var(--muted)",
+                            fontFamily: "monospace"
+                          }}
+                        >
+                          {org.slug}
+                        </span>
                       </div>
-                      <span style={{ fontSize: 12, color: "var(--rsbuild-muted)" }}>
-                        {p.memberGrants.length} pessoa(s) · {p.organizationGrants.length} org(s) {expanded ? "▲" : "▼"}
+                      <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                        {org.members.length} membro(s) cadastrado(s)
                       </span>
                     </div>
-                  </button>
 
-                  {expanded && (
-                    <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Pessoas com acesso</div>
-                        {p.memberGrants.length === 0 && <div style={{ fontSize: 12, color: "var(--rsbuild-muted)" }}>Nenhum grant individual — acesso via organização.</div>}
-                        {p.memberGrants.map((g) => (
-                          <div key={g.userId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0", fontSize: 12, borderTop: "1px solid var(--rsbuild-border)" }}>
-                            <span style={{ flex: 1 }}>{g.email ?? g.userId.slice(0, 8)}</span>
-                            <span style={{ color: "var(--rsbuild-muted)" }}>{LEVEL_LABELS[g.accessLevel] ?? g.accessLevel}</span>
-                            <button type="button" disabled={busy} onClick={() => revokeAccess(p.id, "user", g.userId)} className="secondary-button" style={{ fontSize: 11, padding: "3px 8px" }}>Revogar</button>
-                          </div>
-                        ))}
-                        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                          <select value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)}>
-                            <option value="">Selecionar pessoa…</option>
-                            {allUsers.map((u) => <option key={u.userId} value={u.userId}>{u.email}</option>)}
-                          </select>
-                          <select value={grantLevel} onChange={(e) => setGrantLevel(e.target.value)}>
-                            <option value="viewer">Visualização</option>
-                            <option value="contributor">Contribuição</option>
-                          </select>
-                          <button
-                            type="button" disabled={busy || !grantUserId}
-                            onClick={() => { grantAccess(p.id, "user", grantUserId, grantLevel); setGrantUserId(""); }}
-                            className="primary-button" style={{ fontSize: 12, padding: "6px 12px" }}
-                          >Conceder</button>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, textAlign: "left" }}>
+                        <thead>
+                          <tr style={{ background: "var(--surface)", color: "var(--muted)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                            <th style={{ padding: "10px 18px", fontWeight: 600 }}>Operador / E-mail</th>
+                            <th style={{ padding: "10px 18px", fontWeight: 600 }}>Papel Institucional</th>
+                            <th style={{ padding: "10px 18px", fontWeight: 600 }}>Último Acesso</th>
+                            <th style={{ padding: "10px 18px", fontWeight: 600 }}>Membro Desde</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {org.members.map((m) => {
+                            const meta = ROLE_METADATA[m.role] ?? ROLE_METADATA.viewer;
+                            return (
+                              <tr
+                                key={m.userId}
+                                style={{
+                                  borderTop: "1px solid var(--line)",
+                                  transition: "background 0.15s ease"
+                                }}
+                              >
+                                <td style={{ padding: "12px 18px", color: "var(--ink)", fontWeight: 500 }}>
+                                  {m.email ?? `${m.userId.slice(0, 12)}…`}
+                                </td>
+                                <td style={{ padding: "12px 18px" }}>
+                                  <span
+                                    style={{
+                                      display: "inline-block",
+                                      padding: "3px 10px",
+                                      borderRadius: 6,
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      background: meta.bg,
+                                      color: meta.color,
+                                      border: `1px solid ${meta.border}`
+                                    }}
+                                  >
+                                    {meta.label}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "12px 18px", color: "var(--muted)", fontSize: 12 }}>
+                                  {formatDateTime(m.lastSignInAt)}
+                                </td>
+                                <td style={{ padding: "12px 18px", color: "var(--muted)", fontSize: 12 }}>
+                                  {formatDate(m.memberSince)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {org.invitations
+                            .filter((i) => i.status !== "failed")
+                            .map((i, idx) => {
+                              const meta = ROLE_METADATA[i.role] ?? ROLE_METADATA.viewer;
+                              return (
+                                <tr
+                                  key={`inv-${idx}`}
+                                  style={{
+                                    borderTop: "1px solid var(--line)",
+                                    opacity: 0.85,
+                                    background: "rgba(245, 158, 11, 0.04)"
+                                  }}
+                                >
+                                  <td style={{ padding: "12px 18px", color: "var(--ink)" }}>{i.email}</td>
+                                  <td style={{ padding: "12px 18px" }}>
+                                    <span
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        padding: "3px 10px",
+                                        borderRadius: 6,
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        background: "rgba(245, 158, 11, 0.12)",
+                                        color: "#D97706",
+                                        border: "1px solid rgba(245, 158, 11, 0.28)"
+                                      }}
+                                    >
+                                      Convite · {meta.label}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "12px 18px", color: "var(--muted)", fontSize: 12 }}>
+                                    Aguardando aceite
+                                  </td>
+                                  <td style={{ padding: "12px 18px", color: "var(--muted)", fontSize: 12 }}>
+                                    {formatDate(i.invitedAt)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+
+                          {org.members.length === 0 && org.invitations.length === 0 && (
+                            <tr>
+                              <td colSpan={4} style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>
+                                Nenhum membro ou convite ativo registrado para esta organização.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredOrgs.length === 0 && (
+                <div style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>
+                  Nenhuma organização encontrada para o filtro &ldquo;{search}&rdquo;.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: Acesso por Projeto */}
+          {activeTab === "projects" && (
+            <div style={{ display: "grid", gap: 14 }}>
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+                Grants individuais e corporativos vinculados às esteiras de projeto. O acesso exige associação ativa à organização mantenedora.
+              </p>
+
+              {filteredProjects.map((p) => {
+                const expanded = expandedProject === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    style={{
+                      borderRadius: 10,
+                      border: "1px solid var(--line)",
+                      background: "var(--surface-raised)",
+                      overflow: "hidden"
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setExpandedProject(expanded ? null : p.id)}
+                      style={{
+                        width: "100%",
+                        padding: "16px 20px",
+                        background: "none",
+                        border: "none",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            background: "var(--rsbuild-terracotta-soft)",
+                            color: "var(--rsbuild-terracotta)",
+                            fontFamily: "monospace"
+                          }}
+                        >
+                          {p.projectKey}
+                        </span>
+                        <div>
+                          <strong style={{ fontSize: 15, color: "var(--ink)", display: "block" }}>{p.name}</strong>
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>{p.clientDisplayName}</span>
                         </div>
                       </div>
 
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Organização cliente</div>
-                        <p style={{ fontSize: 12, color: "var(--rsbuild-muted)", margin: "0 0 8px" }}>
-                          O acesso organizacional é sempre da organização cliente deste projeto — o modelo não permite grants para outras empresas.
-                        </p>
-                        {p.organizationGrants.length === 0 && p.clientOrganizationId && (
-                          <div style={{ fontSize: 12, color: "var(--rsbuild-muted)", padding: "5px 0" }}>
-                            {p.clientDisplayName} — sem grant organizacional ativo.
+                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                          {p.memberGrants.length} pessoa(s) · {p.organizationGrants.length} org(s)
+                        </span>
+                        <span style={{ fontSize: 14, color: "var(--muted)" }}>{expanded ? "▲" : "▼"}</span>
+                      </div>
+                    </button>
+
+                    {expanded && (
+                      <div
+                        style={{
+                          padding: "16px 20px 20px",
+                          borderTop: "1px solid var(--line)",
+                          background: "var(--surface)",
+                          display: "grid",
+                          gap: 18
+                        }}
+                      >
+                        {/* Pessoas com Acesso */}
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
+                            Pessoas com Acesso ao Projeto
                           </div>
-                        )}
-                        {p.organizationGrants.map((g) => (
-                          <div key={g.organizationId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0", fontSize: 12, borderTop: "1px solid var(--rsbuild-border)" }}>
-                            <span style={{ flex: 1 }}>{g.organizationName ?? p.clientDisplayName}</span>
-                            <span style={{ color: "var(--rsbuild-muted)" }}>{LEVEL_LABELS[g.accessLevel] ?? g.accessLevel}</span>
-                            <button type="button" disabled={busy} onClick={() => revokeAccess(p.id, "organization", g.organizationId)} className="secondary-button" style={{ fontSize: 11, padding: "3px 8px" }}>Revogar</button>
+                          {p.memberGrants.length === 0 && (
+                            <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 0" }}>
+                              Nenhum grant individual — o acesso é concedido via papel na organização.
+                            </div>
+                          )}
+                          <div style={{ display: "grid", gap: 6 }}>
+                            {p.memberGrants.map((g) => {
+                              const meta = LEVEL_METADATA[g.accessLevel] ?? LEVEL_METADATA.viewer;
+                              return (
+                                <div
+                                  key={g.userId}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "8px 12px",
+                                    borderRadius: 6,
+                                    border: "1px solid var(--line)",
+                                    background: "var(--surface-raised)",
+                                    fontSize: 12
+                                  }}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <span style={{ fontWeight: 600, color: "var(--ink)" }}>
+                                      {g.email ?? g.userId.slice(0, 10)}
+                                    </span>
+                                    <span
+                                      style={{
+                                        padding: "2px 8px",
+                                        borderRadius: 4,
+                                        fontSize: 10,
+                                        fontWeight: 600,
+                                        background: meta.bg,
+                                        color: meta.color
+                                      }}
+                                    >
+                                      {meta.label}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => revokeAccess(p.id, "user", g.userId)}
+                                    className="secondary-button"
+                                    style={{
+                                      fontSize: 11,
+                                      padding: "3px 10px",
+                                      borderRadius: 6,
+                                      border: "1px solid var(--line)",
+                                      background: "var(--surface)",
+                                      color: "#DC2626"
+                                    }}
+                                  >
+                                    Revogar
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
-                        ))}
-                        {p.clientOrganizationId && p.organizationGrants.length === 0 && (
-                          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
-                            <span style={{ fontSize: 12 }}>{p.clientDisplayName}</span>
-                            <select value={grantOrgLevel} onChange={(e) => setGrantOrgLevel(e.target.value)}>
+
+                          {/* Formulário Conceder Grant Pessoa */}
+                          <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
+                            <select
+                              value={grantUserId}
+                              onChange={(e) => setGrantUserId(e.target.value)}
+                              style={{
+                                padding: "8px 12px",
+                                borderRadius: 8,
+                                border: "1px solid var(--line)",
+                                background: "var(--surface)",
+                                color: "var(--ink)",
+                                fontSize: 12,
+                                minWidth: 220
+                              }}
+                            >
+                              <option value="">Selecionar operador…</option>
+                              {allUsers.map((u) => (
+                                <option key={u.userId} value={u.userId}>
+                                  {u.email}
+                                </option>
+                              ))}
+                            </select>
+
+                            <select
+                              value={grantLevel}
+                              onChange={(e) => setGrantLevel(e.target.value)}
+                              style={{
+                                padding: "8px 12px",
+                                borderRadius: 8,
+                                border: "1px solid var(--line)",
+                                background: "var(--surface)",
+                                color: "var(--ink)",
+                                fontSize: 12
+                              }}
+                            >
                               <option value="viewer">Visualização</option>
                               <option value="contributor">Contribuição</option>
                             </select>
+
                             <button
-                              type="button" disabled={busy}
-                              onClick={() => grantAccess(p.id, "organization", p.clientOrganizationId as string, grantOrgLevel)}
-                              className="primary-button" style={{ fontSize: 12, padding: "6px 12px" }}
-                            >Conceder acesso</button>
+                              type="button"
+                              disabled={busy || !grantUserId}
+                              onClick={() => {
+                                grantAccess(p.id, "user", grantUserId, grantLevel);
+                                setGrantUserId("");
+                              }}
+                              className="primary-button"
+                              style={{
+                                padding: "8px 14px",
+                                fontSize: 12,
+                                borderRadius: 8,
+                                background: "var(--rsbuild-terracotta)",
+                                color: "#FFFFFF",
+                                border: "none"
+                              }}
+                            >
+                              Conceder Acesso
+                            </button>
                           </div>
-                        )}
+                        </div>
+
+                        {/* Grant Organização Cliente */}
+                        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
+                            Acesso Organizacional da Empresa Cliente
+                          </div>
+                          <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--muted)" }}>
+                            Habilita visualização unificada para todos os membros ativos da empresa cliente vinculada.
+                          </p>
+
+                          {p.organizationGrants.length === 0 && p.clientOrganizationId && (
+                            <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 0" }}>
+                              {p.clientDisplayName} — sem grant corporativo ativo no momento.
+                            </div>
+                          )}
+
+                          <div style={{ display: "grid", gap: 6 }}>
+                            {p.organizationGrants.map((g) => {
+                              const meta = LEVEL_METADATA[g.accessLevel] ?? LEVEL_METADATA.viewer;
+                              return (
+                                <div
+                                  key={g.organizationId}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "8px 12px",
+                                    borderRadius: 6,
+                                    border: "1px solid var(--line)",
+                                    background: "var(--surface-raised)",
+                                    fontSize: 12
+                                  }}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <span style={{ fontWeight: 600, color: "var(--ink)" }}>
+                                      {g.organizationName ?? p.clientDisplayName}
+                                    </span>
+                                    <span
+                                      style={{
+                                        padding: "2px 8px",
+                                        borderRadius: 4,
+                                        fontSize: 10,
+                                        fontWeight: 600,
+                                        background: meta.bg,
+                                        color: meta.color
+                                      }}
+                                    >
+                                      {meta.label}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => revokeAccess(p.id, "organization", g.organizationId)}
+                                    className="secondary-button"
+                                    style={{
+                                      fontSize: 11,
+                                      padding: "3px 10px",
+                                      borderRadius: 6,
+                                      border: "1px solid var(--line)",
+                                      background: "var(--surface)",
+                                      color: "#DC2626"
+                                    }}
+                                  >
+                                    Revogar
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {p.clientOrganizationId && p.organizationGrants.length === 0 && (
+                            <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{p.clientDisplayName}</span>
+                              <select
+                                value={grantOrgLevel}
+                                onChange={(e) => setGrantOrgLevel(e.target.value)}
+                                style={{
+                                  padding: "8px 12px",
+                                  borderRadius: 8,
+                                  border: "1px solid var(--line)",
+                                  background: "var(--surface)",
+                                  color: "var(--ink)",
+                                  fontSize: 12
+                                }}
+                              >
+                                <option value="viewer">Visualização</option>
+                                <option value="contributor">Contribuição</option>
+                              </select>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => grantAccess(p.id, "organization", p.clientOrganizationId as string, grantOrgLevel)}
+                                className="primary-button"
+                                style={{
+                                  padding: "8px 14px",
+                                  fontSize: 12,
+                                  borderRadius: 8,
+                                  background: "var(--rsbuild-terracotta)",
+                                  color: "#FFFFFF",
+                                  border: "none"
+                                }}
+                              >
+                                Conceder Acesso Organizacional
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                );
+              })}
+
+              {filteredProjects.length === 0 && (
+                <div style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>
+                  Nenhum projeto encontrado para o filtro &ldquo;{search}&rdquo;.
                 </div>
-              );
-            })}
-            {filteredProjects.length === 0 && !loading && (
-              <p style={{ fontSize: 12, color: "var(--rsbuild-muted)" }}>Nenhum projeto encontrado.</p>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
-      </>
-    )}
-  </section>;
+      )}
+    </section>
+  );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { DiagnosticForm } from "./diagnostic-form";
+import { FlowDiagram, GovernanceFlow, HeroNetwork, Reveal } from "./diagrams";
 
 export const metadata = {
   title: "RSBUILD OS | Governança e Inteligência Operacional",
@@ -114,38 +115,8 @@ export default function InstitucionalPage() {
               <a href="#produto" className="inst-cta ghost">Conhecer a plataforma</a>
             </div>
           </div>
-          <div className="inst-hero-art" aria-hidden="true">
-            <svg viewBox="0 0 420 340" fill="none">
-              <defs>
-                <pattern id="heroDots" width="22" height="22" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="1.2" fill="#D9CCB5" opacity="0.18" />
-                </pattern>
-              </defs>
-              <rect width="420" height="340" fill="url(#heroDots)" />
-              {/* Sistemas → Informações → Processos → Governança */}
-              {[
-                [60, 60], [200, 40], [340, 70], [90, 180], [230, 160], [360, 190], [150, 290], [300, 300]
-              ].map(([x, y], i) => (
-                <g key={i}>
-                  <circle cx={x} cy={y} r="5" fill={i === 7 ? "#C2694A" : "#B5583C"} opacity={i === 7 ? 1 : 0.75} />
-                  <circle cx={x} cy={y} r="10" stroke="#C2694A" strokeWidth="1" opacity="0.4" />
-                </g>
-              ))}
-              <g stroke="#C2694A" strokeWidth="1.4" opacity="0.55">
-                <line x1="60" y1="60" x2="200" y2="40" />
-                <line x1="200" y1="40" x2="340" y2="70" />
-                <line x1="90" y1="180" x2="200" y2="40" />
-                <line x1="230" y1="160" x2="340" y2="70" />
-                <line x1="90" y1="180" x2="60" y2="60" />
-                <line x1="230" y1="160" x2="200" y2="40" />
-                <line x1="360" y1="190" x2="340" y2="70" />
-                <line x1="150" y1="290" x2="90" y2="180" />
-                <line x1="300" y1="300" x2="360" y2="190" />
-                <line x1="300" y1="300" x2="230" y2="160" />
-                <line x1="150" y1="290" x2="230" y2="160" />
-              </g>
-              <text x="300" y="330" fill="#C2694A" fontSize="11" fontFamily="Libre Franklin, Arial" fontWeight="700" letterSpacing="2">GOVERNANÇA</text>
-            </svg>
+          <div className="inst-hero-art">
+            <HeroNetwork />
           </div>
         </div>
       </section>
@@ -191,21 +162,12 @@ export default function InstitucionalPage() {
             recursos de inteligência em uma estrutura concebida para organizar,
             acompanhar e governar processos empresariais.
           </p>
-          <div className="inst-diagram">
-            <div className="node-row">
-              {["ERP", "Bancos", "Documentos", "Dados"].map((n) => (
-                <div key={n} className="node">{n}</div>
-              ))}
-            </div>
-            <div className="arrow" />
-            <div className="node core">RSBUILD OS</div>
-            <div className="arrow" />
-            <div className="node-row">
-              {["Processos organizados", "Verificação", "Governança", "Decisões acompanhadas"].map((n) => (
-                <div key={n} className="node">{n}</div>
-              ))}
-            </div>
-          </div>
+          <FlowDiagram
+            top={["ERP", "Bancos", "Documentos", "Dados"]}
+            bottom={["Processos organizados", "Verificação", "Governança", "Decisões acompanhadas"]}
+            core="RSBUILD OS"
+            dark
+          />
         </div>
       </section>
 
@@ -214,15 +176,17 @@ export default function InstitucionalPage() {
         <div className="inst-container">
           <span className="inst-eyebrow">Modelo Operacional</span>
           <h2>Da informação à operação governada.</h2>
-          <div className="inst-steps" style={{ marginTop: 40 }}>
-            {STEPS.map((s) => (
-              <div key={s.num} className="inst-step">
-                <div className="num">{s.num}</div>
-                <h3>{s.title}</h3>
-                <p>{s.text}</p>
-              </div>
-            ))}
-          </div>
+          <Reveal className="inst-reveal-target">
+            <div className="inst-steps" style={{ marginTop: 40 }}>
+              {STEPS.map((s) => (
+                <div key={s.num} className="inst-step">
+                  <div className="num">{s.num}</div>
+                  <h3>{s.title}</h3>
+                  <p>{s.text}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -272,13 +236,8 @@ export default function InstitucionalPage() {
               não eliminar a responsabilidade sobre as decisões.
             </div>
           </div>
-          <div className="inst-diagram" aria-hidden="true">
-            {["Critérios", "Limites de atuação", "Supervisão humana", "Validação", "Registro de eventos"].map((n, i) => (
-              <div key={n} style={{ display: "contents" }}>
-                <div className="node" style={{ borderColor: "rgba(194,105,74,0.6)", color: "#F5F1EA", background: "rgba(255,255,255,0.06)" }}>{n}</div>
-                {i < 4 && <div className="arrow" style={{ background: "#C2694A" }} />}
-              </div>
-            ))}
+          <div style={{ minHeight: 300 }}>
+            <GovernanceFlow items={GOVERNANCE_ITEMS} />
           </div>
         </div>
       </section>
@@ -294,21 +253,11 @@ export default function InstitucionalPage() {
             necessidade específica, considerando os sistemas, processos e
             condições de integração disponíveis.
           </p>
-          <div className="inst-diagram">
-            <div className="node-row">
-              {["ERP / Sistemas", "Documentos", "Dados"].map((n) => (
-                <div key={n} className="node">{n}</div>
-              ))}
-            </div>
-            <div className="arrow" />
-            <div className="node core">RSBUILD OS</div>
-            <div className="arrow" />
-            <div className="node-row">
-              {["Processos", "Validações", "Governança", "Acompanhamento"].map((n) => (
-                <div key={n} className="node">{n}</div>
-              ))}
-            </div>
-          </div>
+          <FlowDiagram
+            top={["ERP / Sistemas", "Documentos", "Dados"]}
+            bottom={["Processos", "Validações", "Governança", "Acompanhamento"]}
+            core="RSBUILD OS"
+          />
         </div>
       </section>
 
@@ -317,15 +266,17 @@ export default function InstitucionalPage() {
         <div className="inst-container">
           <span className="inst-eyebrow">Implementação Progressiva</span>
           <h2>Comece pelo problema. Estruture a solução a partir da operação.</h2>
-          <div className="inst-steps" style={{ marginTop: 40 }}>
-            {IMPLEMENTATION.map((s) => (
-              <div key={s.num} className="inst-step">
-                <div className="num">{s.num}</div>
-                <h3>{s.title}</h3>
-                <p>{s.text}</p>
-              </div>
-            ))}
-          </div>
+          <Reveal className="inst-reveal-target">
+            <div className="inst-steps" style={{ marginTop: 40 }}>
+              {IMPLEMENTATION.map((s) => (
+                <div key={s.num} className="inst-step">
+                  <div className="num">{s.num}</div>
+                  <h3>{s.title}</h3>
+                  <p>{s.text}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
           <div style={{ marginTop: 36, textAlign: "center" }}>
             <a href="#diagnostico" className="inst-cta">Solicitar diagnóstico operacional</a>
           </div>
