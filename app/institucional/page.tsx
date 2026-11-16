@@ -1,119 +1,401 @@
 import Link from "next/link";
 import Image from "next/image";
+import { DiagnosticForm } from "./diagnostic-form";
 
 export const metadata = {
-  title: "RSBUILD OS — Institucional"
+  title: "RSBUILD OS | Governança e Inteligência Operacional",
+  description: "Conheça o RSBUILD OS, uma plataforma concebida para organizar, acompanhar e governar processos empresariais."
 };
+
+const PROBLEMS = [
+  { title: "Processos manuais", text: "Tarefas operacionais dependem de planilhas, e-mails e retrabalho manual." },
+  { title: "Informações fragmentadas", text: "Dados espalhados entre ERP, banco, planilhas e mensageria sem visão única." },
+  { title: "Reconciliações demoradas", text: "Conferências que consomem horas e atrasam decisões financeiras." },
+  { title: "Aprovações descentralizadas", text: "Alçadas informais, sem registro de quem aprovou o quê e quando." },
+  { title: "Dependência de conhecimento individual", text: "Processos que vivem na cabeça de poucas pessoas — risco de continuidade." },
+  { title: "Baixa rastreabilidade", text: "Dificuldade de provar o que aconteceu, quem fez e com qual autorização." }
+];
 
 const MODULES = [
   {
-    icon: "💼",
+    badge: "Disponível",
+    badgeClass: "ok",
     title: "Finanças & Caixa",
-    text: "Ingestão multibanco de extratos, fluxo de caixa consolidado, DRE gerencial e rastreabilidade de importações por hash."
+    text: "Organização de informações financeiras, movimentações e indicadores.",
+    items: ["Extratos", "Fluxo de caixa", "Indicadores", "Rastreabilidade"]
   },
   {
-    icon: "🔄",
+    badge: "Disponível",
+    badgeClass: "ok",
     title: "Reconciliação & Baixas",
-    text: "Motor de correspondência assistida entre extratos e títulos do ERP, com cálculo de encargos e baixa em lote auditável."
+    text: "Conferência assistida entre movimentações, títulos e registros operacionais.",
+    items: ["Correspondências", "Divergências", "Encargos", "Aprovações"]
   },
   {
-    icon: "🚚",
+    badge: "Em validação",
+    badgeClass: "review",
     title: "Logística & Expedição",
-    text: "Estruturação de pedidos informais e protocolo digital de canhotos para blindagem de entrega e prevenção de protesto."
+    text: "Organização e acompanhamento de processos relacionados à expedição e entrega.",
+    items: ["Pedidos", "Expedições", "Comprovantes", "Ocorrências"]
   },
   {
-    icon: "🛡️",
+    badge: "Em validação",
+    badgeClass: "review",
     title: "Auditoria & Governança",
-    text: "Trilha imutável de eventos, registro de acessos negados, sessões e convites — compliance e suporte pericial."
+    text: "Estruturação de responsabilidades, permissões e mecanismos de acompanhamento.",
+    items: ["Identidade", "Alçadas", "Eventos", "Histórico"]
   }
 ];
 
-const PRINCIPLES = [
-  {
-    title: "Camada de governança, não substituto de ERP",
-    text: "O RSBUILD OS não compete com ERPs ou sistemas de gestão. Ele se integra a eles — Omie, TOTVS, Sankhya e outros — operando a camada que o ERP não oferece: conciliação assistida, prova de entrega, alçadas e visão consolidada da holding."
-  },
-  {
-    title: "Desenvolvimento ético de automação e IA",
-    text: "Construímos ferramentas de automação e integração de inteligências artificiais às operações empresariais sob princípios éticos: a IA sugere, organiza e pré-classifica — mas decisões financeiras e operacionais exigem aprovação humana (Human-in-the-Loop). Nenhuma automação executa baixa, conciliação ou alteração de dados sem trilha e, quando aplicável, sem alçada."
-  },
-  {
-    title: "Segurança e proteção de dados",
-    text: "Isolamento total entre empresas por Row Level Security no PostgreSQL, autenticação com JWT em cookies HttpOnly, controle de origem e rate limiting em todas as APIs. Menor privilégio por papel (owner, admin, operator, viewer) e trilha append-only gravada exclusivamente no servidor."
-  },
-  {
-    title: "Rastreabilidade como padrão",
-    text: "Cada importação, alteração, decisão de conciliação, concessão de acesso e sessão é registrada com autor, organização, timestamp e metadados. O cliente pode auditar quem acessou, quem alterou e quem tentou alterar fora da sua alçada."
-  }
+const STEPS = [
+  { num: "01", title: "Conectar", text: "Organizar informações provenientes de sistemas e fontes operacionais." },
+  { num: "02", title: "Interpretar", text: "Contextualizar informações, identificar padrões e aplicar critérios." },
+  { num: "03", title: "Verificar", text: "Submeter informações e ações a mecanismos de validação e conferência." },
+  { num: "04", title: "Governar", text: "Organizar responsabilidades, aprovações e registros operacionais." }
 ];
+
+const IMPLEMENTATION = [
+  { num: "01", title: "Diagnóstico operacional", text: "Entender a operação real, os sistemas e os gargalos antes de propor qualquer solução." },
+  { num: "02", title: "Definição de escopo", text: "Delimitar o problema prioritário, as áreas envolvidas e os resultados esperados." },
+  { num: "03", title: "Projeto-piloto", text: "Implementar em recorte controlado, com acompanhamento próximo e ajustes contínuos." },
+  { num: "04", title: "Avaliação e evolução", text: "Medir resultados, consolidar aprendizados e expandir gradualmente." }
+];
+
+const GOVERNANCE_ITEMS = [
+  "Critérios de atuação explícitos",
+  "Limites de autonomia por operação",
+  "Supervisão humana obrigatória",
+  "Validação antes da execução",
+  "Registro de todos os eventos"
+];
+
+function LineIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
 
 export default function InstitucionalPage() {
   return (
-    <main className="app-shell" style={{ minHeight: "100vh", padding: "48px 24px" }}>
-      <div style={{ width: "min(920px, 100%)", margin: "0 auto", display: "grid", gap: 28 }}>
-
-        <header style={{ textAlign: "center" }}>
-          <Link href="/login" aria-label="Voltar ao acesso">
-            <Image src="/brand/rsbuild-logo-primary.svg" alt="RSBUILD" width={220} height={70} priority />
+    <div className="inst-page">
+      {/* SECTION 01 — HEADER */}
+      <header className="inst-header">
+        <div className="inst-container inst-header-inner">
+          <Link href="/institucional" className="inst-logo" aria-label="RSBUILD OS — página inicial">
+            <Image src="/brand/rsbuild-logo-dark.svg" alt="RSBUILD" width={140} height={44} priority />
           </Link>
-          <div className="eyebrow" style={{ marginTop: 18 }}>CAMADA INSTITUCIONAL</div>
-          <h1 style={{ margin: "10px 0 12px" }}>O que é o RSBUILD OS</h1>
-          <p style={{ color: "var(--muted, #6b7280)", maxWidth: 640, margin: "0 auto", lineHeight: 1.6 }}>
-            Central integrada de operações para holdings e distribuidoras —
-            governança financeira, conciliação e prova operacional sobre os
-            sistemas que a empresa já utiliza.
-          </p>
-        </header>
+          <nav className="inst-nav" aria-label="Navegação institucional">
+            <a href="#produto">O produto</a>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#aplicacoes">Aplicações</a>
+            <a href="#governanca">Governança</a>
+          </nav>
+          <a href="#diagnostico" className="inst-cta">Solicitar diagnóstico</a>
+        </div>
+      </header>
 
-        <section className="panel" style={{ padding: 28 }}>
-          <h2 style={{ marginTop: 0 }}>Posicionamento no mercado</h2>
-          <p style={{ lineHeight: 1.7 }}>
-            O RSBUILD OS é uma <strong>camada de governança e esteira operacional</strong> que se
-            posiciona <strong>entre o ERP e a operação real da empresa</strong>. Ele não substitui
-            sistemas de gestão — integra-se a eles via importações estruturadas e APIs.
-          </p>
-          <p style={{ lineHeight: 1.7 }}>
-            Enquanto o ERP registra o que foi lançado, o RSBUILD OS prova o que aconteceu:
-            concilia o que entrou no banco com o que deveria ter entrado, documenta a entrega
-            física com canhotos digitais, controla alçadas de aprovação e oferece à diretoria
-            uma visão consolidada de todas as empresas do grupo — sem contaminar a operação
-            de cada uma.
-          </p>
-        </section>
+      {/* SECTION 02 — HERO */}
+      <section className="inst-hero">
+        <div className="inst-container inst-hero-grid">
+          <div>
+            <span className="inst-eyebrow">Inteligência Operacional · Governança</span>
+            <h1>
+              Governança e inteligência<br />
+              para operações <em>empresariais.</em>
+            </h1>
+            <p className="sub">
+              Transforme processos, dados e decisões em operações mais
+              organizadas, rastreáveis e governáveis.
+            </p>
+            <div className="inst-hero-ctas">
+              <a href="#diagnostico" className="inst-cta">Solicitar diagnóstico</a>
+              <a href="#produto" className="inst-cta ghost">Conhecer a plataforma</a>
+            </div>
+          </div>
+          <div className="inst-hero-art" aria-hidden="true">
+            <svg viewBox="0 0 420 340" fill="none">
+              <defs>
+                <pattern id="heroDots" width="22" height="22" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="1.2" fill="#D9CCB5" opacity="0.18" />
+                </pattern>
+              </defs>
+              <rect width="420" height="340" fill="url(#heroDots)" />
+              {/* Sistemas → Informações → Processos → Governança */}
+              {[
+                [60, 60], [200, 40], [340, 70], [90, 180], [230, 160], [360, 190], [150, 290], [300, 300]
+              ].map(([x, y], i) => (
+                <g key={i}>
+                  <circle cx={x} cy={y} r="5" fill={i === 7 ? "#C2694A" : "#B5583C"} opacity={i === 7 ? 1 : 0.75} />
+                  <circle cx={x} cy={y} r="10" stroke="#C2694A" strokeWidth="1" opacity="0.4" />
+                </g>
+              ))}
+              <g stroke="#C2694A" strokeWidth="1.4" opacity="0.55">
+                <line x1="60" y1="60" x2="200" y2="40" />
+                <line x1="200" y1="40" x2="340" y2="70" />
+                <line x1="90" y1="180" x2="200" y2="40" />
+                <line x1="230" y1="160" x2="340" y2="70" />
+                <line x1="90" y1="180" x2="60" y2="60" />
+                <line x1="230" y1="160" x2="200" y2="40" />
+                <line x1="360" y1="190" x2="340" y2="70" />
+                <line x1="150" y1="290" x2="90" y2="180" />
+                <line x1="300" y1="300" x2="360" y2="190" />
+                <line x1="300" y1="300" x2="230" y2="160" />
+                <line x1="150" y1="290" x2="230" y2="160" />
+              </g>
+              <text x="300" y="330" fill="#C2694A" fontSize="11" fontFamily="Libre Franklin, Arial" fontWeight="700" letterSpacing="2">GOVERNANÇA</text>
+            </svg>
+          </div>
+        </div>
+      </section>
 
-        <section>
-          <h2 style={{ textAlign: "center" }}>Os 4 módulos operacionais</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+      {/* SECTION 03 — O PROBLEMA */}
+      <section className="inst-section beige">
+        <div className="inst-container">
+          <span className="inst-eyebrow">O Desafio Operacional</span>
+          <h2>Sua empresa possui sistemas. Mas consegue enxergar tudo o que acontece entre eles?</h2>
+          <p className="lead">
+            Na maioria das operações, a informação existe — mas está fragmentada entre
+            ferramentas que não conversam entre si. O resultado é retrabalho,
+            decisões lentas e baixa capacidade de provar o que aconteceu.
+          </p>
+          <div className="inst-grid-3">
+            {PROBLEMS.map((p, i) => (
+              <div key={p.title} className="inst-card">
+                <span className="icon">
+                  <LineIcon>
+                    {i === 0 && <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 13h6M9 17h6" /></>}
+                    {i === 1 && <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" /></>}
+                    {i === 2 && <><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 3v6h-6" /></>}
+                    {i === 3 && <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></>}
+                    {i === 4 && <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>}
+                    {i === 5 && <><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /><path d="M8 11h6M11 8v6" /></>}
+                  </LineIcon>
+                </span>
+                <h3>{p.title}</h3>
+                <p>{p.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 04 — O PRODUTO */}
+      <section className="inst-section" id="produto">
+        <div className="inst-container">
+          <span className="inst-eyebrow">A Plataforma</span>
+          <h2>Uma camada de governança entre seus sistemas e a operação real.</h2>
+          <p className="lead">
+            O RSBUILD OS conecta dados, regras operacionais, fluxos de trabalho e
+            recursos de inteligência em uma estrutura concebida para organizar,
+            acompanhar e governar processos empresariais.
+          </p>
+          <div className="inst-diagram">
+            <div className="node-row">
+              {["ERP", "Bancos", "Documentos", "Dados"].map((n) => (
+                <div key={n} className="node">{n}</div>
+              ))}
+            </div>
+            <div className="arrow" />
+            <div className="node core">RSBUILD OS</div>
+            <div className="arrow" />
+            <div className="node-row">
+              {["Processos organizados", "Verificação", "Governança", "Decisões acompanhadas"].map((n) => (
+                <div key={n} className="node">{n}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 05 — COMO FUNCIONA */}
+      <section className="inst-section light" id="como-funciona">
+        <div className="inst-container">
+          <span className="inst-eyebrow">Modelo Operacional</span>
+          <h2>Da informação à operação governada.</h2>
+          <div className="inst-steps" style={{ marginTop: 40 }}>
+            {STEPS.map((s) => (
+              <div key={s.num} className="inst-step">
+                <div className="num">{s.num}</div>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 06 — FRENTES DE ATUAÇÃO */}
+      <section className="inst-section beige" id="aplicacoes">
+        <div className="inst-container">
+          <span className="inst-eyebrow">Domínios Operacionais</span>
+          <h2>Uma estrutura modular para diferentes necessidades.</h2>
+          <p className="lead">
+            Cada empresa pode ativar apenas as frentes relevantes para sua operação,
+            com o nível de maturidade de cada módulo comunicado com transparência.
+          </p>
+          <div className="inst-grid-4">
             {MODULES.map((m) => (
-              <div key={m.title} className="panel" style={{ padding: 20 }}>
-                <div style={{ fontSize: 22, marginBottom: 8 }}>{m.icon}</div>
-                <h3 style={{ margin: "0 0 8px", fontSize: 15 }}>{m.title}</h3>
-                <p style={{ margin: 0, fontSize: 13, color: "var(--muted, #6b7280)", lineHeight: 1.55 }}>{m.text}</p>
+              <div key={m.title} className="inst-card">
+                <span className={`inst-badge ${m.badgeClass}`}>{m.badge}</span>
+                <h3>{m.title}</h3>
+                <p>{m.text}</p>
+                <ul>{m.items.map((it) => <li key={it}>{it}</li>)}</ul>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="panel" style={{ padding: 28 }}>
-          <h2 style={{ marginTop: 0 }}>Filosofia de desenvolvimento</h2>
-          <div style={{ display: "grid", gap: 20 }}>
-            {PRINCIPLES.map((p) => (
-              <div key={p.title}>
-                <h3 style={{ margin: "0 0 6px", fontSize: 15 }}>{p.title}</h3>
-                <p style={{ margin: 0, fontSize: 14, color: "var(--muted, #6b7280)", lineHeight: 1.65 }}>{p.text}</p>
+      {/* SECTION 07 — INTELIGÊNCIA E GOVERNANÇA */}
+      <section className="inst-section deep" id="governanca" style={{ backgroundImage: "url('/brand/rsbuild-network-pattern.svg')", backgroundSize: "420px", backgroundBlendMode: "overlay" }}>
+        <div className="inst-container inst-split">
+          <div>
+            <span className="inst-eyebrow">Inteligência com Governança</span>
+            <h2>Automatizar não é suficiente. É preciso saber o que está sendo executado.</h2>
+            <p className="lead" style={{ opacity: 0.85 }}>
+              O RSBUILD OS foi concebido para que recursos de inteligência ampliem
+              a capacidade das pessoas — nunca substituam a responsabilidade
+              sobre as decisões. Toda automação opera dentro de critérios,
+              limites e supervisão definidos.
+            </p>
+            <div className="inst-governance-list">
+              {GOVERNANCE_ITEMS.map((item) => (
+                <div key={item} className="inst-governance-item">
+                  <span className="dot" />{item}
+                </div>
+              ))}
+            </div>
+            <div className="inst-message">
+              A inteligência deve ampliar a capacidade operacional das pessoas,
+              não eliminar a responsabilidade sobre as decisões.
+            </div>
+          </div>
+          <div className="inst-diagram" aria-hidden="true">
+            {["Critérios", "Limites de atuação", "Supervisão humana", "Validação", "Registro de eventos"].map((n, i) => (
+              <div key={n} style={{ display: "contents" }}>
+                <div className="node" style={{ borderColor: "rgba(194,105,74,0.6)", color: "#F5F1EA", background: "rgba(255,255,255,0.06)" }}>{n}</div>
+                {i < 4 && <div className="arrow" style={{ background: "#C2694A" }} />}
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <footer style={{ textAlign: "center", fontSize: 12, color: "var(--muted, #6b7280)", paddingBottom: 24 }}>
-          <p style={{ margin: "0 0 12px" }}>
-            Dúvidas sobre a plataforma ou sobre como ela se integra à sua operação?{" "}
-            <a href="mailto:suporte@rsbuild.com.br">suporte@rsbuild.com.br</a>
+      {/* SECTION 08 — ECOSSISTEMA */}
+      <section className="inst-section light">
+        <div className="inst-container">
+          <span className="inst-eyebrow">Integração Operacional</span>
+          <h2>Não é necessário reconstruir sua operação para começar a organizá-la.</h2>
+          <p className="lead">
+            O RSBUILD OS foi concebido para coexistir com as estruturas
+            tecnológicas que a empresa já possui. A adoção pode partir de uma
+            necessidade específica, considerando os sistemas, processos e
+            condições de integração disponíveis.
           </p>
-          <Link href="/login" style={{ fontWeight: 600 }}>← Voltar ao acesso</Link>
-        </footer>
-      </div>
-    </main>
+          <div className="inst-diagram">
+            <div className="node-row">
+              {["ERP / Sistemas", "Documentos", "Dados"].map((n) => (
+                <div key={n} className="node">{n}</div>
+              ))}
+            </div>
+            <div className="arrow" />
+            <div className="node core">RSBUILD OS</div>
+            <div className="arrow" />
+            <div className="node-row">
+              {["Processos", "Validações", "Governança", "Acompanhamento"].map((n) => (
+                <div key={n} className="node">{n}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 09 — IMPLEMENTAÇÃO */}
+      <section className="inst-section beige">
+        <div className="inst-container">
+          <span className="inst-eyebrow">Implementação Progressiva</span>
+          <h2>Comece pelo problema. Estruture a solução a partir da operação.</h2>
+          <div className="inst-steps" style={{ marginTop: 40 }}>
+            {IMPLEMENTATION.map((s) => (
+              <div key={s.num} className="inst-step">
+                <div className="num">{s.num}</div>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 36, textAlign: "center" }}>
+            <a href="#diagnostico" className="inst-cta">Solicitar diagnóstico operacional</a>
+          </div>
+        </div>
+      </section>
+
+      {/* FORMULÁRIO DE DIAGNÓSTICO */}
+      <section className="inst-section" id="diagnostico" style={{ background: "#F4F0E8" }}>
+        <div className="inst-container">
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <span className="inst-eyebrow" style={{ color: "var(--rsbuild-terracotta)" }}>Diagnóstico Operacional</span>
+            <h2 style={{ color: "var(--rsbuild-charcoal)" }}>Conte-nos sobre sua operação.</h2>
+            <p className="lead" style={{ margin: "0 auto", color: "#5C5650" }}>
+              Cinco etapas curtas. Solicitamos apenas o necessário para uma
+              avaliação inicial — nunca credenciais, extratos ou documentos
+              confidenciais.
+            </p>
+          </div>
+          <DiagnosticForm />
+        </div>
+      </section>
+
+      {/* SECTION 10 — CTA E FOOTER */}
+      <section className="inst-cta-final" style={{ background: "var(--rsbuild-charcoal)", backgroundImage: "url('/brand/rsbuild-network-pattern.svg')", backgroundSize: "460px" }}>
+        <div className="inst-container">
+          <h2>Sua operação pode estar pronta para evoluir.</h2>
+          <p>
+            Conte-nos sobre sua empresa, seus processos e os desafios que deseja
+            resolver. Vamos avaliar onde uma camada de governança operacional
+            pode gerar valor.
+          </p>
+          <a href="#diagnostico" className="inst-cta" style={{ fontSize: 15, padding: "14px 28px" }}>
+            Solicitar diagnóstico operacional
+          </a>
+        </div>
+      </section>
+
+      <footer className="inst-footer">
+        <div className="inst-container">
+          <div className="inst-footer-grid">
+            <div>
+              <Image src="/brand/rsbuild-logo-dark.svg" alt="RSBUILD" width={130} height={42} />
+              <p className="desc" style={{ marginTop: 14 }}>
+                RSBUILD OS — Governança para operações que precisam evoluir.
+                Camada de inteligência e controle entre seus sistemas e a
+                operação real.
+              </p>
+            </div>
+            <div>
+              <h4>O produto</h4>
+              <a href="#produto">Plataforma</a>
+              <a href="#como-funciona">Como funciona</a>
+              <a href="#aplicacoes">Frentes de atuação</a>
+            </div>
+            <div>
+              <h4>Contato</h4>
+              <a href="#diagnostico">Solicitar diagnóstico</a>
+              <a href="mailto:suporte@rsbuild.com.br">suporte@rsbuild.com.br</a>
+              <a href="/login">Acesso à plataforma</a>
+            </div>
+          </div>
+          <div className="inst-footer-bottom">
+            <span>© {new Date().getFullYear()} RSBUILD · Todos os direitos reservados.</span>
+            <span>
+              <a href="/institucional">Privacidade</a>
+              <a href="/institucional">Termos de uso</a>
+            </span>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
