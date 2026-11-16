@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 
 export type RsbuildIconName =
   | "control-tower"
@@ -27,7 +27,7 @@ interface RsbuildIconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
   strokeWidth?: number;
 }
 
-const ICON_PATHS: Record<RsbuildIconName, React.ReactNode> = {
+const ICON_PATHS: Record<RsbuildIconName, ReactNode> = {
   "control-tower": (
     <>
       <path d="M12 3v4M5 7h14M7 7l-2 4h14l-2-4M12 11v9M8 20h8" />
