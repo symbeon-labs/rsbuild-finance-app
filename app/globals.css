@@ -3671,11 +3671,12 @@ canvas {
 .inst-form-wrap {
   max-width: 720px;
   margin: 0 auto;
-  background: #fff;
+  background: #ffffff;
   color: var(--rsbuild-charcoal);
   border-radius: 16px;
   padding: 36px;
-  box-shadow: 0 24px 60px rgba(43,44,46,0.25);
+  border: 1px solid rgba(217, 204, 181, 0.22);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 .inst-form-steps { display: flex; gap: 6px; margin-bottom: 28px; }
 .inst-form-steps span { flex: 1; height: 4px; border-radius: 4px; background: #E5E1D8; }

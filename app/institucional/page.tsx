@@ -481,12 +481,25 @@ export default function InstitucionalPage() {
       </section>
 
       {/* FORMULÁRIO DE DIAGNÓSTICO */}
-      <section className="inst-section" id="diagnostico" style={{ background: "#F4F0E8" }}>
-        <div className="inst-container">
+      <section
+        className="inst-section inst-diagnostic-section"
+        id="diagnostico"
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: "var(--rsbuild-charcoal)",
+          backgroundImage:
+            "radial-gradient(circle, rgba(217, 204, 181, 0.08) 1.2px, transparent 1.2px), linear-gradient(to bottom, rgba(43, 44, 46, 0.75) 0%, rgba(43, 44, 46, 0.98) 100%)",
+          backgroundSize: "32px 32px, 100% 100%",
+          padding: "100px 0 96px"
+        }}
+      >
+        <HeroAmbientAtmosphere />
+        <div className="inst-container" style={{ position: "relative", zIndex: 2 }}>
           <div style={{ textAlign: "center", marginBottom: 36 }}>
-            <span className="inst-eyebrow" style={{ color: "var(--rsbuild-terracotta)" }}>Diagnóstico Operacional</span>
-            <h2 style={{ color: "var(--rsbuild-charcoal)" }}>Conte-nos sobre sua operação.</h2>
-            <p className="lead" style={{ margin: "0 auto", color: "#5C5650" }}>
+            <span className="inst-eyebrow" style={{ color: "var(--rsbuild-terracotta-light)" }}>Diagnóstico Operacional</span>
+            <h2 style={{ color: "#F5F1EA" }}>Conte-nos sobre sua operação.</h2>
+            <p className="lead" style={{ margin: "0 auto", color: "rgba(217, 204, 181, 0.85)" }}>
               Cinco etapas curtas. Solicitamos apenas o necessário para uma
               avaliação inicial — nunca credenciais, extratos ou documentos
               confidenciais.
