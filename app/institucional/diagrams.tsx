@@ -247,7 +247,7 @@ export function HeroNetwork() {
     {
       id: "auditoria",
       title: "AUDITORIA & ALÇADAS",
-      sub: "Regra Raquel & governança",
+      sub: "Alçadas, compliance & governança",
       x: 513,
       y: 340,
       width: 295,
