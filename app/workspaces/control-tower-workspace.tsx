@@ -204,8 +204,13 @@ export default function ControlTowerWorkspace({
         onSignOut={() =>
           new Promise<void>((resolve) => {
             startSignOutTransition(async () => {
-              await signOut();
-              resolve();
+              try {
+                await signOut();
+              } finally {
+                // redirect() lança NEXT_REDIRECT — resolve sempre para
+                // não travar o estado pending do botão na sidebar
+                resolve();
+              }
             });
           })
         }

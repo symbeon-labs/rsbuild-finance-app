@@ -31,12 +31,17 @@ export async function signOut() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    await recordSessionEvent({
-      userId: user.id,
-      userEmail: user.email ?? null,
-      eventType: "session.logout",
-      metadata: { method: "explicit" }
-    });
+    // Auditoria de logout é best-effort com teto de espera: nunca pode
+    // bloquear a saída do usuário se o backend de auditoria estiver lento.
+    await Promise.race([
+      recordSessionEvent({
+        userId: user.id,
+        userEmail: user.email ?? null,
+        eventType: "session.logout",
+        metadata: { method: "explicit" }
+      }),
+      new Promise((resolve) => setTimeout(resolve, 3000))
+    ]);
   }
   await supabase.auth.signOut();
   redirect("/login");
