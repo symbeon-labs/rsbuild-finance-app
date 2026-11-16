@@ -261,9 +261,7 @@ export function DiagnosticForm() {
       </div>
 
       <p className="inst-form-note">
-        Seus dados são usados apenas para avaliar a aderência da plataforma à sua operação.
-        Não solicitamos credenciais, extratos ou documentos confidenciais nesta etapa.
-        Ao enviar, você concorda com o tratamento de dados pessoais conforme nossa política de privacidade.
+        As informações serão utilizadas para responder à solicitação e avaliar, em caráter inicial, a aderência da plataforma ao contexto informado. Não inclua credenciais, dados pessoais de terceiros, extratos ou documentos confidenciais. Para solicitar informações sobre o tratamento dos dados ou exercer seus direitos, escreva para suporte@rsbuild.com.br.
       </p>
     </div>
   );
