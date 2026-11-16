@@ -560,3 +560,141 @@ export function GovernanceFlow({ items }: { items: string[] }) {
     </svg>
   );
 }
+
+
+/* --------------------------------------------------------------------------
+   Diagramas institucionais — arquitetura (estrutura) e operação (movimento)
+   -------------------------------------------------------------------------- */
+
+const ARCH_SOURCES = [
+  { icon: "▱", title: "ERP / Sistemas", detail: "Sistemas empresariais" },
+  { icon: "⌂", title: "Bancos", detail: "Movimentações financeiras" },
+  { icon: "▤", title: "Documentos (OCR)", detail: "Documentos e registros" },
+  { icon: "◫", title: "Dados", detail: "APIs e planilhas" }
+];
+
+const ARCH_CAPABILITIES = [
+  { icon: "▥", title: "Monitoramento operacional", detail: "Visibilidade dos processos" },
+  { icon: "↯", title: "Automação com regras", detail: "Execução dentro do escopo" },
+  { icon: "⌘", title: "Verificação e conciliação", detail: "Consistência e evidências" },
+  { icon: "◎", title: "Suporte à decisão", detail: "Análises e recomendações" }
+];
+
+const ARCH_LAYERS = [
+  { title: "Inteligência e agentes", detail: "Análise · automação · recomendações", tone: "intelligence" },
+  { title: "Orquestração de processos", detail: "Regras · fluxos · tarefas · integrações", tone: "orchestration" },
+  { title: "Dados e contexto", detail: "Consolidação · qualidade · rastreabilidade", tone: "data" },
+  { title: "Governança e controle", detail: "Permissões · auditoria · supervisão", tone: "governance" }
+];
+
+const ARCH_OUTCOMES = [
+  { icon: "◎", title: "Processos organizados" },
+  { icon: "✓", title: "Validações confiáveis" },
+  { icon: "◇", title: "Governança aplicada" },
+  { icon: "▱", title: "Decisões acompanhadas" }
+];
+
+export function ArchitectureDiagram() {
+  const { ref, visible } = useInView<HTMLDivElement>(0.12);
+  return (
+    <div ref={ref} className={`rs-architecture${visible ? " is-visible" : ""}`} aria-label="Arquitetura conceitual do RSBUILD OS">
+      <div className="rs-architecture-grid">
+        <div className="rs-architecture-column rs-architecture-sources">
+          <div className="rs-architecture-heading">Fontes de informação</div>
+          {ARCH_SOURCES.map((item, i) => (
+            <div className="rs-architecture-node" key={item.title} style={{ "--node-delay": `${i * 100}ms` } as React.CSSProperties}>
+              <span className="rs-architecture-icon" aria-hidden="true">{item.icon}</span>
+              <span><strong>{item.title}</strong><small>{item.detail}</small></span>
+            </div>
+          ))}
+        </div>
+
+        <div className="rs-architecture-core">
+          <div className="rs-architecture-cap">
+            <span className="rs-architecture-mark">S</span>
+            <strong>RSBUILD OS</strong>
+            <small>Camada de governança operacional</small>
+          </div>
+          <div className="rs-architecture-layers">
+            {ARCH_LAYERS.map((layer, i) => (
+              <div className={`rs-architecture-layer ${layer.tone}`} key={layer.title} style={{ "--layer-delay": `${i * 120}ms` } as React.CSSProperties}>
+                <span className="rs-architecture-layer-index">0{i + 1}</span>
+                <span><strong>{layer.title}</strong><small>{layer.detail}</small></span>
+              </div>
+            ))}
+          </div>
+          <div className="rs-architecture-base" />
+        </div>
+
+        <div className="rs-architecture-column rs-architecture-capabilities">
+          <div className="rs-architecture-heading">Capacidades operacionais</div>
+          {ARCH_CAPABILITIES.map((item, i) => (
+            <div className="rs-architecture-node" key={item.title} style={{ "--node-delay": `${i * 100}ms` } as React.CSSProperties}>
+              <span className="rs-architecture-icon" aria-hidden="true">{item.icon}</span>
+              <span><strong>{item.title}</strong><small>{item.detail}</small></span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rs-architecture-outcomes">
+        <strong className="rs-architecture-outcomes-label">Resultado na operação</strong>
+        {ARCH_OUTCOMES.map((item) => (
+          <div className="rs-architecture-outcome" key={item.title}>
+            <span aria-hidden="true">{item.icon}</span><strong>{item.title}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const OPERATION_STEPS = [
+  { num: "01", title: "Captura", text: "Coleta e organiza as informações da operação", icon: "▤" },
+  { num: "02", title: "Processa", text: "Aplica regras, valida e enriquece os dados", icon: "⚙" },
+  { num: "03", title: "Orquestra", text: "Executa fluxos, tarefas e integrações", icon: "⌘" },
+  { num: "04", title: "Monitora", text: "Acompanha resultados, eventos e desvios", icon: "▥" },
+  { num: "05", title: "Apoia ações", text: "Gera alertas e suporte à decisão", icon: "✓" }
+];
+
+const OPERATION_SOURCES = ["ERP / Sistemas", "Documentos", "Dados", "Outras fontes"];
+const OPERATION_AGENTS = [
+  { icon: "⌕", title: "Análise operacional" },
+  { icon: "✓", title: "Conciliação e verificações" },
+  { icon: "♧", title: "Alertas e exceções" },
+  { icon: "⌘", title: "Recomendações de ação" }
+];
+
+export function OperationalFlow() {
+  const { ref, visible } = useInView<HTMLDivElement>(0.12);
+  return (
+    <div ref={ref} className={`rs-operational-flow${visible ? " is-visible" : ""}`} aria-label="Fluxo operacional do RSBUILD OS">
+      <div className="rs-operational-cycle">
+        <span className="rs-operational-cycle-icon" aria-hidden="true">↻</span>
+        <span><strong>Ciclo de melhoria contínua</strong><small>Monitora · aprende · ajusta</small></span>
+      </div>
+      <div className="rs-operational-main">
+        <div className="rs-operational-sources">
+          <strong>Sua operação</strong>
+          {OPERATION_SOURCES.map((source) => <span key={source}>{source}</span>)}
+        </div>
+        <div className="rs-operational-steps">
+          {OPERATION_STEPS.map((step, i) => (
+            <div className={`rs-operational-step step-${i + 1}`} key={step.num} style={{ "--step-delay": `${i * 130}ms` } as React.CSSProperties}>
+              <span className="rs-operational-step-icon" aria-hidden="true">{step.icon}</span>
+              <span className="rs-operational-step-number">{step.num}</span>
+              <strong>{step.title}</strong>
+              <p>{step.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rs-operational-agents">
+        <strong className="rs-operational-agents-label">Recursos de apoio</strong>
+        {OPERATION_AGENTS.map((agent) => (
+          <div key={agent.title}><span aria-hidden="true">{agent.icon}</span><strong>{agent.title}</strong></div>
+        ))}
+      </div>
+      <div className="rs-operational-footnote">A atuação depende das regras, integrações, permissões e do escopo definidos para cada aplicação.</div>
+    </div>
+  );
+}
