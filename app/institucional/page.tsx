@@ -397,11 +397,23 @@ export default function InstitucionalPage() {
             necessidade específica, considerando os sistemas, processos e
             condições de integração disponíveis.
           </p>
-          <FlowDiagram
-            top={["ERP / Sistemas", "Documentos", "Dados"]}
-            bottom={["Processos", "Validações", "Governança", "Acompanhamento"]}
-            core="RSBUILD OS"
-          />
+          <div className="inst-grid-3 rs-integration-principles">
+            <article className="inst-card">
+              <span className="inst-card-icon">01</span>
+              <h3>Coexistir</h3>
+              <p>Preservar os sistemas e as rotinas que já sustentam a operação.</p>
+            </article>
+            <article className="inst-card">
+              <span className="inst-card-icon">02</span>
+              <h3>Conectar</h3>
+              <p>Aproximar informações e fluxos conforme as integrações disponíveis.</p>
+            </article>
+            <article className="inst-card">
+              <span className="inst-card-icon">03</span>
+              <h3>Evoluir</h3>
+              <p>Ampliar a organização operacional por etapas e escopos definidos.</p>
+            </article>
+          </div>
         </div>
       </section>
 
