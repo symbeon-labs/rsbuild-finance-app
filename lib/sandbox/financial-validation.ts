@@ -37,8 +37,8 @@ export function runFinancialValidation(caseCode: string): ValidationOutcome {
  if(caseCode==="A2.1-BNB-LAYOUT" || caseCode==="A2.2-INTER-LAYOUT") {
    return {status:"blocked",summary:"Fixture bancário específico ainda não foi disponibilizado; OFX genérico não comprova compatibilidade do leiaute BNB/Inter.",checks:[{name:"Amostra de leiaute",passed:false,detail:"Não executar teste de banco específico sem fixture autorizado e sanitizado."}]};
  } else if(caseCode==="A1.4-OFX-PARSER") {
-   const bankId=caseCode==="A2.1-BNB-LAYOUT"?"0004":caseCode==="A2.2-INTER-LAYOUT"?"0077":"0341";
-   const org=caseCode==="A2.1-BNB-LAYOUT"?"BNB":caseCode==="A2.2-INTER-LAYOUT"?"INTER":"ITAU";
+   const bankId="0341";
+   const org="ITAU";
    const result=parseOfx(fixture(bankId,org,"12345-6"));
    check("Dois lançamentos interpretados",result.records.length===2,`Esperados 2; encontrados ${result.records.length}.`);
    check("FITID preservado",result.records.map(r=>r.sourceRecordId).includes(`FIT-${org}-001`) && result.records.map(r=>r.sourceRecordId).includes(`FIT-${org}-002`),"Identificadores de origem devem ser preservados.");
