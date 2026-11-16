@@ -10,6 +10,8 @@ type SandboxData = {
   receivableTitles: any[];
   deliveryProofs: any[];
   auditEvents: any[];
+  validationCases: any[];
+  validationRuns: any[];
   isSandbox: boolean;
 };
 
@@ -17,6 +19,8 @@ export function SandboxView() {
   const [data, setData] = useState<SandboxData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [runningCase, setRunningCase] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -41,6 +45,24 @@ export function SandboxView() {
     }
     load();
   }, []);
+
+  async function runCase(caseCode: string) {
+    setRunningCase(caseCode);
+    setValidationMessage(null);
+    try {
+      const response = await fetch("/api/sandbox", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caseCode }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha na execução.");
+      setValidationMessage(`${caseCode}: ${payload.outcome.status.toUpperCase()} — ${payload.outcome.summary}`);
+      const refreshed = await fetch("/api/sandbox", { cache: "no-store" });
+      const refreshedData = await refreshed.json();
+      if (refreshed.ok) setData(refreshedData);
+    } catch (cause) {
+      setValidationMessage(cause instanceof Error ? cause.message : "Falha na execução.");
+    } finally {
+      setRunningCase(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -139,6 +161,55 @@ export function SandboxView() {
               </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Sprint validation laboratory */}
+      <div className="card cockpit-card" style={{ padding: "20px 24px", borderLeft: "4px solid #B5583C", display: "grid", gap: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div className="eyebrow">VALIDATION ENVIRONMENT · FINANCE</div>
+            <h3 style={{ margin: "5px 0", fontSize: 18, color: "var(--ink)" }}>Validador das Sprints — Conciliação Bancária</h3>
+            <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>Executa fixtures sintéticas no código financeiro atual. Nenhum extrato ou dado de cliente é utilizado.</p>
+          </div>
+          <span style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, background: "rgba(16,185,129,.12)", color: "#059669", fontWeight: 700 }}>Execução isolada</span>
+        </div>
+        {validationMessage && <div role="status" style={{ padding: 12, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)", fontSize: 13 }}>{validationMessage}</div>}
+        {[1,2].map((sprint) => {
+          const cases = (data.validationCases || []).filter((item: any) => item.sprint_number === sprint);
+          return <div key={sprint} style={{ display: "grid", gap: 9 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <strong style={{ color: "var(--ink)", fontSize: 14 }}>Sprint A{sprint} · {sprint === 1 ? "Uma conta bancária conciliada ponta a ponta" : "Leiautes, exceções e auditoria manual"}</strong>
+              <span style={{ fontSize: 11, color: "var(--muted)" }}>{cases.length} casos</span>
+            </div>
+            {cases.map((item: any) => {
+              const latest = (data.validationRuns || []).find((run: any) => run.case_code === item.case_code);
+              const label = latest?.status === "passed" ? "APROVADO" : latest?.status === "failed" ? "REPROVADO" : latest?.status === "blocked" ? "PENDENTE" : "NÃO EXECUTADO";
+              const color = latest?.status === "passed" ? "#059669" : latest?.status === "failed" ? "#DC2626" : "#B7791F";
+              return <div key={item.case_code} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "12px 14px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface-raised)" }}>
+                <div style={{ minWidth: 220, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <strong style={{ color: "var(--ink)", fontSize: 13 }}>{item.task_code} · {item.title}</strong>
+                    <span style={{ color, fontSize: 10, fontWeight: 800, letterSpacing: ".04em" }}>{label}</span>
+                  </div>
+                  <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: 11 }}>{item.acceptance_criteria}</p>
+                  {latest && <small style={{ display: "block", marginTop: 4, color: "var(--muted)" }}>Última execução: {new Date(latest.executed_at).toLocaleString("pt-BR")} · {latest.summary}</small>}
+                </div>
+                <button type="button" className="secondary-button" disabled={runningCase !== null} onClick={() => runCase(item.case_code)} style={{ whiteSpace: "nowrap", opacity: runningCase && runningCase !== item.case_code ? .55 : 1 }}>
+                  {runningCase === item.case_code ? "Executando…" : item.test_kind === "manual" ? "Registrar pendência" : item.test_kind === "blocked" ? "Ver bloqueio" : "Executar teste"}
+                </button>
+              </div>;
+            })}
+          </div>;
+        })}
+        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <strong style={{ color: "var(--ink)", fontSize: 13 }}>Histórico recente de validações</strong>
+          {(data.validationRuns || []).length === 0 ? <p style={{ color: "var(--muted)", fontSize: 12 }}>Nenhuma execução registrada.</p> :
+            <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+              {(data.validationRuns || []).slice(0, 8).map((run: any) => <div key={run.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, color: "var(--muted)" }}>
+                <span>{run.case_code} · {run.summary}</span><strong style={{ color: run.status === "passed" ? "#059669" : run.status === "failed" ? "#DC2626" : "#B7791F" }}>{run.status.toUpperCase()}</strong>
+              </div>)}
+            </div>}
         </div>
       </div>
 
