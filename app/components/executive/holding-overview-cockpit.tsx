@@ -29,6 +29,24 @@ type ProjectSummary = {
   }>;
 };
 
+type OrgOpsMetrics = {
+  titlesPending: number;
+  titlesTotal: number;
+  proofsPending: number;
+  proofsTotal: number;
+  ordersCount: number;
+  settlementsCount: number;
+  settlementsAmount30d: number;
+  recordsPending: number;
+  recordsConciliado: number;
+  erpMovementsCount: number;
+  membersCount: number;
+  pendingInvitations: number;
+  auditEvents7d: number;
+  accessDenied7d: number;
+  lastActivityAt: string | null;
+};
+
 interface HoldingOverviewCockpitProps {
   onNavigateToTab: (tab: NavSection) => void;
   userRole?: string;
@@ -58,9 +76,27 @@ export function HoldingOverviewCockpit({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [opsByOrg, setOpsByOrg] = useState<Record<string, OrgOpsMetrics>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
+
+  useEffect(() => {
+    async function loadOps() {
+      try {
+        const res = await fetch("/api/observability/summary", { cache: "no-store" });
+        if (res.ok) {
+          const payload = await res.json();
+          const map: Record<string, OrgOpsMetrics> = {};
+          for (const org of payload.organizations ?? []) map[org.id] = org;
+          setOpsByOrg(map);
+        }
+      } catch (err) {
+        console.error("Falha ao carregar observabilidade:", err);
+      }
+    }
+    loadOps();
+  }, []);
 
   useEffect(() => {
     async function loadPortfolio() {
@@ -350,6 +386,7 @@ export function HoldingOverviewCockpit({
                 (d) => d.status === "waiting" || d.status === "open"
               );
               const orgId = PROJECT_TO_ORG[project.project_key] || "";
+              const ops = orgId ? opsByOrg[orgId] : undefined;
               const accent = PROJECT_ACCENT[project.project_key] || "#6B7280";
               const badge = PROJECT_BADGE[project.project_key];
 
@@ -462,6 +499,37 @@ export function HoldingOverviewCockpit({
                         {blockingDeps[0].title}
                         {blockingDeps.length > 1 ? ` e mais ${blockingDeps.length - 1}` : ""}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Observabilidade operacional (cross-tenant, somente leitura) */}
+                  {ops && (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(4, 1fr)",
+                        gap: "8px",
+                        padding: "12px 14px",
+                        borderRadius: "8px",
+                        background: "var(--surface-raised, rgba(0,0,0,0.02))",
+                        border: "1px solid var(--rsbuild-border)"
+                      }}
+                    >
+                      {[
+                        { label: "Títulos pendentes", value: ops.titlesPending, warn: ops.titlesPending > 0 },
+                        { label: "Baixas (30d)", value: ops.settlementsCount, warn: false },
+                        { label: "Pedidos", value: ops.ordersCount, warn: false },
+                        { label: "Eventos 7d", value: ops.auditEvents7d, warn: ops.accessDenied7d > 0 }
+                      ].map((m) => (
+                        <div key={m.label} style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: "16px", fontWeight: 800, color: m.warn ? "#F59E0B" : "var(--foreground)" }}>
+                            {m.value}
+                          </div>
+                          <div style={{ fontSize: "10px", color: "var(--rsbuild-muted)", letterSpacing: "0.3px" }}>
+                            {m.label.toUpperCase()}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
 

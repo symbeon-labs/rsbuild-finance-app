@@ -19,6 +19,7 @@ interface TopbarProps {
   onToggleTheme: () => void;
   onResetSession: () => void;
   onOpenConfig: () => void;
+  onOpenTour?: () => void;
 }
 
 export function Topbar({
@@ -36,7 +37,8 @@ export function Topbar({
   onPeriodChange,
   onToggleTheme,
   onResetSession,
-  onOpenConfig
+  onOpenConfig,
+  onOpenTour
 }: TopbarProps) {
   const currentLabel = ALL_NAV_ITEMS.find((item) => item.id === section)?.label || "Visão Geral";
   const roleMeta = getRoleMetadata(userRole);
@@ -161,6 +163,33 @@ export function Topbar({
           </svg>
           <span>Limpar sessão</span>
         </button>
+
+        {/* Botão para Guia do Ciclo 01 */}
+        {onOpenTour && (
+          <button
+            type="button"
+            className="tour-guide-btn"
+            onClick={onOpenTour}
+            title="Conhecer as funcionalidades homologadas do Ciclo 01"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "5px 10px",
+              background: "rgba(181, 88, 60, 0.12)",
+              border: "1px solid rgba(181, 88, 60, 0.35)",
+              borderRadius: "6px",
+              color: "var(--rsbuild-terracotta, #B5583C)",
+              fontSize: "11px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s ease"
+            }}
+          >
+            <span style={{ fontSize: "12px" }}>🧭</span>
+            <span>Guia Ciclo 01</span>
+          </button>
+        )}
 
         <button
           className="avatar"

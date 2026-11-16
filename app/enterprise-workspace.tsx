@@ -47,6 +47,7 @@ import { applyBrandColor } from "@/app/lib/brand-color";
 import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
 import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
+import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
 import { VisaoGeralView } from "@/app/components/finance/visao-geral-view";
 import { MovimentacoesView } from "@/app/components/finance/movimentacoes-view";
@@ -165,6 +166,22 @@ export default function EnterpriseWorkspace({
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [currentUserEmail] = useState<string>(userEmail);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+
+  // Auto-exibição do Tour Guiado no primeiro acesso ao workspace
+  useEffect(() => {
+    try {
+      const hasSeenTour = localStorage.getItem("rsbuild_tour_completed_v1");
+      if (!hasSeenTour) {
+        const timer = setTimeout(() => {
+          setIsTourOpen(true);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // Ignora erro de localStorage
+    }
+  }, []);
 
   // Tema Visual: 'sand' ou 'dark'
   const [theme, setTheme] = useState<"sand" | "dark">(preferredTheme || "sand");
@@ -677,6 +694,7 @@ export default function EnterpriseWorkspace({
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}
           onOpenConfig={() => setIsConfigOpen(true)}
+          onOpenTour={() => setIsTourOpen(true)}
         />
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
@@ -817,6 +835,11 @@ export default function EnterpriseWorkspace({
         onClose={() => setIsConfigOpen(false)}
         onSave={handleSaveCompanyConfig}
         onUploadLogo={handleLogoUploadFile}
+      />
+      <ProductTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onNavigateToSection={(target) => navigateTo(target)}
       />
       <DevZonePanel
         developerAccessAllowed={isDeveloperAuthorized || canAccessSprintZone(membershipRole, organizationSlug)}
