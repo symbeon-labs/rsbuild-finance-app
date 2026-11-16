@@ -22,6 +22,7 @@ import { AccessDirectoryView } from "@/app/components/admin/access-directory-vie
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { SandboxView } from "@/app/components/admin/sandbox-view";
+import { AgentsGovernanceView } from "@/app/components/admin/agents-governance-view";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
@@ -58,7 +59,7 @@ export default function ControlTowerWorkspace({
 
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "torre-controle", "auditoria", "acessos", "sandbox"].includes(urlTab)
+    urlTab && ["visao-geral", "projetos", "torre-controle", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -293,6 +294,9 @@ export default function ControlTowerWorkspace({
           )}
           {section === "acessos" && (
             <AccessDirectoryView />
+          )}
+          {section === "agentes" && (
+            <AgentsGovernanceView canDecide={["owner", "admin"].includes(membershipRole)} />
           )}
           {section === "sandbox" && (
             <SandboxView />

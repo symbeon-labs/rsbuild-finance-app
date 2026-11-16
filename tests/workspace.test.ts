@@ -60,8 +60,9 @@ test("GOV-02: Produto 2 (Reconciliação ERP) opera de forma 100% independente d
 
 test("GOV-03: Produto 4 (Governança) mantém a área de controle no módulo de auditoria", () => {
   const auditItems = ALL_NAV_ITEMS.filter((i) => i.module === "audit");
-  assert.equal(auditItems.length, 3);
+  assert.equal(auditItems.length, 4);
   assert.ok(auditItems.some((i) => i.id === "torre-controle" && i.label === "Governança & Controle"));
+  assert.ok(auditItems.some((i) => i.id === "agentes" && i.label === "Agentes & IA"));
   assert.ok(auditItems.some((i) => i.id === "auditoria" && i.label === "Auditoria & Acessos"));
   assert.ok(auditItems.some((i) => i.id === "acessos" && i.label === "Acessos & Identidades"));
 });

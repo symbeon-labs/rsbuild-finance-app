@@ -170,6 +170,8 @@ export function Sidebar({
           if (item.id === "projetos" && !showProjectPortfolio) return false;
           // Diretório central de acessos é exclusivo do workspace RSBUILD
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
+          // Governança de agentes de IA é exclusiva do plano de controle RSBUILD
+          if (item.id === "agentes" && currentOrgId !== "rsbuild") return false;
           // Sandbox é restrito a admins/owners da RSBUILD
           if (item.id === "sandbox" && !canAccessSandbox) return false;
           if (item.module === "all") return true;
