@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 /** Adiciona .is-visible uma única vez quando o elemento entra na viewport. */
 function useInView<T extends Element>(threshold = 0.25) {
@@ -597,12 +597,12 @@ const ARCH_OUTCOMES = [
 export function ArchitectureDiagram() {
   const { ref, visible } = useInView<HTMLDivElement>(0.12);
   return (
-    <div ref={ref} className={`rs-architecture${visible ? " is-visible" : ""}`} aria-label="Arquitetura conceitual do RSBUILD OS">
+    <div ref={ref} className={`rs-architecture${visible ? " is-visible" : ""}`} role="group" aria-label="Arquitetura conceitual do RSBUILD OS">
       <div className="rs-architecture-grid">
         <div className="rs-architecture-column rs-architecture-sources">
           <div className="rs-architecture-heading">Fontes de informação</div>
           {ARCH_SOURCES.map((item, i) => (
-            <div className="rs-architecture-node" key={item.title} style={{ "--node-delay": `${i * 100}ms` } as React.CSSProperties}>
+            <div className="rs-architecture-node" key={item.title} style={{ "--node-delay": `${i * 100}ms` } as CSSProperties}>
               <span className="rs-architecture-icon" aria-hidden="true">{item.icon}</span>
               <span><strong>{item.title}</strong><small>{item.detail}</small></span>
             </div>
@@ -617,7 +617,7 @@ export function ArchitectureDiagram() {
           </div>
           <div className="rs-architecture-layers">
             {ARCH_LAYERS.map((layer, i) => (
-              <div className={`rs-architecture-layer ${layer.tone}`} key={layer.title} style={{ "--layer-delay": `${i * 120}ms` } as React.CSSProperties}>
+              <div className={`rs-architecture-layer ${layer.tone}`} key={layer.title} style={{ "--layer-delay": `${i * 120}ms` } as CSSProperties}>
                 <span className="rs-architecture-layer-index">0{i + 1}</span>
                 <span><strong>{layer.title}</strong><small>{layer.detail}</small></span>
               </div>
@@ -629,7 +629,7 @@ export function ArchitectureDiagram() {
         <div className="rs-architecture-column rs-architecture-capabilities">
           <div className="rs-architecture-heading">Capacidades operacionais</div>
           {ARCH_CAPABILITIES.map((item, i) => (
-            <div className="rs-architecture-node" key={item.title} style={{ "--node-delay": `${i * 100}ms` } as React.CSSProperties}>
+            <div className="rs-architecture-node" key={item.title} style={{ "--node-delay": `${i * 100}ms` } as CSSProperties}>
               <span className="rs-architecture-icon" aria-hidden="true">{item.icon}</span>
               <span><strong>{item.title}</strong><small>{item.detail}</small></span>
             </div>
@@ -667,7 +667,7 @@ const OPERATION_AGENTS = [
 export function OperationalFlow() {
   const { ref, visible } = useInView<HTMLDivElement>(0.12);
   return (
-    <div ref={ref} className={`rs-operational-flow${visible ? " is-visible" : ""}`} aria-label="Fluxo operacional do RSBUILD OS">
+    <div ref={ref} className={`rs-operational-flow${visible ? " is-visible" : ""}`} role="group" aria-label="Fluxo operacional do RSBUILD OS">
       <div className="rs-operational-cycle">
         <span className="rs-operational-cycle-icon" aria-hidden="true">↻</span>
         <span><strong>Ciclo de melhoria contínua</strong><small>Monitora · aprende · ajusta</small></span>
@@ -679,7 +679,7 @@ export function OperationalFlow() {
         </div>
         <div className="rs-operational-steps">
           {OPERATION_STEPS.map((step, i) => (
-            <div className={`rs-operational-step step-${i + 1}`} key={step.num} style={{ "--step-delay": `${i * 130}ms` } as React.CSSProperties}>
+            <div className={`rs-operational-step step-${i + 1}`} key={step.num} style={{ "--step-delay": `${i * 130}ms` } as CSSProperties}>
               <span className="rs-operational-step-icon" aria-hidden="true">{step.icon}</span>
               <span className="rs-operational-step-number">{step.num}</span>
               <strong>{step.title}</strong>
