@@ -157,7 +157,7 @@ export function FlowDiagram({ top, bottom, core, dark = false }: FlowDiagramProp
  * Cards 295×82px, tipografia 15px/12.5px, ícone r=24, monograma scale=0.30.
  */
 export function HeroNetwork() {
-  const { ref, visible } = useInView<SVGSVGElement>(0.1);
+  const { ref, visible } = useInView<HTMLDivElement>(0.1);
   const [isCoreHovered, setIsCoreHovered] = useState(false);
   const [hoveredSat, setHoveredSat] = useState<number | null>(null);
 
@@ -271,8 +271,8 @@ export function HeroNetwork() {
   ];
 
   return (
+    <div ref={ref} className={`inst-hero-visual${visible ? " is-visible" : ""}`}>
     <svg
-      ref={ref}
       viewBox="0 0 820 460"
       className={`inst-svg inst-hero-prism${visible ? " is-visible" : ""}${isCoreHovered ? " is-core-active" : ""}`}
       role="img"
@@ -393,57 +393,16 @@ export function HeroNetwork() {
         </g>
       </g>
 
-      {/* 4 SATÉLITES — ícones orbitais com identificação contextual */}
+      {/* 4 SATÉLITES — ícones orbitais; interação textual renderizada fora do SVG */}
       {SATELLITES.map((sat, i) => {
         const isHovered = hoveredSat === i;
         const iconCx = sat.x + 41;
         const iconCy = sat.y + 41;
-        const tooltipX = sat.x < 100 ? 84 : 316;
-        const tooltipY = sat.y + 12;
         return (
-          <g
-            key={sat.id}
-            className={`inst-satellite-group${isHovered ? " is-hovered" : ""}`}
-            style={{ transformOrigin: `${iconCx}px ${iconCy}px` }}
-            onMouseEnter={() => setHoveredSat(i)}
-            onMouseLeave={() => setHoveredSat(null)}
-            onFocus={() => setHoveredSat(i)}
-            onBlur={() => setHoveredSat(null)}
-            onClick={() => setHoveredSat((current) => current === i ? null : i)}
-            tabIndex={0}
-            role="button"
-            aria-label={`${sat.title}. ${sat.sub}. Toque ou pressione Enter para ver detalhes.`}
-            aria-pressed={isHovered}
-          >
-            {/* Ponto orbital — mantém a animação original */}
-            <circle cx={iconCx} cy={iconCy} r="24" fill="#222428"
-              stroke="rgba(217, 204, 181, 0.22)" strokeWidth="1.2"
-              className="inst-node-pop" style={{ animationDelay: sat.delay }} />
-
-            {/* Halo animado */}
-            <circle className="inst-sat-icon-halo"
-              cx={iconCx} cy={iconCy} r="24" fill="none"
-              stroke={sat.iconColor} strokeWidth="1.8"
-              opacity={isCoreHovered || isHovered ? "0.95" : "0.35"} />
-
+          <g key={sat.id} className={`inst-satellite-group${isHovered ? " is-hovered" : ""}`} style={{ transformOrigin: `${iconCx}px ${iconCy}px` }}>
+            <circle cx={iconCx} cy={iconCy} r="24" fill="#222428" stroke="rgba(217, 204, 181, 0.22)" strokeWidth="1.2" className="inst-node-pop" style={{ animationDelay: sat.delay }} />
+            <circle className="inst-sat-icon-halo" cx={iconCx} cy={iconCy} r="24" fill="none" stroke={sat.iconColor} strokeWidth="1.8" opacity={isCoreHovered || isHovered ? "0.95" : "0.35"} />
             {sat.icon}
-
-            {/* Identificação contextual — aparece apenas no hover, foco ou toque */}
-            <g className="inst-module-tooltip" aria-hidden={!isHovered}>
-              <rect x={tooltipX} y={tooltipY} width="218" height="58" rx="9"
-                fill="#18191C" stroke="#B5583C" strokeWidth="1.2" />
-              <circle cx={tooltipX + 11} cy={tooltipY + 16} r="2.5" fill={sat.iconColor} />
-              <text x={tooltipX + 21} y={tooltipY + 20}
-                fontSize="11.5" fontWeight="800" fill="#F5F1EA"
-                letterSpacing="0.035em" fontFamily="Libre Franklin, Arial, sans-serif">
-                {sat.title}
-              </text>
-              <text x={tooltipX + 12} y={tooltipY + 41}
-                fontSize="10.5" fontWeight="500" fill="rgba(217, 204, 181, 0.86)"
-                fontFamily="Libre Franklin, Arial, sans-serif">
-                {sat.sub}
-              </text>
-            </g>
           </g>
         );
       })}
@@ -462,6 +421,28 @@ export function HeroNetwork() {
         </text>
       </g>
     </svg>
+    <div className="inst-hero-module-layer">
+      {SATELLITES.map((sat, i) => {
+        const positions = [
+          { left: "6.59%", top: "17.17%", placement: "right" },
+          { left: "67.56%", top: "17.17%", placement: "left" },
+          { left: "6.59%", top: "82.83%", placement: "right" },
+          { left: "67.56%", top: "82.83%", placement: "left" },
+        ];
+        const pos = positions[i];
+        const active = hoveredSat === i;
+        return (
+          <div key={sat.id} className={`inst-hero-module-hit inst-hero-module-${pos.placement}${active ? " is-active" : ""}`} style={{ left: pos.left, top: pos.top, ["--module-accent" as string]: sat.iconColor } as CSSProperties} onMouseEnter={() => setHoveredSat(i)} onMouseLeave={() => setHoveredSat(null)} onFocus={() => setHoveredSat(i)} onBlur={() => setHoveredSat(null)}>
+            <button type="button" className="inst-hero-module-trigger" aria-label={`${sat.title}: ${sat.sub}`} aria-expanded={active} onClick={() => setHoveredSat((current) => current === i ? null : i)} />
+            <div className="inst-hero-module-tooltip" role="status" aria-hidden={!active}>
+              <span className="inst-hero-module-title">{sat.title}</span>
+              <span className="inst-hero-module-sub">{sat.sub}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+    </div>
   );
 }
 
