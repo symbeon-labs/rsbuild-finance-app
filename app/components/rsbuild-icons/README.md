@@ -40,7 +40,7 @@ import { RsbuildIcon } from "@/app/components/rsbuild-icons";
 - `primary`: identidade principal; bege no tema escuro e marrom RSBUILD no tema claro.
 - `secondary`: informação secundária.
 - `accent`: destaque terracota.
-- `muted`: estado discreto ou desabilitado.
+- `muted`: estado discreto ou desabilitado, sem comprometer a leitura em superfícies claras ou escuras.
 
 Os tokens ficam em `app/globals.css` nas variáveis `--rs-icon-*`, com valores específicos para `data-theme="sand"` e `data-theme="dark"`.
 
