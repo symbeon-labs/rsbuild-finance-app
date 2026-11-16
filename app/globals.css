@@ -4019,3 +4019,141 @@ canvas {
     opacity: 1;
   }
 }
+
+/* ==========================================================================
+   Legibilidade e interatividade — seções 05, 07, 08, 09
+   ========================================================================== */
+
+/* ---------- Steps (seções 05 e 09) ---------- */
+.inst-step {
+  transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.inst-step:hover {
+  transform: scale(1.05) translateY(-4px);
+  border-color: var(--rsbuild-terracotta);
+  background: #FFFDF9;
+  box-shadow: 0 10px 28px rgba(181, 88, 60, 0.16);
+}
+
+.inst-step:active {
+  transform: scale(0.98);
+  transition: transform 0.12s ease;
+}
+
+/* Contraste melhorado no fundo light/beige */
+.inst-step h3 {
+  color: var(--rsbuild-deep-brown);
+}
+
+.inst-step p {
+  color: #4A4540;
+}
+
+/* Ícone do step */
+.inst-step-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--rsbuild-terracotta);
+  margin-bottom: 10px;
+  opacity: 0.75;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.inst-step:hover .inst-step-icon {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ---------- Governança (seção 07 — coluna esquerda) ---------- */
+.inst-governance-item {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.inst-governance-item:hover {
+  transform: scale(1.04) translateX(6px);
+  border-color: var(--rsbuild-terracotta-light);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.inst-governance-item:active {
+  transform: scale(0.98);
+  transition: transform 0.12s ease;
+}
+
+.inst-gov-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--rsbuild-terracotta-light);
+  opacity: 0.8;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.inst-governance-item:hover .inst-gov-icon {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* ---------- FlowDiagram (seções 04 e 08) ---------- */
+.inst-svg .inst-node {
+  transition: filter 0.3s ease;
+}
+
+.inst-svg .inst-node:hover {
+  filter: brightness(1.1);
+}
+
+.inst-svg .inst-node:hover .inst-node-pop {
+  stroke: var(--rsbuild-terracotta);
+  stroke-width: 2;
+}
+
+/* Corrigir contraste do texto no modo dark */
+.inst-section.deep .inst-step {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(217, 204, 181, 0.3);
+}
+
+.inst-section.deep .inst-step h3 {
+  color: var(--rsbuild-warm-beige);
+}
+
+.inst-section.deep .inst-step p {
+  color: rgba(217, 204, 181, 0.85);
+}
+
+.inst-section.deep .inst-step-icon {
+  color: var(--rsbuild-terracotta-light);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .inst-step {
+    transition: none;
+    transform: none;
+  }
+  .inst-step:hover {
+    transform: none;
+  }
+  .inst-step:active {
+    transform: none;
+  }
+  .inst-step-icon {
+    transition: none;
+  }
+  .inst-governance-item {
+    transition: none;
+    transform: none;
+  }
+  .inst-governance-item:hover {
+    transform: none;
+  }
+  .inst-governance-item:active {
+    transform: none;
+  }
+  .inst-gov-icon {
+    transition: none;
+  }
+}

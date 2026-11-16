@@ -105,25 +105,25 @@ const MODULES = [
 ];
 
 const STEPS = [
-  { num: "01", title: "Conectar", text: "Organizar informações provenientes de sistemas e fontes operacionais." },
-  { num: "02", title: "Interpretar", text: "Contextualizar informações, identificar padrões e aplicar critérios." },
-  { num: "03", title: "Verificar", text: "Submeter informações e ações a mecanismos de validação e conferência." },
-  { num: "04", title: "Governar", text: "Organizar responsabilidades, aprovações e registros operacionais." }
+  { num: "01", title: "Conectar", text: "Organizar informações provenientes de sistemas e fontes operacionais.", icon: "connect" },
+  { num: "02", title: "Interpretar", text: "Contextualizar informações, identificar padrões e aplicar critérios.", icon: "analyze" },
+  { num: "03", title: "Verificar", text: "Submeter informações e ações a mecanismos de validação e conferência.", icon: "check" },
+  { num: "04", title: "Governar", text: "Organizar responsabilidades, aprovações e registros operacionais.", icon: "shield" }
 ];
 
 const IMPLEMENTATION = [
-  { num: "01", title: "Diagnóstico operacional", text: "Entender a operação real, os sistemas e os gargalos antes de propor qualquer solução." },
-  { num: "02", title: "Definição de escopo", text: "Delimitar o problema prioritário, as áreas envolvidas e os resultados esperados." },
-  { num: "03", title: "Projeto-piloto", text: "Implementar em recorte controlado, com acompanhamento próximo e ajustes contínuos." },
-  { num: "04", title: "Avaliação e evolução", text: "Medir resultados, consolidar aprendizados e expandir gradualmente." }
+  { num: "01", title: "Diagnóstico operacional", text: "Entender a operação real, os sistemas e os gargalos antes de propor qualquer solução.", icon: "search" },
+  { num: "02", title: "Definição de escopo", text: "Delimitar o problema prioritário, as áreas envolvidas e os resultados esperados.", icon: "scope" },
+  { num: "03", title: "Projeto-piloto", text: "Implementar em recorte controlado, com acompanhamento próximo e ajustes contínuos.", icon: "pilot" },
+  { num: "04", title: "Avaliação e evolução", text: "Medir resultados, consolidar aprendizados e expandir gradualmente.", icon: "growth" }
 ];
 
 const GOVERNANCE_ITEMS = [
-  "Critérios de atuação explícitos",
-  "Limites de autonomia por operação",
-  "Supervisão humana obrigatória",
-  "Validação antes da execução",
-  "Registro de todos os eventos"
+  { text: "Critérios de atuação explícitos", icon: "rule" },
+  { text: "Limites de autonomia por operação", icon: "limit" },
+  { text: "Supervisão humana obrigatória", icon: "human" },
+  { text: "Validação antes da execução", icon: "check" },
+  { text: "Registro de todos os eventos", icon: "log" }
 ];
 
 function LineIcon({ children }: { children: React.ReactNode }) {
@@ -142,6 +142,73 @@ function ExternalLinkIcon() {
       <path d="M10 14 21 3" />
     </svg>
   );
+}
+
+function StepIcon({ name }: { name: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    connect: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+        <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+      </svg>
+    ),
+    analyze: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ),
+    check: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    ),
+    shield: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+    search: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+      </svg>
+    ),
+    scope: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
+    ),
+    pilot: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      </svg>
+    ),
+    growth: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      </svg>
+    ),
+    rule: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M8 11h8" />
+      </svg>
+    ),
+    limit: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><path d="M8 12h8" />
+      </svg>
+    ),
+    human: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
+    log: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" />
+      </svg>
+    )
+  };
+  return icons[name] || icons.check;
 }
 
 export default function InstitucionalPage() {
@@ -254,6 +321,9 @@ export default function InstitucionalPage() {
               {STEPS.map((s) => (
                 <div key={s.num} className="inst-step">
                   <div className="num">{s.num}</div>
+                  <div className="inst-step-icon">
+                    <StepIcon name={s.icon} />
+                  </div>
                   <h3>{s.title}</h3>
                   <p>{s.text}</p>
                 </div>
@@ -338,8 +408,11 @@ export default function InstitucionalPage() {
             </p>
             <div className="inst-governance-list">
               {GOVERNANCE_ITEMS.map((item) => (
-                <div key={item} className="inst-governance-item">
-                  <span className="dot" />{item}
+                <div key={item.text} className="inst-governance-item">
+                  <span className="inst-gov-icon">
+                    <StepIcon name={item.icon} />
+                  </span>
+                  {item.text}
                 </div>
               ))}
             </div>
@@ -349,7 +422,7 @@ export default function InstitucionalPage() {
             </div>
           </div>
           <div style={{ minHeight: 300 }}>
-            <GovernanceFlow items={GOVERNANCE_ITEMS} />
+            <GovernanceFlow items={GOVERNANCE_ITEMS.map(i => i.text)} />
           </div>
         </div>
       </section>
@@ -383,6 +456,9 @@ export default function InstitucionalPage() {
               {IMPLEMENTATION.map((s) => (
                 <div key={s.num} className="inst-step">
                   <div className="num">{s.num}</div>
+                  <div className="inst-step-icon">
+                    <StepIcon name={s.icon} />
+                  </div>
                   <h3>{s.title}</h3>
                   <p>{s.text}</p>
                 </div>
