@@ -187,7 +187,7 @@ export function Sidebar({
             className={section === item.id ? "nav-item active" : "nav-item"}
             onClick={() => onSelectSection(item.id)}
           >
-            <span className="nav-icon">{item.icon}</span>
+            <span className="nav-icon"><RsbuildIcon name={item.icon} size={19} tone={section === item.id ? "accent" : "secondary"} /></span>
             <span style={{ flex: 1 }}>{item.label}</span>
             {item.id === "agentes" && (
               <span
