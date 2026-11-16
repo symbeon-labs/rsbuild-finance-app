@@ -16,25 +16,25 @@ const FRENTES_DATA: FrentesDetail[] = [
     id: "alimentos",
     name: "Indústria Alimentícia",
     icon: "🏭",
-    headline: "Operação fabril & distribuição de perecíveis",
-    details: "Controle de remessas a granel, conferência de lotes e blindagem contra perdas em devolução.",
-    metrics: "Mundo do Sabor & Frigoríficos · Validação em campo ativa"
+    headline: "Controle de operações e movimentação de produtos",
+    details: "Organização de informações de lotes, remessas, conferências e ocorrências, conforme o escopo definido para cada projeto.",
+    metrics: "Contexto de aplicação · Exemplo ilustrativo"
   },
   {
     id: "logistica",
     name: "Distribuição & Logística",
     icon: "🚚",
-    headline: "Canhotos digitais & comprovação de entrega",
-    details: "Rastreio pericial de NF-e, upload de canhotos com OCR e trava automática de títulos a protestar.",
-    metrics: "Hub Açaí & frotistas · Redução de 80% no prazo de auditoria"
+    headline: "Acompanhamento de expedição e comprovantes",
+    details: "Estruturação de registros de entrega, documentos associados e pendências para conferência operacional.",
+    metrics: "Contexto de aplicação · Exemplo ilustrativo"
   },
   {
     id: "holding",
-    name: "Governança de Holding",
+    name: "Governança Empresarial",
     icon: "🏛️",
-    headline: "Visão consolidada multi-CNPJ & alçadas",
-    details: "Aprovações hierárquicas (Regra Raquel), batimento de extratos com OFX e auditoria centralizada.",
-    metrics: "Gestão patrimonial integrada · Trilhas rastreáveis de ponta a ponta"
+    headline: "Organização de responsabilidades e informações",
+    details: "Visibilidade de processos, permissões, aprovações e registros, respeitando os limites de cada ambiente integrado.",
+    metrics: "Contexto de aplicação · Exemplo ilustrativo"
   }
 ];
 
@@ -53,10 +53,10 @@ export function FrentesBanner() {
           </div>
           <div>
             <strong className="inst-frentes-title">
-              Frentes Ativas em Produção &amp; Validação Prática
+              Frentes de Aplicação
             </strong>
             <span className="inst-frentes-sub">
-              Operações pioneiras com validação em campo real no ecossistema RSBUILD OS.
+              Exemplos de contextos operacionais atendidos pela plataforma, sem identificação de clientes.
             </span>
           </div>
         </div>
