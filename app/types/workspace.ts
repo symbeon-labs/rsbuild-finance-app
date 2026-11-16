@@ -2,7 +2,12 @@ import { ReceivableTitle } from "../../lib/reconciliation";
 import { DeliveryProof } from "../../lib/delivery";
 import { ParsedWhatsAppOrder } from "../../lib/orders";
 import { FinancialRecord, OmieRecord } from "../../lib/finance";
-import type { RsbuildIconName } from "@/app/components/rsbuild-icons";
+
+export type WorkspaceIconName =
+  | "control-tower" | "finance" | "reconciliation" | "logistics"
+  | "guardian" | "audit" | "approval" | "document" | "import"
+  | "matching" | "alert" | "analytics" | "users" | "integration"
+  | "delivery" | "search";
 
 export type ModuleType = "finance" | "reconciliation" | "logistics" | "audit";
 
@@ -156,7 +161,7 @@ export type NavSection =
 export interface NavItem {
   id: NavSection;
   label: string;
-  icon: RsbuildIconName;
+  icon: WorkspaceIconName;
   module: ModuleType | "all";
 }
 
