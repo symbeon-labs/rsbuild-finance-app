@@ -393,12 +393,13 @@ export function HeroNetwork() {
         </g>
       </g>
 
-      {/* 4 SATÉLITES OPERACIONAIS — cards 295×82px, ícone r=24 */}
+      {/* 4 SATÉLITES — ícones orbitais com identificação contextual */}
       {SATELLITES.map((sat, i) => {
         const isHovered = hoveredSat === i;
         const iconCx = sat.x + 41;
         const iconCy = sat.y + 41;
-        const textStartX = sat.x + 78;
+        const tooltipX = sat.x < 100 ? 84 : 316;
+        const tooltipY = sat.y + 12;
         return (
           <g
             key={sat.id}
@@ -406,16 +407,15 @@ export function HeroNetwork() {
             style={{ transformOrigin: `${iconCx}px ${iconCy}px` }}
             onMouseEnter={() => setHoveredSat(i)}
             onMouseLeave={() => setHoveredSat(null)}
+            onFocus={() => setHoveredSat(i)}
+            onBlur={() => setHoveredSat(null)}
+            onClick={() => setHoveredSat((current) => current === i ? null : i)}
+            tabIndex={0}
+            role="button"
+            aria-label={`${sat.title}. ${sat.sub}. Toque ou pressione Enter para ver detalhes.`}
+            aria-pressed={isHovered}
           >
-            {/* Card */}
-            <rect x={sat.x} y={sat.y} width={sat.width} height={sat.height} rx="14"
-              fill="#18191C"
-              stroke={isHovered || isCoreHovered ? "#C2694A" : "rgba(194, 105, 74, 0.45)"}
-              strokeWidth={isHovered || isCoreHovered ? "1.8" : "1.3"}
-              className="inst-satellite-card inst-node-pop"
-              style={{ animationDelay: sat.delay }} />
-
-            {/* Círculo ícone — r=24 */}
+            {/* Ponto orbital — mantém a animação original */}
             <circle cx={iconCx} cy={iconCy} r="24" fill="#222428"
               stroke="rgba(217, 204, 181, 0.22)" strokeWidth="1.2"
               className="inst-node-pop" style={{ animationDelay: sat.delay }} />
@@ -428,29 +428,22 @@ export function HeroNetwork() {
 
             {sat.icon}
 
-            {/* Título — 15px weight 800 */}
-            <text x={textStartX} y={sat.y + 35}
-              fontSize="15" fontWeight="800" fill="#FFFFFF"
-              letterSpacing="0.04em" fontFamily="Libre Franklin, Arial, sans-serif"
-              className="inst-node-label"
-              style={{ animationDelay: `${parseFloat(sat.delay) + 0.15}s` }}>
-              {sat.title}
-            </text>
-
-            {/* Subtítulo — 12.5px weight 500 */}
-            <text x={textStartX} y={sat.y + 56}
-              fontSize="12.5" fontWeight="500" fill="rgba(217, 204, 181, 0.82)"
-              letterSpacing="0.02em" fontFamily="Libre Franklin, Arial, sans-serif"
-              className="inst-node-label"
-              style={{ animationDelay: `${parseFloat(sat.delay) + 0.25}s` }}>
-              {sat.sub}
-            </text>
-
-            {/* LED de status */}
-            <circle cx={sat.x + sat.width - 20} cy={sat.y + 20} r="8"
-              fill={sat.statusColor} opacity="0.22" />
-            <circle cx={sat.x + sat.width - 20} cy={sat.y + 20} r="3.5"
-              fill={sat.statusColor} />
+            {/* Identificação contextual — aparece apenas no hover, foco ou toque */}
+            <g className="inst-module-tooltip" aria-hidden={!isHovered}>
+              <rect x={tooltipX} y={tooltipY} width="218" height="58" rx="9"
+                fill="#18191C" stroke="#B5583C" strokeWidth="1.2" />
+              <circle cx={tooltipX + 11} cy={tooltipY + 16} r="2.5" fill={sat.iconColor} />
+              <text x={tooltipX + 21} y={tooltipY + 20}
+                fontSize="11.5" fontWeight="800" fill="#F5F1EA"
+                letterSpacing="0.035em" fontFamily="Libre Franklin, Arial, sans-serif">
+                {sat.title}
+              </text>
+              <text x={tooltipX + 12} y={tooltipY + 41}
+                fontSize="10.5" fontWeight="500" fill="rgba(217, 204, 181, 0.86)"
+                fontFamily="Libre Franklin, Arial, sans-serif">
+                {sat.sub}
+              </text>
+            </g>
           </g>
         );
       })}
