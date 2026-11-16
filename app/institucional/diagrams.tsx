@@ -178,12 +178,12 @@ export function HeroNetwork() {
       iconColor: "#10B981",
       statusColor: "#10B981",
       delay: "0.8s",
-      anchorX: 307,
+      anchorX: 54,
       anchorY: 79,
       cubeX: 335,
       cubeY: 180,
-      path: "M 307 79 L 335 180 L 410 230",
-      revPath: "M 410 230 L 335 180 L 307 79",
+      path: "M 54 79 L 335 180 L 410 230",
+      revPath: "M 410 230 L 335 180 L 54 79",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "54px 79px" }}>
           <rect x="43" y="68" width="22" height="20" rx="3" fill="none" stroke="#10B981" strokeWidth="1.9" />
@@ -203,12 +203,12 @@ export function HeroNetwork() {
       iconColor: "#34D399",
       statusColor: "#10B981",
       delay: "0.95s",
-      anchorX: 513,
+      anchorX: 551,
       anchorY: 79,
       cubeX: 485,
       cubeY: 180,
-      path: "M 513 79 L 485 180 L 410 230",
-      revPath: "M 410 230 L 485 180 L 513 79",
+      path: "M 551 79 L 485 180 L 410 230",
+      revPath: "M 410 230 L 485 180 L 551 79",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "551px 79px" }}>
           <path d="M561 73A7.5 7.5 0 0 0 547.5 70.2L545 72.5" fill="none" stroke="#34D399" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
@@ -229,12 +229,12 @@ export function HeroNetwork() {
       iconColor: "#F59E0B",
       statusColor: "#F59E0B",
       delay: "1.1s",
-      anchorX: 307,
+      anchorX: 54,
       anchorY: 381,
       cubeX: 335,
       cubeY: 280,
-      path: "M 307 381 L 335 280 L 410 230",
-      revPath: "M 410 230 L 335 280 L 307 381",
+      path: "M 54 381 L 335 280 L 410 230",
+      revPath: "M 410 230 L 335 280 L 54 381",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "54px 381px" }}>
           <rect x="43" y="371" width="13" height="12" rx="1.5" fill="none" stroke="#F59E0B" strokeWidth="1.9" />
@@ -255,12 +255,12 @@ export function HeroNetwork() {
       iconColor: "#C2694A",
       statusColor: "#F59E0B",
       delay: "1.25s",
-      anchorX: 513,
+      anchorX: 551,
       anchorY: 381,
       cubeX: 485,
       cubeY: 280,
-      path: "M 513 381 L 485 280 L 410 230",
-      revPath: "M 410 230 L 485 280 L 513 381",
+      path: "M 551 381 L 485 280 L 410 230",
+      revPath: "M 410 230 L 485 280 L 551 381",
       icon: (
         <g className="inst-sat-icon-shape" style={{ transformOrigin: "551px 381px" }}>
           <path d="M551 370l8 3v6c0 5.5-4.5 9.2-8 10.5-3.5-1.3-8-5-8-10.5v-6l8-3z" fill="none" stroke="#C2694A" strokeWidth="1.9" strokeLinejoin="round" />
