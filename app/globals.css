@@ -4483,6 +4483,31 @@ canvas {
   animation: instIconPopGlow 1.2s ease-in-out infinite;
 }
 
+/* Módulos orbitais: rótulos contextuais sem cards permanentes */
+.inst-hero-prism .inst-module-tooltip {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+.inst-hero-prism .inst-satellite-group.is-hovered .inst-module-tooltip,
+.inst-hero-prism .inst-satellite-group:focus-visible .inst-module-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+.inst-hero-prism .inst-satellite-group:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 12px rgba(194, 105, 74, 0.55));
+}
+.inst-hero-prism .inst-satellite-group:focus-visible .inst-sat-icon-halo {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .inst-hero-prism .inst-module-tooltip {
+    transition: none;
+  }
+}
+
 /* Quando o Núcleo de Governança está ATIVO (hover no prisma central): Todos os 4 satélites reagem sincronizados */
 .inst-hero-prism.is-core-active .inst-satellite-group {
   filter: drop-shadow(0 8px 24px rgba(194, 105, 74, 0.4));
