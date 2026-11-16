@@ -110,7 +110,9 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: "project_lookup_failed" }, { status: 502 });
   if (!project) return NextResponse.json({ error: "project_not_found" }, { status: 404 });
 
-  if (targetType === "organization" && targetId === project.managing_organization_id) {
+  // FK composta exige que o grant organizacional seja exatamente a
+  // organização cliente do projeto — grants para outras orgs não existem.
+  if (targetType === "organization" && targetId !== project.client_organization_id) {
     return NextResponse.json({ error: "invalid_organization_grant" }, { status: 400 });
   }
 
@@ -177,6 +179,10 @@ export async function DELETE(request: Request) {
   const { project, error } = await loadProject(g.supabase, projectId);
   if (error) return NextResponse.json({ error: "project_lookup_failed" }, { status: 502 });
   if (!project) return NextResponse.json({ error: "project_not_found" }, { status: 404 });
+
+  if (targetType === "organization" && targetId !== project.client_organization_id) {
+    return NextResponse.json({ error: "invalid_organization_grant" }, { status: 400 });
+  }
 
   const deleteQuery = targetType === "user"
     ? g.supabase.from("project_memberships").delete().eq("project_id", projectId).eq("user_id", targetId)

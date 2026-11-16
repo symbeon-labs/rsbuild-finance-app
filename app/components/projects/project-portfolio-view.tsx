@@ -597,7 +597,16 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                           const isSelected = sprint.id === selectedSprint?.id;
                           const isSprintActive = sprint.status === "active";
                           const isCompleted = sprint.status === "completed";
+                          const isBlocked = sprint.status === "blocked";
                           const nextSprint = selectedProject.project_sprints[index + 1];
+
+                          const sprintStatusClass = isSprintActive
+                            ? "sprint-status-active"
+                            : isCompleted
+                            ? "sprint-status-completed"
+                            : isBlocked
+                            ? "sprint-status-blocked"
+                            : "sprint-status-planned";
 
                           const sprintTasks = sprint.project_tasks;
                           const sDone = sprintTasks.filter((t) => t.status === "done").length;
@@ -608,7 +617,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                             <React.Fragment key={sprint.id}>
                               {/* BLOCO DA SPRINT */}
                               <div
-                                className={`sprint-node-block ${isSprintActive ? "active" : ""} ${isSelected ? "selected" : ""}`}
+                                className={`sprint-node-block ${sprintStatusClass} ${isSprintActive ? "active" : ""} ${isSelected ? "selected" : ""}`}
                                 onClick={() => setSelectedSprintId(sprint.id)}
                                 role="button"
                                 tabIndex={0}

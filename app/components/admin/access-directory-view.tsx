@@ -30,6 +30,7 @@ type ProjectGrant = {
   name: string;
   projectKey: string;
   status: string;
+  clientOrganizationId: string | null;
   clientDisplayName: string;
   memberGrants: Array<{ userId: string; email: string | null; accessLevel: string; grantedAt: string }>;
   organizationGrants: Array<{ organizationId: string; organizationName: string | null; accessLevel: string; grantedAt: string }>;
@@ -66,7 +67,6 @@ export function AccessDirectoryView() {
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [grantUserId, setGrantUserId] = useState("");
   const [grantLevel, setGrantLevel] = useState("viewer");
-  const [grantOrgId, setGrantOrgId] = useState("");
   const [grantOrgLevel, setGrantOrgLevel] = useState("viewer");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -258,30 +258,36 @@ export function AccessDirectoryView() {
                       </div>
 
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Organizações com acesso</div>
-                        {p.organizationGrants.length === 0 && <div style={{ fontSize: 12, color: "var(--rsbuild-muted)" }}>Nenhum grant organizacional.</div>}
+                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Organização cliente</div>
+                        <p style={{ fontSize: 12, color: "var(--rsbuild-muted)", margin: "0 0 8px" }}>
+                          O acesso organizacional é sempre da organização cliente deste projeto — o modelo não permite grants para outras empresas.
+                        </p>
+                        {p.organizationGrants.length === 0 && p.clientOrganizationId && (
+                          <div style={{ fontSize: 12, color: "var(--rsbuild-muted)", padding: "5px 0" }}>
+                            {p.clientDisplayName} — sem grant organizacional ativo.
+                          </div>
+                        )}
                         {p.organizationGrants.map((g) => (
                           <div key={g.organizationId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0", fontSize: 12, borderTop: "1px solid var(--rsbuild-border)" }}>
-                            <span style={{ flex: 1 }}>{g.organizationName ?? g.organizationId.slice(0, 8)}</span>
+                            <span style={{ flex: 1 }}>{g.organizationName ?? p.clientDisplayName}</span>
                             <span style={{ color: "var(--rsbuild-muted)" }}>{LEVEL_LABELS[g.accessLevel] ?? g.accessLevel}</span>
                             <button type="button" disabled={busy} onClick={() => revokeAccess(p.id, "organization", g.organizationId)} className="secondary-button" style={{ fontSize: 11, padding: "3px 8px" }}>Revogar</button>
                           </div>
                         ))}
-                        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                          <select value={grantOrgId} onChange={(e) => setGrantOrgId(e.target.value)}>
-                            <option value="">Selecionar organização…</option>
-                            {orgs.filter((o) => o.slug !== "rsbuild").map((o) => <option key={o.id} value={o.id}>{o.displayName}</option>)}
-                          </select>
-                          <select value={grantOrgLevel} onChange={(e) => setGrantOrgLevel(e.target.value)}>
-                            <option value="viewer">Visualização</option>
-                            <option value="contributor">Contribuição</option>
-                          </select>
-                          <button
-                            type="button" disabled={busy || !grantOrgId}
-                            onClick={() => { grantAccess(p.id, "organization", grantOrgId, grantOrgLevel); setGrantOrgId(""); }}
-                            className="primary-button" style={{ fontSize: 12, padding: "6px 12px" }}
-                          >Conceder</button>
-                        </div>
+                        {p.clientOrganizationId && p.organizationGrants.length === 0 && (
+                          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            <span style={{ fontSize: 12 }}>{p.clientDisplayName}</span>
+                            <select value={grantOrgLevel} onChange={(e) => setGrantOrgLevel(e.target.value)}>
+                              <option value="viewer">Visualização</option>
+                              <option value="contributor">Contribuição</option>
+                            </select>
+                            <button
+                              type="button" disabled={busy}
+                              onClick={() => grantAccess(p.id, "organization", p.clientOrganizationId as string, grantOrgLevel)}
+                              className="primary-button" style={{ fontSize: 12, padding: "6px 12px" }}
+                            >Conceder acesso</button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

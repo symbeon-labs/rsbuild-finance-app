@@ -3101,6 +3101,77 @@ canvas {
   box-shadow: 0 0 0 2px var(--rsbuild-terracotta), 0 8px 24px rgba(181, 88, 60, 0.12);
 }
 
+/* Status: EM EXECUÇÃO (Terracotta / Ativa) */
+.sprint-node-block.sprint-status-active {
+  border: 1.5px solid var(--rsbuild-terracotta);
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(181, 88, 60, 0.08) 100%);
+  box-shadow: 0 4px 18px rgba(181, 88, 60, 0.12);
+}
+
+.sprint-node-block.sprint-status-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--rsbuild-terracotta);
+  border-radius: 12px 12px 0 0;
+}
+
+/* Status: CONCLUÍDA (Esmeralda / Sucesso) */
+.sprint-node-block.sprint-status-completed {
+  border: 1.5px solid rgba(16, 185, 129, 0.45);
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(16, 185, 129, 0.06) 100%);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+}
+
+.sprint-node-block.sprint-status-completed::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #10B981;
+  border-radius: 12px 12px 0 0;
+}
+
+/* Status: PLANEJADA (Azul / Neutro Elegante) */
+.sprint-node-block.sprint-status-planned {
+  border: 1.5px solid rgba(99, 102, 241, 0.25);
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(99, 102, 241, 0.03) 100%);
+}
+
+.sprint-node-block.sprint-status-planned::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 12px 12px 0 0;
+}
+
+/* Status: BLOQUEADA (Âmbar / Atenção) */
+.sprint-node-block.sprint-status-blocked {
+  border: 1.5px solid #F59E0B;
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(245, 158, 11, 0.07) 100%);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.1);
+}
+
+.sprint-node-block.sprint-status-blocked::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #F59E0B;
+  border-radius: 12px 12px 0 0;
+}
+
 .sprint-node-block.active {
   animation: activeNodePulse 3s infinite ease-in-out;
   border-color: var(--rsbuild-terracotta);

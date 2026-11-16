@@ -111,7 +111,7 @@ export async function GET(request: Request) {
     projectKey: p.project_key,
     status: p.status,
     managingOrganizationId: p.managing_organization_id,
-    clientOrganizationId: p.client_organization_id,
+    clientOrganizationId: p.client_organization_id ?? null,
     clientDisplayName: p.client_display_name,
     memberGrants: (userGrantsByProject.get(p.id) ?? []).map((g: any) => ({
       userId: g.user_id,
