@@ -93,8 +93,14 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organizationId, email, role: inviteRole })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Falha ao enviar convite.");
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        const textFallback = await response.text().catch(() => "");
+        throw new Error(textFallback || `Erro HTTP ${response.status}: Falha na comunicação com o servidor.`);
+      }
+      if (!response.ok) throw new Error(data?.detail || data?.error || data?.message || "Falha ao enviar convite.");
       setMessage({
         text: `Convite enviado com sucesso para ${email}. O acesso está vinculado exclusivamente a ${organizationName}.`,
         type: "success"

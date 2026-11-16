@@ -63,21 +63,40 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  let invitedUserId: string | null = null;
+
   const { data: invitation, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: new URL("/auth/callback?next=/", request.url).toString(),
     data: { invited_organization_id: organizationId }
   });
-  if (inviteError || !invitation.user) {
-    return NextResponse.json({ error: "invite_delivery_failed", detail: inviteError?.message ?? "user_not_created" }, { status: 502 });
+
+  if (invitation?.user?.id) {
+    invitedUserId = invitation.user.id;
+  } else if (inviteError) {
+    const errorMsg = String(inviteError.message || "");
+    // Se o usuário já existe no Supabase Auth, localizamos seu ID para vincular à organização
+    if (/already|exists|registered/i.test(errorMsg)) {
+      for (let page = 1; page <= 20 && !invitedUserId; page++) {
+        const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+        const found = list?.users?.find((u) => u.email?.toLowerCase() === email) ?? null;
+        if (found) invitedUserId = found.id;
+        if (!list?.users?.length || list.users.length < 200) break;
+      }
+    }
+    if (!invitedUserId) {
+      return NextResponse.json({ error: "invite_delivery_failed", detail: errorMsg || "user_not_created" }, { status: 502 });
+    }
+  } else {
+    return NextResponse.json({ error: "invite_delivery_failed", detail: "user_not_created" }, { status: 502 });
   }
 
   const { error: membershipUpsertError } = await admin.from("organization_memberships").upsert({
     organization_id: organizationId,
-    user_id: invitation.user.id,
+    user_id: invitedUserId,
     role
   }, { onConflict: "organization_id,user_id" });
   if (membershipUpsertError) {
-    return NextResponse.json({ error: "invite_created_membership_failed", invitedUserId: invitation.user.id }, { status: 502 });
+    return NextResponse.json({ error: "invite_created_membership_failed", detail: membershipUpsertError.message, invitedUserId }, { status: 502 });
   }
 
   // Trilha append-only: reenvio atualiza apenas status/usuário convidado,
@@ -88,10 +107,10 @@ export async function POST(request: Request) {
 
   if (existing) {
     const { error: updateError } = await admin.from("organization_invitations")
-      .update({ invited_user_id: invitation.user.id, status: "sent" })
+      .update({ invited_user_id: invitedUserId, status: "sent" })
       .eq("id", existing.id);
     if (updateError) {
-      return NextResponse.json({ error: "invite_resent_failed", invitedUserId: invitation.user.id }, { status: 502 });
+      return NextResponse.json({ error: "invite_resent_failed", detail: updateError.message, invitedUserId }, { status: 502 });
     }
   } else {
     const { error: auditError } = await admin.from("organization_invitations").insert({
@@ -99,11 +118,11 @@ export async function POST(request: Request) {
       email,
       role,
       invited_by: user.id,
-      invited_user_id: invitation.user.id,
+      invited_user_id: invitedUserId,
       status: "sent"
     });
     if (auditError) {
-      return NextResponse.json({ error: "invite_created_audit_failed", invitedUserId: invitation.user.id }, { status: 502 });
+      return NextResponse.json({ error: "invite_created_audit_failed", detail: auditError.message, invitedUserId }, { status: 502 });
     }
   }
 
@@ -113,7 +132,7 @@ export async function POST(request: Request) {
     actorEmail: user.email ?? null,
     eventType: "invitation.sent",
     entityType: "organization_invitation",
-    entityId: invitation.user.id,
+    entityId: invitedUserId,
     metadata: { invitedEmail: email, role }
   });
 
