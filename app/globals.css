@@ -4964,3 +4964,160 @@ canvas {
     transform: scale(1);
   }
 }
+
+
+/* ==========================================================================
+   RSBUILD Interaction System v1.0 — Guia Ciclo 01
+   ========================================================================== */
+.rsbuild-tour-dialog {
+  color: var(--ink) !important;
+}
+.rsbuild-tour-header {
+  background: linear-gradient(110deg, rgba(181,88,60,.055), transparent 62%);
+}
+.rsbuild-tour-title {
+  font-family: var(--font-brand);
+  font-size: 23px !important;
+  line-height: 1.22;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+}
+.rsbuild-tour-subtitle {
+  color: #625B55 !important;
+  font-weight: 500;
+}
+.rsbuild-tour-description {
+  color: #514A44 !important;
+  font-weight: 500;
+}
+.rsbuild-tour-guidance {
+  background: #F8F5F0 !important;
+  border-color: #DED5C9 !important;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.rsbuild-tour-guidance strong {
+  color: #493B36 !important;
+  font-size: 13px !important;
+  font-weight: 700;
+}
+.rsbuild-tour-guidance span {
+  color: #5F5851 !important;
+  font-weight: 500;
+}
+.rsbuild-tour-capability {
+  position: relative;
+  padding: 10px 11px;
+  margin: -3px -5px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.rsbuild-tour-capability:hover {
+  background: rgba(181,88,60,.065);
+  border-color: rgba(181,88,60,.28);
+  box-shadow: 0 4px 14px rgba(43,44,46,.055);
+  transform: translateX(3px);
+}
+.rsbuild-tour-capability-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 9px;
+  background: rgba(97,73,67,.075);
+  color: var(--rs-icon-primary);
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+.rsbuild-tour-capability-icon .rsbuild-icon {
+  width: 27px;
+  height: 27px;
+}
+.rsbuild-tour-capability:hover .rsbuild-tour-capability-icon {
+  color: var(--rs-icon-accent);
+  background: rgba(181,88,60,.12);
+  transform: scale(1.06);
+}
+.rsbuild-tour-capability-title {
+  color: #342D29 !important;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.rsbuild-tour-capability-description {
+  display: block;
+  margin-top: 3px;
+  color: #625B55 !important;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.rsbuild-tour-note {
+  color: #625B55 !important;
+  font-size: 12px !important;
+  font-weight: 500;
+  background: #F8F5F0 !important;
+  border-color: #E5DDD2 !important;
+}
+.rsbuild-tour-note strong {
+  color: #493B36 !important;
+  font-weight: 700;
+}
+.rsbuild-tour-close,
+.rsbuild-tour-skip,
+.rsbuild-tour-action,
+.rsbuild-tour-secondary,
+.rsbuild-tour-primary {
+  transition: color .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease !important;
+}
+.rsbuild-tour-close:hover {
+  color: var(--rsbuild-terracotta) !important;
+  background: rgba(181,88,60,.09) !important;
+}
+.rsbuild-tour-skip:hover {
+  color: var(--rsbuild-terracotta) !important;
+}
+.rsbuild-tour-action:hover,
+.rsbuild-tour-secondary:hover {
+  border-color: var(--rsbuild-terracotta) !important;
+  background: #FBF2EF !important;
+  color: #713C2E !important;
+  box-shadow: 0 3px 10px rgba(181,88,60,.10);
+  transform: translateY(-1px);
+}
+.rsbuild-tour-primary:hover {
+  background: var(--rsbuild-terracotta-hover) !important;
+  box-shadow: 0 5px 15px rgba(181,88,60,.28) !important;
+  transform: translateY(-1px);
+}
+.rsbuild-tour-primary:active,
+.rsbuild-tour-secondary:active,
+.rsbuild-tour-action:active {
+  transform: translateY(0) scale(.985);
+}
+.rsbuild-tour-dialog button:focus-visible {
+  outline: 3px solid rgba(181,88,60,.45);
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .rsbuild-tour-overlay { padding: 10px !important; }
+  .rsbuild-tour-dialog { max-height: calc(100dvh - 20px); overflow-y: auto !important; }
+  .rsbuild-tour-header { padding: 17px 17px 13px !important; }
+  .rsbuild-tour-dialog > div:nth-of-type(2) { padding: 16px 17px !important; }
+  .rsbuild-tour-title { font-size: 20px !important; }
+  .rsbuild-tour-footer { padding: 12px 17px 15px !important; flex-wrap: wrap; }
+  .rsbuild-tour-footer > div { flex-wrap: wrap; justify-content: flex-end; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rsbuild-tour-dialog *,
+  .rsbuild-tour-dialog *::before,
+  .rsbuild-tour-dialog *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .rsbuild-tour-capability:hover,
+  .rsbuild-tour-primary:hover,
+  .rsbuild-tour-secondary:hover,
+  .rsbuild-tour-action:hover {
+    transform: none !important;
+  }
+}

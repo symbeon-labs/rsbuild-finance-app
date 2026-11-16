@@ -256,6 +256,7 @@ export function ProductTourModal({
 
   return (
     <div
+      className="rsbuild-tour-overlay"
       style={{
         position: "fixed",
         inset: 0,
@@ -272,6 +273,7 @@ export function ProductTourModal({
       aria-labelledby="tour-modal-title"
     >
       <div
+        className="rsbuild-tour-dialog"
         style={{
           width: "100%",
           maxWidth: "680px",
@@ -303,6 +305,7 @@ export function ProductTourModal({
 
         {/* Header do Card */}
         <div
+          className="rsbuild-tour-header"
           style={{
             padding: "20px 24px 14px",
             borderBottom: "1px solid var(--line, #2E3036)",
@@ -316,7 +319,7 @@ export function ProductTourModal({
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <span
                 style={{
-                  fontSize: "9.5px",
+                  fontSize: "11px",
                   fontWeight: 700,
                   letterSpacing: "0.08em",
                   color: "var(--rsbuild-terracotta, #B5583C)",
@@ -328,15 +331,16 @@ export function ProductTourModal({
               >
                 {currentStep.badge}
               </span>
-              <span style={{ fontSize: "11px", color: "var(--muted, #9B9A97)" }}>
+              <span style={{ fontSize: "12px", color: "var(--muted, #77716B)" }}>
                 Passo {currentStep.step} de {TOUR_STEPS.length} · {currentStep.tag}
               </span>
             </div>
             <h2
+              className="rsbuild-tour-title"
               id="tour-modal-title"
               style={{
                 margin: 0,
-                fontSize: "19px",
+                fontSize: "22px",
                 fontWeight: 600,
                 color: "var(--ink, #F4F1EA)",
                 letterSpacing: "-0.01em"
@@ -345,10 +349,11 @@ export function ProductTourModal({
               {currentStep.title}
             </h2>
             <p
+              className="rsbuild-tour-subtitle"
               style={{
                 margin: "4px 0 0",
-                fontSize: "12.5px",
-                color: "var(--muted, #9B9A97)",
+                fontSize: "14px",
+                color: "var(--muted, #77716B)",
                 lineHeight: "1.4"
               }}
             >
@@ -357,6 +362,7 @@ export function ProductTourModal({
           </div>
 
           <button
+            className="rsbuild-tour-close"
             onClick={handleComplete}
             style={{
               background: "transparent",
@@ -378,10 +384,11 @@ export function ProductTourModal({
         {/* Corpo do Conteúdo */}
         <div style={{ padding: "20px 24px" }}>
           <p
+            className="rsbuild-tour-description"
             style={{
-              fontSize: "13px",
-              lineHeight: "1.55",
-              color: "var(--ink-secondary, #D5D2CB)",
+              fontSize: "14px",
+              lineHeight: "1.6",
+              color: "var(--ink, #2B2C2E)",
               margin: "0 0 16px"
             }}
           >
@@ -389,7 +396,7 @@ export function ProductTourModal({
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--muted, #9B9A97)" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--muted, #77716B)" }}>
               MATURIDADE DO MÓDULO
             </span>
             <span
@@ -409,11 +416,11 @@ export function ProductTourModal({
             </span>
           </div>
 
-          <div style={{ marginBottom: "14px", padding: "11px 13px", borderRadius: "8px", background: "rgba(255,255,255,0.025)", border: "1px solid var(--line, #2E3036)" }}>
-            <strong style={{ display: "block", fontSize: "11px", color: "var(--ink, #F4F1EA)", marginBottom: "4px" }}>
+          <div className="rsbuild-tour-guidance" style={{ marginBottom: "14px", padding: "11px 13px", borderRadius: "8px", background: "rgba(255,255,255,0.025)", border: "1px solid var(--line, #2E3036)" }}>
+            <strong style={{ display: "block", fontSize: "12px", color: "var(--ink, #2B2C2E)", marginBottom: "4px" }}>
               O que você pode fazer
             </strong>
-            <span style={{ fontSize: "12px", lineHeight: "1.45", color: "var(--ink-secondary, #D5D2CB)" }}>
+            <span style={{ fontSize: "13px", lineHeight: "1.55", color: "var(--muted, #77716B)" }}>
               {currentStep.userCanDo}
             </span>
           </div>
@@ -430,14 +437,14 @@ export function ProductTourModal({
             }}
           >
             {currentStep.bullets.map((b, i) => (
-              <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                <span style={{ display: "inline-flex", width: "22px", height: "22px", alignItems: "center", justifyContent: "center", marginTop: "1px" }}><RsbuildIcon name={b.icon} size={19} tone="primary" /></span>
-                <div style={{ fontSize: "12px", lineHeight: "1.4" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
-                    <strong style={{ color: "var(--ink, #F4F1EA)" }}>{b.title}</strong>
+              <div key={i} className="rsbuild-tour-capability" style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                <span className="rsbuild-tour-capability-icon" style={{ display: "inline-flex", width: "30px", height: "30px", alignItems: "center", justifyContent: "center", marginTop: "1px" }}><RsbuildIcon name={b.icon} size={25} tone="primary" /></span>
+                <div style={{ fontSize: "13px", lineHeight: "1.5" }}>
+                  <div className="rsbuild-tour-capability-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
+                    <strong className="rsbuild-tour-capability-title" style={{ color: "var(--ink, #F4F1EA)" }}>{b.title}</strong>
                     <span
                       style={{
-                        fontSize: "9px",
+                        fontSize: "10px",
                         fontWeight: 700,
                         padding: "2px 6px",
                         borderRadius: "999px",
@@ -448,7 +455,7 @@ export function ProductTourModal({
                       {b.status.toUpperCase()}
                     </span>
                   </div>
-                  <span style={{ color: "var(--muted, #9B9A97)" }}>{b.desc}</span>
+                  <span className="rsbuild-tour-capability-description" style={{ color: "var(--muted, #9B9A97)" }}>{b.desc}</span>
                 </div>
               </div>
             ))}
@@ -456,6 +463,7 @@ export function ProductTourModal({
           {currentStep.operationalNote && (
             <div
               role="note"
+              className="rsbuild-tour-note"
               style={{
                 marginTop: "12px",
                 padding: "10px 12px",
@@ -475,6 +483,7 @@ export function ProductTourModal({
 
         {/* Footer com Navegação e Ações */}
         <div
+          className="rsbuild-tour-footer"
           style={{
             padding: "14px 24px 18px",
             borderTop: "1px solid var(--line, #2E3036)",
@@ -485,6 +494,7 @@ export function ProductTourModal({
           }}
         >
           <button
+            className="rsbuild-tour-skip"
             type="button"
             onClick={handleComplete}
             style={{
@@ -502,6 +512,7 @@ export function ProductTourModal({
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {currentStep.actionLabel && currentStep.targetSection && (
               <button
+                className="rsbuild-tour-action"
                 type="button"
                 onClick={handleGoToSection}
                 style={{
@@ -524,6 +535,7 @@ export function ProductTourModal({
 
             {!isFirst && (
               <button
+                className="rsbuild-tour-secondary"
                 type="button"
                 onClick={handlePrev}
                 style={{
@@ -541,6 +553,7 @@ export function ProductTourModal({
             )}
 
             <button
+              className="rsbuild-tour-primary"
               type="button"
               onClick={handleNext}
               style={{

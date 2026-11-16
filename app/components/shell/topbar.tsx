@@ -2,6 +2,7 @@
 
 import { ALL_NAV_ITEMS, NavSection } from "@/app/types/workspace";
 import { getRoleMetadata } from "@/lib/permissions";
+import { RsbuildIcon } from "@/app/components/rsbuild-icons";
 
 interface TopbarProps {
   companyName: string;
@@ -186,7 +187,7 @@ export function Topbar({
               transition: "all 0.2s ease"
             }}
           >
-            <span style={{ fontSize: "12px" }}>🧭</span>
+            <RsbuildIcon name="control-tower" size={14} tone="accent" aria-hidden="true" />
             <span>Guia Ciclo 01</span>
           </button>
         )}
