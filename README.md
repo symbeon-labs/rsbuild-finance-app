@@ -79,40 +79,69 @@ A plataforma opera consolidando a gestão financeira, conciliação e esteira op
 
 ---
 
-## Módulos
+## Módulos do Sistema
 
-### 💼 Financeiro & Controladoria
+O **RSBUILD OS** é estruturado sobre **4 Módulos Operacionais Fundamentais**, com ativação independente por empresa/tenant através da matriz de governança (White-Label), integrados a uma **Torre de Controle Executiva**:
 
-- **Ingestão Multibanco** — Parser inteligente de extratos OFX (v100/102, Windows-1252) e CSV brasileiro (`;` como separador, vírgula decimal). Identificação automática de layouts dos principais bancos nacionais e adquirentes.
-- **Movimentações** — Visualização consolidada com filtros por período, conta e categoria. Presets contábeis e seletor customizado de datas.
-- **Visão Geral** — KPIs de entradas, saídas, resultado líquido e indicadores de cobertura.
-- **Importações** — Rastreabilidade completa: hash de arquivo, lotes, deduplicação, validação e trilha de auditoria.
-- **Relatórios DRE** — Demonstrativo de resultado gerencial por empresa.
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       TORRE DE CONTROLE EXECUTIVA                           │
+│     Cockpit Consolidado da Holding · Indicadores Globais · Sprint Zone      │
+└──────────────┬──────────────────┬──────────────────┬────────────────────────┘
+               │                  │                  │
+               ▼                  ▼                  ▼
+  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+  │ 💼 1. FINANÇAS &     │  │ 🔄 2. RECONCILIAÇÃO  │  │ 🚚 3. LOGÍSTICA &    │
+  │    CAIXA             │  │    & BAIXAS          │  │    EXPEDIÇÃO         │
+  │ Extratos Multibanco  │  │ Matching Assistido   │  │ Protocolo Canhotos   │
+  │ Fluxo de Caixa / DRE │  │ Títulos a Receber/AP │  │ Pedidos Estruturados │
+  │ Rastreabilidade Lotes│  │ Baixa em Lote p/ ERP │  │ Mitigação de Protesto│
+  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘
+               │                  │                  │
+               └──────────────────┼──────────────────┘
+                                  ▼
+                    ┌───────────────────────────┐
+                    │ 🛡️ 4. AUDITORIA &         │
+                    │    RS GUARDIÃO            │
+                    │ Trilha Imutável de Eventos│
+                    │ Governança HITL / Alçadas │
+                    │ Diagnóstico de Integridade│
+                    └───────────────────────────┘
+```
 
-### 🔄 Conciliação & Baixas ERP
+---
 
-- **Motor de Correspondência** — Matching algorítmico entre lançamentos bancários e títulos a receber do ERP.
-- **Cálculo Automático** — Juros, multas e deduções de títulos em atraso.
-- **Baixa em Lote** — Geração de arquivo estruturado para baixa em lote e automações via API/webhook no ERP.
-- **Reconciliation Decisions** — Persistência auditável de aprovações e justificativas.
+### 💼 Módulo 1: Finanças & Caixa
+*Status de Maturidade: Produção / Homologado*
+- **Ingestão Multibanco:** Parser inteligente de extratos em `.OFX` (v100/102, Windows-1252) e `.CSV` brasileiro (separador `;`, vírgula decimal). Identificação automática de layouts bancários nacionais.
+- **Movimentações & Fluxo de Caixa:** Visualização consolidada com filtros contábeis por período, conta financeira e categoria de transação.
+- **Indicadores de Gestão:** Painel reativo com entradas, saídas, resultado líquido do período e cobertura operacional.
+- **Rastreabilidade de Importações:** Controle rigoroso com hash SHA-256 por arquivo, lotes idempotentes, prevenção de duplicidades e auditoria de upload.
+- **Relatórios Gerenciais (DRE):** Demonstrativo de resultado gerencial segregado por empresa.
 
-### 📦 Logística & Canhotos
+### 🔄 Módulo 2: Reconciliação & Baixas
+*Status de Maturidade: Produção / Homologado*
+- **Motor de Correspondência (Matcher):** Algoritmo de cruzamento assistido entre lançamentos bancários e títulos a receber/pagar do ERP.
+- **Cálculo de Encargos & Deduções:** Apuração automática de juros, multas e abatimentos para títulos liquidados fora do prazo.
+- **Esteira de Baixas em Lote:** Geração de arquivos padronizados e payloads estruturados para baixa em lote no sistema de gestão.
+- **Decisões Persistidas:** Registro auditável de aprovações, justificativas e vinculações de liquidação.
 
-- **Parser NLP de Pedidos** — Interpreta mensagens de canais de mensageria corporativa e converte em pedidos estruturados para o ERP.
-- **Protocolo Digital de Canhotos** — Upload e rastreio de provas de entrega para blindagem jurídica.
-- **Métricas de Entrega** — Cobertura, risco de protesto e geração de CSV de blindagem.
+### 🚚 Módulo 3: Logística & Expedição
+*Status de Maturidade: Operacional / Em Expansão de Integração*
+- **Parser NLP de Pedidos:** Interpretação de pedidos informais recebidos via mensageria corporativa e estruturação para entrada no ERP.
+- **Protocolo Digital de Canhotos:** Captura, custódia e conferência de comprovantes físicos de entrega para blindagem jurídica.
+- **Métricas & Prevenção de Protesto:** Indicadores de cobertura de entrega e geração de relatórios de conformidade para proteção contábil.
 
-### 🛡️ Auditoria & RS Guardião
+### 🛡️ Módulo 4: Auditoria & RS Guardião
+*Status de Maturidade: Operacional / Em Expansão Analítica*
+- **Trilha de Auditoria (Audit Trail):** Registro pericial imutável de todos os eventos (importações, conciliações, aprovações e exclusões) com identificação de ator, organização e timestamps.
+- **RS Guardião (Governança Cognitiva):** Motor de diagnóstico da saúde operacional e conformidade com Human-in-the-Loop (HITL), avaliando integridade fiscal e processos.
+- **Painel de Governança Pericial:** Visualização centralizada dos registros de auditoria para compliance e suporte contábil.
 
-- **Trilha de Auditoria** — Registro de todos os eventos (importação, conciliação, aprovação, exclusão) com organização, ator e metadados.
-- **RS Guardião** — Solução de Governança Cognitiva & Auditoria Pericial com Human-in-the-Loop (HITL). Diagnóstico da saúde operacional com pontuação por dimensão.
-- **Audit Trail View** — Consulta imutável de todos os eventos de governança.
-
-### 🏢 Torre de Controle Executiva
-
-- **Holding Overview** — Cockpit com visão consolidada de todas as empresas da holding.
-- **Torre de Controle** — Dashboard operacional em tempo real para a diretoria.
-- **Sprint Zone** — Portfólio de projetos de tecnologia com sprints e entregas.
+### 🏢 Camada Transversal: Torre de Controle Executiva
+*Status de Maturidade: Produção / Homologado*
+- **Holding Overview:** Painel consolidado multi-empresa com saldos, volumes transacionados e alertas em visão única para a diretoria.
+- **Sprint Zone:** Módulo exclusivo para governança de projetos de tecnologia e acompanhamento de entregas evolutivas da plataforma.
 
 ---
 
@@ -279,15 +308,17 @@ npm run build      # Build de produção — sucesso
 
 ---
 
-## Roadmap
+## Roadmap de Evolução dos Módulos
 
-| Etapa | Status | Descrição |
-|:------|:-------|:----------|
-| **01 — Visibilidade Financeira** | ✅ Produção | Importação, movimentações, KPIs |
-| **02 — Gestão Financeira** | ✅ Produção | Conciliação, baixas, títulos, DRE |
-| **03 — Integração Operacional** | 🔧 Em progresso | Conectores ERP bidirecionais (APIs & Webhooks) |
-| **04 — Governança Avançada** | 📋 Planejado | RS Guardião — alertas preditivos |
-| **05 — Foundry** | 📋 Planejado | Conectores multi-ERP e automações |
+A estratégia de engenharia do **RSBUILD OS** é modular e evolutiva. Enquanto os módulos de **Finanças & Caixa (1)** e **Reconciliação (2)** alcançaram homologação completa e operação em produção, as próximas etapas conduzem os módulos de **Logística (3)** e **Auditoria (4)** ao mesmo nível de integração contínua e automação operacional profunda.
+
+| Ciclo / Marco | Foco Principal | Status | Entregas & Capacidades |
+|:--------------|:---------------|:-------|:-----------------------|
+| **Ciclo 01: Fundação & Finanças** | Módulo 1 (Finanças) & Módulo 2 (Reconciliação) | ✅ Em Produção | Ingestão multibanco (OFX/CSV), persistência em centavos, motor de matching de recebíveis, cálculo de juros/multas, DRE gerencial e geração de baixas em lote. |
+| **Ciclo 02: Conectividade & APIs** | Módulo 1 & 2 (Automação de ERP) | 🔧 Em Progresso | Sincronização direta via REST APIs e Webhooks com ERPs legados, eliminando a dependência de arquivos manuais para extratos e títulos. |
+| **Ciclo 03: Logística Avançada** | Módulo 3 (Logística & Expedição) | 📋 Planejado | **Elevação da Logística ao nível do Financeiro:** Esteira de OCR/visão computacional para digitalização automática de canhotos, reconciliação entre comprovante de entrega e liquidação financeira, e integração de rotas com faturamento. |
+| **Ciclo 04: Governança Cognitiva** | Módulo 4 (Auditoria & RS Guardião) | 📋 Planejado | **Operação Sentinela do RS Guardião:** Alertas preditivos contínuos, detecção de discrepâncias fiscais/contábeis em tempo real, monitoramento autônomo de alçadas e auditoria pericial proativa com HITL. |
+| **Ciclo 05: Enterprise Foundry** | Multi-ERP & Expansão | 📋 Planejado | Framework de conectores agnósticos (SAP, TOTVS, Sankhya, etc.), barramento corporativo de mensageria e expansão para novas holdings e verticais de negócio. |
 
 ---
 
