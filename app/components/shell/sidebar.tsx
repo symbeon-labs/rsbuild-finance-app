@@ -189,21 +189,6 @@ export function Sidebar({
           >
             <span className="nav-icon"><RsbuildIcon name={item.icon} size={19} tone={section === item.id ? "accent" : "secondary"} /></span>
             <span style={{ flex: 1 }}>{item.label}</span>
-            {item.id === "agentes" && (
-              <span
-                style={{
-                  fontSize: "8.5px",
-                  fontWeight: 700,
-                  letterSpacing: "0.5px",
-                  padding: "2px 5px",
-                  borderRadius: "4px",
-                  background: "var(--rsbuild-terracotta-soft)",
-                  color: "var(--rsbuild-terracotta)"
-                }}
-              >
-                RS GUARDIÃO
-              </span>
-            )}
           </button>
         ))}
       </nav>
