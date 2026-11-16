@@ -191,7 +191,7 @@ export function HeroNetwork() {
     {
       id: "reconciliacao",
       title: "RECONCILIAÇÃO ERP",
-      sub: "Omie & conciliação de baixas",
+      sub: "ERP & conciliação de baixas",
       x: 517,
       y: 44,
       width: 285,
