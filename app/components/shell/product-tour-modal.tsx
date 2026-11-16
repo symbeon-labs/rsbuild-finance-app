@@ -61,7 +61,7 @@ const TOUR_STEPS: TourStep[] = [
       "A visão apresentada é limitada aos dados disponíveis no workspace. Não representa, por si só, consolidação automática em tempo real de todas as empresas da holding.",
     maturity: "Em validação",
     targetSection: "torre-controle",
-    actionLabel: "Explorar Torre de Controle",
+    actionLabel: "Explorar Governança",
     tag: "Holding & Governança"
   },
   {

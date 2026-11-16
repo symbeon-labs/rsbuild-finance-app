@@ -16,7 +16,6 @@ import { Sidebar } from "@/app/components/shell/sidebar";
 import { Topbar } from "@/app/components/shell/topbar";
 import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
 import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
-import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { AccessDirectoryView } from "@/app/components/admin/access-directory-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
@@ -59,13 +58,11 @@ export default function ControlTowerWorkspace({
 
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "torre-controle", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
+    urlTab && ["visao-geral", "projetos", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
-  function getModuleForSection(s: NavSection): ModuleType {
-    if (s === "torre-controle") return "audit";
-    if (s === "projetos") return "audit";
+  function getModuleForSection(_s: NavSection): ModuleType {
     return "audit";
   }
 
@@ -73,11 +70,14 @@ export default function ControlTowerWorkspace({
   const [activeModule, setActiveModule] = useState<ModuleType>("audit");
 
   function navigateTo(nextSection: NavSection) {
-    setSection(nextSection);
-    if (nextSection !== "visao-geral") {
-      setActiveModule(getModuleForSection(nextSection));
+    // Na RSBUILD a Torre de Controle operacional não existe — governança
+    // de agentes e auditoria assumiram esse papel
+    const target = nextSection === "torre-controle" ? "agentes" : nextSection;
+    setSection(target);
+    if (target !== "visao-geral") {
+      setActiveModule(getModuleForSection(target));
     }
-    router.push(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${nextSection}`, { scroll: false });
+    router.push(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${target}`, { scroll: false });
   }
 
   const [notice, setNotice] = useState("");
@@ -203,7 +203,7 @@ export default function ControlTowerWorkspace({
         canAccessSandbox={canAccessSandbox}
         onSelectModule={(mod) => {
           setActiveModule(mod);
-          if (mod === "audit") navigateTo("torre-controle");
+          if (mod === "audit") navigateTo("auditoria");
         }}
         onSelectSection={navigateTo}
         onOpenConfig={() => setIsConfigOpen(true)}
@@ -269,24 +269,6 @@ export default function ControlTowerWorkspace({
               onNavigateToTab={navigateTo}
               userRole={effectiveRole}
               userFullName={userFullName}
-            />
-          )}
-          {section === "torre-controle" && (
-            <TorreControleView
-              companyName={companyName}
-              isDirector={isSuperAdmin}
-              currentUserEmail={currentUserEmail}
-              records={[]}
-              totals={{ incoming: 0, outgoing: 0, balance: 0 }}
-              titles={[]}
-              matches={[]}
-              proofs={[]}
-              deliveryMetrics={{ totalInvoices: 0, totalAmount: 0, provenCount: 0, provenAmount: 0, pendingDeliveryCount: 0, pendingDeliveryAmount: 0, rejectedCount: 0, rejectedAmount: 0, lostCount: 0, lostAmount: 0, coverageRate: 0, atRiskProtestAmount: 0 }}
-              evaluations={[]}
-              orders={[]}
-              hubAcaiMetrics={{ totalOrders: 0, totalBoxes: 0, totalRevenue: 0, hrOccupancy: 0 }}
-              hasSprintZone={isSuperAdmin || isDeveloperAuthorized}
-              onNavigateToTab={navigateTo}
             />
           )}
           {section === "auditoria" && (

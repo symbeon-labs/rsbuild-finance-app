@@ -172,6 +172,9 @@ export function Sidebar({
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
           // Governança de agentes de IA é exclusiva do plano de controle RSBUILD
           if (item.id === "agentes" && currentOrgId !== "rsbuild") return false;
+          // A Torre de Controle operacional é de tenants; na RSBUILD a
+          // governança vive em Agentes & IA, Auditoria e Acessos
+          if (item.id === "torre-controle" && currentOrgId === "rsbuild") return false;
           // Sandbox é restrito a admins/owners da RSBUILD
           if (item.id === "sandbox" && !canAccessSandbox) return false;
           if (item.module === "all") return true;
@@ -186,7 +189,7 @@ export function Sidebar({
           >
             <span className="nav-icon">{item.icon}</span>
             <span style={{ flex: 1 }}>{item.label}</span>
-            {item.id === "torre-controle" && (
+            {item.id === "agentes" && (
               <span
                 style={{
                   fontSize: "8.5px",
