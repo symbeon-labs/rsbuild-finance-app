@@ -60,6 +60,7 @@ import { TorreControleView } from "@/app/components/executive/torre-controle-vie
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
+import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 
 type OperationalWorkspaceProps = {
   organizationId: string;
@@ -157,6 +158,7 @@ export default function OperationalWorkspace({
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [currentUserEmail] = useState<string>(userEmail);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
   const [theme, setTheme] = useState<"sand" | "dark">(preferredTheme || "sand");
 
@@ -809,6 +811,7 @@ export default function OperationalWorkspace({
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}
           onOpenConfig={() => setIsConfigOpen(true)}
+          onOpenTour={() => setIsTourOpen(true)}
         />
         {/* Faixa de Retorno à Holding RSBUILD */}
         <div
@@ -1024,6 +1027,11 @@ export default function OperationalWorkspace({
         onInjectProofs={(newProofs) => setProofs(newProofs)}
         onInjectOrders={(newOrders) => setOrders(newOrders)}
         onResetAllData={resetSession}
+      />
+      <ProductTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onNavigateToSection={(targetSection) => navigateTo(targetSection)}
       />
     </main>
   );

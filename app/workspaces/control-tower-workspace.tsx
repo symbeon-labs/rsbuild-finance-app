@@ -23,6 +23,7 @@ import { OrganizationAdminPanel } from "@/app/components/admin/organization-admi
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
+import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 
 type ControlTowerWorkspaceProps = {
   organizationId: string;
@@ -84,6 +85,7 @@ export default function ControlTowerWorkspace({
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [currentUserEmail] = useState<string>(userEmail);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
   const [theme, setTheme] = useState<"sand" | "dark">(preferredTheme || "sand");
 
@@ -232,6 +234,7 @@ export default function ControlTowerWorkspace({
           onToggleTheme={toggleTheme}
           onResetSession={() => {}}
           onOpenConfig={() => setIsConfigOpen(true)}
+          onOpenTour={() => setIsTourOpen(true)}
         />
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
@@ -321,6 +324,11 @@ export default function ControlTowerWorkspace({
         onInjectProofs={() => {}}
         onInjectOrders={() => {}}
         onResetAllData={() => {}}
+      />
+      <ProductTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onNavigateToSection={(targetSection) => navigateTo(targetSection)}
       />
     </main>
   );
