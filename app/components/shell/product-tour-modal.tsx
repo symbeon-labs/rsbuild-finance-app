@@ -316,7 +316,7 @@ export function ProductTourModal({
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <span
                 style={{
-                  fontSize: "9.5px",
+                  fontSize: "11px",
                   fontWeight: 700,
                   letterSpacing: "0.08em",
                   color: "var(--rsbuild-terracotta, #B5583C)",
@@ -328,7 +328,7 @@ export function ProductTourModal({
               >
                 {currentStep.badge}
               </span>
-              <span style={{ fontSize: "11px", color: "var(--muted, #9B9A97)" }}>
+              <span style={{ fontSize: "12px", color: "var(--muted, #77716B)" }}>
                 Passo {currentStep.step} de {TOUR_STEPS.length} · {currentStep.tag}
               </span>
             </div>
@@ -336,7 +336,7 @@ export function ProductTourModal({
               id="tour-modal-title"
               style={{
                 margin: 0,
-                fontSize: "19px",
+                fontSize: "22px",
                 fontWeight: 600,
                 color: "var(--ink, #F4F1EA)",
                 letterSpacing: "-0.01em"
@@ -347,8 +347,8 @@ export function ProductTourModal({
             <p
               style={{
                 margin: "4px 0 0",
-                fontSize: "12.5px",
-                color: "var(--muted, #9B9A97)",
+                fontSize: "14px",
+                color: "var(--muted, #77716B)",
                 lineHeight: "1.4"
               }}
             >
@@ -379,9 +379,9 @@ export function ProductTourModal({
         <div style={{ padding: "20px 24px" }}>
           <p
             style={{
-              fontSize: "13px",
-              lineHeight: "1.55",
-              color: "var(--ink-secondary, #D5D2CB)",
+              fontSize: "14px",
+              lineHeight: "1.6",
+              color: "var(--ink, #2B2C2E)",
               margin: "0 0 16px"
             }}
           >
@@ -389,7 +389,7 @@ export function ProductTourModal({
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--muted, #9B9A97)" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--muted, #77716B)" }}>
               MATURIDADE DO MÓDULO
             </span>
             <span
@@ -410,10 +410,10 @@ export function ProductTourModal({
           </div>
 
           <div style={{ marginBottom: "14px", padding: "11px 13px", borderRadius: "8px", background: "rgba(255,255,255,0.025)", border: "1px solid var(--line, #2E3036)" }}>
-            <strong style={{ display: "block", fontSize: "11px", color: "var(--ink, #F4F1EA)", marginBottom: "4px" }}>
+            <strong style={{ display: "block", fontSize: "12px", color: "var(--ink, #2B2C2E)", marginBottom: "4px" }}>
               O que você pode fazer
             </strong>
-            <span style={{ fontSize: "12px", lineHeight: "1.45", color: "var(--ink-secondary, #D5D2CB)" }}>
+            <span style={{ fontSize: "13px", lineHeight: "1.55", color: "var(--muted, #77716B)" }}>
               {currentStep.userCanDo}
             </span>
           </div>
@@ -431,13 +431,13 @@ export function ProductTourModal({
           >
             {currentStep.bullets.map((b, i) => (
               <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                <span style={{ display: "inline-flex", width: "22px", height: "22px", alignItems: "center", justifyContent: "center", marginTop: "1px" }}><RsbuildIcon name={b.icon} size={19} tone="primary" /></span>
-                <div style={{ fontSize: "12px", lineHeight: "1.4" }}>
+                <span style={{ display: "inline-flex", width: "30px", height: "30px", alignItems: "center", justifyContent: "center", marginTop: "1px" }}><RsbuildIcon name={b.icon} size={25} tone="primary" /></span>
+                <div style={{ fontSize: "13px", lineHeight: "1.5" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
                     <strong style={{ color: "var(--ink, #F4F1EA)" }}>{b.title}</strong>
                     <span
                       style={{
-                        fontSize: "9px",
+                        fontSize: "10px",
                         fontWeight: 700,
                         padding: "2px 6px",
                         borderRadius: "999px",
