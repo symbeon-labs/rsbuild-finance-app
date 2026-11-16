@@ -638,6 +638,7 @@ export function manualMatch(
   justification: string,
   author: string
 ): FinancialRecord {
+  if (!justification.trim()) throw new Error("A justificativa é obrigatória para correspondência manual.");
   const now = new Date().toISOString();
   return {
     ...bankRecord,
