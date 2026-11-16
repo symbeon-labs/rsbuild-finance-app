@@ -128,8 +128,8 @@ const ICON_PATHS: Record<RsbuildIconName, ReactNode> = {
   ),
   search: (
     <>
-      <circle cx="10.8" cy="10.8" r="6.8" />
-      <path d="m16 16 4.5 4.5M8 10.8h5.6M10.8 8v5.6" />
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m15.3 15.3 5.2 5.2" />
     </>
   )
 };
