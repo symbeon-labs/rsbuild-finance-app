@@ -472,26 +472,88 @@ export function HeroNetwork() {
   );
 }
 
-/** Governança: linha vertical que se desenha + nós sequenciais (seção escura). */
+/** Governança: fluxo responsivo com rótulos multilinha e largura suficiente. */
 export function GovernanceFlow({ items }: { items: string[] }) {
   const { ref, visible } = useInView<SVGSVGElement>(0.3);
-  const W = 280, H = 60 + items.length * 84;
+  const W = 560;
+  const rowHeight = 104;
+  const H = 48 + items.length * rowHeight;
   const x = 34;
+  const wrap = (value: string, maxChars = 58) => {
+    const words = value.split(/\\s+/);
+    const lines: string[] = [];
+    let line = "";
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (candidate.length > maxChars && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  };
+
   return (
-    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`inst-svg${visible ? " is-visible" : ""}`} role="img" aria-label="Ciclo de governança">
-      <line className="inst-conn" x1={x} y1={44} x2={x} y2={H - 36} stroke={TERRA_LIGHT} strokeWidth="2" pathLength={100}
-        style={{ animationDelay: "0.2s" }} />
+    <svg
+      ref={ref}
+      viewBox={`0 0 ${W} ${H}`}
+      className={`inst-svg inst-governance-flow${visible ? " is-visible" : ""}`}
+      role="img"
+      aria-label="Ciclo de governança"
+    >
+      <line
+        className="inst-conn"
+        x1={x}
+        y1={34}
+        x2={x}
+        y2={H - 34}
+        stroke={TERRA_LIGHT}
+        strokeWidth="2"
+        pathLength={100}
+        style={{ animationDelay: "0.2s" }}
+      />
       {items.map((label, i) => {
-        const cy = 64 + i * 84;
+        const cy = 48 + i * rowHeight;
+        const lines = wrap(label);
         return (
           <g key={label}>
-            <circle className="inst-node-glow" cx={x} cy={cy} r={13} fill="none" stroke={TERRA_LIGHT} strokeWidth="1.5"
-              style={{ animationDelay: `${0.9 + i * 0.45}s` }} />
-            <circle className="inst-node-pop" cx={x} cy={cy} r={6} fill={TERRA_LIGHT}
-              style={{ animationDelay: `${0.9 + i * 0.45}s` }} />
-            <text className="inst-node-label" x={x + 22} y={cy + 4} fontSize="13.5" fontWeight="600" fill={BEIGE}
+            <circle
+              className="inst-node-glow"
+              cx={x}
+              cy={cy}
+              r={13}
+              fill="none"
+              stroke={TERRA_LIGHT}
+              strokeWidth="1.5"
+              style={{ animationDelay: `${0.9 + i * 0.45}s` }}
+            />
+            <circle
+              className="inst-node-pop"
+              cx={x}
+              cy={cy}
+              r={6}
+              fill={TERRA_LIGHT}
+              style={{ animationDelay: `${0.9 + i * 0.45}s` }}
+            />
+            <text
+              className="inst-node-label"
+              x={x + 22}
+              y={cy - ((lines.length - 1) * 9)}
+              fontSize="13.5"
+              fontWeight="600"
+              fill={BEIGE}
               fontFamily="Libre Franklin, Arial, sans-serif"
-              style={{ animationDelay: `${1.05 + i * 0.45}s` }}>{label}</text>
+              style={{ animationDelay: `${1.05 + i * 0.45}s` }}
+            >
+              {lines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={x + 22} dy={lineIndex === 0 ? 0 : 19}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
           </g>
         );
       })}
