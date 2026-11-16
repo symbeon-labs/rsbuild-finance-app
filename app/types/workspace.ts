@@ -2,6 +2,7 @@ import { ReceivableTitle } from "../../lib/reconciliation";
 import { DeliveryProof } from "../../lib/delivery";
 import { ParsedWhatsAppOrder } from "../../lib/orders";
 import { FinancialRecord, OmieRecord } from "../../lib/finance";
+import type { RsbuildIconName } from "@/app/components/rsbuild-icons";
 
 export type ModuleType = "finance" | "reconciliation" | "logistics" | "audit";
 
@@ -155,36 +156,36 @@ export type NavSection =
 export interface NavItem {
   id: NavSection;
   label: string;
-  icon: string;
+  icon: RsbuildIconName;
   module: ModuleType | "all";
 }
 
 export const ALL_NAV_ITEMS: NavItem[] = [
   // Visão Global
-  { id: "visao-geral", label: "Visão Geral", icon: "◫", module: "all" },
-  { id: "projetos", label: "Projetos e Sprints", icon: "▦", module: "all" },
+  { id: "visao-geral", label: "Visão Geral", icon: "analytics", module: "all" },
+  { id: "projetos", label: "Projetos e Sprints", icon: "document", module: "all" },
 
   // 1. Módulo Financeiro
-  { id: "movimentacoes", label: "Movimentações", icon: "⇄", module: "finance" },
-  { id: "importacoes", label: "Importações Extratos", icon: "⇧", module: "finance" },
-  { id: "relatorios", label: "Relatórios DRE", icon: "▥", module: "finance" },
+  { id: "movimentacoes", label: "Movimentações", icon: "finance", module: "finance" },
+  { id: "importacoes", label: "Importações Extratos", icon: "import", module: "finance" },
+  { id: "relatorios", label: "Relatórios DRE", icon: "analytics", module: "finance" },
 
   // 2. Módulo Reconciliação ERP (Independente)
-  { id: "conciliacao", label: "Conciliação Bancária", icon: "⚖", module: "reconciliation" },
-  { id: "baixas", label: "Reconciliação & Baixas", icon: "✓", module: "reconciliation" },
+  { id: "conciliacao", label: "Conciliação Bancária", icon: "reconciliation", module: "reconciliation" },
+  { id: "baixas", label: "Reconciliação & Baixas", icon: "matching", module: "reconciliation" },
 
   // 3. Módulo Logística & Expedição
-  { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "📱", module: "logistics" },
-  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "📦", module: "logistics" },
+  { id: "pedidos-ha", label: "Entrada de Pedidos", icon: "integration", module: "logistics" },
+  { id: "canhotos", label: "Comprovantes & Canhotos", icon: "delivery", module: "logistics" },
 
   // 4. Sandbox (Ambiente de Testes) — acesso controlado no workspace RSBUILD
-  { id: "sandbox", label: "Sandbox", icon: "🧪", module: "all" },
+  { id: "sandbox", label: "Sandbox", icon: "approval", module: "all" },
 
   // 5. Módulo Auditoria & Inteligência Jurídica (RS Guardião / JEV)
-  { id: "auditoria", label: "Auditoria & Acessos", icon: "🛡", module: "audit" },
-  { id: "acessos", label: "Acessos & Identidades", icon: "🔑", module: "audit" },
-  { id: "agentes", label: "Agentes & IA", icon: "🤖", module: "audit" },
-  { id: "torre-controle", label: "Governança & Controle", icon: "⎈", module: "audit" }
+  { id: "auditoria", label: "Auditoria & Acessos", icon: "audit", module: "audit" },
+  { id: "acessos", label: "Acessos & Identidades", icon: "users", module: "audit" },
+  { id: "agentes", label: "Agentes & IA", icon: "integration", module: "audit" },
+  { id: "torre-controle", label: "Governança & Controle", icon: "control-tower", module: "audit" }
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [
