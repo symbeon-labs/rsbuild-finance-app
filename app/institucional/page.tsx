@@ -395,7 +395,7 @@ export default function InstitucionalPage() {
       </section>
 
       {/* SECTION 07 — INTELIGÊNCIA E GOVERNANÇA */}
-      <section className="inst-section deep" id="governanca" style={{ backgroundImage: "url('/brand/rsbuild-network-pattern.svg')", backgroundSize: "420px", backgroundBlendMode: "overlay" }}>
+      <section className="inst-section deep" id="governanca">
         <div className="inst-container inst-split">
           <div>
             <span className="inst-eyebrow">Inteligência com Governança</span>
@@ -495,7 +495,7 @@ export default function InstitucionalPage() {
       </section>
 
       {/* SECTION 10 — CTA E FOOTER */}
-      <section className="inst-cta-final" style={{ background: "var(--rsbuild-charcoal)", backgroundImage: "url('/brand/rsbuild-network-pattern.svg')", backgroundSize: "460px" }}>
+      <section className="inst-cta-final">
         <div className="inst-container">
           <h2>Sua operação pode estar pronta para evoluir.</h2>
           <p>

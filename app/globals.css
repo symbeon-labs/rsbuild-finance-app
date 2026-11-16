@@ -3462,14 +3462,49 @@ canvas {
 .inst-hero {
   position: relative;
   overflow: hidden;
-  padding: 96px 0 88px;
-  background:
-    radial-gradient(circle at 85% 20%, rgba(181, 88, 60, 0.16), transparent 45%),
-    url('/brand/rsbuild-network-pattern.svg');
-  background-size: auto, 480px;
+  padding: 104px 0 96px;
   background-color: var(--rsbuild-charcoal);
+  background-image:
+    radial-gradient(circle, rgba(217, 204, 181, 0.12) 1.2px, transparent 1.2px),
+    linear-gradient(to bottom, rgba(43, 44, 46, 0.5) 0%, rgba(43, 44, 46, 0.95) 100%);
+  background-size: 32px 32px, 100% 100%;
 }
+
+/* Orbe 1 de Luz Atmosférica Viva: Terracota Superior Direito (Atrás do Diagrama) */
+.inst-hero::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  right: -5%;
+  width: 720px;
+  height: 720px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(181, 88, 60, 0.28) 0%, rgba(194, 105, 74, 0.12) 42%, transparent 70%);
+  filter: blur(65px);
+  pointer-events: none;
+  z-index: 0;
+  animation: instAuroraBreathe 18s ease-in-out infinite alternate;
+}
+
+/* Orbe 2 de Luz Atmosférica Viva: Âmbar/Deep Brown Inferior Esquerdo (Atrás do Título) */
+.inst-hero::after {
+  content: "";
+  position: absolute;
+  bottom: -15%;
+  left: -8%;
+  width: 640px;
+  height: 640px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(97, 73, 67, 0.35) 0%, rgba(181, 88, 60, 0.08) 45%, transparent 70%);
+  filter: blur(75px);
+  pointer-events: none;
+  z-index: 0;
+  animation: instAuroraDrift 24s ease-in-out infinite alternate;
+}
+
 .inst-hero-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 56px;
@@ -3508,7 +3543,16 @@ canvas {
 /* ---------- Sections ---------- */
 .inst-section { padding: 88px 0; }
 .inst-section.beige { background: var(--rsbuild-warm-beige); color: var(--rsbuild-charcoal); }
-.inst-section.deep { background: var(--rsbuild-deep-brown); color: var(--rsbuild-warm-beige); }
+.inst-section.deep {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--rsbuild-deep-brown);
+  color: var(--rsbuild-warm-beige);
+  background-image:
+    radial-gradient(circle, rgba(217, 204, 181, 0.08) 1.2px, transparent 1.2px),
+    radial-gradient(circle at 80% 50%, rgba(181, 88, 60, 0.2), transparent 60%);
+  background-size: 32px 32px, 100% 100%;
+}
 .inst-section.light { background: #F4F0E8; color: var(--rsbuild-charcoal); }
 .inst-section h2 {
   font-family: var(--font-brand);
@@ -3706,7 +3750,17 @@ canvas {
 .inst-form-success .big { font-size: 40px; margin-bottom: 12px; }
 
 /* ---------- CTA final / Footer ---------- */
-.inst-cta-final { text-align: center; padding: 96px 0; }
+.inst-cta-final {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 96px 0;
+  background-color: var(--rsbuild-charcoal);
+  background-image:
+    radial-gradient(circle, rgba(217, 204, 181, 0.1) 1.2px, transparent 1.2px),
+    radial-gradient(circle at 50% 50%, rgba(181, 88, 60, 0.24), transparent 65%);
+  background-size: 32px 32px, 100% 100%;
+}
 .inst-cta-final h2 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; margin: 0 0 16px; font-family: var(--font-brand); color: #F5F1EA; }
 .inst-cta-final p { color: rgba(217,204,181,0.8); max-width: 560px; margin: 0 auto 32px; line-height: 1.7; font-size: 16px; }
 .inst-footer {
@@ -3759,6 +3813,36 @@ canvas {
    Animações institucionais — linguagem do site rsbuild.com.br
    (draw-on-scroll de conexões SVG + nós com glow + fade-up escalonado)
    ========================================================================== */
+
+@keyframes instAuroraBreathe {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-35px, 25px) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(25px, -15px) scale(0.95);
+    opacity: 0.75;
+  }
+}
+
+@keyframes instAuroraDrift {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(30px, -25px) scale(1.12);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-20px, 20px) scale(0.98);
+    opacity: 0.6;
+  }
+}
 
 @keyframes instDraw {
   to { stroke-dashoffset: 0; }
@@ -3835,6 +3919,8 @@ canvas {
   .inst-hero h1,
   .inst-hero p.sub,
   .inst-hero-ctas { animation: none; }
+  .inst-hero::before,
+  .inst-hero::after { animation: none; transform: none; }
 }
 
 /* Steps: fade-up escalonado quando a seção entra na viewport */
