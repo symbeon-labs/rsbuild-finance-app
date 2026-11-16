@@ -356,43 +356,38 @@ export default function InstitucionalPage() {
           </div>
 
           {/* Prova Social & Frentes Operacionais Ativas */}
-          <div
-            style={{
-              marginTop: 32,
-              padding: "20px 24px",
-              borderRadius: 12,
-              background: "rgba(255, 255, 255, 0.75)",
-              border: "1px solid rgba(217, 204, 181, 0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 16
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{ fontSize: 24 }} aria-hidden="true">🏭</span>
-              <div>
-                <strong style={{ fontSize: 13, color: "var(--rsbuild-charcoal)", display: "block" }}>
-                  Frentes Ativas em Produção &amp; Validação Prática
-                </strong>
-                <span style={{ fontSize: 12, color: "#614943" }}>
-                  Operações pioneiras atendidas na indústria de alimentos, distribuição logística e governança financeira de holdings.
+          <Reveal>
+            <div className="inst-frentes-banner">
+              <div className="inst-frentes-left">
+                <div className="inst-frentes-icon-wrap">
+                  🏭
+                  <span className="inst-frentes-live-dot" aria-hidden="true" />
+                </div>
+                <div>
+                  <strong className="inst-frentes-title">
+                    Frentes Ativas em Produção &amp; Validação Prática
+                  </strong>
+                  <span className="inst-frentes-sub">
+                    Operações pioneiras atendidas na indústria de alimentos, distribuição logística e governança financeira de holdings.
+                  </span>
+                </div>
+              </div>
+              <div className="inst-frentes-tags">
+                <span className="inst-frentes-tag">
+                  <span className="inst-frentes-tag-dot" aria-hidden="true" />
+                  Indústria Alimentícia
+                </span>
+                <span className="inst-frentes-tag">
+                  <span className="inst-frentes-tag-dot" aria-hidden="true" />
+                  Distribuição &amp; Logística
+                </span>
+                <span className="inst-frentes-tag">
+                  <span className="inst-frentes-tag-dot" aria-hidden="true" />
+                  Governança de Holding
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span className="inst-badge ok" style={{ fontSize: 10, padding: "3px 10px", margin: 0 }}>
-                Indústria Alimentícia
-              </span>
-              <span className="inst-badge ok" style={{ fontSize: 10, padding: "3px 10px", margin: 0 }}>
-                Distribuição &amp; Logística
-              </span>
-              <span className="inst-badge ok" style={{ fontSize: 10, padding: "3px 10px", margin: 0 }}>
-                Governança de Holding
-              </span>
-            </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 

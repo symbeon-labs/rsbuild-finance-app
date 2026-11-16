@@ -3572,6 +3572,219 @@ canvas {
 .inst-badge.review { background: #FBF0DC; color: #8A6414; }
 .inst-badge.dev { background: #EDE7F6; color: #5B4B8A; }
 
+/* ---------- Frentes Ativas em Produção: Banner Animado ---------- */
+@keyframes instFrentesSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes instLivePulse {
+  0%   { transform: scale(1);   opacity: 1; }
+  50%  { transform: scale(1.9); opacity: 0.35; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes instBadgeTagShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.inst-frentes-banner {
+  position: relative;
+  margin-top: 32px;
+  padding: 22px 28px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(217, 204, 181, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+  box-shadow: 0 4px 24px rgba(97, 73, 67, 0.08);
+  transition: box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+  overflow: hidden;
+}
+
+/* Shimmer track sutil no fundo */
+.inst-frentes-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(217, 204, 181, 0.22) 50%,
+    transparent 65%
+  );
+  background-size: 300% 100%;
+  animation: instBadgeTagShimmer 5s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.inst-frentes-banner:hover {
+  box-shadow: 0 8px 32px rgba(97, 73, 67, 0.16);
+  border-color: rgba(181, 88, 60, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Entrada animada quando entra na viewport via .is-visible no Reveal pai */
+.is-visible .inst-frentes-banner {
+  animation: instFrentesSlideIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+/* Coluna da esquerda: ícone + textos */
+.inst-frentes-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Wrapper do ícone com halo pulsante */
+.inst-frentes-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(30, 107, 79, 0.1);
+  border: 1px solid rgba(30, 107, 79, 0.2);
+  font-size: 22px;
+  flex-shrink: 0;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.inst-frentes-banner:hover .inst-frentes-icon-wrap {
+  background: rgba(30, 107, 79, 0.18);
+  border-color: rgba(30, 107, 79, 0.4);
+}
+
+/* Ponto LED "LIVE" pulsante */
+.inst-frentes-live-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+}
+
+.inst-frentes-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.5);
+  animation: instLivePulse 1.8s ease-in-out infinite;
+}
+
+/* Textos da área esquerda */
+.inst-frentes-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--rsbuild-charcoal);
+  display: block;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+
+.inst-frentes-sub {
+  font-size: 12px;
+  color: #614943;
+  line-height: 1.5;
+}
+
+/* Tags dos setores (direita do banner) */
+.inst-frentes-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inst-frentes-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #E4F2EA;
+  color: #1E6B4F;
+  border: 1px solid rgba(30, 107, 79, 0.2);
+  cursor: default;
+  transition: background 0.25s ease, border-color 0.25s ease,
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.inst-frentes-tag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.inst-frentes-tag:hover {
+  background: #D4EDE1;
+  border-color: rgba(30, 107, 79, 0.45);
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 6px 16px rgba(30, 107, 79, 0.2);
+}
+
+.inst-frentes-tag:hover::before {
+  opacity: 1;
+  animation: instBadgeTagShimmer 0.8s ease-in-out;
+}
+
+/* Dot de status dentro da tag */
+.inst-frentes-tag-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.6);
+  animation: instLivePulse 2s ease-in-out infinite;
+}
+
+/* Hover nos cards da seção de módulos: elevação e realce da borda esquerda */
+.inst-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s ease,
+              border-color 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.inst-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(97, 73, 67, 0.14);
+  border-left-color: var(--rsbuild-terracotta-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inst-frentes-banner,
+  .inst-frentes-banner::before,
+  .inst-frentes-live-dot::after,
+  .inst-frentes-tag-dot,
+  .inst-frentes-tag:hover::before { animation: none !important; }
+  .inst-frentes-tag:hover { transform: none; }
+  .inst-card:hover { transform: none; }
+}
+
 /* ---------- Diagrams ---------- */
 .inst-diagram {
   display: flex;
