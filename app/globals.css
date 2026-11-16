@@ -4706,6 +4706,159 @@ canvas {
   opacity: 1;
 }
 
+/* Institutional navigation — clear interactive states and responsive access */
+html:has(.inst-page) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+.inst-page [id] {
+  scroll-margin-top: 88px;
+}
+.inst-header-inner {
+  gap: clamp(14px, 2vw, 28px);
+}
+.inst-logo {
+  flex: 0 0 auto;
+  border-radius: 7px;
+}
+.inst-logo:focus-visible {
+  outline: 2px solid var(--rsbuild-terracotta-light);
+  outline-offset: 5px;
+}
+.inst-nav {
+  align-items: center;
+  justify-content: center;
+  gap: clamp(15px, 2vw, 28px);
+}
+.inst-nav a:not(.inst-nav-external) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  color: rgba(217, 204, 181, .88);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  transition: color .2s ease, transform .2s ease;
+}
+.inst-nav a:not(.inst-nav-external)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--rsbuild-terracotta-light);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .22s ease;
+}
+.inst-nav a:not(.inst-nav-external):hover,
+.inst-nav a:not(.inst-nav-external):focus-visible {
+  color: #fff;
+  transform: translateY(-1px);
+}
+.inst-nav a:not(.inst-nav-external):hover::after,
+.inst-nav a:not(.inst-nav-external):focus-visible::after {
+  transform: scaleX(1);
+}
+.inst-nav a:focus-visible,
+.inst-cta:focus-visible {
+  outline: 2px solid var(--rsbuild-warm-beige);
+  outline-offset: 4px;
+}
+.inst-nav-external {
+  min-height: 38px;
+  padding: 0 11px 0 13px;
+  border: 1px solid rgba(217, 204, 181, .28);
+  border-radius: 7px;
+  border-bottom: 1px solid rgba(217, 204, 181, .28);
+  background: rgba(217, 204, 181, .055);
+  color: var(--rsbuild-warm-beige) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  transition: color .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.inst-nav-external:hover,
+.inst-nav-external:focus-visible {
+  color: #fff !important;
+  background: rgba(181, 88, 60, .18);
+  border-color: var(--rsbuild-terracotta-light);
+  box-shadow: 0 0 0 3px rgba(181, 88, 60, .10);
+  transform: translateY(-1px);
+}
+.inst-nav-external svg {
+  width: 15px;
+  height: 15px;
+  opacity: .9;
+  transition: transform .2s ease, opacity .2s ease;
+}
+.inst-nav-external:hover svg {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+.inst-cta {
+  box-shadow: 0 4px 14px rgba(181, 88, 60, .16);
+  transition: background .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.inst-cta:hover {
+  box-shadow: 0 7px 20px rgba(181, 88, 60, .26);
+  transform: translateY(-2px);
+}
+.inst-cta:active {
+  transform: translateY(0) scale(.985);
+}
+.inst-cta.ghost:hover {
+  background: rgba(181, 88, 60, .12);
+  box-shadow: 0 5px 16px rgba(181, 88, 60, .12);
+}
+@media (max-width: 1100px) {
+  .inst-header-inner { gap: 14px; }
+  .inst-nav { gap: 14px; }
+  .inst-nav a:not(.inst-nav-external) { font-size: 12px; }
+  .inst-nav-external { padding-inline: 9px; font-size: 11px !important; }
+}
+@media (max-width: 960px) {
+  .inst-header-inner {
+    height: auto;
+    min-height: 68px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .inst-nav {
+    display: flex;
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 22px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 2px 2px 5px;
+  }
+  .inst-nav::-webkit-scrollbar { display: none; }
+  .inst-nav a { flex: 0 0 auto; }
+  .inst-nav a:not(.inst-nav-external) { min-height: 34px; }
+}
+@media (max-width: 600px) {
+  .inst-header-inner { column-gap: 12px; }
+  .inst-logo img { height: 32px; }
+  .inst-header-inner > .inst-cta { padding: 9px 12px; font-size: 11px; }
+  .inst-nav { gap: 18px; }
+  .inst-nav a:not(.inst-nav-external) { font-size: 12px; }
+  .inst-nav-external { min-height: 32px; font-size: 11px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has(.inst-page) { scroll-behavior: auto; }
+  .inst-nav a, .inst-nav a::after, .inst-nav-external,
+  .inst-nav-external svg, .inst-cta { transition: none !important; }
+  .inst-nav a:hover, .inst-nav-external:hover, .inst-cta:hover { transform: none; }
+}
+
 /* ==========================================================================
    Cards da seção 03 — dados estratégicos + efeito Mac
    ========================================================================== */
