@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { NavSection } from "@/app/types/workspace";
+import { RsbuildIcon, type RsbuildIconName } from "@/app/components/rsbuild-icons";
 
 type CapabilityStatus = "Disponível" | "Em validação" | "Em desenvolvimento" | "Planejado";
 
 interface TourCapability {
-  icon: string;
+  icon: RsbuildIconName;
   title: string;
   desc: string;
   status: CapabilityStatus;
@@ -37,19 +38,19 @@ const TOUR_STEPS: TourStep[] = [
       "A Torre de Controle reúne indicadores e informações operacionais disponíveis no workspace para apoiar o acompanhamento da empresa. A consolidação entre diferentes organizações depende das fontes, dos acessos e das integrações habilitadas.",
     bullets: [
       {
-        icon: "🏛️",
+        icon: "control-tower",
         title: "Visão por organização",
         desc: "Acompanhamento das informações disponíveis no workspace ativo.",
         status: "Em validação"
       },
       {
-        icon: "👑",
+        icon: "users",
         title: "Papéis e alçadas de acesso",
         desc: "Ações e aprovações são condicionadas ao perfil e às permissões configuradas.",
         status: "Disponível"
       },
       {
-        icon: "📊",
+        icon: "analytics",
         title: "Indicadores executivos",
         desc: "Leitura de indicadores financeiros e operacionais conforme a disponibilidade das fontes.",
         status: "Em validação"
@@ -72,19 +73,19 @@ const TOUR_STEPS: TourStep[] = [
       "O módulo permite carregar extratos bancários, revisar os registros reconhecidos e acompanhar as movimentações financeiras disponíveis no workspace.",
     bullets: [
       {
-        icon: "💳",
+        icon: "finance",
         title: "Importação OFX/CSV",
         desc: "Leitura de arquivos e apresentação de uma prévia para conferência antes da confirmação.",
         status: "Disponível"
       },
       {
-        icon: "🔎",
+        icon: "search",
         title: "Consulta de movimentações",
         desc: "Busca e visualização dos registros carregados, com filtros e recortes por período.",
         status: "Disponível"
       },
       {
-        icon: "📈",
+        icon: "analytics",
         title: "Visão gerencial",
         desc: "Acompanhamento de entradas, saídas e resultado com base nos registros disponíveis.",
         status: "Disponível"
@@ -107,19 +108,19 @@ const TOUR_STEPS: TourStep[] = [
       "A área de reconciliação permite comparar movimentações bancárias com lançamentos e títulos importados, identificar possíveis correspondências e destacar divergências para revisão.",
     bullets: [
       {
-        icon: "🔄",
+        icon: "matching",
         title: "Correspondência assistida",
         desc: "Sugestões de relacionamento entre registros bancários e lançamentos disponíveis.",
         status: "Em validação"
       },
       {
-        icon: "⚖️",
+        icon: "audit",
         title: "Análise de divergências",
         desc: "Visualização de diferenças e necessidade de revisão antes de confirmar uma correspondência.",
         status: "Em validação"
       },
       {
-        icon: "📦",
+        icon: "document",
         title: "Exportação de lote",
         desc: "Geração de arquivo CSV para conferência e eventual utilização no sistema de origem.",
         status: "Em validação"
@@ -142,19 +143,19 @@ const TOUR_STEPS: TourStep[] = [
       "As ferramentas logísticas ajudam a estruturar informações de pedidos e comprovantes, relacionar registros e acompanhar pendências documentais da operação.",
     bullets: [
       {
-        icon: "📜",
+        icon: "delivery",
         title: "Comprovantes e canhotos",
         desc: "Importação e consulta de registros de entrega e seus dados associados.",
         status: "Em validação"
       },
       {
-        icon: "⚠️",
+        icon: "alert",
         title: "Pendências documentais",
         desc: "Visualização de registros que precisam de conferência ou complemento.",
         status: "Em validação"
       },
       {
-        icon: "💬",
+        icon: "document",
         title: "Interpretação de pedidos",
         desc: "Leitura assistida de mensagens e organização dos itens identificados em uma prévia.",
         status: "Em validação"
@@ -177,19 +178,19 @@ const TOUR_STEPS: TourStep[] = [
       "O RS Guardião representa a frente de governança do RSBUILD OS. No ambiente atual, o painel reúne informações disponíveis e apresenta análises experimentais para apoiar a identificação de pontos que exigem revisão humana.",
     bullets: [
       {
-        icon: "🛡️",
+        icon: "guardian",
         title: "Diagnóstico operacional",
         desc: "Síntese calculada somente quando as fontes necessárias estão disponíveis; não equivale a certificação de conformidade.",
         status: "Em validação"
       },
       {
-        icon: "👁️",
+        icon: "audit",
         title: "Rastreabilidade de ações",
         desc: "Consulta dos registros e informações de auditoria efetivamente disponibilizados pelo workspace.",
         status: "Em validação"
       },
       {
-        icon: "🤝",
+        icon: "approval",
         title: "Supervisão humana",
         desc: "Correspondências, divergências e decisões críticas requerem revisão e permissões adequadas.",
         status: "Disponível"
@@ -430,7 +431,7 @@ export function ProductTourModal({
           >
             {currentStep.bullets.map((b, i) => (
               <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                <span style={{ fontSize: "16px", marginTop: "1px" }}>{b.icon}</span>
+                <span style={{ display: "inline-flex", width: "22px", height: "22px", alignItems: "center", justifyContent: "center", marginTop: "1px" }}><RsbuildIcon name={b.icon} size={19} tone="primary" /></span>
                 <div style={{ fontSize: "12px", lineHeight: "1.4" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
                     <strong style={{ color: "var(--ink, #F4F1EA)" }}>{b.title}</strong>

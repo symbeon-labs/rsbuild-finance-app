@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTransition } from "react";
+import { RsbuildIcon, type RsbuildIconName } from "@/app/components/rsbuild-icons";
 import {
   ALL_NAV_ITEMS,
   EnabledModulesConfig,
@@ -31,7 +32,7 @@ const MODULE_CONFIGS: {
   id: ModuleType;
   label: string;
   shortLabel: string;
-  icon: React.ReactNode;
+  icon: RsbuildIconName;
   title: string;
   menuLabel: string;
 }[] = [
@@ -41,12 +42,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Finanças",
     title: "Módulo Financeiro & Livro Caixa",
     menuLabel: "MENU FINANCEIRO",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-      </svg>
-    )
+    icon: "finance"
   },
   {
     id: "reconciliation",
@@ -54,14 +50,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Reconcil.",
     title: "Conciliação e revisão de títulos",
     menuLabel: "MENU CONCILIAÇÃO",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-        <path d="M3 3v5h5" />
-        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-        <path d="M16 21h5v-5" />
-      </svg>
-    )
+    icon: "reconciliation"
   },
   {
     id: "logistics",
@@ -69,14 +58,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Logística",
     title: "Módulo Logística & Expedição",
     menuLabel: "MENU LOGÍSTICA & EXPEDIÇÃO",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="3" width="15" height="13" />
-        <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
-        <circle cx="5.5" cy="18.5" r="2.5" />
-        <circle cx="18.5" cy="18.5" r="2.5" />
-      </svg>
-    )
+    icon: "logistics"
   },
   {
     id: "audit",
@@ -84,11 +66,7 @@ const MODULE_CONFIGS: {
     shortLabel: "Auditoria",
     title: "Governança e auditoria operacional",
     menuLabel: "MENU GOVERNANÇA",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    )
+    icon: "guardian"
   }
 ];
 
@@ -167,7 +145,7 @@ export function Sidebar({
                   letterSpacing: "0.5px"
                 }}
               >
-                {mod.icon}
+                <RsbuildIcon name={mod.icon} size={18} tone={isActive ? "accent" : "secondary"} />
                 <span>{availableModules.length > 2 ? mod.shortLabel : mod.label}</span>
               </button>
             );
@@ -175,7 +153,7 @@ export function Sidebar({
         </div>
       ) : availableModules.length === 1 ? (
         <div className="module-badge-single">
-          {availableModules[0].icon}
+          <RsbuildIcon name={availableModules[0].icon} size={18} tone="secondary" />
           <span>MÓDULO {availableModules[0].label.toUpperCase()}</span>
         </div>
       ) : null}
