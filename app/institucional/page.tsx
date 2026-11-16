@@ -5,7 +5,39 @@ import { FlowDiagram, GovernanceFlow, HeroNetwork, Reveal } from "./diagrams";
 
 export const metadata = {
   title: "RSBUILD OS | Governança e Inteligência Operacional",
-  description: "Conheça o RSBUILD OS, uma plataforma concebida para organizar, acompanhar e governar processos empresariais."
+  description: "Plataforma concebida para conectar sistemas, organizar fluxos e governar processos empresariais com auditoria pericial e inteligência assistida.",
+  keywords: [
+    "RSBUILD OS",
+    "governança operacional",
+    "inteligência operacional",
+    "conciliação bancária",
+    "auditoria pericial",
+    "holding",
+    "ERP"
+  ],
+  authors: [{ name: "RSBUILD Inovação Corporativa" }],
+  openGraph: {
+    title: "RSBUILD OS | Governança e Inteligência Operacional",
+    description: "Uma camada de governança entre seus sistemas e a operação real. Conecte dados, regras e decisões com rastreabilidade total.",
+    url: "https://rsbuild-os.vercel.app/institucional",
+    siteName: "RSBUILD OS",
+    locale: "pt_BR",
+    type: "website",
+    images: [
+      {
+        url: "https://rsbuild-os.vercel.app/brand/rsbuild-logo-primary.webp",
+        width: 1200,
+        height: 630,
+        alt: "RSBUILD OS — Governança e Inteligência Operacional"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RSBUILD OS | Governança e Inteligência Operacional",
+    description: "Uma camada de governança entre seus sistemas e a operação real.",
+    images: ["https://rsbuild-os.vercel.app/brand/rsbuild-logo-primary.webp"]
+  }
 };
 
 const PROBLEMS = [
@@ -249,6 +281,45 @@ export default function InstitucionalPage() {
                 <ul>{m.items.map((it) => <li key={it}>{it}</li>)}</ul>
               </div>
             ))}
+          </div>
+
+          {/* Prova Social & Frentes Operacionais Ativas */}
+          <div
+            style={{
+              marginTop: 32,
+              padding: "20px 24px",
+              borderRadius: 12,
+              background: "rgba(255, 255, 255, 0.75)",
+              border: "1px solid rgba(217, 204, 181, 0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 16
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{ fontSize: 24 }} aria-hidden="true">🏭</span>
+              <div>
+                <strong style={{ fontSize: 13, color: "var(--rsbuild-charcoal)", display: "block" }}>
+                  Frentes Ativas em Produção &amp; Validação Prática
+                </strong>
+                <span style={{ fontSize: 12, color: "#614943" }}>
+                  Operações pioneiras atendidas na indústria de alimentos, distribuição logística e governança financeira de holdings.
+                </span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span className="inst-badge ok" style={{ fontSize: 10, padding: "3px 10px", margin: 0 }}>
+                Indústria Alimentícia
+              </span>
+              <span className="inst-badge ok" style={{ fontSize: 10, padding: "3px 10px", margin: 0 }}>
+                Distribuição &amp; Logística
+              </span>
+              <span className="inst-badge ok" style={{ fontSize: 10, padding: "3px 10px", margin: 0 }}>
+                Governança de Holding
+              </span>
+            </div>
           </div>
         </div>
       </section>

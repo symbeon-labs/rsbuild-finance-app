@@ -225,16 +225,26 @@ export function Sidebar({
           href="/institucional"
           target="_blank"
           rel="noopener noreferrer"
+          className="sidebar-inst-link"
           style={{
-            display: "block",
-            fontSize: 11,
-            color: "var(--rsbuild-muted, #6b7280)",
-            textAlign: "center",
-            padding: "6px 0 2px",
-            textDecoration: "none"
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            fontSize: "11px",
+            fontWeight: 600,
+            color: "var(--rsbuild-warm-beige, #D9CCB5)",
+            background: "rgba(255, 255, 255, 0.05)",
+            border: "1px solid rgba(217, 204, 181, 0.16)",
+            borderRadius: "6px",
+            padding: "6px 12px",
+            margin: "0 0 10px",
+            textDecoration: "none",
+            transition: "all 0.18s ease"
           }}
         >
-          Sobre o RSBUILD OS ↗
+          <span>Página Institucional RSBUILD</span>
+          <span style={{ fontSize: "11px", opacity: 0.8 }}>↗</span>
         </a>
         <div
           className="sidebar-user-row"

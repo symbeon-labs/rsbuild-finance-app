@@ -176,6 +176,20 @@ button { cursor: pointer; }
 .sidebar-bottom strong, .sidebar-bottom span { display: block; font-size: 11px; }
 .sidebar-bottom span { color: #8F887E; margin-top: 4px; }
 
+.sidebar-inst-link {
+  transition: all 0.2s ease;
+}
+.sidebar-inst-link:hover {
+  background: rgba(181, 88, 60, 0.22) !important;
+  border-color: rgba(181, 88, 60, 0.5) !important;
+  color: #FFFFFF !important;
+}
+.sidebar-inst-link span {
+  display: inline !important;
+  margin-top: 0 !important;
+  color: inherit !important;
+}
+
 .signout-btn {
   display: flex;
   align-items: center;
