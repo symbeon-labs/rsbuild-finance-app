@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
 import { RsbuildIcon, type RsbuildIconName } from "@/app/components/rsbuild-icons";
 
-const MODULE_ICONS: Record<keyof EnabledModulesConfig, RsbuildIconName> = { finance: "finance", reconciliation: "reconciliation", logistics: "logistics", audit: "guardian" };
 function getPresetIdentity(preset: OrganizationPreset) {
   if (preset.id.endsWith("_qa")) return { label: "AMBIENTE QA", icon: "approval" as RsbuildIconName };
   if (preset.id === "rsbuild") return { label: "HOLDING", icon: "control-tower" as RsbuildIconName };
