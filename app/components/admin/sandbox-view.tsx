@@ -63,14 +63,14 @@ export function SandboxView() {
       try {
         const [sandboxResponse, portfolioResponse] = await Promise.all([
           fetch("/api/sandbox", { cache: "no-store" }),
-          fetch("/api/projects", { cache: "no-store" })
+          fetch("/api/projects", { cache: "no-store" }).catch(() => null)
         ]);
         const sandboxPayload = await sandboxResponse.json();
         if (!sandboxResponse.ok) throw new Error(sandboxPayload.error || "Falha ao carregar o Sandbox.");
         if (!active) return;
         setData(sandboxPayload);
 
-        if (!portfolioResponse.ok) {
+        if (!portfolioResponse || !portfolioResponse.ok) {
           setPortfolioError("O vínculo com as sprints está temporariamente indisponível.");
         } else {
           try {
