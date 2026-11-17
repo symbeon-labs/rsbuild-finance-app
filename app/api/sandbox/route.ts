@@ -161,18 +161,43 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const caseCode = typeof body.caseCode === "string" ? body.caseCode : "";
-    if (!/^(A1\.[4-7]|A2\.[1-5]|A2\.W02)-/.test(caseCode)) {
+    const status = body.status;
+    const summary = typeof body.summary === "string" ? body.summary.trim() : "";
+    const observed = typeof body.observed === "string" ? body.observed.trim() : "";
+    const evidenceRef = typeof body.evidenceRef === "string" ? body.evidenceRef.trim() : "";
+    if (body.mode !== "manual" || body.targetEnvironment !== "mundo-sabor-sandbox") {
+      return NextResponse.json({ error: "manual_mundo_sabor_scope_required" }, { status: 400 });
+    }
+    if (!/^(A1\\.[4-7]|A2\\.[1-5]|A2\\.W02)-/.test(caseCode)) {
       return NextResponse.json({ error: "invalid_validation_case" }, { status: 400 });
     }
+    if (!["passed", "failed", "blocked"].includes(status) || summary.length < 5 || summary.length > 1000 || observed.length > 2000 || evidenceRef.length > 500) {
+      return NextResponse.json({ error: "invalid_manual_homologation_record" }, { status: 400 });
+    }
 
-    const { runFinancialValidation } = await import("@/lib/sandbox/financial-validation");
-    const outcome = runFinancialValidation(caseCode);
+    const { data: mundoOrg, error: mundoOrgError } = await supabase
+      .from("sandbox_organizations").select("id").eq("slug", "mundo-sabor-sandbox").maybeSingle();
+    if (mundoOrgError || !mundoOrg) {
+      return NextResponse.json({ error: "mundo_sabor_sandbox_unavailable" }, { status: 503 });
+    }
+    if (!access.isSandboxAdmin && !access.organizationIds.includes(mundoOrg.id)) {
+      return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
+    }
+
+    const { data: validationCase, error: caseError } = await supabase
+      .from("sandbox_validation_cases").select("case_code,project_key")
+      .eq("case_code", caseCode).eq("enabled", true).maybeSingle();
+    if (caseError || !validationCase || validationCase.project_key !== "mundo-do-sabor") {
+      return NextResponse.json({ error: "validation_case_not_found_for_mundo_sabor" }, { status: 404 });
+    }
+
     const { data, error } = await supabase.rpc("sandbox_record_validation_run", {
       p_case_code: caseCode,
-      p_status: outcome.status,
-      p_summary: outcome.summary,
-      p_result: { checks: outcome.checks, engine: "rsbuild-financial-validation-v1" }
+      p_status: status,
+      p_summary: summary,
+      p_result: { mode: "manual", observed, evidenceRef, targetEnvironment: "mundo-sabor-sandbox" }
     });
+    const outcome = { status, summary, observed, evidenceRef, mode: "manual" };
 
     if (error) {
       console.error("Sandbox validation persistence failed:", error);
