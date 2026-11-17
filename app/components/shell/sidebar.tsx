@@ -84,6 +84,7 @@ export function Sidebar({
   showProjectPortfolio = false,
   canAccessSandbox = false,
   canAccessLeadInbox = false,
+  projectCollaboratorOnly = false,
   onSelectModule,
   onSelectSection,
   onOpenConfig,
@@ -170,6 +171,7 @@ export function Sidebar({
 
       <nav className="nav-list" aria-label="Navegação principal">
         {ALL_NAV_ITEMS.filter((item) => {
+          if (projectCollaboratorOnly) return item.id === "projetos";
           if (item.id === "projetos" && !showProjectPortfolio) return false;
           // Caixa de entrada comercial: disponível somente no workspace institucional RSBUILD.
           if (item.id === "mensagens" && (currentOrgId !== "rsbuild" || !canAccessLeadInbox)) return false;
@@ -241,7 +243,7 @@ export function Sidebar({
           <span>Página Institucional RSBUILD</span>
           <span style={{ fontSize: "11px", opacity: 0.8 }}>↗</span>
         </a>
-        <div
+        {!projectCollaboratorOnly && <div
           className="sidebar-user-row"
           style={{ cursor: "pointer" }}
           onClick={onOpenConfig}
@@ -255,7 +257,7 @@ export function Sidebar({
               <span style={{ fontSize: "10px", color: "var(--rsbuild-terracotta)" }}>✎</span>
             </span>
           </div>
-        </div>
+        </div>}
         <button
           className="signout-btn"
           onClick={() => {
