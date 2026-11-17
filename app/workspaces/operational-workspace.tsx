@@ -67,6 +67,7 @@ type OperationalWorkspaceProps = {
   organizationId: string;
   organizationSlug: OrganizationId;
   organizationName: string;
+  availableOrganizationSlugs: string[];
   membershipRole: string;
   userEmail: string;
   isDeveloperAuthorized?: boolean;
@@ -94,6 +95,7 @@ export default function OperationalWorkspace({
   organizationId,
   organizationSlug,
   organizationName,
+  availableOrganizationSlugs,
   membershipRole,
   userEmail,
   isDeveloperAuthorized = false,
@@ -1070,6 +1072,7 @@ export default function OperationalWorkspace({
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
         currentOrgRealId={organizationId}
+        availableOrganizationSlugs={availableOrganizationSlugs}
         isSuperAdmin={isSuperAdmin}
         enabledModules={enabledModules}
         brandColor={brandColor}
