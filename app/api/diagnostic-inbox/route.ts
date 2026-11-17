@@ -111,7 +111,11 @@ export async function POST(request: Request) {
 
   if (body.action === "assign") {
     const assignedTo = typeof body.assignedTo === "string" ? body.assignedTo : "";
-    if (!assignedTo) return NextResponse.json({ error: "invalid_assignee" }, { status: 400 });
+    if (!assignedTo) {
+      const { error } = await supabase.from("diagnostic_request_assignments").delete().eq("request_id", requestId);
+      if (error) return NextResponse.json({ error: "assignment_remove_failed" }, { status: 403 });
+      return NextResponse.json({ ok: true });
+    }
     const { error } = await supabase.from("diagnostic_request_assignments").upsert({
       request_id: requestId, assigned_to: assignedTo, assigned_by: user.id,
       updated_at: new Date().toISOString()
