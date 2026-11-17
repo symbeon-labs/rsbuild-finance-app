@@ -91,22 +91,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "sandbox_forbidden" }, { status: 403 });
     }
 
-    const organizationFilter = access.organizationIds;
-    // Public security_invoker views preserve the underlying sandbox RLS policies.
-    // Every organization-scoped query is constrained to the caller's memberships.
-    const [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes, casesRes, runsRes] = await Promise.all([
-      supabase.from("sandbox_organizations").select("*").in("id", organizationFilter).order("display_name"),
-      supabase.from("sandbox_organization_memberships").select("*").in("organization_id", organizationFilter).limit(1000),
-      supabase.from("sandbox_financial_accounts").select("*").in("organization_id", organizationFilter).limit(1000),
-      supabase.from("sandbox_financial_records").select("*").in("organization_id", organizationFilter).order("transaction_date", { ascending: false }).limit(1000),
-      supabase.from("sandbox_receivable_titles").select("*").in("organization_id", organizationFilter).order("due_date").limit(1000),
-      supabase.from("sandbox_delivery_proofs").select("*").in("organization_id", organizationFilter).order("delivery_date", { ascending: false }).limit(1000),
-      supabase.from("sandbox_audit_events").select("*").in("organization_id", organizationFilter).order("created_at", { ascending: false }).limit(1000),
-      supabase.from("sandbox_validation_cases").select("*").eq("enabled", true).order("sprint_number").order("sort_order"),
-      access.isSandboxAdmin
-        ? supabase.from("sandbox_validation_runs").select("*").order("executed_at", { ascending: false }).limit(100)
-        : supabase.from("sandbox_validation_runs").select("*").eq("actor_id", user.id).order("executed_at", { ascending: false }).limit(100)
+    // Esta primeira fase homologa exclusivamente Mundo do Sabor.
+    const { data: mundoOrg, error: mundoOrgError } = await supabase
+      .from("sandbox_organizations")
+      .select("id,slug")
+      .eq("slug", "mundo-sabor-sandbox")
+      .maybeSingle();
+    if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
+      return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
+    }
+
+    const [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes, casesRes] = await Promise.all([
+      supabase.from("sandbox_organizations").select("*").eq("id", mundoOrg.id),
+      supabase.from("sandbox_organization_memberships").select("*").eq("organization_id", mundoOrg.id).limit(1000),
+      supabase.from("sandbox_financial_accounts").select("*").eq("organization_id", mundoOrg.id).limit(1000),
+      supabase.from("sandbox_financial_records").select("*").eq("organization_id", mundoOrg.id).order("transaction_date", { ascending: false }).limit(1000),
+      supabase.from("sandbox_receivable_titles").select("*").eq("organization_id", mundoOrg.id).order("due_date").limit(1000),
+      supabase.from("sandbox_delivery_proofs").select("*").eq("organization_id", mundoOrg.id).order("delivery_date", { ascending: false }).limit(1000),
+      supabase.from("sandbox_audit_events").select("*").eq("organization_id", mundoOrg.id).order("created_at", { ascending: false }).limit(1000),
+      supabase.from("sandbox_validation_cases").select("*").eq("project_key", "mundo-do-sabor").eq("enabled", true).order("sprint_number").order("sort_order")
     ]);
+    const caseCodes = (casesRes.data ?? []).map((item) => item.case_code);
+    const runsRes = caseCodes.length
+      ? await supabase.from("sandbox_validation_runs").select("*").in("case_code", caseCodes).order("executed_at", { ascending: false }).limit(200)
+      : { data: [], error: null };
 
     const firstError = [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes, casesRes, runsRes]
       .find((result) => result.error);
@@ -165,46 +173,56 @@ export async function POST(request: Request) {
     const summary = typeof body.summary === "string" ? body.summary.trim() : "";
     const observed = typeof body.observed === "string" ? body.observed.trim() : "";
     const evidenceRef = typeof body.evidenceRef === "string" ? body.evidenceRef.trim() : "";
-    if (body.mode !== "manual" || body.targetEnvironment !== "mundo-sabor-sandbox") {
-      return NextResponse.json({ error: "manual_mundo_sabor_scope_required" }, { status: 400 });
+
+    if (body.mode !== "manual") {
+      return NextResponse.json({ error: "manual_homologation_only" }, { status: 400 });
     }
     if (!/^(A1\\.[4-7]|A2\\.[1-5]|A2\\.W02)-/.test(caseCode)) {
       return NextResponse.json({ error: "invalid_validation_case" }, { status: 400 });
     }
     if (!["passed", "failed", "blocked"].includes(status) || summary.length < 5 || summary.length > 1000 || observed.length > 2000 || evidenceRef.length > 500) {
-      return NextResponse.json({ error: "invalid_manual_homologation_record" }, { status: 400 });
+      return NextResponse.json({ error: "invalid_manual_validation_payload" }, { status: 400 });
     }
 
     const { data: mundoOrg, error: mundoOrgError } = await supabase
-      .from("sandbox_organizations").select("id").eq("slug", "mundo-sabor-sandbox").maybeSingle();
-    if (mundoOrgError || !mundoOrg) {
-      return NextResponse.json({ error: "mundo_sabor_sandbox_unavailable" }, { status: 503 });
-    }
-    if (!access.isSandboxAdmin && !access.organizationIds.includes(mundoOrg.id)) {
+      .from("sandbox_organizations")
+      .select("id")
+      .eq("slug", "mundo-sabor-sandbox")
+      .maybeSingle();
+    if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
       return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
     }
 
     const { data: validationCase, error: caseError } = await supabase
-      .from("sandbox_validation_cases").select("case_code,project_key")
-      .eq("case_code", caseCode).eq("enabled", true).maybeSingle();
-    if (caseError || !validationCase || validationCase.project_key !== "mundo-do-sabor") {
-      return NextResponse.json({ error: "validation_case_not_found_for_mundo_sabor" }, { status: 404 });
+      .from("sandbox_validation_cases")
+      .select("case_code")
+      .eq("case_code", caseCode)
+      .eq("project_key", "mundo-do-sabor")
+      .eq("enabled", true)
+      .maybeSingle();
+    if (caseError || !validationCase) {
+      return NextResponse.json({ error: "validation_case_not_found" }, { status: 404 });
     }
 
     const { data, error } = await supabase.rpc("sandbox_record_validation_run", {
       p_case_code: caseCode,
       p_status: status,
       p_summary: summary,
-      p_result: { mode: "manual", observed, evidenceRef, targetEnvironment: "mundo-sabor-sandbox" }
+      p_result: {
+        mode: "manual",
+        target_environment: "mundo-sabor-sandbox",
+        observed,
+        evidenceRef,
+        homologation_version: "mundo-sabor-manual-v1"
+      }
     });
-    const outcome = { status, summary, observed, evidenceRef, mode: "manual" };
 
     if (error) {
-      console.error("Sandbox validation persistence failed:", error);
+      console.error("Manual homologation persistence failed:", error);
       return NextResponse.json({ error: "validation_persistence_failed" }, { status: 502 });
     }
 
-    return NextResponse.json({ outcome, run: data }, {
+    return NextResponse.json({ success: true, status, caseCode, run: data }, {
       status: 200,
       headers: { "Cache-Control": "private, no-store" }
     });
