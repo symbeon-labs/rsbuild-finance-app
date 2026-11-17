@@ -1,11 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import { DiagnosticForm } from "./diagnostic-form";
 import { ArchitectureDiagram, FlowDiagram, GovernanceFlow, HeroNetwork, OperationalFlow, Reveal } from "./diagrams";
 import { HeroAmbientAtmosphere } from "./hero-ambient";
 import { FrentesBanner } from "./frentes-banner";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "RSBUILD OS | Governança e Inteligência Operacional",
   description: "Uma camada complementar para organizar informações, contextualizar processos e apoiar a supervisão de operações empresariais.",
   keywords: [

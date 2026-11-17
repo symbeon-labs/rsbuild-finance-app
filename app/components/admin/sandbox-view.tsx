@@ -130,8 +130,25 @@ export function SandboxView() {
             <span style={{ color: "var(--muted)", fontSize: 11 }}>{project.client_display_name} · {project.status}</span>
           </div>
           {project.project_sprints.map(sprint => {
-            const linkedCases = (data.validationCases || []).filter((item: any) => sprint.project_tasks.some(task => task.title.includes(item.task_code)));
-            const passed = linkedCases.filter((item: any) => (data.validationRuns || []).some((run: any) => run.case_code === item.case_code && run.status === "passed")).length;
+            // Associação restrita ao projeto e à sprint do cenário.
+            const sprintCases = (data.validationCases || []).filter(
+              (item: any) => item.project_key === project.project_key && item.sprint_number === sprint.sprint_number
+            );
+            const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const matchesTaskCode = (title: string, code: string) =>
+              new RegExp("(^|[^A-Za-z0-9])" + escapeRegExp(code) + "(?=$|[^A-Za-z0-9])").test(title);
+            const linkedCases = sprintCases.filter((item: any) =>
+              sprint.project_tasks.some(task => matchesTaskCode(task.title, item.task_code))
+            );
+            // A aprovação considera exclusivamente a execução mais recente de cada cenário.
+            const latestRunByCase = new Map<string, any>();
+            for (const run of data.validationRuns || []) {
+              const previous = latestRunByCase.get(run.case_code);
+              if (!previous || new Date(run.executed_at).getTime() > new Date(previous.executed_at).getTime()) {
+                latestRunByCase.set(run.case_code, run);
+              }
+            }
+            const passed = linkedCases.filter((item: any) => latestRunByCase.get(item.case_code)?.status === "passed").length;
             return <div key={sprint.id} style={{ padding: "12px 14px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface-raised)", display: "grid", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                 <strong style={{ color: "var(--ink)", fontSize: 13 }}>Sprint {sprint.sprint_number} · {sprint.title}</strong>
@@ -144,8 +161,11 @@ export function SandboxView() {
                 <span>{passed}/{linkedCases.length} cenários aprovados</span>
               </div>
               {sprint.project_tasks.map(task => {
-                const linked = (data.validationCases || []).filter((item: any) => task.title.includes(item.task_code));
-                const latest = linked.flatMap((item: any) => (data.validationRuns || []).filter((run: any) => run.case_code === item.case_code)).sort((a: any,b: any) => new Date(b.executed_at).getTime()-new Date(a.executed_at).getTime())[0];
+                const linked = linkedCases.filter((item: any) => matchesTaskCode(task.title, item.task_code));
+                const latest = linked
+                  .map((item: any) => latestRunByCase.get(item.case_code))
+                  .filter(Boolean)
+                  .sort((a: any, b: any) => new Date(b.executed_at).getTime() - new Date(a.executed_at).getTime())[0];
                 return <div key={task.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", paddingTop: 6, borderTop: "1px solid var(--line)" }}>
                   <span style={{ fontSize: 11, color: "var(--ink)" }}>{task.title}</span>
                   <span style={{ fontSize: 10, color: latest?.status === "passed" ? "#059669" : latest?.status === "failed" ? "#DC2626" : "#B7791F", fontWeight: 700 }}>{latest ? latest.status.toUpperCase() : linked.length ? "NÃO EXECUTADO" : "SEM CENÁRIO"}</span>

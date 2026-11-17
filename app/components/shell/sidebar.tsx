@@ -170,6 +170,11 @@ export function Sidebar({
           if (item.id === "projetos" && !showProjectPortfolio) return false;
           // Diretório central de acessos é exclusivo do workspace RSBUILD
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
+          // Governança de agentes de IA é exclusiva do plano de controle RSBUILD
+          if (item.id === "agentes" && currentOrgId !== "rsbuild") return false;
+          // A Torre de Controle operacional é de tenants; na RSBUILD a
+          // governança vive em Agentes & IA, Auditoria e Acessos
+          if (item.id === "torre-controle" && currentOrgId === "rsbuild") return false;
           // Sandbox é restrito a admins/owners da RSBUILD
           if (item.id === "sandbox" && !canAccessSandbox) return false;
           if (item.module === "all") return true;
@@ -182,23 +187,8 @@ export function Sidebar({
             className={section === item.id ? "nav-item active" : "nav-item"}
             onClick={() => onSelectSection(item.id)}
           >
-            <span className="nav-icon">{item.icon}</span>
+            <span className="nav-icon"><RsbuildIcon name={item.icon} size={19} tone={section === item.id ? "accent" : "secondary"} /></span>
             <span style={{ flex: 1 }}>{item.label}</span>
-            {item.id === "torre-controle" && (
-              <span
-                style={{
-                  fontSize: "8.5px",
-                  fontWeight: 700,
-                  letterSpacing: "0.5px",
-                  padding: "2px 5px",
-                  borderRadius: "4px",
-                  background: "var(--rsbuild-terracotta-soft)",
-                  color: "var(--rsbuild-terracotta)"
-                }}
-              >
-                RS GUARDIÃO
-              </span>
-            )}
           </button>
         ))}
       </nav>

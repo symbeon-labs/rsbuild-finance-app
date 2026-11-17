@@ -199,7 +199,7 @@ export function HoldingOverviewCockpit({
           </button>
           <button
             type="button"
-            onClick={() => onNavigateToTab("torre-controle")}
+            onClick={() => onNavigateToTab("agentes")}
             className="primary-button"
             style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px" }}
             title="RS Guardião · Governança Cognitiva & Auditoria Pericial"
