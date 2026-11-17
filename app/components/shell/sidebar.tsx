@@ -32,7 +32,7 @@ interface SidebarProps {
   onSignOut: () => Promise<void>;
 }
 
-const MODULE_CONFIGS: {
+export const MODULE_CONFIGS: {
   id: ModuleType;
   label: string;
   shortLabel: string;
@@ -188,6 +188,7 @@ export function Sidebar({
           return item.module === activeModule;
         }).sort((a, b) => {
           const coreOrder: NavSection[] = [
+            "workspace",
             "visao-geral",
             "projetos",
             "sandbox",
