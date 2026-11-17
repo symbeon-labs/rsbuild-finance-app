@@ -38,18 +38,32 @@ async function getSandboxAccess(
     return { allowed: false, isSandboxAdmin: false, organizationIds: [] };
   }
 
+  if (isSandboxAdmin) {
+    const { data: organizations, error: organizationsError } = await supabase
+      .from("sandbox_organizations")
+      .select("id");
+    if (organizationsError) {
+      return { allowed: false, isSandboxAdmin: true, organizationIds: [] };
+    }
+    return {
+      allowed: true,
+      isSandboxAdmin: true,
+      organizationIds: (organizations ?? []).map((organization) => organization.id)
+    };
+  }
+
   const { data: sandboxMemberships, error: sandboxMembershipError } = await supabase
     .from("sandbox_organization_memberships")
     .select("organization_id")
     .eq("user_id", userId);
 
   if (sandboxMembershipError || !sandboxMemberships?.length) {
-    return { allowed: false, isSandboxAdmin, organizationIds: [] };
+    return { allowed: false, isSandboxAdmin: false, organizationIds: [] };
   }
 
   return {
     allowed: true,
-    isSandboxAdmin,
+    isSandboxAdmin: false,
     organizationIds: sandboxMemberships.map((membership) => membership.organization_id)
   };
 }
