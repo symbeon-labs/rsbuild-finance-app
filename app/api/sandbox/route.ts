@@ -179,7 +179,7 @@ export async function POST(request: Request) {
     if (body.mode !== "manual") {
       return NextResponse.json({ error: "manual_homologation_only" }, { status: 400 });
     }
-    if (!/^(A1\\.[4-7]|A2\\.[1-5]|A2\\.W02)-/.test(caseCode)) {
+    if (!/^(A1\.[4-7]|A2\.[1-5]|A2\.W02)-/.test(caseCode)) {
       return NextResponse.json({ error: "invalid_validation_case" }, { status: 400 });
     }
     if (!["passed", "failed", "blocked"].includes(status) || summary.length < 5 || summary.length > 1000 || observed.length > 2000 || evidenceRef.length > 500) {
