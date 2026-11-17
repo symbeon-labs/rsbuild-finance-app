@@ -17,6 +17,7 @@ interface WorkspaceModalProps {
   companyLogoUrl: string;
   currentOrgId?: OrganizationId;
   currentOrgRealId?: string;
+  availableOrganizationSlugs: string[];
   isSuperAdmin: boolean;
   enabledModules: EnabledModulesConfig;
   brandColor?: string;
@@ -31,6 +32,7 @@ export function WorkspaceModal({
   companyLogoUrl,
   currentOrgId = "rsbuild",
   currentOrgRealId,
+  availableOrganizationSlugs,
   isSuperAdmin,
   enabledModules,
   brandColor = "#B5583C",
@@ -351,7 +353,7 @@ export function WorkspaceModal({
             {activeTab === "modulos" && (
               <>
                 {/* Trava de Blindagem Multi-Tenant / Seletor Restrito com Modo Apresentação */}
-                {isSuperAdmin && (
+                {availableOrganizationSlugs.length > 1 && (
                   <div style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "10px 12px", background: "var(--surface)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -384,7 +386,7 @@ export function WorkspaceModal({
                     {showTenantSelector && (
                       <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px dashed var(--line)" }}>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                          {ORGANIZATION_PRESETS.map((preset) => {
+                          {ORGANIZATION_PRESETS.filter((preset) => availableOrganizationSlugs.includes(preset.id)).map((preset) => {
                             const isCurrent = selectedOrg === preset.id;
                             return (
                               <button
