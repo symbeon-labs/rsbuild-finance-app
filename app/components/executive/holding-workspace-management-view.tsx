@@ -25,9 +25,9 @@ function EnvironmentCard({
   onOpen: () => void;
 }) {
   const meta = {
-    production: { label: "OFICIAL", description: "Ambiente operacional da empresa", tone: "#059669", icon: "building-2" as const },
-    qa: { label: "HOMOLOGAÇÃO", description: "Testes funcionais e validação com dados controlados", tone: "#B7791F", icon: "flask-conical" as const },
-    sandbox: { label: "SANDBOX", description: "Laboratório isolado para experimentação e evidências", tone: "#7C3AED", icon: "test-tube" as const }
+    production: { label: "OFICIAL", description: "Ambiente operacional da empresa", tone: "#059669", icon: "integration" as const },
+    qa: { label: "HOMOLOGAÇÃO", description: "Testes funcionais e validação com dados controlados", tone: "#B7791F", icon: "approval" as const },
+    sandbox: { label: "SANDBOX", description: "Laboratório isolado para experimentação e evidências", tone: "#7C3AED", icon: "search" as const }
   }[kind];
 
   return (
@@ -43,7 +43,7 @@ function EnvironmentCard({
         <p style={{ margin: "5px 0 0", color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>{meta.description}</p>
       </div>
       <button type="button" className="secondary-button" onClick={onOpen} style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 7 }}>
-        Abrir ambiente <RsbuildIcon name="arrow-right" size={14} tone="accent" />
+        Abrir ambiente →
       </button>
     </article>
   );
