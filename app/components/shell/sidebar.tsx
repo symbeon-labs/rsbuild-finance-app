@@ -23,6 +23,8 @@ interface SidebarProps {
   showProjectPortfolio?: boolean;
   /** Sandbox é restrito a admins/owners da RSBUILD */
   canAccessSandbox?: boolean;
+  /** Caixa de mensagens restrita a owner/admin/operator da RSBUILD. */
+  canAccessLeadInbox?: boolean;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
@@ -81,6 +83,7 @@ export function Sidebar({
   currentOrgId = "rsbuild",
   showProjectPortfolio = false,
   canAccessSandbox = false,
+  canAccessLeadInbox = false,
   onSelectModule,
   onSelectSection,
   onOpenConfig,
@@ -169,7 +172,7 @@ export function Sidebar({
         {ALL_NAV_ITEMS.filter((item) => {
           if (item.id === "projetos" && !showProjectPortfolio) return false;
           // Caixa de entrada comercial: disponível somente no workspace institucional RSBUILD.
-          if (item.id === "mensagens" && currentOrgId !== "rsbuild") return false;
+          if (item.id === "mensagens" && (currentOrgId !== "rsbuild" || !canAccessLeadInbox)) return false;
           // Diretório central de acessos é exclusivo do workspace RSBUILD
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
           // Governança de agentes de IA é exclusiva do plano de controle RSBUILD
