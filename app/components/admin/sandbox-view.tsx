@@ -26,6 +26,15 @@ const statusColor: Record<string, string> = {
   passed: "#059669", failed: "#DC2626", blocked: "#B7791F", pending: "var(--muted)"
 };
 
+function taskHomologationStatus(linkedCases: any[], latestByCase: Map<string, any>): string | null {
+  if (!linkedCases.length) return null;
+  const statuses = linkedCases.map((item) => latestByCase.get(item.case_code)?.status ?? "pending");
+  if (statuses.includes("failed")) return "failed";
+  if (statuses.includes("blocked")) return "blocked";
+  if (statuses.every((status) => status === "passed")) return "passed";
+  return "pending";
+}
+
 export function SandboxView() {
   const [data, setData] = useState<SandboxData | null>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
@@ -58,13 +67,21 @@ export function SandboxView() {
         ]);
         const sandboxPayload = await sandboxResponse.json();
         if (!sandboxResponse.ok) throw new Error(sandboxPayload.error || "Falha ao carregar o Sandbox.");
-        const portfolioPayload = await portfolioResponse.json();
         if (!active) return;
         setData(sandboxPayload);
-        if (portfolioResponse.ok) {
-          const allProjects = Array.isArray(portfolioPayload.projects) ? portfolioPayload.projects : [];
-          setProjects(allProjects.filter((project: PortfolioProject) => project.project_key === "mundo-do-sabor"));
-        } else setPortfolioError("O vínculo com as sprints está temporariamente indisponível.");
+
+        if (!portfolioResponse.ok) {
+          setPortfolioError("O vínculo com as sprints está temporariamente indisponível.");
+        } else {
+          try {
+            const portfolioPayload = await portfolioResponse.json();
+            if (!active) return;
+            const allProjects = Array.isArray(portfolioPayload.projects) ? portfolioPayload.projects : [];
+            setProjects(allProjects.filter((project: PortfolioProject) => project.project_key === "mundo-do-sabor"));
+          } catch {
+            if (active) setPortfolioError("Não foi possível interpretar os dados do portfólio de sprints.");
+          }
+        }
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : "Falha ao carregar Sandbox.");
       } finally {
@@ -83,7 +100,9 @@ export function SandboxView() {
     const map = new Map<string, any>();
     for (const run of data?.validationRuns ?? []) {
       const previous = map.get(run.case_code);
-      if (!previous || new Date(run.executed_at).getTime() > new Date(previous.executed_at).getTime()) map.set(run.case_code, run);
+      if (!previous || new Date(run.executed_at).getTime() > new Date(previous.executed_at).getTime()) {
+        map.set(run.case_code, run);
+      }
     }
     return map;
   }, [data]);
@@ -91,7 +110,7 @@ export function SandboxView() {
     total: cases.length,
     passed: cases.filter((item: any) => latestByCase.get(item.case_code)?.status === "passed").length,
     failed: cases.filter((item: any) => latestByCase.get(item.case_code)?.status === "failed").length,
-    blocked: cases.filter((item: any) => latestByCase.get(item.case_code)?.status === "blocked" || !latestByCase.has(item.case_code)).length
+    blocked: cases.filter((item: any) => ["blocked", undefined].includes(latestByCase.get(item.case_code)?.status)).length
   }), [cases, latestByCase]);
 
   async function submitManualResult() {
@@ -111,20 +130,26 @@ export function SandboxView() {
           status: manualStatus,
           summary: summary.trim(),
           observed: observed.trim(),
-          evidenceRef: evidenceRef.trim(),
-          targetEnvironment: "mundo-sabor-sandbox"
+          evidenceRef: evidenceRef.trim()
         })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Não foi possível registrar a homologação.");
-      await refresh();
-      setFeedback("Resultado manual registrado com trilha de auditoria.");
+
+      // The write is committed. Close/reset before refreshing so a refresh failure
+      // cannot leave a retryable form that would create a duplicate validation run.
       setSelectedCase(null);
       setSummary("");
       setObserved("");
       setEvidenceRef("");
       setManualStatus("passed");
       setSection("history");
+      try {
+        await refresh();
+        setFeedback("Resultado manual registrado com trilha de auditoria.");
+      } catch {
+        setFeedback("Resultado registrado. Não foi possível atualizar o histórico; recarregue a página para consultar o registro.");
+      }
     } catch (cause) {
       setFeedback(cause instanceof Error ? cause.message : "Falha ao registrar resultado.");
     } finally {
@@ -137,7 +162,11 @@ export function SandboxView() {
   if (!data) return null;
 
   const panel: React.CSSProperties = { padding: 18, border: "1px solid var(--line)", borderRadius: 12, background: "var(--surface-raised)" };
-  const buttonStyle = (active: boolean): React.CSSProperties => ({ border: "1px solid var(--line)", borderRadius: 8, padding: "9px 13px", background: active ? "var(--ink)" : "var(--surface-raised)", color: active ? "var(--surface)" : "var(--ink)", fontWeight: 700, cursor: "pointer", fontSize: 12 });
+  const buttonStyle = (active: boolean): React.CSSProperties => ({
+    border: "1px solid var(--line)", borderRadius: 8, padding: "9px 13px",
+    background: active ? "var(--ink)" : "var(--surface-raised)",
+    color: active ? "var(--surface)" : "var(--ink)", fontWeight: 700, cursor: "pointer", fontSize: 12
+  });
 
   return (
     <section style={{ display: "grid", gap: 18 }}>
@@ -212,8 +241,11 @@ export function SandboxView() {
             <div style={{ fontSize: 11, color: "var(--muted)" }}>{passed}/{sprintCases.length} casos aprovados na homologação · {sprint.project_tasks.length} tarefas na sprint</div>
             {sprint.project_tasks.map(task => {
               const linked = sprintCases.filter((item: any) => item.task_code && task.title.includes(item.task_code));
-              const latest = linked.map((item: any) => latestByCase.get(item.case_code)).filter(Boolean).sort((a: any, b: any) => new Date(b.executed_at).getTime() - new Date(a.executed_at).getTime())[0];
-              return <div key={task.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 7, flexWrap: "wrap" }}><span style={{ color: "var(--ink)", fontSize: 11 }}>{task.title}</span><strong style={{ color: statusColor[latest?.status ?? "pending"], fontSize: 10 }}>{linked.length ? statusLabel[latest?.status ?? "pending"] : "SEM CASO VINCULADO"}</strong></div>;
+              const homologationStatus = taskHomologationStatus(linked, latestByCase);
+              return <div key={task.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 7, flexWrap: "wrap" }}>
+                <span style={{ color: "var(--ink)", fontSize: 11 }}>{task.title}</span>
+                <strong style={{ color: statusColor[homologationStatus ?? "pending"], fontSize: 10 }}>{homologationStatus ? statusLabel[homologationStatus] : "SEM CASO VINCULADO"}</strong>
+              </div>;
             })}
           </div>;
         }))}
@@ -232,7 +264,7 @@ export function SandboxView() {
       </div>}
 
       {selectedCase && <div role="dialog" aria-modal="true" aria-labelledby="homologation-title" className="card cockpit-card" style={{ ...panel, border: "2px solid #7C3AED", display: "grid", gap: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><div><div className="eyebrow">REGISTRO MANUAL</div><h3 id="homologation-title" style={{ margin: "4px 0", color: "var(--ink)" }}>{selectedCase.task_code} · {selectedCase.title}</h3></div><button type="button" className="secondary-button" onClick={() => setSelectedCase(null)}>Fechar</button></div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><div><div className="eyebrow">REGISTRO MANUAL</div><h3 id="homologation-title" style={{ margin: "4px 0", color: "var(--ink)" }}>{selectedCase.task_code} · {selectedCase.title}</h3></div><button type="button" className="secondary-button" onClick={() => setSelectedCase(null)} disabled={saving}>Fechar</button></div>
         <div style={{ padding: 12, borderRadius: 8, background: "var(--surface)", color: "var(--muted)", fontSize: 12 }}><strong style={{ color: "var(--ink)" }}>Critério de aceite:</strong> {selectedCase.acceptance_criteria}</div>
         <label style={{ display: "grid", gap: 5, color: "var(--ink)", fontSize: 12, fontWeight: 700 }}>Resultado da validação
           <select value={manualStatus} onChange={event => setManualStatus(event.target.value as ManualStatus)} style={{ padding: 10, borderRadius: 8, border: "1px solid var(--line)", background: "var(--surface-raised)", color: "var(--ink)" }}>
