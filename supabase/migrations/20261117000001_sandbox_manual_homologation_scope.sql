@@ -1,7 +1,11 @@
--- Scope manual validation writes to the Mundo do Sabor sandbox.
--- The validation_runs.environment column intentionally remains 'sandbox';
--- the specific target environment is preserved in result JSON.
-create or replace function public.sandbox_record_validation_run(
+-- Keep the RPC endpoint callable by authenticated app sessions while moving
+-- privileged writes into a non-exposed schema. The public wrapper is INVOKER;
+-- only the private implementation is DEFINER and performs explicit authorization.
+create schema if not exists app_private;
+revoke all on schema app_private from public, anon;
+grant usage on schema app_private to authenticated;
+
+create or replace function app_private.sandbox_record_validation_run(
   p_case_code text,
   p_status text,
   p_summary text,
@@ -113,6 +117,25 @@ begin
   );
 
   return jsonb_build_object('success', true, 'run_id', v_run_id);
+end;
+$$;
+
+revoke all on function app_private.sandbox_record_validation_run(text, text, text, jsonb) from public, anon;
+grant execute on function app_private.sandbox_record_validation_run(text, text, text, jsonb) to authenticated;
+
+-- Preserve the existing PostgREST RPC name without exposing a DEFINER endpoint.
+create or replace function public.sandbox_record_validation_run(
+  p_case_code text,
+  p_status text,
+  p_summary text,
+  p_result jsonb default '{}'::jsonb
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  return app_private.sandbox_record_validation_run(p_case_code, p_status, p_summary, p_result);
 end;
 $$;
 
