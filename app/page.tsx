@@ -125,7 +125,7 @@ export default async function Home({ searchParams }: Props) {
   }
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
-  const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor"];
+  const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor", "hub_acai_qa", "mundo_sabor_qa"];
   if (!validOrganizationSlugs.includes(selected.slug as OrganizationId)) {
     return (
       <main className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
@@ -156,6 +156,7 @@ export default async function Home({ searchParams }: Props) {
     organizationId: selected.id,
     organizationSlug,
     organizationName: selected.display_name,
+    availableOrganizationSlugs: organizations.map((organization) => organization.slug),
     membershipRole: selectedMembership?.role ?? "viewer",
     userEmail: user.email ?? "",
     userFullName:
