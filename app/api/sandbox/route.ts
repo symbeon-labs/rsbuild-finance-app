@@ -147,7 +147,7 @@ export async function GET(request: Request) {
   }
 }
 
-/** Executes only deterministic fixtures; never accepts client/customer data. */
+/** Records a manual homologation decision and its evidence; never accepts client/customer data. */
 export async function POST(request: Request) {
   try {
     const origin = request.headers.get("origin");
