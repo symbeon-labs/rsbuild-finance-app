@@ -56,12 +56,14 @@ export default function ControlTowerWorkspace({
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
 
+  const isProjectCollaborator = membershipRole === "operator";
   const canViewProjectPortfolio = true;
 
 
   const urlTab = searchParams.get("tab") as NavSection | null;
-  const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
+  const initialSection: NavSection = isProjectCollaborator
+    ? "projetos"
+    : urlTab && ["visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -75,7 +77,7 @@ export default function ControlTowerWorkspace({
   function navigateTo(nextSection: NavSection) {
     // Na RSBUILD a Torre de Controle operacional não existe — governança
     // de agentes e auditoria assumiram esse papel
-    const target = nextSection === "torre-controle" ? "agentes" : nextSection;
+    const target = isProjectCollaborator ? "projetos" : nextSection === "torre-controle" ? "agentes" : nextSection;
     setSection(target);
     if (target !== "visao-geral") {
       setActiveModule(getModuleForSection(target));
@@ -203,6 +205,7 @@ export default function ControlTowerWorkspace({
         enabledModules={enabledModules}
         currentOrgId={currentOrgId}
         showProjectPortfolio={canViewProjectPortfolio}
+        projectCollaboratorOnly={isProjectCollaborator}
         canAccessSandbox={canAccessSandbox}
         canAccessLeadInbox={["owner", "admin", "operator"].includes(membershipRole)}
         onSelectModule={(mod) => {
@@ -210,7 +213,7 @@ export default function ControlTowerWorkspace({
           if (mod === "audit") navigateTo("auditoria");
         }}
         onSelectSection={navigateTo}
-        onOpenConfig={() => setIsConfigOpen(true)}
+        onOpenConfig={() => { if (!isProjectCollaborator) setIsConfigOpen(true); }}
         onSignOut={() =>
           new Promise<void>((resolve) => {
             startSignOutTransition(async () => {
@@ -241,7 +244,7 @@ export default function ControlTowerWorkspace({
           onPeriodChange={() => {}}
           onToggleTheme={toggleTheme}
           onResetSession={() => {}}
-          onOpenConfig={() => setIsConfigOpen(true)}
+          onOpenConfig={() => { if (!isProjectCollaborator) setIsConfigOpen(true); }}
           onOpenTour={() => setIsTourOpen(true)}
         />
         <div className="content">
@@ -249,7 +252,7 @@ export default function ControlTowerWorkspace({
           <div className="inline-note" role="note">
             Central de Controle RSBUILD — visão governamental e observabilidade de empresas integradas.
           </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+          {!isProjectCollaborator && <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button
               className="secondary-button"
               type="button"
@@ -259,8 +262,8 @@ export default function ControlTowerWorkspace({
               <span>{isAdminPanelOpen ? "✕" : "⚙️"}</span>
               <span>{isAdminPanelOpen ? "Fechar Gestão da Empresa" : "Equipe & Identidade da Empresa"}</span>
             </button>
-          </div>
-          {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={effectiveRole} />}
+          </div>}
+          {!isProjectCollaborator && isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={effectiveRole} />}
           {notice && (
             <div className="notice" role="status">
               {notice}
@@ -268,30 +271,30 @@ export default function ControlTowerWorkspace({
             </div>
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
-          {section === "mensagens" && <LeadInboxView />}
-          {section === "visao-geral" && (
+          {!isProjectCollaborator && section === "mensagens" && <LeadInboxView />}
+          {!isProjectCollaborator && section === "visao-geral" && (
             <HoldingOverviewCockpit
               onNavigateToTab={navigateTo}
               userRole={effectiveRole}
               userFullName={userFullName}
             />
           )}
-          {section === "auditoria" && (
+          {!isProjectCollaborator && section === "auditoria" && (
             <AuditTrailView organizationId={organizationId} organizationName={organizationName} />
           )}
-          {section === "acessos" && (
+          {!isProjectCollaborator && section === "acessos" && (
             <AccessDirectoryView />
           )}
-          {section === "agentes" && (
+          {!isProjectCollaborator && section === "agentes" && (
             <AgentsGovernanceView canDecide={["owner", "admin"].includes(membershipRole)} />
           )}
-          {section === "sandbox" && (
+          {!isProjectCollaborator && section === "sandbox" && (
             <SandboxView />
           )}
         </div>
       </section>
       <WorkspaceModal
-        isOpen={isConfigOpen}
+        isOpen={isConfigOpen && !isProjectCollaborator}
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
