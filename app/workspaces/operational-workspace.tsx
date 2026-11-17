@@ -44,7 +44,8 @@ import {
 } from "@/app/types/workspace";
 import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
 import { applyBrandColor } from "@/app/lib/brand-color";
-import { Sidebar } from "@/app/components/shell/sidebar";
+import { MODULE_CONFIGS, Sidebar } from "@/app/components/shell/sidebar";
+import { RsbuildIcon } from "@/app/components/rsbuild-icons";
 import { Topbar } from "@/app/components/shell/topbar";
 import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
 import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
@@ -93,21 +94,30 @@ export default function OperationalWorkspace({
   const canViewProjectPortfolio = false;
 
   const urlTab = searchParams.get("tab") as NavSection | null;
-  const initialSection: NavSection =
-    urlTab &&
-    ["visao-geral", "torre-controle", "auditoria", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab)
-      ? urlTab
-      : "visao-geral";
+  const validSections: NavSection[] = [
+    "workspace", "visao-geral", "torre-controle", "auditoria", "movimentacoes",
+    "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"
+  ];
+  const initialSection: NavSection = urlTab && validSections.includes(urlTab) ? urlTab : "workspace";
 
   function getModuleForSection(s: NavSection): ModuleType {
     if (s === "baixas" || s === "conciliacao") return "reconciliation";
     if (s === "pedidos-ha" || s === "canhotos") return "logistics";
     if (s === "torre-controle" || s === "auditoria") return "audit";
+    if (s === "workspace") {
+      return ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.defaultModule ?? "finance";
+    }
     return "finance";
   }
 
   const [section, setSection] = useState<NavSection>(initialSection);
   const [activeModule, setActiveModule] = useState<ModuleType>(getModuleForSection(initialSection));
+
+  useEffect(() => {
+    const nextSection: NavSection = urlTab && validSections.includes(urlTab) ? urlTab : "workspace";
+    setSection(nextSection);
+    setActiveModule(getModuleForSection(nextSection));
+  }, [urlTab, organizationSlug]);
 
   function navigateTo(nextSection: NavSection) {
     setSection(nextSection);
@@ -806,7 +816,7 @@ export default function OperationalWorkspace({
           userEmail={currentUserEmail}
           userFullName={userFullName}
           userRoleTitle={userRoleTitle}
-          showPeriodSelector={!["torre-controle", "auditoria", "pedidos-ha", "canhotos"].includes(section)}
+          showPeriodSelector={!["workspace", "torre-controle", "auditoria", "pedidos-ha", "canhotos"].includes(section)}
           onPeriodChange={handlePeriodChange}
           onToggleTheme={toggleTheme}
           onResetSession={resetSession}
@@ -859,6 +869,57 @@ export default function OperationalWorkspace({
         </div>
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
+          {section === "workspace" ? (
+            <section aria-labelledby="workspace-launcher-title" style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(24px, 5vw, 56px) 0" }}>
+              <div style={{ marginBottom: 30 }}>
+                <p style={{ margin: "0 0 8px", color: "var(--muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>CENTRAL DE OPERAÇÕES</p>
+                <h1 id="workspace-launcher-title" style={{ margin: 0, color: "var(--ink)", fontSize: "clamp(26px, 4vw, 38px)", fontWeight: 650, letterSpacing: "-0.04em" }}>{companyName}</h1>
+                <p style={{ margin: "10px 0 0", maxWidth: 620, color: "var(--muted)", fontSize: 14, lineHeight: 1.65 }}>Selecione um módulo para acessar as operações disponíveis neste workspace.</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 235px), 1fr))", gap: 14 }}>
+                {MODULE_CONFIGS.filter((module) => enabledModules[module.id]).map((module) => {
+                  const destinations: Record<ModuleType, NavSection> = {
+                    finance: "visao-geral",
+                    reconciliation: "baixas",
+                    logistics: "pedidos-ha",
+                    audit: "torre-controle"
+                  };
+                  const descriptions: Record<ModuleType, string> = {
+                    finance: "Movimentações, importações e visão financeira",
+                    reconciliation: "Conferência de títulos, conciliação e baixas",
+                    logistics: "Pedidos, expedição e comprovantes de entrega",
+                    audit: "Governança, rastreabilidade e auditoria operacional"
+                  };
+                  return (
+                    <button
+                      key={module.id}
+                      type="button"
+                      onClick={() => navigateTo(destinations[module.id])}
+                      aria-label={`Abrir módulo ${module.label}`}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 16, minHeight: 132,
+                        padding: "22px", textAlign: "left", cursor: "pointer",
+                        color: "var(--ink)", background: "var(--surface)",
+                        border: "1px solid var(--line)", borderRadius: 12,
+                        transition: "border-color 160ms ease, transform 160ms ease"
+                      }}
+                      onMouseEnter={(event) => { event.currentTarget.style.borderColor = "var(--rsbuild-terracotta, #B5583C)"; }}
+                      onMouseLeave={(event) => { event.currentTarget.style.borderColor = "var(--line)"; }}
+                    >
+                      <span style={{ display: "grid", placeItems: "center", flex: "0 0 46px", width: 46, height: 46, borderRadius: 10, color: "var(--rsbuild-terracotta, #B5583C)", background: "var(--surface-raised, rgba(255,255,255,0.04))" }}>
+                        <RsbuildIcon name={module.icon} size={25} tone="accent" />
+                      </span>
+                      <span style={{ display: "grid", gap: 7, minWidth: 0 }}>
+                        <strong style={{ fontSize: 16, fontWeight: 650 }}>{module.label}</strong>
+                        <span style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>{descriptions[module.id]}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ) : (
+          <>
           <div className="inline-note" role="note">
             Títulos, canhotos e pedidos são persistidos no Supabase com isolamento por organização.
           </div>
@@ -987,6 +1048,8 @@ export default function OperationalWorkspace({
             />
           )}
           {section === "relatorios" && <RelatoriosDreView />}
+          </>
+          )}
         </div>
       </section>
       <input
