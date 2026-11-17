@@ -130,16 +130,21 @@ export function SandboxView() {
             <span style={{ color: "var(--muted)", fontSize: 11 }}>{project.client_display_name} · {project.status}</span>
           </div>
           {project.project_sprints.map(sprint => {
-            // A associação só é válida dentro do mesmo projeto e sprint.
-            // O código da tarefa deve aparecer no título como token, não como substring arbitrária.
+            // Associação restrita ao projeto e à sprint do cenário.
             const sprintCases = (data.validationCases || []).filter(
               (item: any) => item.project_key === project.project_key && item.sprint_number === sprint.sprint_number
             );
+            const matchesTaskCode = (title: string, code: string) =>
+              title === code ||
+              title.startsWith(`${code} `) ||
+              title.startsWith(`${code}·`) ||
+              title.includes(` ${code} `) ||
+              title.includes(` ${code}·`) ||
+              title.includes(` ${code}:`);
             const linkedCases = sprintCases.filter((item: any) =>
-              sprint.project_tasks.some(task => new RegExp(`(^|\\\\s)${item.task_code.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\          {project.project_sprints.map(sprint => {
-            const linkedCases = (data.validationCases || []).filter((item: any) => sprint.project_tasks.some(task => task.title.includes(item.task_code)));
-            const passed = linkedCases.filter((item: any) => (data.validationRuns || []).some((run: any) => run.case_code === item.case_code && run.status === "passed")).length;")}(?=$|\\\\s|[:·-])`).test(task.title))
+              sprint.project_tasks.some(task => matchesTaskCode(task.title, item.task_code))
             );
+            // Mantém somente a execução mais recente de cada cenário.
             const latestRunByCase = new Map<string, any>();
             for (const run of data.validationRuns || []) {
               const previous = latestRunByCase.get(run.case_code);
@@ -162,8 +167,11 @@ export function SandboxView() {
               {sprint.project_tasks.map(task => {
                 const linked = linkedCases.filter((item: any) =>
                   new RegExp(`(^|\\\\s)${item.task_code.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\              {sprint.project_tasks.map(task => {
-                const linked = (data.validationCases || []).filter((item: any) => task.title.includes(item.task_code));
-                const latest = linked.flatMap((item: any) => (data.validationRuns || []).filter((run: any) => run.case_code === item.case_code)).sort((a: any,b: any) => new Date(b.executed_at).getTime()-new Date(a.executed_at).getTime())[0];")}(?=$|\\\\s|[:·-])`).test(task.title)
+                const linked = linkedCases.filter((item: any) => matchesTaskCode(task.title, item.task_code));
+                const latest = linked
+                  .map((item: any) => latestRunByCase.get(item.case_code))
+                  .filter(Boolean)
+                  .sort((a: any, b: any) => new Date(b.executed_at).getTime() - new Date(a.executed_at).getTime())[0];")}(?=$|\\\\s|[:·-])`).test(task.title)
                 );
                 const latest = linked
                   .map((item: any) => latestRunByCase.get(item.case_code))
