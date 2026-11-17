@@ -21,7 +21,7 @@ interface SidebarProps {
   currentOrgId?: OrganizationId;
   /** Portfólio de projetos/sprints é restrito ao workspace de gestão RSBUILD */
   showProjectPortfolio?: boolean;
-  /** Sandbox é restrito a admins/owners da RSBUILD */
+  /** Sandbox é exibido conforme autorização explícita resolvida no servidor. */
   canAccessSandbox?: boolean;
   /** Caixa de mensagens restrita a owner/admin/operator da RSBUILD. */
   canAccessLeadInbox?: boolean;
@@ -180,7 +180,7 @@ export function Sidebar({
           // A Torre de Controle operacional é de tenants; na RSBUILD a
           // governança vive em Agentes & IA, Auditoria e Acessos
           if (item.id === "torre-controle" && currentOrgId === "rsbuild") return false;
-          // Sandbox é restrito a admins/owners da RSBUILD
+          // Sandbox só aparece para usuários com acesso confirmado pelo servidor
           if (item.id === "sandbox" && !canAccessSandbox) return false;
           if (item.module === "all") return true;
           // Verifica se o módulo do item está contratado
