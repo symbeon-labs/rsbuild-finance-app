@@ -9,7 +9,7 @@ create or replace function public.sandbox_record_validation_run(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = pg_catalog
+set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
