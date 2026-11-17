@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 /**
  * Diretório central de acessos e identidades — somente equipe RSBUILD.
  *
- * Agrega por organização: membros (papel + último login), convites e
- * grants de projeto (individuais e por organização cliente).
- * Leitura cross-tenant preferencialmente via service role; caso indisponível,
- * degrada graciosamente usando a sessão autenticada do usuário RSBUILD.
+ * Esta rota agrega dados cross-tenant. A sessão do usuário é usada apenas
+ * para autenticação; toda leitura de organizações e permissões é feita pelo
+ * cliente administrativo no servidor. Nunca fazer fallback para o cliente
+ * autenticado, pois isso mistura escopos RLS e pode expor dados parcialmente.
  */
 export async function GET(request: Request) {
   try {
@@ -29,69 +29,106 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "rate_limited" }, { status: 429 });
     }
 
-    const { data: membership, error: membershipError } = await supabase
-      .from("organization_memberships")
-      .select("role, organizations!inner(slug)")
-      .eq("user_id", user.id)
-      .eq("organizations.slug", "rsbuild")
+    // Cross-tenant access is fail-closed: no authenticated-client fallback.
+    const admin = getAdminClient();
+    if (!admin) {
+      console.error(JSON.stringify({
+        event: "access_directory_admin_client_unavailable",
+        hasSupabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        hasSecretKey: Boolean(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+      }));
+      return NextResponse.json({ error: "access_directory_admin_unavailable" }, { status: 503 });
+    }
+
+    // Resolve the trusted RSBUILD tenant and authorize the caller server-side.
+    const { data: rsbuildOrg, error: orgLookupError } = await admin
+      .from("organizations")
+      .select("id")
+      .eq("slug", "rsbuild")
       .maybeSingle();
-    if (membershipError || !membership || !["owner", "admin", "operator"].includes(membership.role)) {
+
+    if (orgLookupError || !rsbuildOrg) {
+      console.error(JSON.stringify({
+        event: "access_directory_tenant_lookup_failed",
+        code: orgLookupError?.code ?? null,
+        message: orgLookupError?.message ?? "rsbuild organization not found"
+      }));
+      return NextResponse.json({ error: "access_directory_unavailable" }, { status: 502 });
+    }
+
+    const { data: membership, error: membershipError } = await admin
+      .from("organization_memberships")
+      .select("role")
+      .eq("organization_id", rsbuildOrg.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (membershipError) {
+      console.error(JSON.stringify({
+        event: "access_directory_membership_lookup_failed",
+        code: membershipError.code,
+        message: membershipError.message
+      }));
+      return NextResponse.json({ error: "access_directory_unavailable" }, { status: 502 });
+    }
+    if (!membership || !["owner", "admin", "operator"].includes(membership.role)) {
       return NextResponse.json({ error: "access_directory_forbidden" }, { status: 403 });
     }
 
-    // Tenta cliente service-role (admin) para visão cross-tenant e listUsers;
-    // Se não configurado no ambiente, usa o cliente autenticado (RLS do operador RSBUILD).
-    const admin = getAdminClient();
-    const queryClient = admin || supabase;
-
     const [orgsRes, membershipsRes, invitesRes, userGrantsRes, orgGrantsRes, projectsRes] = await Promise.all([
-      queryClient.from("organizations").select("id, slug, display_name").order("display_name"),
-      queryClient.from("organization_memberships").select("organization_id, user_id, role, custom_title, created_at").limit(20000),
-      queryClient.from("organization_invitations").select("organization_id, email, role, status, invited_by, invited_user_id, created_at").limit(10000),
-      queryClient.from("project_memberships").select("project_id, managing_organization_id, user_id, access_level, created_at").limit(20000),
-      queryClient.from("project_organization_access").select("project_id, managing_organization_id, client_organization_id, access_level, created_at").limit(20000),
-      queryClient.from("projects").select("id, managing_organization_id, client_organization_id, client_display_name, project_key, name, status").limit(5000)
+      admin.from("organizations").select("id, slug, display_name").order("display_name"),
+      admin.from("organization_memberships").select("organization_id, user_id, role, custom_title, created_at").limit(20000),
+      admin.from("organization_invitations").select("organization_id, email, role, status, invited_by, invited_user_id, created_at").limit(10000),
+      admin.from("project_memberships").select("project_id, managing_organization_id, user_id, access_level, created_at").limit(20000),
+      admin.from("project_organization_access").select("project_id, managing_organization_id, client_organization_id, access_level, created_at").limit(20000),
+      admin.from("projects").select("id, managing_organization_id, client_organization_id, client_display_name, project_key, name, status").limit(5000)
     ]);
 
     const firstError = [orgsRes, membershipsRes, invitesRes, userGrantsRes, orgGrantsRes, projectsRes]
-      .find((r) => r.error);
+      .find((result) => result.error);
     if (firstError?.error) {
-      console.error(JSON.stringify({ event: "access_directory_query_failed", code: firstError.error.code, message: firstError.error.message }));
-      return NextResponse.json({ error: "access_directory_unavailable", message: firstError.error.message }, { status: 502 });
+      console.error(JSON.stringify({
+        event: "access_directory_query_failed",
+        code: firstError.error.code,
+        message: firstError.error.message
+      }));
+      return NextResponse.json({ error: "access_directory_unavailable" }, { status: 502 });
     }
 
-    // Mapa de usuários Auth (e-mail + último login)
+    // Auth user metadata is retrieved only after RSBUILD membership is verified.
     const usersById = new Map<string, { email: string | null; lastSignInAt: string | null }>();
-    if (admin) {
-      try {
-        for (let page = 1; page <= 10; page++) {
-          const { data: list, error: listError } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-          if (listError) break;
-          for (const u of list?.users ?? []) {
-            usersById.set(u.id, { email: u.email ?? null, lastSignInAt: u.last_sign_in_at ?? null });
-          }
-          if (!list?.users?.length || list.users.length < 200) break;
+    try {
+      for (let page = 1; page <= 10; page++) {
+        const { data: list, error: listError } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+        if (listError) {
+          console.warn(JSON.stringify({ event: "access_directory_auth_users_unavailable", message: listError.message }));
+          break;
         }
-      } catch (adminAuthErr) {
-        console.warn("Could not fetch user emails from admin.auth.admin.listUsers", adminAuthErr);
+        for (const authUser of list?.users ?? []) {
+          usersById.set(authUser.id, {
+            email: authUser.email ?? null,
+            lastSignInAt: authUser.last_sign_in_at ?? null
+          });
+        }
+        if (!list?.users?.length || list.users.length < 200) break;
       }
+    } catch (error) {
+      console.warn("Could not fetch user emails from admin.auth.admin.listUsers", error);
     }
 
-    // Garante que o usuário corrente esteja catalogado
-    if (user.id && !usersById.has(user.id)) {
+    if (!usersById.has(user.id)) {
       usersById.set(user.id, { email: user.email ?? null, lastSignInAt: user.last_sign_in_at ?? null });
     }
 
-    const orgName = new Map((orgsRes.data ?? []).map((o: any) => [o.id, o.display_name]));
-    const projectName = new Map((projectsRes.data ?? []).map((p: any) => [p.id, p.name]));
+    const orgName = new Map((orgsRes.data ?? []).map((org: any) => [org.id, org.display_name]));
 
     const groupBy = <T extends Record<string, any>>(rows: T[] | null | undefined, key: string) => {
       const map = new Map<string, T[]>();
       for (const row of rows ?? []) {
-        const k = String(row[key]);
-        const arr = map.get(k) ?? [];
-        arr.push(row);
-        map.set(k, arr);
+        const groupKey = String(row[key]);
+        const group = map.get(groupKey) ?? [];
+        group.push(row);
+        map.set(groupKey, group);
       }
       return map;
     };
@@ -105,52 +142,53 @@ export async function GET(request: Request) {
       id: org.id,
       slug: org.slug,
       displayName: org.display_name,
-      members: (membersByOrg.get(org.id) ?? []).map((m: any) => ({
-        userId: m.user_id,
-        email: usersById.get(m.user_id)?.email ?? null,
-        role: m.role,
-        customTitle: m.custom_title ?? null,
-        lastSignInAt: usersById.get(m.user_id)?.lastSignInAt ?? null,
-        memberSince: m.created_at
+      members: (membersByOrg.get(org.id) ?? []).map((member: any) => ({
+        userId: member.user_id,
+        email: usersById.get(member.user_id)?.email ?? null,
+        role: member.role,
+        customTitle: member.custom_title ?? null,
+        lastSignInAt: usersById.get(member.user_id)?.lastSignInAt ?? null,
+        memberSince: member.created_at
       })),
-      invitations: (invitesByOrg.get(org.id) ?? []).map((i: any) => ({
-        email: i.email,
-        role: i.role,
-        status: i.status,
-        invitedUserId: i.invited_user_id,
-        invitedAt: i.created_at
+      invitations: (invitesByOrg.get(org.id) ?? []).map((invite: any) => ({
+        email: invite.email,
+        role: invite.role,
+        status: invite.status,
+        invitedUserId: invite.invited_user_id,
+        invitedAt: invite.created_at
       }))
     }));
 
-    const projects = (projectsRes.data ?? []).map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      projectKey: p.project_key,
-      status: p.status,
-      managingOrganizationId: p.managing_organization_id,
-      clientOrganizationId: p.client_organization_id ?? null,
-      clientDisplayName: p.client_display_name,
-      memberGrants: (userGrantsByProject.get(p.id) ?? []).map((g: any) => ({
-        userId: g.user_id,
-        email: usersById.get(g.user_id)?.email ?? null,
-        accessLevel: g.access_level,
-        grantedAt: g.created_at
+    const projects = (projectsRes.data ?? []).map((project: any) => ({
+      id: project.id,
+      name: project.name,
+      projectKey: project.project_key,
+      status: project.status,
+      managingOrganizationId: project.managing_organization_id,
+      clientOrganizationId: project.client_organization_id ?? null,
+      clientDisplayName: project.client_display_name,
+      memberGrants: (userGrantsByProject.get(project.id) ?? []).map((grant: any) => ({
+        userId: grant.user_id,
+        email: usersById.get(grant.user_id)?.email ?? null,
+        accessLevel: grant.access_level,
+        grantedAt: grant.created_at
       })),
-      organizationGrants: (orgGrantsByProject.get(p.id) ?? []).map((g: any) => ({
-        organizationId: g.client_organization_id,
-        organizationName: orgName.get(g.client_organization_id) ?? null,
-        accessLevel: g.access_level,
-        grantedAt: g.created_at
+      organizationGrants: (orgGrantsByProject.get(project.id) ?? []).map((grant: any) => ({
+        organizationId: grant.client_organization_id,
+        organizationName: orgName.get(grant.client_organization_id) ?? null,
+        accessLevel: grant.access_level,
+        grantedAt: grant.created_at
       }))
     }));
 
-    return NextResponse.json({ organizations, projects, adminMode: Boolean(admin) }, {
-      status: 200, headers: { "Cache-Control": "private, no-store" }
+    return NextResponse.json({ organizations, projects, adminMode: true }, {
+      status: 200,
+      headers: { "Cache-Control": "private, no-store" }
     });
-  } catch (err: any) {
-    console.error("Critical error in /api/access-directory:", err);
+  } catch (error: any) {
+    console.error("Critical error in /api/access-directory:", error);
     return NextResponse.json(
-      { error: "access_directory_error", message: err?.message || "Erro interno ao processar diretório de acessos." },
+      { error: "access_directory_error", message: error?.message || "Erro interno ao processar diretório de acessos." },
       { status: 500 }
     );
   }
