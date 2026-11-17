@@ -117,7 +117,10 @@ export default function OperationalWorkspace({
     const nextSection: NavSection = urlTab && validSections.includes(urlTab) ? urlTab : "workspace";
     setSection(nextSection);
     setActiveModule(getModuleForSection(nextSection));
-  }, [urlTab, organizationSlug]);
+    if (!urlTab) {
+      router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
+    }
+  }, [urlTab, organizationSlug, organizationId, router]);
 
   function navigateTo(nextSection: NavSection) {
     setSection(nextSection);
