@@ -161,7 +161,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const caseCode = typeof body.caseCode === "string" ? body.caseCode : "";
-    if (!/^(A1\\.[4-7]|A2\\.[1-5]|A2\\.W02)-/.test(caseCode)) {
+    if (!/^(A1\.[4-7]|A2\.[1-5]|A2\.W02)-/.test(caseCode)) {
       return NextResponse.json({ error: "invalid_validation_case" }, { status: 400 });
     }
 
