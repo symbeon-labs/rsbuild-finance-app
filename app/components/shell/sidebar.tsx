@@ -25,6 +25,8 @@ interface SidebarProps {
   canAccessSandbox?: boolean;
   /** Caixa de mensagens restrita a owner/admin/operator da RSBUILD. */
   canAccessLeadInbox?: boolean;
+  /** Restricts RSBUILD operators to explicitly granted project work. */
+  projectCollaboratorOnly?: boolean;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
