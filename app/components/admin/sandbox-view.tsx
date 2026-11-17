@@ -15,8 +15,14 @@ type SandboxData = {
   isSandbox: boolean;
 };
 
+type PortfolioTask = { id: string; title: string; acceptance_criteria: string; status: string; priority: string };
+type PortfolioSprint = { id: string; sprint_number: number; title: string; objective: string; completion_criteria: string; status: string; project_tasks: PortfolioTask[] };
+type PortfolioProject = { id: string; project_key: string; name: string; client_display_name: string; status: string; project_sprints: PortfolioSprint[] };
+
 export function SandboxView() {
   const [data, setData] = useState<SandboxData | null>(null);
+  const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [runningCase, setRunningCase] = useState<string | null>(null);
@@ -37,6 +43,10 @@ export function SandboxView() {
           throw new Error(json.error || json.message || `Erro ${res.status}`);
         }
         setData(json);
+        const portfolioResponse = await fetch("/api/projects", { cache: "no-store" });
+        const portfolioPayload = await portfolioResponse.json();
+        if (portfolioResponse.ok) setProjects(Array.isArray(portfolioPayload.projects) ? portfolioPayload.projects : []);
+        else setPortfolioError("Portfólio de sprints indisponível para esta sessão.");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Falha ao carregar sandbox.");
       } finally {
@@ -103,6 +113,47 @@ export function SandboxView() {
             Schema isolado
           </div>
         </div>
+      </div>
+
+      {/* Sprint portfolio integration */}
+      <div className="card cockpit-card" style={{ padding: "20px 24px", display: "grid", gap: 16, borderLeft: "4px solid #614943" }}>
+        <div>
+          <div className="eyebrow">CICLO 01 · PORTFÓLIO RSBUILD</div>
+          <h3 style={{ margin: "5px 0", fontSize: 18, color: "var(--ink)" }}>Sprint Validation Environment</h3>
+          <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>Validação vinculada às sprints e tarefas do portfólio. A execução usa apenas fixtures sintéticas isoladas; tarefas sem cenário automatizado permanecem sem homologação.</p>
+        </div>
+        {portfolioError && <p role="status" style={{ color: "#B7791F", fontSize: 12 }}>{portfolioError}</p>}
+        {projects.length === 0 && !portfolioError && <p style={{ color: "var(--muted)", fontSize: 12 }}>Nenhum projeto disponível no portfólio para esta sessão.</p>}
+        {projects.map(project => <div key={project.id} style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", borderBottom: "1px solid var(--line)", paddingBottom: 8 }}>
+            <strong style={{ color: "var(--ink)", fontSize: 14 }}>{project.name}</strong>
+            <span style={{ color: "var(--muted)", fontSize: 11 }}>{project.client_display_name} · {project.status}</span>
+          </div>
+          {project.project_sprints.map(sprint => {
+            const linkedCases = (data.validationCases || []).filter((item: any) => sprint.project_tasks.some(task => task.title.includes(item.task_code)));
+            const passed = linkedCases.filter((item: any) => (data.validationRuns || []).some((run: any) => run.case_code === item.case_code && run.status === "passed")).length;
+            return <div key={sprint.id} style={{ padding: "12px 14px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface-raised)", display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                <strong style={{ color: "var(--ink)", fontSize: 13 }}>Sprint {sprint.sprint_number} · {sprint.title}</strong>
+                <span style={{ fontSize: 10, color: sprint.status === "active" ? "#059669" : "var(--muted)", fontWeight: 700 }}>{sprint.status.toUpperCase()}</span>
+              </div>
+              <p style={{ margin: 0, fontSize: 11, color: "var(--muted)" }}>{sprint.objective}</p>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11, color: "var(--muted)" }}>
+                <span>{sprint.project_tasks.length} tarefas no portfólio</span>
+                <span>{linkedCases.length} cenários vinculados</span>
+                <span>{passed}/{linkedCases.length} cenários aprovados</span>
+              </div>
+              {sprint.project_tasks.map(task => {
+                const linked = (data.validationCases || []).filter((item: any) => task.title.includes(item.task_code));
+                const latest = linked.flatMap((item: any) => (data.validationRuns || []).filter((run: any) => run.case_code === item.case_code)).sort((a: any,b: any) => new Date(b.executed_at).getTime()-new Date(a.executed_at).getTime())[0];
+                return <div key={task.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", paddingTop: 6, borderTop: "1px solid var(--line)" }}>
+                  <span style={{ fontSize: 11, color: "var(--ink)" }}>{task.title}</span>
+                  <span style={{ fontSize: 10, color: latest?.status === "passed" ? "#059669" : latest?.status === "failed" ? "#DC2626" : "#B7791F", fontWeight: 700 }}>{latest ? latest.status.toUpperCase() : linked.length ? "NÃO EXECUTADO" : "SEM CENÁRIO"}</span>
+                </div>;
+              })}
+            </div>;
+          })}
+        </div>)}
       </div>
 
       {/* Stats */}
