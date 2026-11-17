@@ -118,14 +118,16 @@ export function LeadInboxView() {
   };
 
   const assignLead = async (assignedTo: string) => {
-    if (!selected || !assignedTo) return;
+    if (!selected) return;
     setSaving(true); setError("");
     try {
       await postAction({ action: "assign", requestId: selected.id, assignedTo });
-      setAssignments((current) => [...current.filter((item) => item.request_id !== selected.id), {
-        request_id: selected.id, assigned_to: assignedTo, assigned_by: currentUserId,
-        updated_at: new Date().toISOString()
-      }]);
+      setAssignments((current) => assignedTo
+        ? [...current.filter((item) => item.request_id !== selected.id), {
+            request_id: selected.id, assigned_to: assignedTo, assigned_by: currentUserId,
+            updated_at: new Date().toISOString()
+          }]
+        : current.filter((item) => item.request_id !== selected.id));
     } catch (err) { setError(err instanceof Error ? err.message : "Falha ao atribuir responsável."); }
     finally { setSaving(false); }
   };
