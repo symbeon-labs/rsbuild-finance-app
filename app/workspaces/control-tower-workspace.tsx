@@ -25,6 +25,7 @@ import { AgentsGovernanceView } from "@/app/components/admin/agents-governance-v
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { LeadInboxView } from "@/app/components/admin/lead-inbox-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
+import { HoldingWorkspaceManagementView, type HoldingWorkspaceOrganization } from "@/app/components/executive/holding-workspace-management-view";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 
 type ControlTowerWorkspaceProps = {
@@ -32,6 +33,8 @@ type ControlTowerWorkspaceProps = {
   organizationSlug: OrganizationId;
   organizationName: string;
   availableOrganizationSlugs: string[];
+  availableOrganizations: HoldingWorkspaceOrganization[];
+  availableSandboxOrganizations: HoldingWorkspaceOrganization[];
   membershipRole: string;
   userEmail: string;
   isDeveloperAuthorized?: boolean;
@@ -46,6 +49,8 @@ export default function ControlTowerWorkspace({
   organizationSlug,
   organizationName,
   availableOrganizationSlugs,
+  availableOrganizations,
+  availableSandboxOrganizations,
   membershipRole,
   userEmail,
   isDeveloperAuthorized = false,
@@ -63,7 +68,7 @@ export default function ControlTowerWorkspace({
 
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
+    urlTab && ["workspace", "visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -268,6 +273,13 @@ export default function ControlTowerWorkspace({
               {notice}
               <button onClick={() => setNotice("")}>×</button>
             </div>
+          )}
+          {section === "workspace" && (
+            <HoldingWorkspaceManagementView
+              organizations={availableOrganizations}
+              sandboxOrganizations={availableSandboxOrganizations}
+              currentOrganizationId={organizationId}
+            />
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
           {section === "mensagens" && <LeadInboxView />}
