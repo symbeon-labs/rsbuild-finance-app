@@ -140,6 +140,18 @@ export default async function Home({ searchParams }: Props) {
 
   const organizationSlug = selected.slug as OrganizationId;
   const isRsbuild = organizationSlug === "rsbuild";
+
+  // Sandbox access is based on explicit sandbox membership, not merely the
+  // RSBUILD organization role. Owners/admins retain the existing global access.
+  let canAccessSandbox = isRsbuild && ["owner", "admin"].includes(selectedMembership?.role ?? "");
+  if (isRsbuild && selectedMembership?.role === "operator") {
+    const { data: sandboxMemberships, error: sandboxMembershipError } = await supabase
+      .from("sandbox_organization_memberships")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .limit(100);
+    canAccessSandbox = !sandboxMembershipError && Boolean(sandboxMemberships?.length);
+  }
   const workspaceProps = {
     organizationId: selected.id,
     organizationSlug,
@@ -154,7 +166,7 @@ export default async function Home({ searchParams }: Props) {
   };
   return (
     <Suspense fallback={null}>
-      {isRsbuild ? <ControlTowerWorkspace {...workspaceProps} /> : <OperationalWorkspace {...workspaceProps} />}
+      {isRsbuild ? <ControlTowerWorkspace {...workspaceProps} canAccessSandbox={canAccessSandbox} /> : <OperationalWorkspace {...workspaceProps} />}
     </Suspense>
   );
 }
