@@ -139,6 +139,47 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     brandColor: "#2563EB",
     brandColorHover: "#1D4ED8",
     brandColorSoft: "#EFF6FF"
+  },
+  {
+    id: "hub_acai_qa",
+    name: "Hub Açaí QA",
+    tagline: "Ambiente de Testes — Distribuição",
+    logoUrl: "",
+    badge: "🧪 QA",
+    defaultModule: "logistics",
+    enabledModules: {
+      finance: false,
+      reconciliation: true,
+      logistics: true,
+      audit: true
+    },
+    hasExecutiveTower: true,
+    description: "Ambiente de teste isolado para validação de funcionalidades do Hub Açaí. Dados sintéticos para testes de pedidos, logística e reconciliação.",
+    // Cor QA: amarelo ouro
+    brandColor: "#F59E0B",
+    brandColorHover: "#D97706",
+    brandColorSoft: "#FFFBEB",
+    contacts: HUB_ACAI_CONTACTS
+  },
+  {
+    id: "mundo_sabor_qa",
+    name: "Mundo do Sabor QA",
+    tagline: "Ambiente de Testes — Indústria",
+    logoUrl: "",
+    badge: "🧪 QA",
+    defaultModule: "finance",
+    enabledModules: {
+      finance: true,
+      reconciliation: true,
+      logistics: true,
+      audit: true
+    },
+    hasExecutiveTower: true,
+    description: "Ambiente de teste isolado para validação de funcionalidades do Mundo do Sabor. Dados sintéticos para testes financeiros, conciliação e auditoria.",
+    // Cor QA: verde esmeralda
+    brandColor: "#10B981",
+    brandColorHover: "#059669",
+    brandColorSoft: "#ECFDF5"
   }
 ];
 
