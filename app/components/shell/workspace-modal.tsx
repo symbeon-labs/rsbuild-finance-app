@@ -17,7 +17,7 @@ interface WorkspaceModalProps {
   companyLogoUrl: string;
   currentOrgId?: OrganizationId;
   currentOrgRealId?: string;
-  availableOrganizationSlugs: string[];
+  availableOrganizationSlugs?: string[];
   isSuperAdmin: boolean;
   enabledModules: EnabledModulesConfig;
   brandColor?: string;
@@ -32,7 +32,7 @@ export function WorkspaceModal({
   companyLogoUrl,
   currentOrgId = "rsbuild",
   currentOrgRealId,
-  availableOrganizationSlugs,
+  availableOrganizationSlugs = [],
   isSuperAdmin,
   enabledModules,
   brandColor = "#B5583C",
