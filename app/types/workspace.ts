@@ -184,6 +184,7 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
 ];
 
 export type NavSection =
+  | "workspace"
   | "visao-geral"
   | "torre-controle"
   | "movimentacoes"
@@ -208,6 +209,8 @@ export interface NavItem {
 }
 
 export const ALL_NAV_ITEMS: NavItem[] = [
+  // Entrada do workspace operacional
+  { id: "workspace", label: "Workspace", icon: "control-tower", module: "all" },
   // Visão Global
   { id: "visao-geral", label: "Visão Geral", icon: "analytics", module: "all" },
   { id: "projetos", label: "Projetos e Sprints", icon: "document", module: "all" },
