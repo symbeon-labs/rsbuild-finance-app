@@ -1,0 +1,52 @@
+name: Sandbox Access Verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/api/sandbox/**"
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - ".github/workflows/sandbox-access.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sandbox-access-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database:
+    name: Sandbox migrations and RLS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.0.0
+      - name: Start isolated Supabase
+        run: supabase start -x studio,edge-runtime,logflare,vector
+      - name: Apply every migration from an empty database
+        run: supabase db reset
+      - name: Run pgTAP database tests
+        run: supabase test db
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup
+
+  application:
+    name: Sandbox API validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+      - name: Unit and integration tests
+        run: npm test
+      - name: TypeScript validation
+        run: npm run typecheck
