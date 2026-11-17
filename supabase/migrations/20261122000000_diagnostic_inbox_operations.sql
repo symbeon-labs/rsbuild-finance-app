@@ -31,7 +31,7 @@ alter table public.diagnostic_request_assignments enable row level security;
 alter table public.diagnostic_request_notes enable row level security;
 
 grant select, insert, update on public.diagnostic_request_reads to authenticated;
-grant select, insert, update on public.diagnostic_request_assignments to authenticated;
+grant select, insert, update, delete on public.diagnostic_request_assignments to authenticated;
 grant select, insert on public.diagnostic_request_notes to authenticated;
 
 -- A read receipt belongs to the signed-in RSBUILD member only.
@@ -166,3 +166,17 @@ with check (
 revoke all on public.diagnostic_request_reads from anon;
 revoke all on public.diagnostic_request_assignments from anon;
 revoke all on public.diagnostic_request_notes from anon;
+
+create policy "RSBUILD members remove diagnostic assignments"
+on public.diagnostic_request_assignments
+for delete to authenticated
+using (
+  exists (
+    select 1
+    from public.organization_memberships m
+    join public.organizations o on o.id = m.organization_id
+    where o.slug = 'rsbuild'
+      and m.user_id = (select auth.uid())
+      and m.role::text in ('owner', 'admin', 'operator')
+  )
+);
