@@ -100,7 +100,7 @@ export function LeadInboxView() {
       </div>
 
       {error && <div className="notice" role="alert">{error}</div>}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(260px, .85fr) minmax(0, 1.5fr)", gap: 16, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 16, alignItems: "start" }}>
         <div className="panel" style={{ padding: 16 }}>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
             {([["all", "Todas"], ["new", "Novas"], ["in_review", "Em análise"]] as const).map(([key, label]) => (
@@ -131,7 +131,7 @@ export function LeadInboxView() {
               <div><div className="eyebrow">SOLICITAÇÃO RECEBIDA</div><h2 style={{ margin: "7px 0 4px" }}>{selected.company_name}</h2><div style={{ color: "var(--rsbuild-muted, #8b8580)", fontSize: 12 }}>{dateTime(selected.created_at)}</div></div>
               <span className="status-badge">{STATUS_LABELS[selected.status] ?? selected.status}</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 18 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 18 }}>
               <div>{field("CONTATO", selected.contact_name)}{field("CARGO / FUNÇÃO", selected.contact_role)}{field("E-MAIL", selected.contact_email)}{field("TELEFONE", selected.contact_phone)}</div>
               <div>{field("SEGMENTO", selected.segment)}{field("UNIDADES / EMPRESAS", selected.units_count)}{field("ERP", selected.erp_used)}{field("OUTROS SISTEMAS", selected.systems_used)}</div>
             </div>
