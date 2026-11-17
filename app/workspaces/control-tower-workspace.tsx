@@ -23,6 +23,7 @@ import { OrganizationBrandBanner } from "@/app/components/admin/organization-bra
 import { SandboxView } from "@/app/components/admin/sandbox-view";
 import { AgentsGovernanceView } from "@/app/components/admin/agents-governance-view";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
+import { LeadInboxView } from "@/app/components/admin/lead-inbox-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 
@@ -58,7 +59,7 @@ export default function ControlTowerWorkspace({
 
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
-    urlTab && ["visao-geral", "projetos", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
+    urlTab && ["visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
       ? urlTab
       : "visao-geral";
 
@@ -264,6 +265,7 @@ export default function ControlTowerWorkspace({
             </div>
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
+          {section === "mensagens" && <LeadInboxView />}
           {section === "visao-geral" && (
             <HoldingOverviewCockpit
               onNavigateToTab={navigateTo}
