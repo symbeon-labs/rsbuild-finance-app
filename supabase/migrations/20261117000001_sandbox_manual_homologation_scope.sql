@@ -9,7 +9,7 @@ create or replace function public.sandbox_record_validation_run(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = public, sandbox
+set search_path = pg_catalog
 as $$
 declare
   v_uid uuid := auth.uid();
@@ -18,8 +18,27 @@ declare
   v_mundo_org_id uuid;
   v_run_id uuid;
 begin
-  if v_uid is null or p_status not in ('passed', 'failed', 'blocked') then
+  if v_uid is null
+     or p_status is null
+     or p_status not in ('passed', 'failed', 'blocked') then
     raise exception 'invalid_validation_request';
+  end if;
+
+  if p_summary is null
+     or length(btrim(p_summary)) < 5
+     or length(p_summary) > 1000 then
+    raise exception 'invalid_validation_summary';
+  end if;
+
+  if jsonb_typeof(p_result) is distinct from 'object'
+     or p_result ->> 'mode' is distinct from 'manual'
+     or p_result ->> 'target_environment' is distinct from 'mundo-sabor-sandbox'
+     or p_result ->> 'homologation_version' is distinct from 'mundo-sabor-manual-v1'
+     or jsonb_typeof(p_result -> 'observed') is distinct from 'string'
+     or jsonb_typeof(p_result -> 'evidenceRef') is distinct from 'string'
+     or length(p_result ->> 'observed') > 2000
+     or length(p_result ->> 'evidenceRef') > 500 then
+    raise exception 'invalid_manual_validation_payload';
   end if;
 
   select id into v_mundo_org_id
@@ -70,8 +89,8 @@ begin
     v_case.id,
     v_case.case_code,
     p_status,
-    left(coalesce(p_summary, ''), 1000),
-    coalesce(p_result, '{}'::jsonb),
+    btrim(p_summary),
+    p_result,
     v_uid,
     v_email
   ) returning id into v_run_id;
