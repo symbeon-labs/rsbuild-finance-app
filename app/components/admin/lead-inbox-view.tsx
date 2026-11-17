@@ -152,7 +152,7 @@ export function LeadInboxView() {
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
         <div>
           <div className="eyebrow">RELACIONAMENTO · ENTRADA INSTITUCIONAL</div>
-          <h1 style={{ margin: "8px 0 6px" }}>Caixa de mensagens</h1>
+          <h1 style={{ margin: "8px 0 6px" }}>Central de Leads</h1>
           <p style={{ margin: 0, color: "var(--rsbuild-muted, #8b8580)" }}>Solicitações recebidas pelo formulário institucional.</p>
         </div>
         <button className="secondary-button" type="button" onClick={() => void loadRequests()} disabled={loading || saving}>
