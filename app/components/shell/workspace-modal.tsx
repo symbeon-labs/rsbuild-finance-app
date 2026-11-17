@@ -7,6 +7,8 @@ const ORG_ID_BY_SLUG: Record<string, string> = {
   rsbuild: "0269fe05-0990-41a8-a28c-2919691eaf0f",
   hub_acai: "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76",
   mundo_sabor: "c5356414-adce-4fdc-941b-15cfe26b991e",
+  hub_acai_qa: "550e8400-e29b-41d4-a716-446655440001",
+  mundo_sabor_qa: "550e8400-e29b-41d4-a716-446655440002",
 };
 
 interface WorkspaceModalProps {
@@ -355,7 +357,7 @@ export function WorkspaceModal({
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "var(--green-text, #10B981)" }} />
                         <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-brand)", letterSpacing: "0.5px" }}>
-                          NÚCLEO: {selectedOrg === "rsbuild" ? "RSBUILD INOVAÇÃO" : selectedOrg === "hub_acai" ? "HUB AÇAÍ SALVADOR" : "MUNDO DO SABOR"}
+                          NÚCLEO: {currentPreset?.name ?? selectedOrg}
                         </span>
                         <span style={{ fontSize: "9px", background: "rgba(16, 185, 129, 0.12)", color: "var(--green-text, #10B981)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
                           Blindado
@@ -402,7 +404,7 @@ export function WorkspaceModal({
                                   {preset.badge}
                                 </span>
                                 <strong style={{ fontSize: "11px", color: "var(--ink)", display: "block", marginTop: "2px" }}>
-                                  {preset.id === "rsbuild" ? "RSBUILD" : preset.id === "hub_acai" ? "Hub Açaí" : "Mundo do Sabor"}
+                                  {preset.name}
                                 </strong>
                               </button>
                             );
