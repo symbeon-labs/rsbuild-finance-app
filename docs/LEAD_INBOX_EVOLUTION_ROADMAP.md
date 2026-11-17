@@ -1,40 +1,57 @@
-# Caixa de Mensagens RSBUILD — evolução incremental
+# Caixa de Mensagens RSBUILD — Handoff v1
 
-## Objetivo da primeira entrega
+## Objetivo
 
-Receber no Workspace RSBUILD as solicitações já persistidas pelo formulário da página institucional. A primeira versão é uma caixa de entrada de leitura: listar, filtrar, abrir os dados enviados e iniciar contato por e-mail ou WhatsApp.
+Conectar o formulário institucional já existente ao Workspace RSBUILD e oferecer o mínimo necessário para conduzir cada solicitação recebida sem implantar um CRM completo.
 
-## Escopo entregue neste PR
+## Escopo desta entrega
 
-- Reutilizar `diagnostic_requests` e o endpoint público de gravação já existentes.
-- Ler os registros por endpoint autenticado, usando a sessão Supabase e as políticas RLS existentes.
-- Exibir a caixa somente no Workspace RSBUILD para membros owner, admin ou operator.
-- Apresentar contagem total, novas e em análise.
-- Abrir o conteúdo integral da solicitação e facilitar o primeiro retorno.
-- Não alterar status nem introduzir um CRM completo nesta etapa.
+1. **Recebimento e visualização:** reutilizar a tabela `diagnostic_requests` e o endpoint público existente.
+2. **Marcação de leitura:** recibo individual por usuário; abrir uma solicitação marca como lida para aquele membro, sem alterar a leitura dos demais.
+3. **Status do atendimento:** `new`, `in_review`, `qualified`, `disqualified`, `converted`. A alteração permanece restrita a owner/admin conforme a política de atualização já existente na tabela de solicitações.
+4. **Responsável:** atribuir a solicitação a um membro owner/admin/operator da organização RSBUILD.
+5. **Notas internas:** registrar observações privadas, vinculadas ao autor e à solicitação. Notas são append-only na interface desta versão.
+6. **Contato:** atalhos para e-mail e WhatsApp.
 
-## Evoluções possíveis — fora do escopo atual
+## Modelo de dados incremental
 
-| Etapa | Evolução | Valor operacional |
-|---|---|---|
-| 1 | Marcar como lida / não lida | Distinguir mensagens visualizadas das pendentes |
-| 2 | Atualizar status (nova, em análise, qualificada, encerrada) | Dar visibilidade ao andamento sem criar um CRM complexo |
-| 3 | Responsável interno | Definir quem conduz cada contato |
-| 4 | Notas privadas | Registrar contexto interno sem expor ao solicitante |
-| 5 | Linha do tempo de atividades | Preservar histórico de contatos e mudanças |
-| 6 | Notificações | Avisar a equipe quando chegar uma nova solicitação |
-| 7 | Atualização em tempo real | Reduzir a necessidade de atualização manual |
-| 8 | Priorização assistida | Sugerir urgência e área de interesse com critérios transparentes e revisão humana |
-| 9 | Métricas de conversão | Medir volume, tempo de resposta e evolução das oportunidades |
+- `diagnostic_request_reads`: estado de leitura por usuário e solicitação.
+- `diagnostic_request_assignments`: responsável atual, autor da atribuição e data de atualização.
+- `diagnostic_request_notes`: notas internas com autoria e data de criação.
+- A tabela `diagnostic_requests` permanece como registro original do formulário; não duplicamos os dados de contato.
 
-## Limites de segurança
+## Segurança e permissões
 
-- O formulário público pode enviar dados, mas nunca consultar a caixa.
-- A leitura interna usa sessão autenticada e RLS; não expor chave privilegiada no navegador.
-- O acesso permanece restrito à organização RSBUILD e aos papéis autorizados.
-- Notas, atribuições e eventos futuros devem manter segregação de acesso e trilha de auditoria.
-- Coletar e reter somente os dados necessários para responder à solicitação, observando o aviso de privacidade e a LGPD.
+- O formulário público continua podendo somente criar solicitações pelo endpoint server-side já existente.
+- A leitura da caixa exige sessão autenticada e políticas RLS.
+- Leituras são individuais por usuário.
+- Atribuições e notas são compartilhadas somente com owner/admin/operator da RSBUILD.
+- Alteração de status é limitada a owner/admin, respeitando a política existente.
+- A lista de membros é resolvida no servidor; a chave privilegiada nunca é enviada ao navegador.
+- Notas não são expostas ao solicitante do formulário.
+- Dados pessoais e observações internas devem ser tratados conforme a finalidade de atendimento e o aviso de privacidade aplicável.
 
-## Critério para evoluir
+## Fora do escopo — evoluções futuras
 
-Só implementar cada etapa quando houver necessidade operacional observável. A prioridade imediata é validar o ciclo completo: formulário enviado → registro persistido → mensagem visível no Workspace → equipe consegue responder.
+| Evolução | Quando considerar |
+|---|---|
+| Histórico unificado de eventos | Quando for necessário auditar cada transição e contato numa timeline |
+| Notificações por e-mail/in-app | Quando o volume justificar alertas proativos |
+| Atualização em tempo real | Quando a atualização manual deixar de ser suficiente |
+| Priorização assistida por IA | Quando houver critérios claros e volume histórico para avaliação |
+| Métricas de atendimento e conversão | Quando houver dados suficientes para medir tempo de resposta e conversão |
+| Modelos de resposta e templates | Quando a equipe identificar perguntas recorrentes |
+
+## Critério de aceite
+
+- Um envio do formulário aparece na caixa interna.
+- Cada membro vê seu próprio estado de leitura.
+- Owner/admin consegue alterar status.
+- Membros autorizados conseguem atribuir o atendimento a um colega da RSBUILD.
+- Membros autorizados conseguem registrar e consultar notas internas.
+- Usuários externos e membros de outros tenants não conseguem ler solicitações, notas, atribuições ou recibos.
+- O fluxo público de envio continua inalterado.
+
+## Handoff
+
+Este PR deve ser revisado como unidade mínima de atendimento institucional. A implantação deve ocorrer somente após revisão do diff, aplicação da migration e validação do ciclo completo em preview.
