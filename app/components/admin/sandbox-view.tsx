@@ -135,12 +135,7 @@ export function SandboxView() {
               (item: any) => item.project_key === project.project_key && item.sprint_number === sprint.sprint_number
             );
             const matchesTaskCode = (title: string, code: string) =>
-              title === code ||
-              title.startsWith(`${code} `) ||
-              title.startsWith(`${code}·`) ||
-              title.includes(` ${code} `) ||
-              title.includes(` ${code}·`) ||
-              title.includes(` ${code}:`);
+              title.split(/[\\s·:—-]+/).includes(code);
             const linkedCases = sprintCases.filter((item: any) =>
               sprint.project_tasks.some(task => matchesTaskCode(task.title, item.task_code))
             );
