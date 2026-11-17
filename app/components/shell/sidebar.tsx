@@ -168,6 +168,8 @@ export function Sidebar({
       <nav className="nav-list" aria-label="Navegação principal">
         {ALL_NAV_ITEMS.filter((item) => {
           if (item.id === "projetos" && !showProjectPortfolio) return false;
+          // Caixa de entrada comercial: disponível somente no workspace institucional RSBUILD.
+          if (item.id === "mensagens" && currentOrgId !== "rsbuild") return false;
           // Diretório central de acessos é exclusivo do workspace RSBUILD
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
           // Governança de agentes de IA é exclusiva do plano de controle RSBUILD
