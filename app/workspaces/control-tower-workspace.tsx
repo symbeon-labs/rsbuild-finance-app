@@ -31,6 +31,7 @@ type ControlTowerWorkspaceProps = {
   organizationId: string;
   organizationSlug: OrganizationId;
   organizationName: string;
+  availableOrganizationSlugs: string[];
   membershipRole: string;
   userEmail: string;
   isDeveloperAuthorized?: boolean;
@@ -44,6 +45,7 @@ export default function ControlTowerWorkspace({
   organizationId,
   organizationSlug,
   organizationName,
+  availableOrganizationSlugs,
   membershipRole,
   userEmail,
   isDeveloperAuthorized = false,
@@ -296,6 +298,7 @@ export default function ControlTowerWorkspace({
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
         currentOrgRealId={organizationId}
+        availableOrganizationSlugs={availableOrganizationSlugs}
         isSuperAdmin={isSuperAdmin}
         enabledModules={enabledModules}
         brandColor={brandColor}
