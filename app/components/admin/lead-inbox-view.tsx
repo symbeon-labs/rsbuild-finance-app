@@ -145,7 +145,7 @@ export function LeadInboxView() {
             {field("O QUE MOTIVOU O CONTATO", selected.intention)}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", borderTop: "1px solid var(--rsbuild-border, #ded8cf)", paddingTop: 16, marginTop: 8 }}>
               <a className="secondary-button" href={`mailto:${encodeURIComponent(selected.contact_email)}?subject=${encodeURIComponent("Retorno sobre sua solicitação | RSBUILD")}`}>Responder por e-mail</a>
-              {selected.contact_phone && <a className="secondary-button" href={`https://wa.me/${selected.contact_phone.replace(/\\D/g, "")}`} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}
+              {selected.contact_phone && <a className="secondary-button" href={`https://wa.me/${selected.contact_phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}
             </div>
           </>}
         </article>
