@@ -34,6 +34,7 @@ type ControlTowerWorkspaceProps = {
   membershipRole: string;
   userEmail: string;
   isDeveloperAuthorized?: boolean;
+  canAccessSandbox?: boolean;
   userFullName?: string;
   userRoleTitle?: string;
   preferredTheme?: "sand" | "dark";
@@ -46,6 +47,7 @@ export default function ControlTowerWorkspace({
   membershipRole,
   userEmail,
   isDeveloperAuthorized = false,
+  canAccessSandbox = false,
   userFullName,
   userRoleTitle,
   preferredTheme
@@ -55,7 +57,7 @@ export default function ControlTowerWorkspace({
   const [, startSignOutTransition] = useTransition();
 
   const canViewProjectPortfolio = true;
-  const canAccessSandbox = ["owner", "admin"].includes(membershipRole);
+
 
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
