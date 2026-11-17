@@ -155,6 +155,7 @@ export type NavSection =
   | "auditoria"
   | "acessos"
   | "projetos"
+  | "mensagens"
   | "agentes"
   | "sandbox";
 
@@ -169,6 +170,7 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   // Visão Global
   { id: "visao-geral", label: "Visão Geral", icon: "analytics", module: "all" },
   { id: "projetos", label: "Projetos e Sprints", icon: "document", module: "all" },
+  { id: "mensagens", label: "Caixa de mensagens", icon: "document", module: "all" },
 
   // 1. Módulo Financeiro
   { id: "movimentacoes", label: "Movimentações", icon: "finance", module: "finance" },

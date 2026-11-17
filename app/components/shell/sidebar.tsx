@@ -23,6 +23,8 @@ interface SidebarProps {
   showProjectPortfolio?: boolean;
   /** Sandbox é restrito a admins/owners da RSBUILD */
   canAccessSandbox?: boolean;
+  /** Caixa de mensagens restrita a owner/admin/operator da RSBUILD. */
+  canAccessLeadInbox?: boolean;
   onSelectModule: (module: ModuleType) => void;
   onSelectSection: (section: NavSection) => void;
   onOpenConfig: () => void;
@@ -81,6 +83,7 @@ export function Sidebar({
   currentOrgId = "rsbuild",
   showProjectPortfolio = false,
   canAccessSandbox = false,
+  canAccessLeadInbox = false,
   onSelectModule,
   onSelectSection,
   onOpenConfig,
@@ -168,6 +171,8 @@ export function Sidebar({
       <nav className="nav-list" aria-label="Navegação principal">
         {ALL_NAV_ITEMS.filter((item) => {
           if (item.id === "projetos" && !showProjectPortfolio) return false;
+          // Caixa de entrada comercial: disponível somente no workspace institucional RSBUILD.
+          if (item.id === "mensagens" && (currentOrgId !== "rsbuild" || !canAccessLeadInbox)) return false;
           // Diretório central de acessos é exclusivo do workspace RSBUILD
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
           // Governança de agentes de IA é exclusiva do plano de controle RSBUILD
@@ -181,6 +186,22 @@ export function Sidebar({
           // Verifica se o módulo do item está contratado
           if (!enabledModules[item.module]) return false;
           return item.module === activeModule;
+        }).sort((a, b) => {
+          const coreOrder: NavSection[] = [
+            "visao-geral",
+            "projetos",
+            "sandbox",
+            "agentes",
+            "auditoria",
+            "acessos",
+            "mensagens"
+          ];
+          const aIndex = coreOrder.indexOf(a.id);
+          const bIndex = coreOrder.indexOf(b.id);
+          if (aIndex === -1 && bIndex === -1) return 0;
+          if (aIndex === -1) return 1;
+          if (bIndex === -1) return -1;
+          return aIndex - bIndex;
         }).map((item) => (
           <button
             key={item.id}
@@ -188,7 +209,7 @@ export function Sidebar({
             onClick={() => onSelectSection(item.id)}
           >
             <span className="nav-icon"><RsbuildIcon name={item.icon} size={19} tone={section === item.id ? "accent" : "secondary"} /></span>
-            <span style={{ flex: 1 }}>{item.label}</span>
+            <span style={{ flex: 1 }}>{item.id === "mensagens" ? "Central de Leads" : item.label}</span>
           </button>
         ))}
       </nav>
