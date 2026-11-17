@@ -129,7 +129,7 @@ export function LeadInboxView() {
           {selected && <>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 22 }}>
               <div><div className="eyebrow">SOLICITAÇÃO RECEBIDA</div><h2 style={{ margin: "7px 0 4px" }}>{selected.company_name}</h2><div style={{ color: "var(--rsbuild-muted, #8b8580)", fontSize: 12 }}>{dateTime(selected.created_at)}</div></div>
-              <span className="status-badge">{STATUS_LABELS[selected.status] ?? selected.status}</span>
+              <span style={{ alignSelf: "flex-start", padding: "6px 10px", borderRadius: 999, background: "var(--rsbuild-panel-soft, rgba(181,88,60,.08))", color: "var(--rsbuild-terracotta, #B5583C)", fontSize: 11, fontWeight: 700 }}>{STATUS_LABELS[selected.status] ?? selected.status}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 18 }}>
               <div>{field("CONTATO", selected.contact_name)}{field("CARGO / FUNÇÃO", selected.contact_role)}{field("E-MAIL", selected.contact_email)}{field("TELEFONE", selected.contact_phone)}</div>
