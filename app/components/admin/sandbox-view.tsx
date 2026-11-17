@@ -26,15 +26,6 @@ const statusColor: Record<string, string> = {
   passed: "#059669", failed: "#DC2626", blocked: "#B7791F", pending: "var(--muted)"
 };
 
-function taskHomologationStatus(linkedCases: any[], latestByCase: Map<string, any>): string | null {
-  if (!linkedCases.length) return null;
-  const statuses = linkedCases.map((item) => latestByCase.get(item.case_code)?.status ?? "pending");
-  if (statuses.includes("failed")) return "failed";
-  if (statuses.includes("blocked")) return "blocked";
-  if (statuses.every((status) => status === "passed")) return "passed";
-  return "pending";
-}
-
 export function SandboxView() {
   const [data, setData] = useState<SandboxData | null>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
@@ -230,23 +221,41 @@ export function SandboxView() {
       </div>}
 
       {section === "sprints" && <div className="card cockpit-card" style={{ ...panel, display: "grid", gap: 14 }}>
-        <div><div className="eyebrow">RASTREABILIDADE DE ENTREGA</div><h3 style={{ margin: "4px 0", color: "var(--ink)" }}>Homologação vinculada às sprints</h3><p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>As sprints continuam organizando o desenvolvimento. A homologação mantém seu próprio estado e não altera o status das tarefas.</p></div>
+        <div><div className="eyebrow">RASTREABILIDADE DE ENTREGA</div><h3 style={{ margin: "4px 0", color: "var(--ink)" }}>Desenvolvimento e homologação por sprint</h3><p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>A visão consolida os casos de homologação por sprint. O vínculo individual entre cada caso e cada tarefa ainda precisa de reconciliação funcional; por isso, os estados não são atribuídos automaticamente às tarefas.</p></div>
         {portfolioError && <p role="status" style={{ color: "#B7791F" }}>{portfolioError}</p>}
         {projects.map(project => project.project_sprints.map(sprint => {
           const sprintCases = cases.filter((item: any) => item.sprint_number === sprint.sprint_number);
-          const passed = sprintCases.filter((item: any) => latestByCase.get(item.case_code)?.status === "passed").length;
+          const sprintRuns = sprintCases.map((item: any) => latestByCase.get(item.case_code));
+          const passed = sprintRuns.filter((run: any) => run?.status === "passed").length;
+          const failed = sprintRuns.filter((run: any) => run?.status === "failed").length;
+          const blocked = sprintRuns.filter((run: any) => run?.status === "blocked").length;
+          const pending = sprintCases.length - passed - failed - blocked;
           return <div key={sprint.id} style={{ ...panel, display: "grid", gap: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><strong style={{ color: "var(--ink)" }}>Sprint {sprint.sprint_number} · {sprint.title}</strong><span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>DESENVOLVIMENTO: {sprint.status.toUpperCase()}</span></div>
             <p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>{sprint.objective}</p>
-            <div style={{ fontSize: 11, color: "var(--muted)" }}>{passed}/{sprintCases.length} casos aprovados na homologação · {sprint.project_tasks.length} tarefas na sprint</div>
-            {sprint.project_tasks.map(task => {
-              const linked = sprintCases.filter((item: any) => item.task_code && task.title.includes(item.task_code));
-              const homologationStatus = taskHomologationStatus(linked, latestByCase);
-              return <div key={task.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 7, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11 }}>
+              <span style={{ color: statusColor.passed }}>{passed} aprovados</span>
+              <span style={{ color: statusColor.failed }}>{failed} reprovados</span>
+              <span style={{ color: statusColor.blocked }}>{blocked} bloqueados</span>
+              <span style={{ color: statusColor.pending }}>{pending} pendentes</span>
+            </div>
+            <div style={{ display: "grid", gap: 7, borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+              <strong style={{ color: "var(--ink)", fontSize: 11 }}>Tarefas de desenvolvimento ({sprint.project_tasks.length})</strong>
+              {sprint.project_tasks.map(task => <div key={task.id} style={{ borderTop: "1px solid var(--line)", paddingTop: 7 }}>
                 <span style={{ color: "var(--ink)", fontSize: 11 }}>{task.title}</span>
-                <strong style={{ color: statusColor[homologationStatus ?? "pending"], fontSize: 10 }}>{homologationStatus ? statusLabel[homologationStatus] : "SEM CASO VINCULADO"}</strong>
-              </div>;
-            })}
+              </div>)}
+            </div>
+            <div style={{ display: "grid", gap: 6, borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+              <strong style={{ color: "var(--ink)", fontSize: 11 }}>Casos de homologação ({sprintCases.length})</strong>
+              {sprintCases.map((item: any) => {
+                const latest = latestByCase.get(item.case_code);
+                const status = latest?.status ?? "pending";
+                return <div key={item.case_code} style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ color: "var(--muted)", fontSize: 11 }}>{item.case_code} · {item.title}</span>
+                  <strong style={{ color: statusColor[status], fontSize: 10 }}>{statusLabel[status]}</strong>
+                </div>;
+              })}
+            </div>
           </div>;
         }))}
         {projects.length === 0 && !portfolioError && <p style={{ color: "var(--muted)" }}>Projeto Mundo do Sabor não encontrado no portfólio desta sessão.</p>}
