@@ -75,6 +75,21 @@ type OperationalWorkspaceProps = {
   preferredTheme?: "sand" | "dark";
 };
 
+const OPERATIONAL_NAV_SECTIONS: NavSection[] = [
+  "workspace", "visao-geral", "torre-controle", "auditoria", "movimentacoes",
+  "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"
+];
+
+function getOperationalModuleForSection(section: NavSection, organizationSlug: OrganizationId): ModuleType {
+  if (section === "baixas" || section === "conciliacao") return "reconciliation";
+  if (section === "pedidos-ha" || section === "canhotos") return "logistics";
+  if (section === "torre-controle" || section === "auditoria") return "audit";
+  if (section === "workspace") {
+    return ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.defaultModule ?? "finance";
+  }
+  return "finance";
+}
+
 export default function OperationalWorkspace({
   organizationId,
   organizationSlug,
@@ -94,29 +109,18 @@ export default function OperationalWorkspace({
   const canViewProjectPortfolio = false;
 
   const urlTab = searchParams.get("tab") as NavSection | null;
-  const validSections: NavSection[] = [
-    "workspace", "visao-geral", "torre-controle", "auditoria", "movimentacoes",
-    "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"
-  ];
-  const initialSection: NavSection = urlTab && validSections.includes(urlTab) ? urlTab : "workspace";
-
-  function getModuleForSection(s: NavSection): ModuleType {
-    if (s === "baixas" || s === "conciliacao") return "reconciliation";
-    if (s === "pedidos-ha" || s === "canhotos") return "logistics";
-    if (s === "torre-controle" || s === "auditoria") return "audit";
-    if (s === "workspace") {
-      return ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.defaultModule ?? "finance";
-    }
-    return "finance";
-  }
+  const initialSection: NavSection = urlTab && OPERATIONAL_NAV_SECTIONS.includes(urlTab) ? urlTab : "workspace";
 
   const [section, setSection] = useState<NavSection>(initialSection);
-  const [activeModule, setActiveModule] = useState<ModuleType>(getModuleForSection(initialSection));
+  const [activeModule, setActiveModule] = useState<ModuleType>(
+    getOperationalModuleForSection(initialSection, organizationSlug)
+  );
 
   useEffect(() => {
-    const nextSection: NavSection = urlTab && validSections.includes(urlTab) ? urlTab : "workspace";
+    const nextSection: NavSection =
+      urlTab && OPERATIONAL_NAV_SECTIONS.includes(urlTab) ? urlTab : "workspace";
     setSection(nextSection);
-    setActiveModule(getModuleForSection(nextSection));
+    setActiveModule(getOperationalModuleForSection(nextSection, organizationSlug));
     if (!urlTab) {
       router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
     }
@@ -125,7 +129,7 @@ export default function OperationalWorkspace({
   function navigateTo(nextSection: NavSection) {
     setSection(nextSection);
     if (nextSection !== "visao-geral") {
-      setActiveModule(getModuleForSection(nextSection));
+      setActiveModule(getOperationalModuleForSection(nextSection, organizationSlug));
     }
     router.push(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${nextSection}`, { scroll: false });
   }
@@ -871,7 +875,7 @@ export default function OperationalWorkspace({
           </button>
         </div>
         <div className="content">
-          <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
+          {section !== "workspace" && <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />}
           {section === "workspace" ? (
             <section aria-labelledby="workspace-launcher-title" style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(24px, 5vw, 56px) 0" }}>
               <div style={{ marginBottom: 30 }}>
@@ -904,10 +908,8 @@ export default function OperationalWorkspace({
                         padding: "22px", textAlign: "left", cursor: "pointer",
                         color: "var(--ink)", background: "var(--surface)",
                         border: "1px solid var(--line)", borderRadius: 12,
-                        transition: "border-color 160ms ease, transform 160ms ease"
+                        transition: "none"
                       }}
-                      onMouseEnter={(event) => { event.currentTarget.style.borderColor = "var(--rsbuild-terracotta, #B5583C)"; }}
-                      onMouseLeave={(event) => { event.currentTarget.style.borderColor = "var(--line)"; }}
                     >
                       <span style={{ display: "grid", placeItems: "center", flex: "0 0 46px", width: 46, height: 46, borderRadius: 10, color: "var(--rsbuild-terracotta, #B5583C)", background: "var(--surface-raised, rgba(255,255,255,0.04))" }}>
                         <RsbuildIcon name={module.icon} size={25} tone="accent" />
