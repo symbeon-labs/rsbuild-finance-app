@@ -40,6 +40,7 @@ export async function GET() {
   if ("response" in context) return context.response;
   const { supabase, user, role, organizationId } = context;
 
+  const admin = createAdminClient();
   const [requestsResult, readsResult, assignmentsResult, notesResult, membersResult] = await Promise.all([
     supabase.from("diagnostic_requests").select([
       "id", "company_name", "segment", "contact_name", "contact_role",
@@ -51,7 +52,7 @@ export async function GET() {
     supabase.from("diagnostic_request_reads").select("request_id, read_at").eq("user_id", user.id),
     supabase.from("diagnostic_request_assignments").select("request_id, assigned_to, assigned_by, updated_at"),
     supabase.from("diagnostic_request_notes").select("id, request_id, author_id, body, created_at").order("created_at", { ascending: true }).limit(500),
-    supabase.from("organization_memberships").select("user_id, role, custom_title").eq("organization_id", organizationId)
+    admin.from("organization_memberships").select("user_id, role, custom_title").eq("organization_id", organizationId)
   ]);
 
   const failed = [requestsResult, readsResult, assignmentsResult, notesResult, membersResult].find((result) => result.error);
@@ -61,7 +62,6 @@ export async function GET() {
   }
 
   // Resolve member labels server-side; the service key never leaves this route.
-  const admin = createAdminClient();
   const members = await Promise.all((membersResult.data ?? [])
     .filter((member) => TEAM_ROLES.includes(member.role))
     .map(async (member) => {
