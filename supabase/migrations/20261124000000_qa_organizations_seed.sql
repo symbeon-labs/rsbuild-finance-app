@@ -1,6 +1,20 @@
 -- Dados sintéticos para organizações QA (Hub Açaí QA e Mundo do Sabor QA)
 -- Cenários de teste para validação de funcionalidades
 
+-- Provision QA tenants before inserting tenant-scoped fixtures.
+-- Stable IDs/slugs are shared with the application workspace presets.
+INSERT INTO public.organizations (id, legal_name, display_name, slug, status, created_at, updated_at)
+VALUES
+  ('550e8400-e29b-41d4-a716-446655440001', 'Hub Açaí QA', 'Hub Açaí QA', 'hub_acai_qa', 'active', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440002', 'Mundo do Sabor QA', 'Mundo do Sabor QA', 'mundo_sabor_qa', 'active', NOW(), NOW())
+ON CONFLICT (id) DO UPDATE
+SET legal_name = EXCLUDED.legal_name,
+    display_name = EXCLUDED.display_name,
+    slug = EXCLUDED.slug,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+
 -- Hub Açaí QA: Contas bancárias
 INSERT INTO financial_accounts (id, organization_id, name, institution, account_type, currency, is_active, created_at, updated_at) VALUES
   ('550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440001', 'Itaú Hub Açaí QA', 'Itaú', 'checking', 'BRL', true, NOW(), NOW()),
