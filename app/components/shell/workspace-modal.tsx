@@ -2,6 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
+import { RsbuildIcon, type RsbuildIconName } from "@/app/components/rsbuild-icons";
+
+const MODULE_ICONS: Record<keyof EnabledModulesConfig, RsbuildIconName> = { finance: "finance", reconciliation: "reconciliation", logistics: "logistics", audit: "guardian" };
+function getPresetIdentity(preset: OrganizationPreset) {
+  if (preset.id.endsWith("_qa")) return { label: "AMBIENTE QA", icon: "approval" as RsbuildIconName };
+  if (preset.id === "rsbuild") return { label: "HOLDING", icon: "control-tower" as RsbuildIconName };
+  if (preset.id === "hub_acai") return { label: "DISTRIBUIÇÃO", icon: "logistics" as RsbuildIconName };
+  return { label: "INDÚSTRIA", icon: "finance" as RsbuildIconName };
+}
 
 const ORG_ID_BY_SLUG: Record<string, string> = {
   rsbuild: "0269fe05-0990-41a8-a28c-2919691eaf0f",
@@ -98,7 +107,7 @@ export function WorkspaceModal({
             onClick={onClose}
             aria-label="Fechar"
           >
-            ✕
+            <RsbuildIcon name="approval" size={17} tone="muted" />
           </button>
         </div>
 
@@ -128,7 +137,7 @@ export function WorkspaceModal({
               cursor: "pointer"
             }}
           >
-            🎨 Identidade & Marca
+            <RsbuildIcon name="users" size={15} tone={activeTab === "marca" ? "accent" : "secondary"} /> Identidade & Marca
           </button>
           <button
             type="button"
@@ -145,7 +154,7 @@ export function WorkspaceModal({
               cursor: "pointer"
             }}
           >
-            📦 Módulos & Núcleos
+            <RsbuildIcon name="control-tower" size={15} tone={activeTab === "modulos" ? "accent" : "secondary"} /> Módulos & Núcleos
           </button>
           {currentPreset?.contacts && currentPreset.contacts.length > 0 && (
             <button
@@ -163,7 +172,7 @@ export function WorkspaceModal({
                 cursor: "pointer"
               }}
             >
-              📇 Diretório Base ({currentPreset.contacts.length})
+              <RsbuildIcon name="document" size={15} tone={activeTab === "dados" ? "accent" : "secondary"} /> Diretório Base ({currentPreset.contacts.length})
             </button>
           )}
         </div>
@@ -252,7 +261,7 @@ export function WorkspaceModal({
                       onClick={() => logoInputRef.current?.click()}
                       style={{ fontSize: "11px", padding: "6px 12px" }}
                     >
-                      <span>📷</span> Fazer upload de imagem
+                      <RsbuildIcon name="import" size={15} tone="secondary" /> Fazer upload de imagem
                     </button>
                     {companyLogoUrl && (
                       <button
@@ -362,7 +371,7 @@ export function WorkspaceModal({
                           NÚCLEO: {currentPreset?.name ?? selectedOrg}
                         </span>
                         <span style={{ fontSize: "9px", background: "rgba(16, 185, 129, 0.12)", color: "var(--green-text, #10B981)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                          Blindado
+                          <RsbuildIcon name="guardian" size={11} tone="secondary" /> Acesso restrito
                         </span>
                       </div>
                       <button
@@ -379,13 +388,13 @@ export function WorkspaceModal({
                           fontWeight: 600
                         }}
                       >
-                        {showTenantSelector ? "▲ Ocultar" : "⚙️ Alternar Núcleo"}
+                        {showTenantSelector ? "Ocultar ambientes" : "Trocar ambiente"}
                       </button>
                     </div>
 
                     {showTenantSelector && (
                       <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px dashed var(--line)" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "8px" }}>
                           {ORGANIZATION_PRESETS.filter((preset) => availableOrganizationSlugs.includes(preset.id)).map((preset) => {
                             const isCurrent = selectedOrg === preset.id;
                             return (
@@ -403,11 +412,15 @@ export function WorkspaceModal({
                                 }}
                               >
                                 <span style={{ fontSize: "9px", fontWeight: 700, color: "var(--rsbuild-terracotta)", display: "block" }}>
-                                  {preset.badge}
+                                  <RsbuildIcon name={getPresetIdentity(preset).icon} size={15} tone="accent" />
+                                  {getPresetIdentity(preset).label}
                                 </span>
-                                <strong style={{ fontSize: "11px", color: "var(--ink)", display: "block", marginTop: "2px" }}>
+                                <strong style={{ fontSize: "11px", color: "var(--ink)", display: "block", marginTop: "5px" }}>
                                   {preset.name}
                                 </strong>
+                                <span style={{ display: "block", fontSize: "9px", color: "var(--muted)", marginTop: "3px", lineHeight: 1.35 }}>
+                                  {preset.tagline}
+                                </span>
                               </button>
                             );
                           })}
@@ -424,7 +437,7 @@ export function WorkspaceModal({
                       PRODUTOS MODULARES CONTRATADOS
                     </span>
                     <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                      🔒 Alçada Symbeon
+                      <RsbuildIcon name="guardian" size={12} tone="accent" /> Governança Symbeon
                     </span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
@@ -450,9 +463,9 @@ export function WorkspaceModal({
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}>💼 1. Finanças & Caixa</strong>
+                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="finance" size={18} tone="accent" /> 1. Finanças & Caixa</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.finance ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.finance ? "● ATIVO" : "○ INATIVO"}
+                            {activeModulesState.finance ? "ATIVO" : "INATIVO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -483,9 +496,9 @@ export function WorkspaceModal({
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}>⚡ 2. Reconciliação ERP</strong>
+                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="reconciliation" size={18} tone="accent" /> 2. Reconciliação ERP</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.reconciliation ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.reconciliation ? "● ATIVO" : "○ INATIVO"}
+                            {activeModulesState.reconciliation ? "ATIVO" : "INATIVO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -516,9 +529,9 @@ export function WorkspaceModal({
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}>🚚 3. Logística & Expedição</strong>
+                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="logistics" size={18} tone="accent" /> 3. Logística & Expedição</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.logistics ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.logistics ? "● ATIVO" : "○ INATIVO"}
+                            {activeModulesState.logistics ? "ATIVO" : "INATIVO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -549,9 +562,9 @@ export function WorkspaceModal({
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}>🛡️ 4. Auditoria & RS Guardião</strong>
+                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="guardian" size={18} tone="accent" /> 4. Auditoria & RS Guardião</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.audit ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.audit ? "● ATIVO" : "○ INATIVO"}
+                            {activeModulesState.audit ? "ATIVO" : "INATIVO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -629,7 +642,7 @@ export function WorkspaceModal({
             }}
           >
             <div style={{ fontSize: "11px", color: "var(--muted)" }}>
-              Workspace: <strong style={{ color: "var(--ink)" }}>{selectedOrg.toUpperCase()}</strong>
+              Ambiente selecionado: <strong style={{ color: "var(--ink)" }}>{currentPreset?.name ?? selectedOrg}</strong>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
               <button
