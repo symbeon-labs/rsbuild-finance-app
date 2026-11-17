@@ -141,22 +141,53 @@ export default async function Home({ searchParams }: Props) {
   const organizationSlug = selected.slug as OrganizationId;
   const isRsbuild = organizationSlug === "rsbuild";
 
-  // Sandbox access is based on explicit sandbox membership, not merely the
-  // RSBUILD organization role. Owners/admins retain the existing global access.
-  let canAccessSandbox = isRsbuild && ["owner", "admin"].includes(selectedMembership?.role ?? "");
-  if (isRsbuild && selectedMembership?.role === "operator") {
+  // Ambientes de homologação são concedidos por membership próprio.
+  // Sandbox também exige vínculo explícito para operadores; owners/admins da holding
+  // mantêm a visão global já prevista.
+  let canAccessSandbox = false;
+  let availableSandboxOrganizations: Array<{ id: string; slug: string; name: string }> = [];
+  if (isRsbuild && ["owner", "admin"].includes(selectedMembership?.role ?? "")) {
+    canAccessSandbox = true;
+    const { data: sandboxOrgs } = await supabase
+      .from("sandbox_organizations")
+      .select("id, slug, display_name")
+      .eq("status", "active")
+      .order("display_name");
+    availableSandboxOrganizations = (sandboxOrgs ?? []).map((org) => ({
+      id: org.id, slug: org.slug, name: org.display_name
+    }));
+  } else if (isRsbuild && selectedMembership?.role === "operator") {
     const { data: sandboxMemberships, error: sandboxMembershipError } = await supabase
       .from("sandbox_organization_memberships")
       .select("organization_id")
       .eq("user_id", user.id)
       .limit(100);
-    canAccessSandbox = !sandboxMembershipError && Boolean(sandboxMemberships?.length);
+    const sandboxIds = (sandboxMemberships ?? []).map((membership) => membership.organization_id);
+    if (!sandboxMembershipError && sandboxIds.length) {
+      const { data: sandboxOrgs } = await supabase
+        .from("sandbox_organizations")
+        .select("id, slug, display_name")
+        .in("id", sandboxIds)
+        .eq("status", "active")
+        .order("display_name");
+      availableSandboxOrganizations = (sandboxOrgs ?? []).map((org) => ({
+        id: org.id, slug: org.slug, name: org.display_name
+      }));
+      canAccessSandbox = availableSandboxOrganizations.length > 0;
+    }
   }
+  const availableOrganizations = organizations.map((organization) => ({
+    id: organization.id,
+    slug: organization.slug,
+    name: organization.display_name
+  }));
   const workspaceProps = {
     organizationId: selected.id,
     organizationSlug,
     organizationName: selected.display_name,
     availableOrganizationSlugs: organizations.map((organization) => organization.slug),
+    availableOrganizations,
+    availableSandboxOrganizations,
     membershipRole: selectedMembership?.role ?? "viewer",
     userEmail: user.email ?? "",
     userFullName:
