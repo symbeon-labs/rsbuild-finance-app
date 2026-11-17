@@ -106,7 +106,7 @@ export function WorkspaceModal({
             onClick={onClose}
             aria-label="Fechar"
           >
-            <RsbuildIcon name="approval" size={17} tone="muted" />
+            ×
           </button>
         </div>
 
@@ -580,7 +580,7 @@ export function WorkspaceModal({
               <div style={{ padding: "8px 10px", borderRadius: "8px", background: "var(--bg)", border: "1px dashed var(--line)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                   <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-brand)" }}>
-                    📇 CLIENTES E FORNECEDORES HOMOLOGADOS ({currentPreset.contacts.length})
+                    <RsbuildIcon name="users" size={14} tone="secondary" /> CLIENTES E FORNECEDORES HOMOLOGADOS ({currentPreset.contacts.length})
                   </span>
                   <span style={{ fontSize: "9px", color: "var(--green-text, #10B981)", fontWeight: 700 }}>
                     ● Integrado
