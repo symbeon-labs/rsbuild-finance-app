@@ -57,6 +57,8 @@ export function HoldingWorkspaceManagementView({
   const router = useRouter();
   const official = organizations.filter((item) => !item.slug.endsWith("_qa") && item.slug !== "rsbuild");
   const qa = organizations.filter((item) => item.slug.endsWith("_qa"));
+  // A tela /api/sandbox nesta versão homologa especificamente Mundo do Sabor.
+  const integratedSandboxOrganizations = sandboxOrganizations.filter((item) => item.slug === "mundo-sabor-sandbox");
   const internal = organizations.find((item) => item.slug === "rsbuild");
 
   function openOrganization(id: string) {
@@ -128,16 +130,16 @@ export function HoldingWorkspaceManagementView({
           <h2 style={{ color: "var(--ink)", margin: "4px 0", fontSize: 18 }}>Sandbox</h2>
           <p style={{ color: "var(--muted)", margin: 0, fontSize: 12 }}>Ambientes isolados para experimentação, cenários sintéticos e registro de evidências.</p>
         </div>
-        {sandboxOrganizations.length ? (
+        {integratedSandboxOrganizations.length ? (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 12 }}>
-              {sandboxOrganizations.map((item) => <EnvironmentCard key={item.id} item={item} kind="sandbox" onOpen={openSandbox} />)}
+              {integratedSandboxOrganizations.map((item) => <EnvironmentCard key={item.id} item={item} kind="sandbox" onOpen={openSandbox} />)}
             </div>
             <p style={{ margin: 0, color: "var(--muted)", fontSize: 11 }}>
               A central de homologação abre os casos atualmente habilitados para Mundo do Sabor. Os demais sandboxes aparecem como ambientes concedidos, sem misturar seus dados.
             </p>
           </>
-        ) : <p style={{ color: "var(--muted)", fontSize: 12 }}>Nenhum ambiente Sandbox concedido a esta conta.</p>}
+        ) : <p style={{ color: "var(--muted)", fontSize: 12 }}>Nenhum ambiente Sandbox integrado e concedido a esta conta.</p>}
       </section>
     </section>
   );
