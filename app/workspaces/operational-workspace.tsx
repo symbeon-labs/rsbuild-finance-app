@@ -121,7 +121,7 @@ export default function OperationalWorkspace({
       urlTab && OPERATIONAL_NAV_SECTIONS.includes(urlTab) ? urlTab : "workspace";
     setSection(nextSection);
     setActiveModule(getOperationalModuleForSection(nextSection, organizationSlug));
-    if (!urlTab) {
+    if (!urlTab || !OPERATIONAL_NAV_SECTIONS.includes(urlTab)) {
       router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
     }
   }, [urlTab, organizationSlug, organizationId, router]);
