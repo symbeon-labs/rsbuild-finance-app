@@ -249,9 +249,9 @@ export default function ControlTowerWorkspace({
         />
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
-          <div className="inline-note" role="note">
+          {!isProjectCollaborator && <div className="inline-note" role="note">
             Central de Controle RSBUILD — visão governamental e observabilidade de empresas integradas.
-          </div>
+          </div>}
           {!isProjectCollaborator && <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button
               className="secondary-button"
@@ -306,7 +306,7 @@ export default function ControlTowerWorkspace({
         onSave={handleSaveCompanyConfig}
         onUploadLogo={handleLogoUploadFile}
       />
-      <DevZonePanel
+      {!isProjectCollaborator && <DevZonePanel
         developerAccessAllowed={isDeveloperAuthorized}
         currentOrgId={organizationId}
         currentOrgSlug={organizationSlug}
@@ -324,7 +324,7 @@ export default function ControlTowerWorkspace({
         onInjectProofs={() => {}}
         onInjectOrders={() => {}}
         onResetAllData={() => {}}
-      />
+      />}
       <ProductTourModal
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
