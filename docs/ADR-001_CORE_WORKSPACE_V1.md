@@ -2,6 +2,7 @@
 
 - **Status:** Aprovada — baseline de navegação congelada
 - **Data:** 2026-11-17
+- **Atualizado:** 2026-11-22 — baseline mantida
 - **Escopo:** Navegação principal do Workspace RSBUILD
 
 ## Decisão
