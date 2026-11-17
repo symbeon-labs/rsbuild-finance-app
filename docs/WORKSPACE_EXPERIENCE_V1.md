@@ -12,8 +12,8 @@ The existing application shell and sidebar remain the persistent navigation syst
 
 ### Navigation model
 
-1. **Launcher** — discover available modules, search and resume recent work.
-2. **Persistent sidebar** — switch between enabled modules and global destinations without returning to the launcher.
+1. **Launcher** — discover available modules and search destinations.
+2. **Persistent sidebar** — switch between enabled modules and return to the launcher.
 3. **Module content** — existing dashboards, views and operational workflows remain the source of truth.
 
 The launcher must not replace or duplicate the sidebar's navigation responsibilities.
@@ -31,73 +31,74 @@ The operational shell is composed in `app/enterprise-workspace.tsx` and already 
 
 Implementation must reuse these structures. Do not create a second navigation registry or bypass server-side authorization.
 
-## 3. Existing RSBUILD icon system — reuse, do not replace
+## 3. RSBUILD icon system — minimal and precise
 
-The icon library already exists and is integrated in the sidebar and product tour:
+Reuse the existing icon library; do not introduce another icon package or create an icon for every feature.
 
 - Component: `app/components/rsbuild-icons/index.tsx`
 - Usage guide: `app/components/rsbuild-icons/README.md`
 - Semantic color tokens: `app/globals.css` (`--rs-icon-primary`, `--rs-icon-secondary`, `--rs-icon-accent`, `--rs-icon-muted`)
 
-The library contains 17 original 24×24 monoline SVG icons. Paths use `currentColor`; theme colors are token-driven.
+The current source lists **16 original 24×24 monoline SVG icons**. Paths use `currentColor`; theme colors are token-driven.
 
-### Current icon inventory
+Inventory: `control-tower`, `finance`, `reconciliation`, `logistics`, `guardian`, `audit`, `approval`, `document`, `import`, `matching`, `alert`, `analytics`, `users`, `integration`, `delivery`, `search`.
 
-`control-tower`, `finance`, `reconciliation`, `logistics`, `guardian`, `audit`, `approval`, `document`, `import`, `matching`, `alert`, `analytics`, `users`, `integration`, `delivery`, `search`.
+### Rules
 
-### Initial launcher mapping
+1. One icon per top-level module card; secondary functions do not get their own card icon.
+2. Reuse an existing icon only when its meaning is accurate.
+3. Create a new glyph only when a real, enabled top-level module has no suitable existing icon.
+4. Do not add icons speculatively for hypothetical modules.
+5. No emoji, decorative icon clutter, or mixed icon libraries.
+6. Preserve the existing 24×24 grid, monoline stroke, `currentColor` and semantic theme tokens for any justified addition.
 
-Use the existing icon names where the semantic meaning is appropriate:
+### Initial semantic mapping
 
-| Module / destination | Existing icon | Notes |
+| Module / destination | Existing icon | Guidance |
 |---|---|---|
-| Financeiro | `finance` | Direct semantic match |
-| Reconciliação | `reconciliation` | Direct semantic match |
-| Logística / Expedição | `logistics` or `delivery` | Choose based on module scope |
-| Auditoria / Governança | `guardian` or `audit` | Governance vs. audit view |
-| Projetos e Sprints | `document` | Suitable until a dedicated project glyph exists |
-| Sandbox / Homologação | `approval` | Validation state; do not imply production approval |
-| Agentes & IA / Integrações | `integration` | Existing integration glyph |
-| Pessoas / Acessos | `users` | Direct semantic match |
-| Indicadores / Analytics | `analytics` | Direct semantic match |
-| Busca | `search` | Existing search glyph |
+| Financeiro | `finance` | Direct match |
+| Reconciliação | `reconciliation` | Direct match |
+| Logística / Expedição | `logistics` | Prefer one glyph for the parent module |
+| Governança / Auditoria | `guardian` or `audit` | Choose one based on the actual module identity |
+| Projetos / Documentos | `document` | Reuse only if this is a real top-level module |
+| Homologação | `approval` | Use only if exposed as a top-level destination |
+| Integrações | `integration` | Direct match |
+| Pessoas / Acessos | `users` | Direct match |
+| Indicadores | `analytics` | Direct match |
 
-### Icon gaps to evaluate during implementation
-
-The current icon set does not have dedicated glyphs for production, inventory, purchasing, stores/branches, e-commerce, maintenance, marketing or HR administration. Do not use emoji or silently map unrelated icons. Extend `RsbuildIconName` and `ICON_PATHS` with original monoline SVG paths in the same 24×24 grid, rounded stroke treatment, no embedded colors and semantic `currentColor` tokens. Document each addition in the existing README. Add only glyphs required by modules that actually exist in the current product configuration.
+This is a semantic guide, not a requirement to display every item. The launcher must reflect only the modules already enabled and authorized in the current product configuration. If a module lacks an accurate icon, use a restrained text-first card temporarily rather than a misleading glyph. Review actual enabled modules before adding any new icon.
 
 ## 4. Launcher experience
 
 ### Header
 - Organization name and concise workspace context.
 - Search field for modules and destinations.
-- Optional keyboard shortcut hint only if the shortcut is actually implemented.
 - Do not add a second global command system if an existing one is discovered.
+- Do not display a keyboard shortcut hint unless the shortcut is implemented.
 
 ### Module cards
 Each card contains:
-- RSBUILD icon from `RsbuildIcon`
-- concise module name
-- one-line description
-- optional small status/attention indicator only when backed by real state
-- clear interactive and focus-visible states
+- One RSBUILD icon where an accurate existing glyph is available.
+- Concise module name.
+- One-line description.
+- Optional status indicator only when backed by real state.
+- Clear interactive and focus-visible states.
 
-Cards are generated from the existing organization preset / enabled-module configuration and permission-resolved navigation data. They must not expose unavailable modules or imply capabilities that are not enabled.
+Cards are generated from existing organization presets / enabled-module configuration and permission-resolved navigation data. They must not expose unavailable modules or imply capabilities that are not enabled.
 
 ### Supporting elements
-- Recent destinations only if reliable recent-navigation state is available; otherwise defer.
-- Notifications only when backed by an existing notification source; do not invent counts.
-- Search results must obey the same authorization filtering as the cards and sidebar.
+- Keep the first version focused: no recent activity feed or notification counters unless reliable existing data sources already support them.
+- Search results obey the same authorization filtering as cards and sidebar.
 
 ## 5. Visual direction
 
-- Preserve RSBUILD brand identity and the existing `sand` / `dark` theme support.
-- Dark workspace direction: deep graphite/navy surfaces with restrained violet/cyan accents, not a separate unthemed palette.
+- Preserve RSBUILD brand identity and existing `sand` / `dark` theme support.
+- Dark workspace direction: deep graphite/navy surfaces with restrained violet/cyan accents.
 - Reuse current CSS variables and semantic icon tones; avoid hard-coded per-icon colors.
 - Cards: subtle border, restrained surface elevation, quiet hover/focus feedback and short transitions.
-- Avoid excessive glow, gradients, badges or decorative status LEDs.
-- Typography and spacing must remain consistent with the current shell.
-- Responsive: desktop grid; tablet and mobile progressively reduce columns; sidebar may use its existing responsive/collapsed behavior and must remain reachable after module entry.
+- Avoid excessive glow, gradients, badges, decorative status LEDs and unnecessary visual elements.
+- Typography and spacing remain consistent with the current shell.
+- Responsive: desktop grid; tablet and mobile progressively reduce columns; existing sidebar responsive behavior remains available after module entry.
 - Respect `prefers-reduced-motion`.
 
 ## 6. Interaction and routing
@@ -107,28 +108,28 @@ Cards are generated from the existing organization preset / enabled-module confi
 - Add a launcher destination to the existing navigation model so users can return to it from the persistent sidebar.
 - Preserve existing deep links and `?organizationId=...` / `?tab=...` behavior.
 - Browser back/forward must keep URL and selected content coherent.
-- Do not change organization selection, authentication, membership checks, RBAC, or tenant isolation as part of this UI change.
+- Do not change organization selection, authentication, membership checks, RBAC, or tenant isolation.
 - Do not treat a hidden card as an authorization boundary; server/API checks remain authoritative.
-- Existing first-run product tour must not automatically obscure the launcher. Keep the guide available through its existing explicit entry point or define a non-blocking, deliberate trigger.
+- Existing first-run product tour must not automatically obscure the launcher.
 
 ## 7. Implementation sequence
 
 1. Add a typed launcher destination to the existing navigation model and route synchronization.
 2. Build a focused launcher component using existing presets, enabled modules, permission-filtered destinations and `RsbuildIcon`.
 3. Integrate it into the existing workspace shell without removing or replacing the sidebar.
-4. Add only the icon glyphs needed by enabled modules in scope; update the icon README.
-5. Add component/logic tests for module visibility, routing, search filtering and keyboard/focus behavior.
+4. Use the existing icon vocabulary; add a glyph only if implementation reveals a genuine top-level module gap.
+5. Add tests for module visibility, routing, search filtering and keyboard/focus behavior.
 6. Validate desktop, tablet and mobile in both `sand` and `dark` themes.
-7. Run typecheck, test and production build; inspect the Vercel preview before merge.
+7. Run typecheck, tests and production build; inspect the Vercel preview before merge.
 
 ## 8. Acceptance criteria
 
-- [ ] Authenticated user lands on the launcher after the organization is resolved.
+- [ ] Authenticated user lands on the launcher after organization resolution.
 - [ ] Only modules enabled for the organization and available to the user are shown.
-- [ ] Cards use the existing RSBUILD geometric icon system; no emoji substitutes.
-- [ ] Missing icon glyphs are added consistently and documented, only where needed.
+- [ ] Cards use a small, semantically accurate subset of the RSBUILD icon system.
+- [ ] No emoji substitutes, duplicate icon packages or speculative icon additions.
 - [ ] Selecting a card opens the existing module, not a duplicate implementation.
-- [ ] Sidebar remains visible/reachable and supports module switching after entry.
+- [ ] Sidebar remains available and supports module switching after entry.
 - [ ] Launcher can be reopened from the sidebar.
 - [ ] Existing deep links, organization context and permission checks continue to work.
 - [ ] Search does not reveal inaccessible modules or sections.
@@ -142,11 +143,12 @@ Cards are generated from the existing organization preset / enabled-module confi
 - Changing Supabase schema, RLS, authentication, memberships or RBAC.
 - Replacing the existing sidebar or creating a parallel navigation framework.
 - Adding artificial metrics, fake notifications or unsupported module claims.
+- Creating a dedicated icon for every feature or hypothetical module.
 - Rebranding the application independently of the existing RSBUILD design system.
 
 ## 10. Known implementation risks
 
-- The current organization presets are the authoritative starting point for enabled modules, but some sidebar destinations are conditional on additional server-resolved permissions. Launcher visibility must use the same effective conditions.
-- The current app has both control-tower and operational workspace shells. Confirm whether the launcher should be shared by both before broadening integration; do not silently change the institutional RSBUILD workspace.
-- The current tour auto-opens on first use in the operational shell and can conflict with a new landing experience.
-- Icon names in the existing library are a deliberately small semantic vocabulary. Extend it instead of introducing a competing icon package.
+- Organization presets are the starting point for enabled modules, but some sidebar destinations are conditional on additional server-resolved permissions. Launcher visibility must use the same effective conditions.
+- The app has both control-tower and operational workspace shells. Confirm the intended scope before broadening integration; do not silently change the institutional RSBUILD workspace.
+- The current tour can conflict with a new landing experience; it must not automatically obscure the launcher.
+- Keep the implementation focused on the actual enabled modules, not a speculative future catalog.
