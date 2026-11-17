@@ -113,7 +113,9 @@ export async function GET(request: Request) {
     ]);
     const caseCodes = (casesRes.data ?? []).map((item) => item.case_code);
     const runsRes = caseCodes.length
-      ? await supabase.from("sandbox_validation_runs").select("*").in("case_code", caseCodes).order("executed_at", { ascending: false }).limit(200)
+      ? access.isSandboxAdmin
+        ? await supabase.from("sandbox_validation_runs").select("*").in("case_code", caseCodes).order("executed_at", { ascending: false }).limit(200)
+        : await supabase.from("sandbox_validation_runs").select("*").in("case_code", caseCodes).eq("actor_id", user.id).order("executed_at", { ascending: false }).limit(200)
       : { data: [], error: null };
 
     const firstError = [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes, casesRes, runsRes]
