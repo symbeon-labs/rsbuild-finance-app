@@ -1,37 +1,86 @@
 # RSBUILD Workspace Experience v1.0
 
-Status: Draft — implementation kickoff  
+Status: Implementation-ready specification  
 Target: `main`  
 Branch: `feat/workspace-launcher-experience-v1`
 
 ## 1. Product decision
 
-Introduce a Workspace Launcher as the initial landing surface after authentication and organization resolution. It is a module-discovery and navigation surface, **not a dashboard**.
+Introduce a minimal **Workspace Launcher** as the landing surface for operational tenant workspaces. It is a module-selection surface, not a dashboard.
 
-The existing application shell and sidebar remain the persistent navigation system after a module is opened.
+The existing sidebar remains mounted and persistent after a module is opened. The Launcher complements the sidebar; it does not replace its module switcher or internal navigation.
 
 ### Navigation model
 
-1. **Launcher** — discover available modules and search destinations.
-2. **Persistent sidebar** — switch between enabled modules and return to the launcher.
-3. **Module content** — existing dashboards, views and operational workflows remain the source of truth.
+1. **Launcher (`workspace`)** — concise overview of the modules enabled for the current tenant and accessible to the current user.
+2. **Persistent sidebar** — existing module switcher and section navigation, plus a clear way back to the Launcher.
+3. **Module content** — existing dashboards and operational views remain unchanged.
 
-The launcher must not replace or duplicate the sidebar's navigation responsibilities.
+Important distinction: `visao-geral` is already an existing operational section. Do not reuse it as the Launcher identifier.
 
-## 2. Existing architecture to preserve
+## 2. Scope for this PR
 
-The current application resolves the authenticated user and organization in `app/page.tsx`, then renders either `ControlTowerWorkspace` or `OperationalWorkspace`.
+### Included
+- Operational tenant workspaces using `OperationalWorkspace`, initially Mundo do Sabor and Hub Açaí (including their configured QA tenants only if they are already supported by the current routing and preset logic).
+- A minimal Launcher surface with one card per enabled and accessible top-level module.
+- Return-to-launcher navigation in the existing sidebar.
+- Existing module switching and internal section navigation remain functional.
 
-The operational shell is composed in `app/enterprise-workspace.tsx` and already uses:
+### Explicitly excluded from this first implementation
+- Institutional RSBUILD `ControlTowerWorkspace`. It has a separate information architecture and must not be changed implicitly.
+- Rebuilding dashboards, module internals, organization selection or onboarding.
+- New modules, new permissions, backend schema changes, Supabase/RLS changes, or new icon packages.
+- Recent activity feeds, notification counters, command palette or other features not already backed by existing product capabilities.
+
+If later product direction requires a unified Launcher for the institutional control tower, handle it in a separate scoped change after its information architecture is reviewed.
+
+## 3. Existing architecture to preserve
+
+The application resolves authentication, membership and organization in `app/page.tsx`. It renders `ControlTowerWorkspace` for the institutional RSBUILD organization and `OperationalWorkspace` for operational tenants.
+
+The operational shell is `app/workspaces/operational-workspace.tsx` and already uses:
 - `Sidebar` from `app/components/shell/sidebar.tsx`
 - `Topbar` from `app/components/shell/topbar.tsx`
-- organization presets and enabled-module configuration from `app/types/workspace.ts`
+- `ORGANIZATION_PRESETS`, `EnabledModulesConfig`, `ModuleType` and `NavSection` from `app/types/workspace.ts`
 - URL synchronization through the `tab` query parameter
-- tenant-specific access checks and server-resolved sandbox permissions
+- tenant context and server-side membership resolution
 
-Implementation must reuse these structures. Do not create a second navigation registry or bypass server-side authorization.
+The sidebar already has:
+- a module switcher based on `enabledModules`
+- internal navigation filtered by module and contextual access props
+- existing icon usage via `RsbuildIcon`
 
-## 3. RSBUILD icon system — minimal and precise
+Implementation must extend these existing structures. Do not create a parallel module registry or duplicate the sidebar module-switching behavior.
+
+## 4. Navigation contract
+
+Add a distinct `workspace` value to `NavSection` and support it explicitly in the operational workspace URL parser and renderer.
+
+Required behavior:
+- When an operational tenant is opened without an explicit `tab`, show the Launcher.
+- When a valid existing `tab` is present, preserve the requested destination. Existing deep links must not be redirected to the Launcher.
+- `?tab=visao-geral` continues to open the existing overview/dashboard.
+- Selecting a Launcher card opens the existing default section for that module, using the current module-to-section mapping. Do not create duplicate module pages.
+- The sidebar receives a Launcher navigation item that calls the existing `onSelectSection` callback.
+- Browser back/forward and URL state remain synchronized.
+- Invalid or unauthorized tab values continue to fall back safely; do not weaken current access checks.
+
+The Launcher is a navigation state inside the existing operational shell, not a new authentication flow, organization route or independent app shell.
+
+## 5. Module visibility and access
+
+Build Launcher cards from the same effective module configuration used by the current sidebar:
+- `enabledModules` from the current organization preset / existing configuration.
+- Existing contextual visibility conditions already applied by the sidebar.
+- Existing server-resolved access props for restricted destinations where relevant.
+
+Show one card per top-level enabled module, not one card per internal section. Do not list internal pages such as imports, reports, settlements or delivery proofs as separate Launcher cards.
+
+The Launcher is a presentation layer, not an authorization boundary. Existing server/API authorization remains authoritative. Do not infer access from hidden cards alone.
+
+Do not introduce a new entitlement or role matrix in this PR. If current module visibility is not consistently available to both Launcher and sidebar, extract a small shared pure helper from the existing rules and use it in both places; avoid duplicating conditional logic.
+
+## 6. Minimal RSBUILD icon strategy
 
 Reuse the existing icon library; do not introduce another icon package or create an icon for every feature.
 
@@ -39,116 +88,85 @@ Reuse the existing icon library; do not introduce another icon package or create
 - Usage guide: `app/components/rsbuild-icons/README.md`
 - Semantic color tokens: `app/globals.css` (`--rs-icon-primary`, `--rs-icon-secondary`, `--rs-icon-accent`, `--rs-icon-muted`)
 
-The current source lists **16 original 24×24 monoline SVG icons**. Paths use `currentColor`; theme colors are token-driven.
+The current source lists **16 original 24×24 monoline SVG icons**:
+`control-tower`, `finance`, `reconciliation`, `logistics`, `guardian`, `audit`, `approval`, `document`, `import`, `matching`, `alert`, `analytics`, `users`, `integration`, `delivery`, `search`.
 
-Inventory: `control-tower`, `finance`, `reconciliation`, `logistics`, `guardian`, `audit`, `approval`, `document`, `import`, `matching`, `alert`, `analytics`, `users`, `integration`, `delivery`, `search`.
+### Launcher icon mapping
 
-### Rules
+Use only the icons that correspond to the four existing top-level operational modules:
 
-1. One icon per top-level module card; secondary functions do not get their own card icon.
-2. Reuse an existing icon only when its meaning is accurate.
-3. Create a new glyph only when a real, enabled top-level module has no suitable existing icon.
-4. Do not add icons speculatively for hypothetical modules.
-5. No emoji, decorative icon clutter, or mixed icon libraries.
-6. Preserve the existing 24×24 grid, monoline stroke, `currentColor` and semantic theme tokens for any justified addition.
+| Module | Icon |
+|---|---|
+| Financeiro | `finance` |
+| Reconciliação | `reconciliation` |
+| Logística | `logistics` |
+| Auditoria / Governança | `guardian` |
 
-### Initial semantic mapping
+These icons already match the sidebar's `MODULE_CONFIGS`. Reuse that mapping or a shared typed module configuration; do not maintain a second mapping if avoidable.
 
-| Module / destination | Existing icon | Guidance |
-|---|---|---|
-| Financeiro | `finance` | Direct match |
-| Reconciliação | `reconciliation` | Direct match |
-| Logística / Expedição | `logistics` | Prefer one glyph for the parent module |
-| Governança / Auditoria | `guardian` or `audit` | Choose one based on the actual module identity |
-| Projetos / Documentos | `document` | Reuse only if this is a real top-level module |
-| Homologação | `approval` | Use only if exposed as a top-level destination |
-| Integrações | `integration` | Direct match |
-| Pessoas / Acessos | `users` | Direct match |
-| Indicadores | `analytics` | Direct match |
+No new icon glyphs are required for this PR. Internal destinations retain their existing icons in the sidebar.
 
-This is a semantic guide, not a requirement to display every item. The launcher must reflect only the modules already enabled and authorized in the current product configuration. If a module lacks an accurate icon, use a restrained text-first card temporarily rather than a misleading glyph. Review actual enabled modules before adding any new icon.
+## 7. Launcher UI
 
-## 4. Launcher experience
+### Content
+- Organization name and a concise label such as “Workspace”.
+- One card per enabled top-level module.
+- Each card contains the existing RSBUILD icon, module name and a short description.
+- Cards open the existing module's default section.
+- No recent activity, status badges, notification counts, search, keyboard shortcut or command palette in v1 unless an existing implementation can be reused without adding scope. Prefer omitting them for the first release.
 
-### Header
-- Organization name and concise workspace context.
-- Search field for modules and destinations.
-- Do not add a second global command system if an existing one is discovered.
-- Do not display a keyboard shortcut hint unless the shortcut is implemented.
-
-### Module cards
-Each card contains:
-- One RSBUILD icon where an accurate existing glyph is available.
-- Concise module name.
-- One-line description.
-- Optional status indicator only when backed by real state.
-- Clear interactive and focus-visible states.
-
-Cards are generated from existing organization presets / enabled-module configuration and permission-resolved navigation data. They must not expose unavailable modules or imply capabilities that are not enabled.
-
-### Supporting elements
-- Keep the first version focused: no recent activity feed or notification counters unless reliable existing data sources already support them.
-- Search results obey the same authorization filtering as cards and sidebar.
-
-## 5. Visual direction
-
-- Preserve RSBUILD brand identity and existing `sand` / `dark` theme support.
-- Dark workspace direction: deep graphite/navy surfaces with restrained violet/cyan accents.
-- Reuse current CSS variables and semantic icon tones; avoid hard-coded per-icon colors.
-- Cards: subtle border, restrained surface elevation, quiet hover/focus feedback and short transitions.
-- Avoid excessive glow, gradients, badges, decorative status LEDs and unnecessary visual elements.
-- Typography and spacing remain consistent with the current shell.
-- Responsive: desktop grid; tablet and mobile progressively reduce columns; existing sidebar responsive behavior remains available after module entry.
+### Visual direction
+- Minimal, calm, precise and consistent with the current RSBUILD shell.
+- Preserve existing `sand` and `dark` theme support.
+- Use existing CSS variables and semantic icon tones.
+- Subtle borders and restrained hover/focus states.
+- Avoid excessive glow, gradients, badges, decorative LEDs and hard-coded icon colors.
+- Keep card labels and descriptions concise.
+- Responsive grid: desktop multi-column, tablet fewer columns, mobile single column or compact layout.
 - Respect `prefers-reduced-motion`.
+- Preserve visible keyboard focus and accessible button labels.
 
-## 6. Interaction and routing
+## 8. First-run tour
 
-- Launcher is the default entry surface after organization resolution for the new experience.
-- A card opens the corresponding existing module and its valid default section.
-- Add a launcher destination to the existing navigation model so users can return to it from the persistent sidebar.
-- Preserve existing deep links and `?organizationId=...` / `?tab=...` behavior.
-- Browser back/forward must keep URL and selected content coherent.
-- Do not change organization selection, authentication, membership checks, RBAC, or tenant isolation.
-- Do not treat a hidden card as an authorization boundary; server/API checks remain authoritative.
-- Existing first-run product tour must not automatically obscure the launcher.
+The operational workspace currently auto-opens `ProductTourModal` for users without the completion key. The tour must not obscure the Launcher on first arrival.
 
-## 7. Implementation sequence
+For this PR, delay the tour until after the user has entered a module, or provide a clear non-blocking trigger. Preserve the ability to launch the tour manually and its completion behavior. Do not remove the tour.
 
-1. Add a typed launcher destination to the existing navigation model and route synchronization.
-2. Build a focused launcher component using existing presets, enabled modules, permission-filtered destinations and `RsbuildIcon`.
-3. Integrate it into the existing workspace shell without removing or replacing the sidebar.
-4. Use the existing icon vocabulary; add a glyph only if implementation reveals a genuine top-level module gap.
-5. Add tests for module visibility, routing, search filtering and keyboard/focus behavior.
-6. Validate desktop, tablet and mobile in both `sand` and `dark` themes.
-7. Run typecheck, tests and production build; inspect the Vercel preview before merge.
+## 9. Implementation sequence
 
-## 8. Acceptance criteria
+1. Add `workspace` as a distinct operational `NavSection`.
+2. Make the Launcher the fallback initial section only when no explicit valid `tab` is supplied.
+3. Implement a small Launcher component within the existing operational shell.
+4. Derive cards from the same enabled-module configuration and semantic icon mapping used by the sidebar.
+5. Add a Launcher entry to the existing sidebar navigation; keep the sidebar mounted and persistent.
+6. Ensure card selection opens each module's existing default section.
+7. Prevent the first-run tour from covering the Launcher.
+8. Add tests for default entry, legacy deep links, module visibility, card navigation, sidebar return path and browser history.
+9. Validate desktop/tablet/mobile in both themes; run typecheck, tests and production build; inspect preview.
 
-- [ ] Authenticated user lands on the launcher after organization resolution.
-- [ ] Only modules enabled for the organization and available to the user are shown.
-- [ ] Cards use a small, semantically accurate subset of the RSBUILD icon system.
-- [ ] No emoji substitutes, duplicate icon packages or speculative icon additions.
-- [ ] Selecting a card opens the existing module, not a duplicate implementation.
-- [ ] Sidebar remains available and supports module switching after entry.
-- [ ] Launcher can be reopened from the sidebar.
-- [ ] Existing deep links, organization context and permission checks continue to work.
-- [ ] Search does not reveal inaccessible modules or sections.
-- [ ] No fabricated recent activity, notification counts or maturity claims.
-- [ ] Responsive behavior and reduced-motion preferences are respected.
-- [ ] Typecheck, tests and build pass; visual preview reviewed in both themes.
+## 10. Acceptance criteria
 
-## 9. Explicit non-goals
+- [ ] Operational tenant without a `tab` lands on `tab=workspace` / Launcher.
+- [ ] Existing valid deep links (including `visao-geral`) continue to work unchanged.
+- [ ] Institutional RSBUILD Control Tower is unaffected.
+- [ ] Exactly one card appears for each enabled top-level operational module.
+- [ ] No disabled module or inaccessible destination is exposed.
+- [ ] Cards use the existing four semantic module icons; no new glyphs or icon packages.
+- [ ] Card selection opens the existing module and valid default section.
+- [ ] Existing sidebar remains mounted and usable after module entry.
+- [ ] Sidebar has a clear return-to-Launcher item.
+- [ ] Existing sidebar module switcher and internal navigation continue to work.
+- [ ] Browser back/forward and URL state remain coherent.
+- [ ] First-run tour does not cover the Launcher and remains available.
+- [ ] No changes to authentication, organization selection, Supabase, RLS or RBAC.
+- [ ] Responsive layout, keyboard focus and reduced-motion behavior are verified.
+- [ ] Typecheck, tests and production build pass; preview reviewed in both themes.
 
-- Rebuilding dashboards or operational module internals.
-- Changing Supabase schema, RLS, authentication, memberships or RBAC.
-- Replacing the existing sidebar or creating a parallel navigation framework.
-- Adding artificial metrics, fake notifications or unsupported module claims.
-- Creating a dedicated icon for every feature or hypothetical module.
-- Rebranding the application independently of the existing RSBUILD design system.
+## 11. Non-goals
 
-## 10. Known implementation risks
-
-- Organization presets are the starting point for enabled modules, but some sidebar destinations are conditional on additional server-resolved permissions. Launcher visibility must use the same effective conditions.
-- The app has both control-tower and operational workspace shells. Confirm the intended scope before broadening integration; do not silently change the institutional RSBUILD workspace.
-- The current tour can conflict with a new landing experience; it must not automatically obscure the launcher.
-- Keep the implementation focused on the actual enabled modules, not a speculative future catalog.
+- Changing the institutional RSBUILD control tower.
+- Replacing or redesigning the persistent sidebar.
+- Creating a new module registry, permissions model or backend schema.
+- Rebuilding dashboards or operational workflows.
+- Adding speculative modules, icon glyphs, fake activity or notification indicators.
+- Introducing search/command palette or other nonessential Launcher features in v1.
