@@ -202,6 +202,7 @@ export default function ControlTowerWorkspace({
         currentOrgId={currentOrgId}
         showProjectPortfolio={canViewProjectPortfolio}
         canAccessSandbox={canAccessSandbox}
+        canAccessLeadInbox={["owner", "admin", "operator"].includes(membershipRole)}
         onSelectModule={(mod) => {
           setActiveModule(mod);
           if (mod === "audit") navigateTo("auditoria");
