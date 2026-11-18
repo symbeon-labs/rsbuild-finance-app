@@ -22,6 +22,12 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 3.0.0
+      # GitHub-hosted runners may already reserve Supabase's default 54322/54320
+      # ports. Use isolated host ports for the local database and shadow database.
+      - name: Configure isolated Supabase database ports
+        run: |
+          sed -i 's/^port = 54322$/port = 55432/' supabase/config.toml
+          sed -i 's/^shadow_port = 54320$/shadow_port = 55430/' supabase/config.toml
       - run: supabase start -x studio,edge-runtime,logflare,vector,inbucket
       - run: supabase test db
       - if: always()
