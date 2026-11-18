@@ -27,6 +27,8 @@ interface WorkspaceModalProps {
   currentOrgRealId?: string;
   availableOrganizationSlugs?: string[];
   isSuperAdmin: boolean;
+  /** Somente Platform Admin pode alterar a disponibilidade de capacidades. */
+  canManageModules?: boolean;
   enabledModules: EnabledModulesConfig;
   brandColor?: string;
   onClose: () => void;
@@ -42,6 +44,7 @@ export function WorkspaceModal({
   currentOrgRealId,
   availableOrganizationSlugs = [],
   isSuperAdmin,
+  canManageModules = false,
   enabledModules,
   brandColor = "#B5583C",
   onClose,
@@ -200,12 +203,12 @@ export function WorkspaceModal({
             const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
             const modAuditInput = form.elements.namedItem("modAudit") as HTMLInputElement;
 
-            const nextModules: EnabledModulesConfig = {
+            const nextModules: EnabledModulesConfig = canManageModules ? {
               finance: modFinanceInput ? modFinanceInput.checked : activeModulesState.finance,
               reconciliation: modReconciliationInput ? modReconciliationInput.checked : activeModulesState.reconciliation,
               logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics,
               audit: modAuditInput ? modAuditInput.checked : activeModulesState.audit
-            };
+            } : enabledModules;
 
             const targetName = nameInput ? nameInput.value : typedName;
             const targetLogo = urlInput ? (urlInput.value || companyLogoUrl) : companyLogoUrl;
@@ -436,7 +439,7 @@ export function WorkspaceModal({
                       PRODUTOS MODULARES CONTRATADOS
                     </span>
                     <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                      <RsbuildIcon name="guardian" size={12} tone="accent" /> Governança Symbeon
+                      <RsbuildIcon name="guardian" size={12} tone="accent" /> Governança Symbeon · {canManageModules ? "Administração da plataforma" : "Somente visualização — liberação pela RSBUILD"}
                     </span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
@@ -456,6 +459,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modFinance"
+                        disabled={!canManageModules}
                         checked={activeModulesState.finance}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, finance: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
@@ -489,6 +493,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modReconciliation"
+                        disabled={!canManageModules}
                         checked={activeModulesState.reconciliation}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, reconciliation: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
@@ -522,6 +527,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modLogistics"
+                        disabled={!canManageModules}
                         checked={activeModulesState.logistics}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, logistics: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
@@ -555,6 +561,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modAudit"
+                        disabled={!canManageModules}
                         checked={activeModulesState.audit}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, audit: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
