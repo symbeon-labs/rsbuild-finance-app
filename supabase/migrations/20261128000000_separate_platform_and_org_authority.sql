@@ -129,7 +129,7 @@ begin
     return false;
   end if;
 
-  -- p_organization_id is the synthetic Sandbox organization ID. Resolve the
+  -- p_sandbox_organization_id is the synthetic Sandbox organization ID. Resolve the
   -- tenant link from the nullable FK first, then by deterministic slug mapping.
   select coalesce(so.organization_id, o.id)
     into v_tenant_organization_id
@@ -200,7 +200,9 @@ as $$
   select app_private.has_sandbox_capability_entitlements(p_sandbox_organization_id, p_capability_keys);
 $$;
 revoke all on function public.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
-grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;\n\n
+grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;
+
+
 -- Move project authorization predicates out of the exposed API schema.
 create or replace function app_private.can_operate_rsbuild_project(target_project_id uuid)
 returns boolean
@@ -208,7 +210,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $$
   select
     exists (
       select 1
@@ -223,7 +225,7 @@ as $
       where pm.project_id = target_project_id and pm.user_id = (select auth.uid())
         and pm.access_level = 'contributor'
     );
-$;
+$$;
 revoke all on function app_private.can_operate_rsbuild_project(uuid) from public, anon;
 grant execute on function app_private.can_operate_rsbuild_project(uuid) to authenticated;
 
@@ -233,9 +235,9 @@ language sql
 stable
 security invoker
 set search_path = ''
-as $
+as $$
   select app_private.can_operate_rsbuild_project(target_project_id);
-$;
+$$;
 revoke all on function public.can_operate_rsbuild_project(uuid) from public, anon;
 grant execute on function public.can_operate_rsbuild_project(uuid) to authenticated;
 
@@ -245,7 +247,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $$
   select
     exists (
       select 1
@@ -265,7 +267,7 @@ as $
       join public.organization_memberships cm on cm.organization_id = pa.client_organization_id
       where pa.project_id = target_project_id and cm.user_id = (select auth.uid())
     );
-$;
+$$;
 revoke all on function app_private.can_read_rsbuild_project(uuid) from public, anon;
 grant execute on function app_private.can_read_rsbuild_project(uuid) to authenticated;
 
@@ -275,9 +277,9 @@ language sql
 stable
 security invoker
 set search_path = ''
-as $
+as $$
   select app_private.can_read_rsbuild_project(target_project_id);
-$;
+$$;
 revoke all on function public.can_read_rsbuild_project(uuid) from public, anon;
 grant execute on function public.can_read_rsbuild_project(uuid) to authenticated;
 
@@ -288,7 +290,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_uid uuid := auth.uid();
   v_is_owner boolean;
@@ -381,7 +383,7 @@ begin
 
   return jsonb_build_object('success', true, 'message', 'Sandbox reset with synthetic data');
 end;
-$;
+$$;
 revoke all on function app_private.sandbox_reset() from public, anon;
 grant execute on function app_private.sandbox_reset() to authenticated;
 
@@ -390,9 +392,9 @@ returns jsonb
 language sql
 security invoker
 set search_path = ''
-as $
+as $$
   select app_private.sandbox_reset();
-$;
+$$;
 revoke all on function public.sandbox_reset() from public, anon;
 grant execute on function public.sandbox_reset() to authenticated;
 
