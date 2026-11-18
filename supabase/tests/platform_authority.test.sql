@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(17);
+select plan(18);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -45,9 +45,14 @@ select is(
 );
 select ok(
   not public.has_sandbox_capability_entitlements(
-    (select id from sandbox.organizations where slug='g01-tenant-sandbox'), array['finance']::text[]
+    (select organization_id from sandbox.organizations where slug='g01-tenant-sandbox'), array['finance']::text[]
   ),
   'RSBUILD owner without a sandbox entitlement cannot access the capability in Sandbox'
+);
+select throws_ok(
+  $sql$select public.sandbox_record_validation_run('A1.4-G01','passed','manual homologation evidence','{}'::jsonb)$sql$,
+  '42501', 'sandbox_capability_not_entitled',
+  'direct validation RPC cannot bypass Sandbox capability entitlements'
 );
 reset role;
 
@@ -86,6 +91,7 @@ select ok(
   and not has_function_privilege('anon','public.is_platform_administrator()','EXECUTE')
   and not has_function_privilege('anon','public.has_sandbox_capability_entitlements(uuid,text[])','EXECUTE')
   and not has_function_privilege('anon','public.set_organization_capability_license(uuid,text,text,text,text,text[],timestamp with time zone)','EXECUTE')
+  and not has_function_privilege('anon','public.sandbox_record_validation_run(text,text,text,jsonb)','EXECUTE')
   and not (
     select bool_or(p.prosecdef)
     from pg_proc p
@@ -94,7 +100,7 @@ select ok(
       and p.proname in (
         'can_operate_rsbuild_project','can_read_rsbuild_project','sandbox_reset',
         'is_platform_administrator','has_sandbox_capability_entitlements',
-        'set_organization_capability_license'
+        'set_organization_capability_license','sandbox_record_validation_run'
       )
   ),
   'privileged public RPC wrappers are invoker-only and unavailable to anon'
@@ -122,7 +128,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','c1111111-1111-4111-8111-111111111111',true);
 select ok(
   public.has_sandbox_capability_entitlements(
-    (select id from sandbox.organizations where slug='g01-tenant-sandbox'), array['finance']::text[]
+    (select organization_id from sandbox.organizations where slug='g01-tenant-sandbox'), array['finance']::text[]
   ),
   'RSBUILD owner with a valid Sandbox entitlement can access sandbox capability'
 );
