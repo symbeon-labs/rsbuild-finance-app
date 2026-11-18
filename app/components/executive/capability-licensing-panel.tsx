@@ -67,7 +67,7 @@ export function CapabilityLicensingPanel() {
         operationalStatus: draft.operationalStatus,
         reason: draft.reason
       });
-      setMessage(result.ok ? "Licença atualizada e registrada no histórico." : result.error);
+      setMessage(result.ok ? "Licença atualizada e registrada no histórico." : (result.error ?? "Não foi possível atualizar a licença."));
       if (result.ok) {
         setLicenseDrafts((current) => { const next = { ...current }; delete next[key]; return next; });
         await refresh();
