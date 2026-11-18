@@ -57,7 +57,7 @@ alter table public.organization_capability_licenses
   add column if not exists entitled_environments text[] not null default '{}'::text[],
   add column if not exists expires_at timestamptz;
 
-do $
+do $$
 begin
   if not exists (
     select 1 from pg_constraint
@@ -69,7 +69,7 @@ begin
       check (entitled_environments <@ array['qa','sandbox','production']::text[]);
   end if;
 end;
-$;
+$$;
 
 -- Link each synthetic sandbox organization to its real tenant identity.
 -- This is metadata only; it does not copy production data into Sandbox.
@@ -82,7 +82,7 @@ from public.organizations o
 where so.organization_id is null
   and so.slug = replace(o.slug, '_', '-') || '-sandbox';
 
-do $
+do $$
 begin
   if exists (select 1 from sandbox.organizations where organization_id is null) then
     raise exception 'Every sandbox organization must map to a tenant organization before entitlement enforcement';
@@ -97,7 +97,7 @@ begin
       foreign key (organization_id) references public.organizations(id) on delete restrict;
   end if;
 end;
-$;
+$$;
 
 alter table sandbox.organizations
   alter column organization_id set not null;
@@ -121,7 +121,7 @@ language plpgsql
 stable
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_uid uuid := auth.uid();
 begin
@@ -169,7 +169,7 @@ begin
       )
   );
 end;
-$;
+$$;
 
 revoke all on function public.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
 grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;\n\n-- Remove organization-owner authority over platform-wide licensing.
@@ -193,12 +193,6 @@ create policy "Platform administrators read capability license events"
   on public.capability_license_events for select to authenticated
   using ((select public.is_platform_administrator()));
 
-create policy "Platform administrators append capability license events"
-  on public.capability_license_events for insert to authenticated
-  with check (
-    actor_id = (select auth.uid())
-    and (select public.is_platform_administrator())
-  );
 
 -- Replace the licensing RPC authorization boundary. The transaction and
 -- append-only event remain atomic; authority and environment scope are checked
@@ -218,7 +212,7 @@ returns public.organization_capability_licenses
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_actor uuid := auth.uid();
   v_previous public.organization_capability_licenses;
