@@ -112,6 +112,10 @@ export default function EnterpriseWorkspace({
 
   const [section, setSection] = useState<NavSection>(initialSection);
   const [activeModule, setActiveModule] = useState<ModuleType>(getModuleForSection(initialSection));
+  const activeModuleRef = useRef(activeModule);
+  const sectionRef = useRef(section);
+  activeModuleRef.current = activeModule;
+  sectionRef.current = section;
 
   function navigateTo(nextSection: NavSection) {
     const safeSection = nextSection === "projetos" && !canViewProjectPortfolio ? "visao-geral" : nextSection;
@@ -330,22 +334,22 @@ export default function EnterpriseWorkspace({
         const firstAvailable = (["finance", "reconciliation", "logistics", "audit"] as ModuleType[])
           .find((module) => nextModules[module]);
 
-        if (!nextModules[activeModule]) {
+        if (!nextModules[activeModuleRef.current]) {
           const safeModule = firstAvailable ?? "finance";
           setActiveModule(safeModule);
           setSection("visao-geral");
           router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
-        } else if (section === "conciliacao" || section === "baixas") {
+        } else if (sectionRef.current === "conciliacao" || sectionRef.current === "baixas") {
           if (!nextModules.reconciliation) {
             setSection("visao-geral");
             router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
           }
-        } else if (section === "pedidos-ha" || section === "canhotos") {
+        } else if (sectionRef.current === "pedidos-ha" || sectionRef.current === "canhotos") {
           if (!nextModules.logistics) {
             setSection("visao-geral");
             router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
           }
-        } else if (section === "auditoria" || section === "agentes" || section === "acessos" || section === "torre-controle") {
+        } else if (sectionRef.current === "auditoria" || sectionRef.current === "agentes" || sectionRef.current === "acessos" || sectionRef.current === "torre-controle") {
           if (!nextModules.audit) {
             setSection("visao-geral");
             router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
