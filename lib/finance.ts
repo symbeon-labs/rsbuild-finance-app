@@ -213,6 +213,45 @@ function parseRows(input: string, delimiter: string): { rows: { line: number; ce
 const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 const batchId = () => `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+export type CsvCanonicalField = "date" | "description" | "amount" | "direction" | "category" | "cost_center" | "document" | "account";
+
+export type CsvColumnMatch = {
+  source: string;
+  normalized: string;
+  field: CsvCanonicalField | null;
+  confidence: number;
+  required: boolean;
+};
+
+const CSV_FIELD_ALIASES: Record<CsvCanonicalField, string[]> = {
+  date: ["data", "date", "data movimento", "data_movimento", "data lancamento", "dt movimento", "dt lancamento", "data transacao", "transaction date", "posting date", "dt"],
+  description: ["descricao", "description", "historico", "memo", "lancamento", "name", "detalhe", "identificacao", "complemento", "favorecido", "beneficiario"],
+  amount: ["valor", "amount", "montante", "vlr", "vl lancamento", "valor lancamento", "valor total", "value", "quantia"],
+  direction: ["tipo", "direcao", "direction", "natureza", "tipo movimento", "operacao", "credito debito", "dc"],
+  category: ["categoria", "category", "grupo", "classificacao", "tipo despesa"],
+  cost_center: ["centro de custo", "cost center", "setor", "departamento", "unidade"],
+  document: ["documento", "document", "numero documento", "num documento", "doc", "id transacao", "fitid"],
+  account: ["conta", "account", "conta bancaria", "account id"]
+};
+
+function normalizeCsvHeader(value: string): string {
+  return value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Descoberta determinística de colunas: não altera nem descarta o arquivo de origem. */
+export function discoverCsvColumns(headerLine: string): CsvColumnMatch[] {
+  const delimiter = [",", ";", "\\t"].map((d) => ({ d, n: headerLine.split(d).length - 1 })).sort((a,b) => b.n-a.n)[0];
+  if (!delimiter || delimiter.n === 0) return [];
+  return headerLine.replace(/^\\uFEFF/, "").split(delimiter.d).map((raw) => {
+    const source = raw.trim().replace(/^["']|["']$/g, "");
+    const normalized = normalizeCsvHeader(source);
+    const field = (Object.keys(CSV_FIELD_ALIASES) as CsvCanonicalField[]).find((key) =>
+      CSV_FIELD_ALIASES[key].some((alias) => normalizeCsvHeader(alias) === normalized)
+    ) ?? null;
+    return { source, normalized, field, confidence: field ? 1 : 0, required: field === "date" || field === "description" || field === "amount" };
+  });
+}
+
 export function parseCsv(text: string): ImportResult {
   const delimiter = detectDelimiter(text);
   if (!delimiter) return { records: [], errors: ["Delimitador CSV ambíguo ou ausente; use cabeçalhos separados por vírgula, ponto e vírgula ou tabulação."] };
@@ -220,11 +259,11 @@ export function parseCsv(text: string): ImportResult {
   if (parsed.rows.length < 2) return { records: [], errors: [...parsed.errors, "O arquivo não contém linhas de dados."] };
   const headers = parsed.rows[0].cells.map(normalize);
   const find = (...names: string[]) => headers.findIndex((h) => names.includes(h));
-  const dateIndex = find("data", "date", "data movimento", "data_movimento", "data lancamento");
-  const descriptionIndex = find("descricao", "description", "historico", "memo", "lancamento", "name");
-  const amountIndex = find("valor", "amount", "montante");
-  const directionIndex = find("tipo", "direcao", "direction", "natureza");
-  const categoryIndex = find("categoria", "category");
+  const dateIndex = find("data", "date", "data movimento", "data_movimento", "data lancamento", "dt movimento", "dt lancamento", "data transacao", "transaction date", "posting date", "dt");
+  const descriptionIndex = find("descricao", "description", "historico", "memo", "lancamento", "name", "detalhe", "identificacao", "complemento", "favorecido", "beneficiario");
+  const amountIndex = find("valor", "amount", "montante", "vlr", "vl lancamento", "valor lancamento", "valor total", "value", "quantia");
+  const directionIndex = find("tipo", "direcao", "direction", "natureza", "tipo movimento", "operacao", "credito debito", "dc");
+  const categoryIndex = find("categoria", "category", "grupo", "classificacao", "tipo despesa");
   const errors = [...parsed.errors];
   if ([dateIndex, descriptionIndex, amountIndex].some((i) => i < 0)) {
     return { records: [], errors: [...errors, "Cabeçalhos obrigatórios: Data, Descrição e Valor."] };
