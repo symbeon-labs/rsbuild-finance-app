@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { RsbuildIcon } from "@/app/components/rsbuild-icons";
+import { CapabilityLicensingPanel } from "@/app/components/executive/capability-licensing-panel";
 
 export type HoldingWorkspaceOrganization = {
   id: string;
@@ -13,6 +14,7 @@ type Props = {
   organizations: HoldingWorkspaceOrganization[];
   sandboxOrganizations: HoldingWorkspaceOrganization[];
   currentOrganizationId: string;
+  canManageCapabilities?: boolean;
 };
 
 const CAPABILITIES = [
@@ -52,7 +54,7 @@ function EnvironmentCard({ item, kind, onOpen }: {
   );
 }
 
-export function HoldingWorkspaceManagementView({ organizations, sandboxOrganizations, currentOrganizationId }: Props) {
+export function HoldingWorkspaceManagementView({ organizations, sandboxOrganizations, currentOrganizationId, canManageCapabilities = false }: Props) {
   const router = useRouter();
   const official = organizations.filter((item) => !item.slug.endsWith("_qa") && item.slug !== "rsbuild");
   const qa = organizations.filter((item) => item.slug.endsWith("_qa"));
@@ -140,6 +142,15 @@ export function HoldingWorkspaceManagementView({ organizations, sandboxOrganizat
         </div>
         <p style={{ margin: 0, color: "var(--muted)", fontSize: 11 }}>Os módulos financeiros, de reconciliação e logística não estão habilitados no workspace institucional RSBUILD. O catálogo não concede acesso nem representa implantação concluída.</p>
       </section>
+
+      {canManageCapabilities && <section style={{ display: "grid", gap: 12 }}>
+        <div>
+          <div className="eyebrow">03 · AUTORIZAÇÃO INSTITUCIONAL</div>
+          <h2 style={{ color: "var(--ink)", margin: "4px 0", fontSize: 18 }}>Licenças por organização</h2>
+          <p style={{ color: "var(--muted)", margin: 0, fontSize: 12 }}>Somente o Owner institucional pode conceder, suspender ou revogar capacidades.</p>
+        </div>
+        <CapabilityLicensingPanel />
+      </section>}
 
       <section style={{ display: "grid", gap: 12 }}>
         <div>
