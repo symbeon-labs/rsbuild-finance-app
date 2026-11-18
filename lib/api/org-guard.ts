@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { recordAuditEvent } from "@/lib/api/audit";
 import { consumeRateLimit } from "@/lib/api/rate-limit";
+import { resolveOrganizationEnvironment } from "@/lib/platform-authorization";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -75,6 +76,10 @@ export async function requireOrgContext(
     return deny(403, "organization_access_denied");
   }
   const role = membership.role as OrgRole;
+  const organizationRelation = membership.organizations as unknown as { slug?: string } | { slug?: string }[];
+  const organizationSlug = Array.isArray(organizationRelation)
+    ? organizationRelation[0]?.slug ?? ""
+    : organizationRelation?.slug ?? "";
   if (!allowedRoles.includes(role)) {
     await recordAuditEvent({
       organizationId,
@@ -89,10 +94,10 @@ export async function requireOrgContext(
   }
 
   if (requiredCapability) {
-    // This guard protects public-schema production tenant routes.
-    // Sandbox routes use a separate RPC and an explicit sandbox entitlement check.
-    // QA is not exposed through this route family yet.
-    const environment: CapabilityEnvironment = "production";
+    // Resolve environment from the server-loaded organization record.
+    // Never accept environment from request parameters or browser payloads.
+    // Sandbox routes use a separate schema and dedicated entitlement RPC.
+    const environment: CapabilityEnvironment = resolveOrganizationEnvironment(organizationSlug);
 
     const { data: entitlement, error: entitlementError } = await supabase
       .from("organization_capability_licenses")
