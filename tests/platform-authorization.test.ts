@@ -19,6 +19,38 @@ test("organization admin does not receive platform privileges", () => {
   assert.equal(canAdministerPlatform({ platformAdministrator: false }), false);
 });
 
+test("RSBUILD organization admins can enter the RSBUILD workspace without platform authority", () => {
+  assert.equal(canEnterOrganizationWorkspace({
+    organizationSlug: "rsbuild",
+    organizationRole: "admin",
+    platformAdministrator: false
+  }), true);
+  assert.equal(canEnterOrganizationWorkspace({
+    organizationSlug: "rsbuild",
+    organizationRole: "owner",
+    platformAdministrator: false
+  }), true);
+  assert.equal(canEnterOrganizationWorkspace({
+    organizationSlug: "rsbuild",
+    organizationRole: "viewer",
+    platformAdministrator: false
+  }), false);
+  assert.equal(canAdministerPlatform({ platformAdministrator: false }), false);
+});
+
+test("client organization memberships do not grant entry to the RSBUILD workspace", () => {
+  assert.equal(canEnterOrganizationWorkspace({
+    organizationSlug: "rsbuild",
+    organizationRole: null,
+    platformAdministrator: false
+  }), false);
+  assert.equal(canEnterOrganizationWorkspace({
+    organizationSlug: "mundo_sabor_qa",
+    organizationRole: "operator",
+    platformAdministrator: false
+  }), true);
+});
+
 test("only explicit platform grant enables platform administration", () => {
   assert.equal(canAdministerPlatform({ platformAdministrator: true }), true);
   assert.equal(canManageCapabilityLicenses({ platformAdministrator: true }), true);
