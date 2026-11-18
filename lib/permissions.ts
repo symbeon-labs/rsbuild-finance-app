@@ -17,7 +17,7 @@ export const ROLE_HIERARCHY: Record<MemberRole, RoleMetadata> = {
   owner: {
     role: "owner",
     label: "Responsável pela organização",
-    badge: "👑 OWNER",
+    badge: "👑 PROPRIETÁRIO",
     description: "Administra a organização, seus membros, workspaces e aprovações permitidas. Não recebe privilégios globais da plataforma.",
     level: 0
   },
