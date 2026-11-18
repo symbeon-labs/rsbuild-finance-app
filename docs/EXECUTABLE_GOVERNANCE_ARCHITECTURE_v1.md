@@ -15,12 +15,15 @@
 1. A fail-closed `platform_administrators` registry with revocation metadata.
 2. A server-side `is_platform_administrator()` database predicate based on `auth.uid()`.
 3. Capability-license RLS policies moved from RSBUILD organization owner to explicit platform administrators.
-4. Capability-license mutations run through a narrowly scoped SECURITY DEFINER RPC with explicit platform-grant verification; direct authenticated DML on license and event tables is revoked.
+4. Capability-license mutations run through a public SECURITY INVOKER RPC wrapper and a narrowly scoped SECURITY DEFINER implementation in the non-exposed `app_private` schema, with explicit platform-grant verification; direct authenticated DML on license and event tables is revoked.
 5. Organization owners retain tenant-scoped access but cannot administer platform licenses. Platform administrators can inspect the minimal organization directory needed for licensing without receiving tenant membership or operational data access.
 6. License records persist an explicit QA/Sandbox/Production allow-list and optional expiration. A grant without an environment is rejected.
 7. Shared server-side guards enforce Finance, Reconciliation, Logistics and Audit entitlements on the corresponding operational API routes. QA vs Production is derived from the organization slug on the server.
 8. Sandbox organizations are explicitly linked to their tenant identity. A narrow boolean RPC checks Sandbox entitlements without exposing license records or granting platform authority.
-9. A dedicated /platform-admin route exposes the licensing controls only after server-side verification. Unit and pgTAP tests cover authority separation, mutation boundaries, expiry, environment scope and revocation.
+9. A dedicated /platform-admin route exposes the licensing controls only after server-side verification.
+10. Project authorization predicates and Sandbox reset now use private SECURITY DEFINER implementations behind SECURITY INVOKER public wrappers. Anonymous execution is revoked.
+11. Sandbox reset re-seeds all synthetic organizations with their verified tenant mapping, preserving the new non-null foreign key.
+12. Unit and pgTAP tests cover authority separation, mutation boundaries, public RPC exposure, expiry, environment scope and revocation.
 
 ## Bootstrap — mandatory before applying in production
 
@@ -39,7 +42,7 @@ No automatic seed is intentional: an automatic grant to the RSBUILD owner would 
 
 The TypeScript predicate is a pure policy helper, not an authorization source. Runtime enforcement must query the database grant and entitlement server-side. The licensing record now stores an explicit environment allow-list and optional expiration; a granted license without an environment is rejected. Do not accept `platformAdministrator`, capability status, environment, organization ID or role from browser payloads as authoritative.
 
-The shared guard is wired to the Finance, Reconciliation, Logistics and Audit operational routes, and the Sandbox API uses a separate narrow entitlement check. Other API surfaces that are not part of those four capability domains still require their own explicit capability mapping. The pure TypeScript helper remains a policy/test utility, never an authorization source. The initial Symbeon administrator is not provisioned by this migration.
+The shared guard is wired to the Finance, Reconciliation, Logistics and Audit operational routes. QA vs Production is derived from the server-loaded organization slug (`_qa`, including alpha/beta lanes). The Sandbox API uses a separate narrow entitlement check against the linked production tenant identity. Other API surfaces that are not part of those four capability domains still require their own explicit capability mapping. The pure TypeScript helper remains a policy/test utility, never an authorization source. The initial Symbeon administrator is not provisioned by this migration.
 
 ## Deployment sequence
 
