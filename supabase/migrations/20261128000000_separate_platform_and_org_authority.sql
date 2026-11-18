@@ -200,7 +200,203 @@ as $$
   select app_private.has_sandbox_capability_entitlements(p_sandbox_organization_id, p_capability_keys);
 $$;
 revoke all on function public.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
-grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;\n\n-- Remove organization-owner authority over platform-wide licensing.
+grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;\n\n
+-- Move project authorization predicates out of the exposed API schema.
+create or replace function app_private.can_operate_rsbuild_project(target_project_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select
+    exists (
+      select 1
+      from public.projects p
+      join public.organization_memberships m on m.organization_id = p.managing_organization_id
+      join public.organizations o on o.id = m.organization_id
+      where p.id = target_project_id and o.slug = 'rsbuild'
+        and m.user_id = (select auth.uid()) and m.role in ('owner', 'admin')
+    )
+    or exists (
+      select 1 from public.project_memberships pm
+      where pm.project_id = target_project_id and pm.user_id = (select auth.uid())
+        and pm.access_level = 'contributor'
+    );
+$;
+revoke all on function app_private.can_operate_rsbuild_project(uuid) from public, anon;
+grant execute on function app_private.can_operate_rsbuild_project(uuid) to authenticated;
+
+create or replace function public.can_operate_rsbuild_project(target_project_id uuid)
+returns boolean
+language sql
+stable
+security invoker
+set search_path = ''
+as $
+  select app_private.can_operate_rsbuild_project(target_project_id);
+$;
+revoke all on function public.can_operate_rsbuild_project(uuid) from public, anon;
+grant execute on function public.can_operate_rsbuild_project(uuid) to authenticated;
+
+create or replace function app_private.can_read_rsbuild_project(target_project_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select
+    exists (
+      select 1
+      from public.projects p
+      join public.organization_memberships m on m.organization_id = p.managing_organization_id
+      join public.organizations o on o.id = m.organization_id
+      where p.id = target_project_id and o.slug = 'rsbuild'
+        and m.user_id = (select auth.uid()) and m.role in ('owner', 'admin')
+    )
+    or exists (
+      select 1 from public.project_memberships pm
+      where pm.project_id = target_project_id and pm.user_id = (select auth.uid())
+        and pm.access_level in ('viewer', 'contributor')
+    )
+    or exists (
+      select 1 from public.project_organization_access pa
+      join public.organization_memberships cm on cm.organization_id = pa.client_organization_id
+      where pa.project_id = target_project_id and cm.user_id = (select auth.uid())
+    );
+$;
+revoke all on function app_private.can_read_rsbuild_project(uuid) from public, anon;
+grant execute on function app_private.can_read_rsbuild_project(uuid) to authenticated;
+
+create or replace function public.can_read_rsbuild_project(target_project_id uuid)
+returns boolean
+language sql
+stable
+security invoker
+set search_path = ''
+as $
+  select app_private.can_read_rsbuild_project(target_project_id);
+$;
+revoke all on function public.can_read_rsbuild_project(uuid) from public, anon;
+grant execute on function public.can_read_rsbuild_project(uuid) to authenticated;
+
+-- Rebuild Sandbox reset behind a private DEFINER implementation. The public
+-- RPC is INVOKER and the synthetic organizations retain their tenant mapping.
+create or replace function app_private.sandbox_reset()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_uid uuid := auth.uid();
+  v_is_owner boolean;
+begin
+  select exists (
+    select 1
+    from public.organization_memberships m
+    join public.organizations o on o.id = m.organization_id
+    where o.slug = 'rsbuild' and m.user_id = v_uid and m.role = 'owner'
+  ) into v_is_owner;
+
+  if v_uid is null or not v_is_owner then
+    raise exception 'sandbox_reset_forbidden' using errcode = '42501';
+  end if;
+
+  delete from sandbox.audit_events;
+  delete from sandbox.delivery_proofs;
+  delete from sandbox.receivable_titles;
+  delete from sandbox.financial_records;
+  delete from sandbox.financial_accounts;
+  delete from sandbox.organization_memberships;
+  delete from sandbox.organizations;
+
+  insert into sandbox.organizations (slug, display_name, description, organization_id)
+  select seed.slug, seed.display_name, seed.description, o.id
+  from (values
+    ('hub-acai-sandbox', 'Hub Açaí Sandbox', 'Ambiente de testes para Hub Açaí - dados sintéticos', 'hub_acai'),
+    ('mundo-sabor-sandbox', 'Mundo do Sabor Sandbox', 'Ambiente de testes para Mundo do Sabor - dados sintéticos', 'mundo_sabor'),
+    ('rsbuild-sandbox', 'RSBUILD Sandbox', 'Ambiente de testes interno RSBUILD - dados sintéticos', 'rsbuild')
+  ) as seed(slug, display_name, description, tenant_slug)
+  join public.organizations o on o.slug = seed.tenant_slug;
+
+  if (select count(*) from sandbox.organizations) <> 3 then
+    raise exception 'sandbox_tenant_mapping_missing';
+  end if;
+
+  insert into sandbox.organization_memberships (organization_id, user_id, role, custom_title)
+  select o.id, '00000000-0000-0000-0000-000000000001'::uuid, 'owner', 'Sandbox Admin'
+  from sandbox.organizations o where o.slug = 'rsbuild-sandbox';
+
+  insert into sandbox.organization_memberships (organization_id, user_id, role, custom_title)
+  select o.id, '00000000-0000-0000-0000-000000000002'::uuid, 'admin', 'Test Admin'
+  from sandbox.organizations o where o.slug = 'hub-acai-sandbox';
+
+  insert into sandbox.organization_memberships (organization_id, user_id, role, custom_title)
+  select o.id, '00000000-0000-0000-0000-000000000003'::uuid, 'operator', 'Test Operator'
+  from sandbox.organizations o where o.slug = 'mundo-sabor-sandbox';
+
+  insert into sandbox.financial_accounts (organization_id, name, institution, account_type, currency)
+  select o.id, 'Conta Corrente Sandbox', 'Banco Teste', 'checking', 'BRL'
+  from sandbox.organizations o where o.slug = 'hub-acai-sandbox';
+
+  insert into sandbox.financial_accounts (organization_id, name, institution, account_type, currency)
+  select o.id, 'Conta Poupança Sandbox', 'Banco Teste', 'savings', 'BRL'
+  from sandbox.organizations o where o.slug = 'mundo-sabor-sandbox';
+
+  insert into sandbox.financial_records (organization_id, account_id, direction, amount_cents, description, transaction_date)
+  select fa.organization_id, fa.id, 'entrada', 150000, 'Venda Sandbox - Pedido #12345', current_date - 1
+  from sandbox.financial_accounts fa
+  join sandbox.organizations o on o.id = fa.organization_id
+  where o.slug = 'hub-acai-sandbox';
+
+  insert into sandbox.financial_records (organization_id, account_id, direction, amount_cents, description, transaction_date)
+  select fa.organization_id, fa.id, 'saída', 50000, 'Pagamento Sandbox - Fornecedor', current_date - 2
+  from sandbox.financial_accounts fa
+  join sandbox.organizations o on o.id = fa.organization_id
+  where o.slug = 'mundo-sabor-sandbox';
+
+  insert into sandbox.receivable_titles (organization_id, title_number, customer_name, amount_cents, due_date, status)
+  select o.id, 'TIT-SANDBOX-001', 'Cliente Teste Sandbox', 250000, current_date + 7, 'pending'
+  from sandbox.organizations o where o.slug = 'hub-acai-sandbox';
+
+  insert into sandbox.receivable_titles (organization_id, title_number, customer_name, amount_cents, due_date, status)
+  select o.id, 'TIT-SANDBOX-002', 'Cliente Teste Sandbox 2', 180000, current_date + 14, 'pending'
+  from sandbox.organizations o where o.slug = 'mundo-sabor-sandbox';
+
+  insert into sandbox.delivery_proofs (organization_id, order_number, customer_name, delivery_date, status)
+  select o.id, 'PED-SANDBOX-001', 'Cliente Teste Sandbox', current_date - 1, 'delivered'
+  from sandbox.organizations o where o.slug = 'hub-acai-sandbox';
+
+  insert into sandbox.delivery_proofs (organization_id, order_number, customer_name, delivery_date, status)
+  select o.id, 'PED-SANDBOX-002', 'Cliente Teste Sandbox 2', current_date, 'pending'
+  from sandbox.organizations o where o.slug = 'mundo-sabor-sandbox';
+
+  insert into sandbox.audit_events (organization_id, actor_id, actor_email, event_type, entity_type, entity_id, metadata)
+  select o.id, '00000000-0000-0000-0000-000000000001'::uuid,
+    'sandbox-admin@test.com', 'sandbox.test.created', 'sandbox_organization', o.id,
+    jsonb_build_object('test', true, 'timestamp', now())
+  from sandbox.organizations o where o.slug = 'rsbuild-sandbox';
+
+  return jsonb_build_object('success', true, 'message', 'Sandbox reset with synthetic data');
+end;
+$;
+revoke all on function app_private.sandbox_reset() from public, anon;
+grant execute on function app_private.sandbox_reset() to authenticated;
+
+create or replace function public.sandbox_reset()
+returns jsonb
+language sql
+security invoker
+set search_path = ''
+as $
+  select app_private.sandbox_reset();
+$;
+revoke all on function public.sandbox_reset() from public, anon;
+grant execute on function public.sandbox_reset() to authenticated;
+
+-- Remove organization-owner authority over platform-wide licensing.
 drop policy if exists "RSBUILD owners manage capability licenses" on public.organization_capability_licenses;
 drop policy if exists "RSBUILD owners read all capability licenses" on public.organization_capability_licenses;
 drop policy if exists "RSBUILD owners read capability license events" on public.capability_license_events;
