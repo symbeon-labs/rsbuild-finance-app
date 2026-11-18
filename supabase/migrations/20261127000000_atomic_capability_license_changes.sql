@@ -1,4 +1,21 @@
 -- Atomic, owner-only capability license changes with an append-only event.
+
+-- Institutional owner must inspect all tenant entitlements from the holding workspace.
+drop policy if exists "RSBUILD owners read all capability licenses" on public.organization_capability_licenses;
+create policy "RSBUILD owners read all capability licenses"
+  on public.organization_capability_licenses for select to authenticated
+  using (
+    exists (
+      select 1
+      from public.organization_memberships m
+      join public.organizations o on o.id = m.organization_id
+      where o.slug = 'rsbuild'
+        and m.user_id = (select auth.uid())
+        and m.role = 'owner'::public.rsbuild_member_role
+    )
+  );
+
+
 create or replace function public.set_organization_capability_license(
   p_organization_id uuid,
   p_capability_key text,
