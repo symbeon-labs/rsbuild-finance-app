@@ -35,7 +35,7 @@ export type BidirectionalMatchOptions = {
 
 const normalize = (value: string) => value
   .normalize("NFD")
-  .replace(/[\\u0300-\\u036f]/g, "")
+  .replace(/[\u0300-\u036f]/g, "")
   .toLocaleLowerCase("pt-BR")
   .replace(/[^a-z0-9]+/g, " ")
   .trim();
@@ -43,7 +43,7 @@ const normalize = (value: string) => value
 const cents = (value: number) => Number.isFinite(value) ? Math.round(value * 100) : NaN;
 
 function dayDistance(a: string, b: string): number | null {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(a) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(b)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(a) || !/^\d{4}-\d{2}-\d{2}$/.test(b)) return null;
   const left = Date.parse(a + "T00:00:00Z");
   const right = Date.parse(b + "T00:00:00Z");
   if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
