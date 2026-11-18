@@ -21,9 +21,10 @@
 7. Shared server-side guards enforce Finance, Reconciliation, Logistics and Audit entitlements on the corresponding operational API routes. QA vs Production is derived from the organization slug on the server.
 8. Sandbox organizations are explicitly linked to their tenant identity. A narrow boolean RPC checks Sandbox entitlements without exposing license records or granting platform authority.
 9. A dedicated /platform-admin route exposes the licensing controls only after server-side verification.
-10. Project authorization predicates and Sandbox reset now use private SECURITY DEFINER implementations behind SECURITY INVOKER public wrappers. Anonymous execution is revoked.
-11. Sandbox reset re-seeds all synthetic organizations with their verified tenant mapping, preserving the new non-null foreign key.
-12. Unit and pgTAP tests cover authority separation, mutation boundaries, public RPC exposure, expiry, environment scope and revocation.
+10. Project authorization predicates, Sandbox reset and manual homologation writes now use private SECURITY DEFINER implementations behind SECURITY INVOKER public wrappers. Anonymous execution is revoked.
+11. The manual validation RPC independently enforces the same four Sandbox capability entitlements; direct RPC calls cannot bypass the Next.js route guard.
+12. Sandbox reset re-seeds all synthetic organizations with their verified tenant mapping, preserving the new non-null foreign key.
+13. Unit and pgTAP tests cover authority separation, mutation boundaries, public RPC exposure, expiry, environment scope and revocation.
 
 ## Bootstrap — mandatory before applying in production
 
@@ -42,7 +43,7 @@ No automatic seed is intentional: an automatic grant to the RSBUILD owner would 
 
 The TypeScript predicate is a pure policy helper, not an authorization source. Runtime enforcement must query the database grant and entitlement server-side. The licensing record now stores an explicit environment allow-list and optional expiration; a granted license without an environment is rejected. Do not accept `platformAdministrator`, capability status, environment, organization ID or role from browser payloads as authoritative.
 
-The shared guard is wired to the Finance, Reconciliation, Logistics and Audit operational routes. QA vs Production is derived from the server-loaded organization slug (`_qa`, including alpha/beta lanes). The Sandbox API uses a separate narrow entitlement check against the linked production tenant identity. Other API surfaces that are not part of those four capability domains still require their own explicit capability mapping. The pure TypeScript helper remains a policy/test utility, never an authorization source. The initial Symbeon administrator is not provisioned by this migration.
+The shared guard is wired to the Finance, Reconciliation, Logistics and Audit operational routes. QA vs Production is derived from the server-loaded organization slug (`_qa`, including alpha/beta lanes). The Sandbox API uses a separate narrow entitlement check against the linked production tenant identity. Other API surfaces that are not part of those four capability domains still require their own explicit capability mapping. The pure TypeScript helper remains a policy/test utility, never an authorization source. The initial Symbeon administrator is not provisioned by this migration. The connected database currently has no capability-license rows; after enforcement is activated, capability-protected operations remain blocked until an explicit grant and environment scope are provisioned for each tenant.
 
 ## Deployment sequence
 
