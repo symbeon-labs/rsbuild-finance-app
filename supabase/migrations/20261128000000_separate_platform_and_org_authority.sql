@@ -86,11 +86,8 @@ from public.organizations o
 where so.organization_id is null
   and so.slug = replace(o.slug, '_', '-') || '-sandbox';
 
-do $$
+do $
 begin
-  if exists (select 1 from sandbox.organizations where organization_id is null) then
-    raise exception 'Every sandbox organization must map to a tenant organization before entitlement enforcement';
-  end if;
   if not exists (
     select 1 from pg_constraint
     where conrelid = 'sandbox.organizations'::regclass
@@ -103,9 +100,6 @@ begin
 end;
 $$;
 
-alter table sandbox.organizations
-  alter column organization_id set not null;
-
 create index if not exists sandbox_organizations_tenant_idx
   on sandbox.organizations(organization_id);
 
@@ -117,7 +111,7 @@ select * from sandbox.organizations;
 -- Narrow boolean check for sandbox entitlement. It returns no license data and
 -- does not grant platform administration or tenant membership.
 create or replace function app_private.has_sandbox_capability_entitlements(
-  p_organization_id uuid,
+  p_sandbox_organization_id uuid,
   p_capability_keys text[]
 )
 returns boolean
@@ -128,9 +122,23 @@ set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
+  v_tenant_organization_id uuid;
 begin
-  if v_uid is null or p_organization_id is null
+  if v_uid is null or p_sandbox_organization_id is null
     or p_capability_keys is null or cardinality(p_capability_keys) = 0 then
+    return false;
+  end if;
+
+  -- p_organization_id is the synthetic Sandbox organization ID. Resolve the
+  -- tenant link from the nullable FK first, then by deterministic slug mapping.
+  select coalesce(so.organization_id, o.id)
+    into v_tenant_organization_id
+  from sandbox.organizations so
+  left join public.organizations o
+    on so.slug = replace(o.slug, '_', '-') || '-sandbox'
+  where so.id = p_sandbox_organization_id;
+
+  if v_tenant_organization_id is null then
     return false;
   end if;
 
@@ -148,7 +156,7 @@ begin
             select 1
             from sandbox.organizations so
             join sandbox.organization_memberships sm on sm.organization_id = so.id
-            where so.organization_id = p_organization_id
+            where so.id = p_sandbox_organization_id
               and sm.user_id = v_uid
           )
         )
@@ -164,7 +172,7 @@ begin
       or not exists (
         select 1
         from public.organization_capability_licenses l
-        where l.organization_id = p_organization_id
+        where l.organization_id = v_tenant_organization_id
           and l.capability_key = requested.capability_key
           and l.license_status = 'granted'
           and l.operational_status = 'active'
@@ -180,7 +188,7 @@ grant execute on function app_private.has_sandbox_capability_entitlements(uuid, 
 
 -- Public PostgREST entry point is INVOKER; privileged lookup stays private.
 create or replace function public.has_sandbox_capability_entitlements(
-  p_organization_id uuid,
+  p_sandbox_organization_id uuid,
   p_capability_keys text[]
 )
 returns boolean
@@ -189,7 +197,7 @@ stable
 security invoker
 set search_path = ''
 as $$
-  select app_private.has_sandbox_capability_entitlements(p_organization_id, p_capability_keys);
+  select app_private.has_sandbox_capability_entitlements(p_sandbox_organization_id, p_capability_keys);
 $$;
 revoke all on function public.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
 grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;\n\n-- Remove organization-owner authority over platform-wide licensing.
