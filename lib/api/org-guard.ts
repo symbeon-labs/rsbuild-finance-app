@@ -94,6 +94,19 @@ export async function requireOrgContext(
   }
 
   if (requiredCapability) {
+    // The institutional RSBUILD audit trail is a core governance surface,
+    // not a customer-licensed capability. Keep it available to institutional
+    // owners/admins while customer tenants remain subject to explicit audit
+    // entitlements below.
+    const isInternalAuditAdministrator =
+      requiredCapability === "audit" &&
+      organizationSlug === "rsbuild" &&
+      (role === "owner" || role === "admin");
+
+    if (isInternalAuditAdministrator) {
+      return { ok: true, ctx: { supabase, userId: user.id, userEmail: user.email ?? "", role } };
+    }
+
     // Resolve environment from the server-loaded organization record.
     // Never accept environment from request parameters or browser payloads.
     // Sandbox routes use a separate schema and dedicated entitlement RPC.
