@@ -339,6 +339,7 @@ export default function ControlTowerWorkspace({
               organizations={availableOrganizations}
               sandboxOrganizations={availableSandboxOrganizations}
               currentOrganizationId={organizationId}
+              canManageCapabilities={organizationSlug === "rsbuild" && membershipRole === "owner"}
             />
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
