@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseCsv, parseOfx } from "@/lib/finance";
+import { decodeImportText, parseCsv, parseOfx } from "@/lib/finance";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 import { recordAuditEvent } from "@/lib/api/audit";
@@ -115,8 +115,13 @@ export async function POST(request: Request) {
   const bytes = Buffer.from(await file.arrayBuffer());
   const fileHash = createHash("sha256").update(bytes).digest("hex");
   let sourceText: string;
-  try { sourceText = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
-  catch { return NextResponse.json({ error: "source_encoding_invalid" }, { status: 422 }); }
+  try { sourceText = decodeImportText(bytes); }
+  catch (error) {
+    return NextResponse.json({
+      error: "source_encoding_invalid",
+      message: error instanceof Error ? error.message : "Codificação do arquivo não reconhecida."
+    }, { status: 422 });
+  }
 
   const parsed = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(sourceText) : parseCsv(sourceText);
   if (parsed.errors.length || !parsed.records.length || parsed.records.length > MAX_RECORDS) {
