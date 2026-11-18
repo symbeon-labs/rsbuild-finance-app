@@ -48,8 +48,14 @@ export function isCapabilityUsable(input: {
   operationalStatus: "not_implemented" | "in_development" | "available" | "active";
   environment: Environment;
   entitledEnvironments: Environment[];
+  expiresAt?: string | null;
+  now?: Date;
 }): boolean {
+  const expiresAt = input.expiresAt ? Date.parse(input.expiresAt) : null;
+  const notExpired = expiresAt === null
+    || (Number.isFinite(expiresAt) && expiresAt > (input.now ?? new Date()).getTime());
   return input.licenseStatus === "granted"
     && input.operationalStatus === "active"
-    && input.entitledEnvironments.includes(input.environment);
+    && input.entitledEnvironments.includes(input.environment)
+    && notExpired;
 }
