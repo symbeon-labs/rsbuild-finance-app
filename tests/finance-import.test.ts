@@ -452,7 +452,7 @@ test("normaliza CSV com cabeçalhos alternativos para o esquema financeiro", () 
 
 
 test("biblioteca sintética Mundo do Sabor: CSV bancário é compatível com o parser financeiro", () => {
-  const syntheticBankCsv = readFileSync(new URL("../docs/qa/library/bank-statements-synthetic.csv", import.meta.url), "utf8");
+  const syntheticBankCsv = readFileSync("docs/qa/library/bank-statements-synthetic.csv", "utf8");
   const result = parseCsv(syntheticBankCsv);
   assert.equal(result.records.length, 7);
   assert.deepEqual(result.errors, []);
