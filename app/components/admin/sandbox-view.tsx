@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { HoldingWorkspaceOrganization } from "@/app/components/executive/holding-workspace-management-view";
 
 type SandboxData = {
   organizations: any[];
@@ -26,7 +28,8 @@ const statusColor: Record<string, string> = {
   passed: "#059669", failed: "#DC2626", blocked: "#B7791F", pending: "var(--muted)"
 };
 
-export function SandboxView() {
+export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }: { qaOrganizations?: HoldingWorkspaceOrganization[]; sandboxOrganizations?: HoldingWorkspaceOrganization[] }) {
+  const router = useRouter();
   const [data, setData] = useState<SandboxData | null>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +164,34 @@ export function SandboxView() {
 
   return (
     <section style={{ display: "grid", gap: 18 }}>
+      <section className="card cockpit-card" style={{ padding: 18, display: "grid", gap: 14 }}>
+        <div>
+          <div className="eyebrow">AMBIENTES CONTROLADOS</div>
+          <h2 style={{ margin: "4px 0", color: "var(--ink)", fontSize: 19 }}>Homologação & Sandbox</h2>
+          <p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>Ambientes de teste e laboratórios isolados.</p>
+        </div>
+        {qaOrganizations.length > 0 && <>
+          <strong style={{ color: "var(--ink)", fontSize: 13 }}>Homologação</strong>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+            {qaOrganizations.map((org) => <article key={org.id} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 14, display: "grid", gap: 8 }}>
+              <span style={{ color: "#B7791F", fontSize: 10, fontWeight: 800 }}>QA · HOMOLOGAÇÃO</span>
+              <strong style={{ color: "var(--ink)", fontSize: 14 }}>{org.name}</strong>
+              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(org.id) + "&tab=visao-geral")}>Abrir ambiente →</button>
+            </article>)}
+          </div>
+        </>}
+        {sandboxOrganizations.length > 0 && <>
+          <strong style={{ color: "var(--ink)", fontSize: 13 }}>Laboratórios isolados</strong>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+            {sandboxOrganizations.map((org) => <article key={org.id} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 14, display: "grid", gap: 8 }}>
+              <span style={{ color: "#7C3AED", fontSize: 10, fontWeight: 800 }}>SANDBOX</span>
+              <strong style={{ color: "var(--ink)", fontSize: 14 }}>{org.name}</strong>
+              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(org.id) + "&tab=sandbox")}>Abrir laboratório →</button>
+            </article>)}
+          </div>
+        </>}
+        {qaOrganizations.length === 0 && sandboxOrganizations.length === 0 && <p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>Nenhum ambiente controlado concedido a esta conta.</p>}
+      </section>
       <header className="card cockpit-card" style={{ padding: "22px 24px", borderLeft: "4px solid #7C3AED", display: "grid", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div>
