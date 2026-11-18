@@ -34,4 +34,7 @@ test("capability requires granted license, active implementation and environment
   assert.equal(isCapabilityUsable({ ...base, environment: "production" }), false);
   assert.equal(isCapabilityUsable({ ...base, licenseStatus: "suspended" }), false);
   assert.equal(isCapabilityUsable({ ...base, operationalStatus: "in_development" }), false);
+  assert.equal(isCapabilityUsable({ ...base, expiresAt: "2020-01-01T00:00:00.000Z", now: new Date("2026-11-18T12:00:00.000Z") }), false);
+  assert.equal(isCapabilityUsable({ ...base, expiresAt: "not-a-date", now: new Date("2026-11-18T12:00:00.000Z") }), false);
+  assert.equal(isCapabilityUsable({ ...base, expiresAt: "2027-01-01T00:00:00.000Z", now: new Date("2026-11-18T12:00:00.000Z") }), true);
 });
