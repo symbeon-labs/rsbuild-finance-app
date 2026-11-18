@@ -6,7 +6,7 @@ import { RecordTable } from "./common";
 
 interface ImportacoesViewProps {
   fileName: string;
-  detectedColumns: CsvColumnMatch[];
+  detectedColumns?: CsvColumnMatch[];
   pendingImport: FinancialRecord[];
   pendingMetadata: BankMetadata | null;
   importErrors: string[];
@@ -19,7 +19,7 @@ interface ImportacoesViewProps {
 
 export function ImportacoesView({
   fileName,
-  detectedColumns,
+  detectedColumns = [],
   pendingImport,
   pendingMetadata,
   importErrors,
