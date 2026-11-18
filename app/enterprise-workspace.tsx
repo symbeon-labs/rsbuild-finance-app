@@ -1,5 +1,6 @@
 "use client";
 
+import { todayIsoDateSaoPaulo } from "@/lib/date-format";
 import { ChangeEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
@@ -595,7 +596,7 @@ export default function EnterpriseWorkspace({
     const blob = new Blob([ofxContent], { type: "application/x-ofx;charset=windows-1252" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = todayIsoDateSaoPaulo();
     a.href = url;
     a.download = `extrato_padronizado_omie_${dateStr}.ofx`;
     document.body.appendChild(a);
@@ -631,7 +632,7 @@ export default function EnterpriseWorkspace({
     const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = todayIsoDateSaoPaulo();
     a.href = url;
     a.download = `lote_baixas_omie_${dateStr}.csv`;
     document.body.appendChild(a);
@@ -674,7 +675,7 @@ export default function EnterpriseWorkspace({
     const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = todayIsoDateSaoPaulo();
     a.href = url;
     a.download = `protocolo_blindagem_canhotos_${dateStr}.csv`;
     document.body.appendChild(a);
@@ -729,7 +730,7 @@ export default function EnterpriseWorkspace({
     const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = todayIsoDateSaoPaulo();
     a.href = url;
     a.download = `pedidos_vendas_omie_hub_acai_${dateStr}.csv`;
     document.body.appendChild(a);
