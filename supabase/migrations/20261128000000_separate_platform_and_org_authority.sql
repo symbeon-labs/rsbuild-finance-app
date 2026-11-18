@@ -29,7 +29,7 @@ create or replace function public.is_platform_administrator()
 returns boolean
 language sql
 stable
-security definer
+security invoker
 set search_path = ''
 as $$
   select exists (
@@ -112,7 +112,7 @@ select * from sandbox.organizations;
 
 -- Narrow boolean check for sandbox entitlement. It returns no license data and
 -- does not grant platform administration or tenant membership.
-create or replace function public.has_sandbox_capability_entitlements(
+create or replace function app_private.has_sandbox_capability_entitlements(
   p_organization_id uuid,
   p_capability_keys text[]
 )
@@ -171,6 +171,22 @@ begin
 end;
 $$;
 
+revoke all on function app_private.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
+grant execute on function app_private.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;
+
+-- Public PostgREST entry point is INVOKER; privileged lookup stays private.
+create or replace function public.has_sandbox_capability_entitlements(
+  p_organization_id uuid,
+  p_capability_keys text[]
+)
+returns boolean
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select app_private.has_sandbox_capability_entitlements(p_organization_id, p_capability_keys);
+$$;
 revoke all on function public.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
 grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;\n\n-- Remove organization-owner authority over platform-wide licensing.
 drop policy if exists "RSBUILD owners manage capability licenses" on public.organization_capability_licenses;
@@ -199,7 +215,7 @@ create policy "Platform administrators read capability license events"
 -- server-side. Drop the previous signature to avoid an ambiguous overload.
 drop function if exists public.set_organization_capability_license(uuid, text, text, text, text);
 
-create function public.set_organization_capability_license(
+create function app_private.set_organization_capability_license(
   p_organization_id uuid,
   p_capability_key text,
   p_license_status text,
@@ -308,5 +324,28 @@ begin
 end;
 $$;
 
-revoke all on function public.set_organization_capability_license(uuid, text, text, text, text, text[], timestamptz) from public;
+
+-- Public RPC remains INVOKER; mutation is isolated in app_private.
+create or replace function public.set_organization_capability_license(
+  p_organization_id uuid,
+  p_capability_key text,
+  p_license_status text,
+  p_operational_status text,
+  p_reason text default null,
+  p_entitled_environments text[] default '{}'::text[],
+  p_expires_at timestamptz default null
+)
+returns public.organization_capability_licenses
+language sql
+security invoker
+set search_path = ''
+as $$
+  select app_private.set_organization_capability_license(
+    p_organization_id, p_capability_key, p_license_status,
+    p_operational_status, p_reason, p_entitled_environments, p_expires_at
+  );
+$$;
+revoke all on function app_private.set_organization_capability_license(uuid, text, text, text, text, text[], timestamptz) from public, anon;
+grant execute on function app_private.set_organization_capability_license(uuid, text, text, text, text, text[], timestamptz) to authenticated;
+revoke all on function public.set_organization_capability_license(uuid, text, text, text, text, text[], timestamptz) from public, anon;
 grant execute on function public.set_organization_capability_license(uuid, text, text, text, text, text[], timestamptz) to authenticated;
