@@ -5,7 +5,6 @@ import {
   canAdministerPlatform,
   canManageCapabilityLicenses,
   isCapabilityUsable,
-  resolveOrganizationEnvironment,
   resolveOrganizationEnvironment
 } from "../lib/platform-authorization";
 
@@ -50,9 +49,3 @@ test("organization environment is resolved from its trusted server-side slug", (
   assert.equal(resolveOrganizationEnvironment("hub_acai"), "production");
 });
 
-
-test("organization environment is resolved from the persisted slug", () => {
-  assert.equal(resolveOrganizationEnvironment("mundo_sabor"), "production");
-  assert.equal(resolveOrganizationEnvironment("mundo_sabor_qa"), "qa");
-  assert.equal(resolveOrganizationEnvironment("rsbuild_qa_alpha"), "qa");
-});
