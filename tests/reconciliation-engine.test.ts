@@ -68,3 +68,21 @@ test("A1: invalid amounts cannot produce a match", () => {
   const result = matchFinancialTitlesWithRecords([title({ amount: NaN })], [record()]);
   assert.equal(result[0].status, "no_match");
 });
+
+test("A1: impossible calendar dates are rejected", () => {
+  const result = matchFinancialTitlesWithRecords(
+    [title({ dueDate: "2026-02-31" })],
+    [record({ date: "2026-02-28" })]
+  );
+  assert.equal(result[0].status, "no_match");
+});
+
+test("A1: invalid score thresholds are rejected against the scoring ceiling", () => {
+  assert.throws(
+    () => matchFinancialTitlesWithRecords([title()], [record()], { autoMatchMinimumScore: 131 }),
+    /between 1 and 130/
+  );
+  assert.doesNotThrow(
+    () => matchFinancialTitlesWithRecords([title()], [record()], { autoMatchMinimumScore: 100 })
+  );
+});
