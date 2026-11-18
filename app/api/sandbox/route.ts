@@ -215,7 +215,7 @@ export async function POST(request: Request) {
     if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
       return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
     }
-    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.organization_id);
+    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.id);
     if (entitlementDenial) return entitlementDenial;
 
     const { data: validationCase, error: caseError } = await supabase
