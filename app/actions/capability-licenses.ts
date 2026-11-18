@@ -42,7 +42,7 @@ export async function setCapabilityLicense(input: {
     p_operational_status: input.operationalStatus,
     p_reason: input.reason?.trim() || null,
     p_entitled_environments: input.entitledEnvironments,
-    p_expires_at: input.expiresAt || null
+    p_expires_at: input.expiresAt ? `${input.expiresAt}T23:59:59.999-03:00` : null
   });
 
   if (error) return { ok: false, error: error.message.includes("42501")
