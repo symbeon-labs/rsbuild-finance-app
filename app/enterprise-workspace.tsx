@@ -364,7 +364,7 @@ export default function EnterpriseWorkspace({
       });
 
     return () => { active = false; };
-  }, [organizationId, organizationSlug]);
+  }, [organizationId, organizationSlug, router]);
 
   // Persiste os dados de sessão sempre que mudam, somente após a hidratação da org ativa.
   // Evita gravar dados da organização anterior sob a chave da nova organização.
