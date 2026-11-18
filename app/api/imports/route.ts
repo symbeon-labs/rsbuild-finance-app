@@ -7,7 +7,7 @@ import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 import { recordAuditEvent } from "@/lib/api/audit";
 import { requireOrgContext } from "@/lib/api/org-guard";
-import { consumeRateLimit } from "@/lib/api/rate-limit";
+import { requireOrgContext } from "@/lib/api/org-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,21 +23,6 @@ export async function GET(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(organizationId)) {
     return NextResponse.json({ error: "invalid_organization" }, { status: 400 });
-  }
-  const { data: membership, error: membershipError } = await userClient
-    .from("organization_memberships").select("role")
-    .eq("organization_id", organizationId).eq("user_id", user.id).maybeSingle();
-  if (membershipError || !membership) {
-    await recordAuditEvent({
-      organizationId,
-      actorId: user.id,
-      actorEmail: user.email ?? null,
-      eventType: "access.denied",
-      entityType: "organization",
-      entityId: organizationId,
-      metadata: { reason: "organization_access_denied", path: "/api/imports", method: "GET" }
-    });
-    return NextResponse.json({ error: "organization_access_denied" }, { status: 403 });
   }
   const capabilityGuard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], "finance");
   if (!capabilityGuard.ok) return capabilityGuard.response;
@@ -77,9 +62,6 @@ export async function POST(request: Request) {
   const userClient = await createClient();
   const { data: { user }, error: authError } = await userClient.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-  if (!consumeRateLimit(`${user.id}:/api/imports`)) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-  }
 
   let form: FormData;
   try { form = await request.formData(); }
@@ -94,27 +76,9 @@ export async function POST(request: Request) {
   if (fileError) return NextResponse.json({ error: fileError }, { status: file.size > MAX_IMPORT_FILE_BYTES ? 413 : 415 });
 
   // Tenant authorization is evaluated with the user's session, never with the service key.
-  const { data: membership, error: membershipError } = await userClient
-    .from("organization_memberships")
-    .select("role")
-    .eq("organization_id", organizationId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (membershipError || !membership || !["owner", "admin", "operator"].includes(membership.role)) {
-    await recordAuditEvent({
-      organizationId,
-      actorId: user.id,
-      actorEmail: user.email ?? null,
-      eventType: "access.denied",
-      entityType: "organization",
-      entityId: organizationId,
-      metadata: { reason: "insufficient_role", requiredRoles: ["owner", "admin", "operator"], actualRole: membership?.role ?? null, path: "/api/imports", method: "POST" }
-    });
-    return NextResponse.json({ error: "organization_access_denied" }, { status: 403 });
-  }
-
   const capabilityGuard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "finance");
   if (!capabilityGuard.ok) return capabilityGuard.response;
+
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const fileHash = createHash("sha256").update(bytes).digest("hex");
