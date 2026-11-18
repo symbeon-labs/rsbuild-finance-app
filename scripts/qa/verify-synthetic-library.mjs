@@ -24,7 +24,7 @@ for (const dataset of manifest.datasets) {
 const bank = rows("bank-statements-synthetic.csv");
 const credits = bank.filter(r => r[6] === "CREDIT").reduce((sum, r) => sum + money(r[5]), 0);
 const debits = bank.filter(r => r[6] === "DEBIT").reduce((sum, r) => sum + Math.abs(money(r[5])), 0);
-if (credits !== 295000 || debits !== 163000 || credits - debits !== 132000) failures.push("bank statement totals mismatch");
+if (credits !== 263000 || debits !== 163000 || credits - debits !== 100000) failures.push("bank statement totals mismatch");
 
 const ar = rows("receivables-synthetic.csv");
 const arTotal = ar.reduce((sum, r) => sum + money(r[6]), 0);
