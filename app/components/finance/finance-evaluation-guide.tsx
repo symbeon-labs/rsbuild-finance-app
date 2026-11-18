@@ -27,37 +27,37 @@ const GUIDE: Partial<Record<NavSection, GuideItem>> = {
   "visao-geral": {
     title: "Visão geral financeira",
     purpose: "Reunir em um único painel as entradas, saídas, resultado do período e situação dos registros financeiros carregados.",
-    benefit: "Facilita uma leitura inicial da movimentação e ajuda a identificar rapidamente períodos ou bases que precisam de conferência.",
+    benefit: "Ajuda a entender o movimento do período e a localizar informações que precisam de conferência.",
     evidence: ["Totais de entradas e saídas coerentes com os registros apresentados", "Quantidade de movimentações e pendências de revisão", "Fontes identificadas e registros recentes"],
   },
   movimentacoes: {
     title: "Movimentações financeiras",
     purpose: "Consultar os lançamentos importados, pesquisar por descrição, categoria ou origem e revisar os registros disponíveis.",
-    benefit: "Reduz o tempo gasto procurando lançamentos e oferece uma visão organizada das movimentações para conferência.",
+    benefit: "Organiza a consulta e facilita localizar lançamentos que precisam ser conferidos.",
     evidence: ["Registros apresentados com data, valor, natureza e origem", "Busca retornando os lançamentos esperados", "Exportação disponível quando houver registros"],
   },
   importacoes: {
     title: "Importação de extratos",
     purpose: "Receber arquivos bancários CSV ou OFX, apresentar uma prévia e permitir a revisão antes da confirmação.",
-    benefit: "Organiza a entrada de dados financeiros e reduz erros ao permitir conferir o conteúdo antes de gravá-lo no ambiente.",
+    benefit: "Permite revisar os dados antes da confirmação e identificar inconsistências na entrada.",
     evidence: ["Arquivo e instituição identificados quando disponíveis", "Campos reconhecidos e registros apresentados na prévia", "Erros destacados e confirmação bloqueada quando há inconsistências", "Importação só persistida após confirmação explícita"],
   },
   conciliacao: {
     title: "Conciliação bancária",
     purpose: "Comparar movimentações bancárias com lançamentos do ERP, destacando correspondências, itens pendentes e possíveis divergências.",
-    benefit: "Ajuda a localizar diferenças entre fontes financeiras e direciona a revisão para os casos que exigem atenção.",
+    benefit: "Destaca diferenças entre fontes e direciona a conferência para os itens pendentes.",
     evidence: ["Totais por conta e situação das correspondências", "Itens conciliados e não conciliados identificáveis", "Decisões manuais acompanhadas de justificativa", "Divergências submetidas à alçada adequada"],
   },
   baixas: {
     title: "Baixas e conciliação de títulos",
     purpose: "Relacionar títulos a receber com entradas bancárias e organizar os itens prontos, divergentes ou ainda não identificados.",
-    benefit: "Apoia a conferência de recebimentos e prepara informações para uma eventual baixa no ERP, com revisão antes de qualquer ação.",
+    benefit: "Organiza a conferência dos recebimentos e destaca o que precisa de revisão antes de uma baixa.",
     evidence: ["Títulos relacionados a registros bancários", "Diferenças de valor e status sugerido visíveis", "Restrições de autorização respeitadas", "Exportação identificada como arquivo para conferência, sem baixa automática no ERP"],
   },
   relatorios: {
     title: "Relatórios DRE",
     purpose: "Área destinada à consolidação de demonstrativos de resultado e indicadores contábeis.",
-    benefit: "Deverá apoiar a leitura do desempenho financeiro em uma visão gerencial consolidada.",
+    benefit: "Quando estiver disponível, deverá apoiar a leitura gerencial do desempenho financeiro.",
     evidence: ["A área informa que está em desenvolvimento", "Não apresentar demonstrativos como se já estivessem disponíveis", "Registrar quais indicadores e recortes seriam relevantes para a operação"],
   },
 };
