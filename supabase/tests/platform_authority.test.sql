@@ -31,6 +31,10 @@ insert into sandbox.organizations (id, slug, display_name, organization_id)
 values ('d3333333-3333-4333-8333-333333333333','g01-tenant-sandbox','G01 Tenant Sandbox','d2222222-2222-4222-8222-222222222222')
 on conflict (slug) do nothing;
 
+insert into sandbox.organizations (id, slug, display_name, organization_id)
+values ('d4444444-4444-4444-8444-444444444444','mundo-sabor-sandbox','Mundo do Sabor Sandbox','d2222222-2222-4222-8222-222222222222')
+on conflict (slug) do update set organization_id = excluded.organization_id;
+
 insert into public.platform_administrators (user_id, granted_by, reason)
 values ('c2222222-2222-4222-8222-222222222222','c2222222-2222-4222-8222-222222222222','G01 pgTAP fixture')
 on conflict (user_id) do update set revoked_at = null, revoked_by = null;
