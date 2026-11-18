@@ -7,7 +7,7 @@ const MAX_EVENTS = 300;
 
 export async function GET(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], "audit");
   if (!guard.ok) return guard.response;
   const { supabase } = guard.ctx;
 
