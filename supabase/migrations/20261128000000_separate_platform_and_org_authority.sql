@@ -141,7 +141,7 @@ begin
   if p_license_status = 'granted' and cardinality(p_entitled_environments) = 0 then
     raise exception 'A granted license requires at least one entitled environment' using errcode = '22023';
   end if;
-  if p_expires_at is not null and p_expires_at <= now() then
+  if p_license_status = 'granted' and p_expires_at is not null and p_expires_at <= now() then
     raise exception 'License expiration must be in the future' using errcode = '22023';
   end if;
   if not exists (select 1 from public.organizations where id = p_organization_id) then
