@@ -3,24 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { NavSection } from "@/app/types/workspace";
 
-type GuideItem = {
-  title: string;
-  purpose: string;
-  benefit: string;
-  evidence: string[];
-};
-
+type GuideItem = { title: string; purpose: string; benefit: string; evidence: string[] };
 type Evaluation = {
-  id: string;
-  organization: string;
-  environment: "QA";
-  module: "Finanças";
-  feature: string;
-  section: string;
-  assessment: string;
-  observation: string;
-  version: "finance-guide-v0.1";
-  createdAt: string;
+  id: string; organization_id: string; feature_key: string; assessment: string;
+  scenario_summary: string; observation: string; operational_impact: string;
+  rubric_version: string; created_by: string; created_at: string;
 };
 
 const GUIDE: Partial<Record<NavSection, GuideItem>> = {
@@ -62,75 +49,67 @@ const GUIDE: Partial<Record<NavSection, GuideItem>> = {
   },
 };
 
-const STORAGE_KEY = "rsbuild_qa_finance_evaluations_v1";
+const ASSESSMENTS = ["Atendeu ao esperado", "Atendeu parcialmente", "Não atendeu", "Não foi possível verificar", "Não se aplica"];
 
 export function FinanceEvaluationGuide({
-  section,
-  organizationName,
-}: {
-  section: NavSection;
-  organizationName: string;
-}) {
+  section, organizationName, organizationId,
+}: { section: NavSection; organizationName: string; organizationId: string }) {
   const item = GUIDE[section];
   const [assessment, setAssessment] = useState("Não avaliado");
+  const [scenarioSummary, setScenarioSummary] = useState("");
   const [observation, setObservation] = useState("");
+  const [operationalImpact, setOperationalImpact] = useState("");
   const [entries, setEntries] = useState<Evaluation[]>([]);
   const [expanded, setExpanded] = useState(true);
   const [feedback, setFeedback] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  async function loadEvaluations() {
+    setLoading(true);
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) setEntries(parsed);
-      }
-    } catch {
-      setFeedback("Não foi possível recuperar as avaliações salvas neste navegador.");
-    }
-  }, []);
+      const response = await fetch(`/api/qa-evaluations?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível recuperar as avaliações.");
+      setEntries(Array.isArray(payload.evaluations) ? payload.evaluations : []);
+      setFeedback("");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Falha ao carregar avaliações.");
+    } finally { setLoading(false); }
+  }
 
-  const sectionEntries = useMemo(
-    () => entries.filter((entry) => entry.organization === organizationName && entry.environment === "QA" && entry.module === "Finanças" && entry.section === section),
-    [entries, section],
-  );
+  useEffect(() => { void loadEvaluations(); }, [organizationId]);
 
+  const sectionEntries = useMemo(() => entries.filter((entry) => entry.feature_key === section), [entries, section]);
   if (!item) return null;
-  const guideTitle = item.title;
 
-  function saveEvaluation() {
-    const entry: Evaluation = {
-      id: `qa-finance-${Date.now()}`,
-      organization: organizationName,
-      environment: "QA",
-      module: "Finanças",
-      feature: guideTitle,
-      section,
-      assessment,
-      observation: observation.trim(),
-      version: "finance-guide-v0.1",
-      createdAt: new Date().toISOString(),
-    };
-    const next = [...entries, entry];
+  async function saveEvaluation() {
+    if (assessment === "Não avaliado") return;
+    setSaving(true);
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      setEntries(next);
-      setObservation("");
-      setFeedback("Avaliação salva neste navegador.");
-    } catch {
-      setFeedback("Não foi possível salvar. Verifique o espaço disponível no navegador.");
-    }
+      const response = await fetch("/api/qa-evaluations", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId, featureKey: section, assessment,
+          scenarioSummary, observation, operationalImpact, evidenceRefs: [],
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível salvar a avaliação.");
+      setAssessment("Não avaliado"); setScenarioSummary(""); setObservation(""); setOperationalImpact("");
+      await loadEvaluations();
+      setFeedback("Avaliação registrada no ambiente QA.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Falha ao salvar avaliação.");
+    } finally { setSaving(false); }
   }
 
   function exportEvaluations() {
-    const payload = entries.filter((entry) => entry.organization === organizationName && entry.environment === "QA" && entry.module === "Finanças");
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "avaliacoes-financeiras-mundo-do-sabor-qa.json";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    anchor.href = url; anchor.download = "avaliacoes-financeiras-mundo-do-sabor-qa.json";
+    anchor.click(); URL.revokeObjectURL(url);
   }
 
   return (
@@ -145,61 +124,55 @@ export function FinanceEvaluationGuide({
           {expanded ? "Recolher guia" : "Abrir guia"}
         </button>
       </div>
-
-      {expanded && (
-        <>
-          <div className="qa-guide-grid">
-            <article>
-              <span>FINALIDADE</span>
-              <p>{item.purpose}</p>
-            </article>
-            <article>
-              <span>BENEFÍCIO OPERACIONAL</span>
-              <p>{item.benefit}</p>
-            </article>
-            <article>
-              <span>CRITÉRIOS DE VERIFICAÇÃO</span>
-              <ul>{item.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul>
-            </article>
+      {expanded && <>
+        <div className="qa-guide-grid">
+          <article><span>FINALIDADE</span><p>{item.purpose}</p></article>
+          <article><span>BENEFÍCIO OPERACIONAL</span><p>{item.benefit}</p></article>
+          <article><span>CRITÉRIOS DE VERIFICAÇÃO</span><ul>{item.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul></article>
+        </div>
+        <div className="qa-guide-evaluation">
+          <div className="qa-guide-evaluation-title">
+            <div><strong>Resultado da verificação</strong><p>Registre o cenário testado, o resultado observado e o impacto percebido na operação.</p></div>
+            <span>{loading ? "Carregando…" : `${sectionEntries.length} registro(s) nesta área`}</span>
           </div>
-
-          <div className="qa-guide-evaluation">
-            <div className="qa-guide-evaluation-title">
-              <div>
-                <strong>Resultado da verificação</strong>
-                <p>Compare o comportamento observado com os critérios acima. Registre o que conseguiu validar e o que ficou pendente.</p>
-              </div>
-              <span>{sectionEntries.length} registro(s) nesta área</span>
-            </div>
-            <div className="qa-guide-form">
-              <label>
-                Resultado da avaliação
-                <select value={assessment} onChange={(event) => setAssessment(event.target.value)}>
-                  <option>Não avaliado</option>
-                  <option>Atendeu ao esperado</option>
-                  <option>Atendeu parcialmente</option>
-                  <option>Não atendeu</option>
-                  <option>Não foi possível verificar</option>
-                  <option>Não se aplica</option>
-                </select>
-              </label>
-              <label className="qa-guide-observation">
-                Observações do avaliador
-                <textarea value={observation} onChange={(event) => setObservation(event.target.value)} placeholder="Descreva o cenário testado, o resultado observado, eventuais divergências e o que precisa ser ajustado." rows={3} />
-              </label>
-            </div>
-            <div className="qa-guide-actions">
-              <span>Mundo do Sabor · QA · Finanças · Guia v0.1 · Registro local neste navegador</span>
-              <div>
-                <button type="button" className="secondary-button" onClick={exportEvaluations} disabled={!entries.length}>Exportar avaliações</button>
-                <button type="button" className="primary-button" onClick={saveEvaluation} disabled={assessment === "Não avaliado" && !observation.trim()}>Salvar avaliação</button>
-              </div>
-            </div>
-            {feedback && <p className="qa-guide-feedback" role="status">{feedback}</p>}
-            <p className="qa-guide-disclaimer">Este guia apenas registra a avaliação. O registro não altera lançamentos, saldos ou títulos; ações executadas nas próprias funcionalidades continuam sujeitas aos seus fluxos e permissões.</p>
+          <div className="qa-guide-form">
+            <label>Resultado da avaliação
+              <select value={assessment} onChange={(event) => setAssessment(event.target.value)}>
+                <option>Não avaliado</option>{ASSESSMENTS.map((value) => <option key={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className="qa-guide-observation">Cenário testado
+              <textarea value={scenarioSummary} onChange={(event) => setScenarioSummary(event.target.value)} placeholder="O que você tentou fazer?" rows={2} />
+            </label>
+            <label className="qa-guide-observation">Resultado observado
+              <textarea value={observation} onChange={(event) => setObservation(event.target.value)} placeholder="O que aconteceu? Inclua divergências ou dificuldades." rows={3} />
+            </label>
+            <label className="qa-guide-observation">Impacto na operação
+              <textarea value={operationalImpact} onChange={(event) => setOperationalImpact(event.target.value)} placeholder="Como isso afeta a rotina da empresa ou poderia melhorá-la?" rows={2} />
+            </label>
           </div>
-        </>
-      )}
+          <div className="qa-guide-actions">
+            <span>{organizationName} · QA · Finanças · Guia v0.2 · Registro centralizado</span>
+            <div>
+              <button type="button" className="secondary-button" onClick={exportEvaluations} disabled={!entries.length}>Exportar avaliações</button>
+              <button type="button" className="primary-button" onClick={saveEvaluation} disabled={saving || assessment === "Não avaliado" || (!scenarioSummary.trim() && !observation.trim() && !operationalImpact.trim())}>
+                {saving ? "Salvando…" : "Registrar avaliação"}
+              </button>
+            </div>
+          </div>
+          {feedback && <p className="qa-guide-feedback" role="status">{feedback}</p>}
+          {sectionEntries.length > 0 && <div className="qa-guide-history" aria-label="Histórico de avaliações">
+            <strong>Histórico registrado</strong>
+            {sectionEntries.map((entry) => <article key={entry.id}>
+              <div><b>{entry.assessment}</b><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString("pt-BR")}</time></div>
+              {entry.scenario_summary && <p><span>Cenário:</span> {entry.scenario_summary}</p>}
+              {entry.observation && <p><span>Resultado:</span> {entry.observation}</p>}
+              {entry.operational_impact && <p><span>Impacto:</span> {entry.operational_impact}</p>}
+            </article>)}
+          </div>}
+          <p className="qa-guide-disclaimer">Os registros são vinculados ao avaliador e ao ambiente QA. A avaliação não altera lançamentos, saldos ou títulos e não representa homologação técnica.</p>
+        </div>
+      </>}
     </section>
   );
 }
