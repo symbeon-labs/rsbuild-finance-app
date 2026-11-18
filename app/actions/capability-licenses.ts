@@ -84,7 +84,7 @@ export async function getCapabilityLicensingData() {
 /** Read-only capability availability for a member of the selected organization. */
 export async function getWorkspaceCapabilityAvailability(
   organizationId: string,
-  environment: "qa" | "sandbox" | "production"
+  environment: "qa" | "production"
 ) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -112,15 +112,19 @@ export async function getWorkspaceCapabilityAvailability(
   const capabilities = Object.fromEntries(
     (licenses ?? []).map((license) => {
       const entitled = (license.entitled_environments ?? []).includes(environment);
-      const expired = Boolean(license.expires_at && new Date(license.expires_at).getTime() < now);
+      const expired = Boolean(license.expires_at && new Date(license.expires_at).getTime() <= now);
       const granted = license.license_status === "granted" && entitled && !expired;
-      const status = !granted
-        ? (license.license_status === "suspended" ? "suspended" : license.license_status === "revoked" ? "revoked" : "blocked")
-        : license.operational_status === "in_development"
-          ? "in_development"
-          : ["available", "active"].includes(license.operational_status)
+      const status = expired
+        ? "expired"
+        : !granted
+          ? (license.license_status === "suspended" ? "suspended" : license.license_status === "revoked" ? "revoked" : "blocked")
+          : license.operational_status === "active"
             ? "available"
-            : "not_implemented";
+            : license.operational_status === "in_development"
+              ? "in_development"
+              : license.operational_status === "available"
+                ? "pending_activation"
+                : "not_implemented";
       return [license.capability_key, status];
     })
   );
