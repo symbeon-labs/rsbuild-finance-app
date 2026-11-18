@@ -15,7 +15,7 @@ test("formatDatePtBr formats timestamps in Sao Paulo timezone", () => {
 });
 
 test("formatDateTimePtBr formats timestamps in Sao Paulo timezone", () => {
-  assert.equal(formatDateTimePtBr("2026-11-18T14:30:00.000Z"), "18/11/2026 11:30");
+  assert.equal(formatDateTimePtBr("2026-11-18T14:30:00.000Z"), "18/11/2026, 11:30");
 });
 
 test("formatters preserve empty and invalid values safely", () => {
