@@ -9,8 +9,7 @@ create policy "RSBUILD owners read organization directory"
     exists (
       select 1
       from public.organization_memberships m
-      join public.organizations holding on holding.id = m.organization_id
-      where holding.slug = 'rsbuild'
+      where m.organization_id = '0269fe05-0990-41a8-a28c-2919691eaf0f'::uuid
         and m.user_id = (select auth.uid())
         and m.role = 'owner'::public.rsbuild_member_role
     )
