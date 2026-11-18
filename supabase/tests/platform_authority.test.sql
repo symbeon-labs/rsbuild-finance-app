@@ -20,7 +20,7 @@ from public.organizations where slug='rsbuild'
 on conflict do nothing;
 
 insert into public.capability_catalog (capability_key, display_name, description)
-values ('g01_test','G01 Test Capability','pgTAP fixture')
+values ('finance','Finance','pgTAP fixture')
 on conflict (capability_key) do nothing;
 
 insert into sandbox.organizations (slug, display_name, organization_id)
@@ -36,7 +36,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','c1111111-1111-4111-8111-111111111111',true);
 select ok(not public.is_platform_administrator(), 'RSBUILD owner is not implicitly a platform administrator');
 select throws_ok(
-  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','owner must not grant')$sql$,
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','finance','granted','active','owner must not grant')$sql$,
   '42501', null, 'RSBUILD owner cannot grant capability licenses'
 );
 select is(
@@ -64,7 +64,7 @@ select is(
   1, 'platform administrator can resolve tenant identity for licensing'
 );
 select lives_ok(
-  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','G01 authorized grant',array['qa'],null)$sql$,
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','finance','granted','active','G01 authorized grant',array['qa'],null)$sql$,
   'platform administrator can grant a capability through the audited RPC'
 );
 select ok(
@@ -100,19 +100,19 @@ select ok(
   'privileged public RPC wrappers are invoker-only and unavailable to anon'
 );
 select throws_ok(
-  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','missing environment',array[]::text[],null)$sql$,
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','finance','granted','active','missing environment',array[]::text[],null)$sql$,
   '22023', null, 'granted license without environment scope is rejected'
 );
 select throws_ok(
-  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','expired license',array['qa'],now() - interval '1 hour')$sql$,
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','finance','granted','active','expired license',array['qa'],now() - interval '1 hour')$sql$,
   '22023', null, 'expired license grant is rejected'
 );
 select is(
-  (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='g01_test'),
+  (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='finance'),
   1, 'license mutation appends one audit event and rejected grants append none'
 );
 select lives_ok(
-  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','G01 sandbox grant',array['sandbox'],null)$sql$,
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','finance','granted','active','G01 sandbox grant',array['sandbox'],null)$sql$,
   'platform administrator can explicitly grant Sandbox scope'
 );
 reset role;
