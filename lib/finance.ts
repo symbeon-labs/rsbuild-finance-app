@@ -46,6 +46,29 @@ export type ImportResult = {
   metadata?: BankMetadata;
 };
 
+/**
+ * Decodifica extratos bancários sem presumir UTF-8.
+ * Bancos brasileiros frequentemente exportam CSV/OFX em Windows-1252;
+ * alguns arquivos também chegam com BOM UTF-16.
+ */
+export function decodeImportText(bytes: Uint8Array): string {
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return new TextDecoder("utf-16le", { fatal: true }).decode(bytes);
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return new TextDecoder("utf-16be", { fatal: true }).decode(bytes);
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    try {
+      return new TextDecoder("windows-1252", { fatal: true }).decode(bytes);
+    } catch {
+      throw new Error("Não foi possível identificar a codificação do arquivo. Exporte novamente em UTF-8 ou Windows-1252.");
+    }
+  }
+}
+
 export const KNOWN_BANKS: Record<string, string> = {
   "0341": "Itaú Unibanco",
   "341": "Itaú Unibanco",
@@ -190,18 +213,60 @@ function parseRows(input: string, delimiter: string): { rows: { line: number; ce
 const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 const batchId = () => `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+export type CsvCanonicalField = "date" | "description" | "amount" | "direction" | "category" | "cost_center" | "document" | "account";
+
+export type CsvColumnMatch = {
+  source: string;
+  normalized: string;
+  field: CsvCanonicalField | null;
+  confidence: number;
+  required: boolean;
+};
+
+const CSV_FIELD_ALIASES: Record<CsvCanonicalField, string[]> = {
+  date: ["data", "date", "data movimento", "data_movimento", "data lancamento", "dt movimento", "dt lancamento", "data transacao", "transaction date", "posting date", "dt"],
+  description: ["descricao", "description", "historico", "memo", "lancamento", "name", "detalhe", "identificacao", "complemento", "favorecido", "beneficiario"],
+  amount: ["valor", "amount", "montante", "vlr", "vl lancamento", "vlr lancamento", "valor lancamento", "valor total", "value", "quantia"],
+  direction: ["tipo", "direcao", "direction", "natureza", "tipo movimento", "operacao", "credito debito", "dc"],
+  category: ["categoria", "category", "grupo", "classificacao", "tipo despesa"],
+  cost_center: ["centro de custo", "cost center", "setor", "departamento", "unidade"],
+  document: ["documento", "document", "numero documento", "num documento", "doc", "id transacao", "fitid"],
+  account: ["conta", "account", "conta bancaria", "account id"]
+};
+
+function normalizeCsvHeader(value: string): string {
+  return value.replace(/^\uFEFF/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Descoberta determinística de colunas usando o mesmo parser de cabeçalho do CSV. */
+export function discoverCsvColumns(headerLine: string): CsvColumnMatch[] {
+  const delimiter = detectDelimiter(headerLine);
+  if (!delimiter) return [];
+  const parsed = parseRows(headerLine, delimiter);
+  const headers = parsed.rows[0]?.cells ?? [];
+  return headers.map((source) => {
+    const normalized = normalizeCsvHeader(source);
+    const field = (Object.keys(CSV_FIELD_ALIASES) as CsvCanonicalField[]).find((key) =>
+      CSV_FIELD_ALIASES[key].some((alias) => normalizeCsvHeader(alias) === normalized)
+    ) ?? null;
+    return { source, normalized, field, confidence: field ? 1 : 0, required: field === "date" || field === "description" || field === "amount" };
+  });
+}
+
 export function parseCsv(text: string): ImportResult {
   const delimiter = detectDelimiter(text);
   if (!delimiter) return { records: [], errors: ["Delimitador CSV ambíguo ou ausente; use cabeçalhos separados por vírgula, ponto e vírgula ou tabulação."] };
   const parsed = parseRows(text, delimiter);
   if (parsed.rows.length < 2) return { records: [], errors: [...parsed.errors, "O arquivo não contém linhas de dados."] };
-  const headers = parsed.rows[0].cells.map(normalize);
-  const find = (...names: string[]) => headers.findIndex((h) => names.includes(h));
-  const dateIndex = find("data", "date", "data movimento", "data_movimento", "data lancamento");
-  const descriptionIndex = find("descricao", "description", "historico", "memo", "lancamento", "name");
-  const amountIndex = find("valor", "amount", "montante");
-  const directionIndex = find("tipo", "direcao", "direction", "natureza");
-  const categoryIndex = find("categoria", "category");
+  const headers = parsed.rows[0].cells.map(normalizeCsvHeader);
+  const findField = (field: CsvCanonicalField) => headers.findIndex((header) =>
+    CSV_FIELD_ALIASES[field].some((alias) => normalizeCsvHeader(alias) === header)
+  );
+  const dateIndex = findField("date");
+  const descriptionIndex = findField("description");
+  const amountIndex = findField("amount");
+  const directionIndex = findField("direction");
+  const categoryIndex = findField("category");
   const errors = [...parsed.errors];
   if ([dateIndex, descriptionIndex, amountIndex].some((i) => i < 0)) {
     return { records: [], errors: [...errors, "Cabeçalhos obrigatórios: Data, Descrição e Valor."] };

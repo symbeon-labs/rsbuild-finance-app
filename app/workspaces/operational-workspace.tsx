@@ -8,6 +8,8 @@ import {
   FinancialRecord,
   OmieRecord,
   generateOmieOfx,
+  decodeImportText,
+  discoverCsvColumns,
   parseCsv,
   parseOfx,
   filterRecordsByPeriodOption,
@@ -144,6 +146,7 @@ export default function OperationalWorkspace({
   const [pendingMetadata, setPendingMetadata] = useState<BankMetadata | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
+  const [detectedColumns, setDetectedColumns] = useState<ReturnType<typeof discoverCsvColumns>>([]);
 
   const [omieRecords, setOmieRecords] = useState<OmieRecord[]>([]);
 
@@ -443,14 +446,40 @@ export default function OperationalWorkspace({
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    pendingFileRef.current = file;
-    setFileName(file.name);
     setNotice("");
-    const text = await file.text();
-    const result = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(text) : parseCsv(text);
-    setPendingImport(result.records);
-    setImportErrors(result.errors);
-    setPendingMetadata(result.metadata || null);
+    setPendingImport([]);
+    setImportErrors([]);
+    setPendingMetadata(null);
+    setDetectedColumns([]);
+    const extension = file.name.trim().toLowerCase().split(".").pop();
+    if (extension !== "csv" && extension !== "ofx") {
+      setFileName(file.name);
+      setImportErrors(["Formato não suportado. Selecione um arquivo CSV ou OFX."]);
+      navigateTo("importacoes");
+      event.target.value = "";
+      return;
+    }
+    if (!file.size || file.size > 10 * 1024 * 1024) {
+      setFileName(file.name);
+      setImportErrors([!file.size ? "O arquivo está vazio." : "O arquivo excede o limite de 10 MiB."]);
+      navigateTo("importacoes");
+      event.target.value = "";
+      return;
+    }
+    try {
+      const text = decodeImportText(new Uint8Array(await file.arrayBuffer()));
+      if (extension === "csv") setDetectedColumns(discoverCsvColumns(text.split(/\r?\n/, 1)[0] ?? ""));
+      const result = extension === "ofx" ? parseOfx(text) : parseCsv(text);
+      pendingFileRef.current = file;
+      setFileName(file.name);
+      setPendingImport(result.records);
+      setImportErrors(result.errors);
+      setPendingMetadata(result.metadata || null);
+    } catch (error) {
+      pendingFileRef.current = null;
+      setFileName(file.name);
+      setImportErrors([error instanceof Error ? error.message : "Não foi possível ler o arquivo. Exporte novamente em CSV/OFX."]);
+    }
     navigateTo("importacoes");
     event.target.value = "";
   }
@@ -988,6 +1017,7 @@ export default function OperationalWorkspace({
           {section === "importacoes" && (
             <ImportacoesView
               fileName={fileName}
+              detectedColumns={detectedColumns}
               pendingImport={pendingImport}
               pendingMetadata={pendingMetadata}
               importErrors={importErrors}

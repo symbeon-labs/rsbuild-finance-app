@@ -1,6 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
+import { readFileSync } from "node:fs";
+import { decodeImportText, discoverCsvColumns, parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
+
+test("decodifica CSV/OFX em UTF-8, Windows-1252 e UTF-16 com BOM", () => {
+  const utf8 = new TextEncoder().encode("Descrição;Valor\\nAção;10,00");
+  assert.match(decodeImportText(utf8), /Ação/);
+
+  const windows1252 = new Uint8Array([68,101,115,99,114,105,231,227,111,59,86,97,108,111,114,10,65,231,227,111,59,49,48,44,48,48]);
+  assert.match(decodeImportText(windows1252), /Descrição;Valor/);
+  assert.match(decodeImportText(windows1252), /Ação/);
+
+  const utf16 = new Uint8Array([0xff, 0xfe, 68, 0, 97, 0, 116, 0, 97, 0]);
+  assert.equal(decodeImportText(utf16), "Data");
+});
 
 const csv = [
   "Data;Descrição;Valor;Tipo;Categoria",
@@ -376,3 +389,63 @@ test("DASH-02: filterRecordsByPeriodOption filtra por opções contábeis e cust
   );
   assert.deepEqual(custom.map((r) => r.value), ["abril-inicio"]);
 });
+
+const readBankFixture = (name: string) =>
+  readFileSync(`tests/fixtures/bank-statements/${name}`, "utf8");
+
+test("FIXTURE Itaú CSV: importa lançamentos brasileiros e mantém créditos/débitos", () => {
+  const result = parseCsv(readBankFixture("itau-conta-corrente.csv"));
+  assert.equal(result.records.length, 5);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.records[0].description, "PIX RECEBIDO MERCADINHO SÃO JORGE LTDA");
+  assert.equal(result.records[0].amount, 2450);
+  assert.equal(result.records[0].direction, "entrada");
+  assert.equal(result.records[2].amount, 1320.75);
+  assert.equal(result.records[2].direction, "saída");
+});
+
+test("FIXTURE Inter OFX SGML: importa metadados, FITID, PIX, tarifa e estorno", () => {
+  const text = readBankFixture("inter-conta-corrente.ofx");
+  const bytes1252 = encodeWindows1252(text);
+  const decoded = decodeImportText(bytes1252);
+  const result = parseOfx(decoded);
+  assert.equal(result.records.length, 4);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.metadata?.bankName, "Banco Inter");
+  assert.equal(result.metadata?.accountId, "12345678-9");
+  assert.equal(result.records[0].sourceRecordId, "INTER-20261101-001");
+  assert.equal(result.records[2].description, "TARIFA BANCÁRIA");
+  assert.equal(result.records[3].direction, "entrada");
+});
+
+test("FIXTURE Banco do Brasil OFX XML: importa tags fechadas e metadados", () => {
+  const result = parseOfx(readBankFixture("banco-do-brasil-conta-corrente.ofx"));
+  assert.equal(result.records.length, 3);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.metadata?.bankName, "Banco do Brasil");
+  assert.equal(result.metadata?.branchId, "1234");
+  assert.equal(result.metadata?.accountId, "98765-4");
+  assert.equal(result.records[0].description, "DEPÓSITO IDENTIFICADO");
+  assert.equal(result.records[1].direction, "saída");
+});
+
+
+test("descobre colunas financeiras por aliases semânticos", () => {
+  const columns = discoverCsvColumns("Dt. Movimento;Histórico;Vlr. Lançamento;Natureza;Setor;Documento");
+  assert.deepEqual(columns.map((column) => column.field), ["date", "description", "amount", "direction", "cost_center", "document"]);
+  assert.equal(columns.filter((column) => column.required).length, 3);
+});
+
+test("normaliza CSV com cabeçalhos alternativos para o esquema financeiro", () => {
+  const result = parseCsv([
+    "Dt. Movimento;Histórico;Vlr. Lançamento;Natureza;Setor",
+    "18/11/2026;PIX RECEBIDO CLIENTE;1.250,00;Entrada;Vendas",
+    "19/11/2026;PAGAMENTO FORNECEDOR;-250,00;Saída;Compras"
+  ].join("\n"));
+  assert.equal(result.records.length, 2);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.records[0].amount, 1250);
+  assert.equal(result.records[0].direction, "entrada");
+  assert.equal(result.records[1].direction, "saída");
+});
+

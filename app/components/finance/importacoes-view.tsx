@@ -1,10 +1,12 @@
 "use client";
 
-import { BankMetadata, FinancialRecord, formatCurrency } from "@/lib/finance";
+import { useMemo, useState } from "react";
+import { BankMetadata, CsvColumnMatch, FinancialRecord, formatCurrency } from "@/lib/finance";
 import { RecordTable } from "./common";
 
 interface ImportacoesViewProps {
   fileName: string;
+  detectedColumns?: CsvColumnMatch[];
   pendingImport: FinancialRecord[];
   pendingMetadata: BankMetadata | null;
   importErrors: string[];
@@ -17,6 +19,7 @@ interface ImportacoesViewProps {
 
 export function ImportacoesView({
   fileName,
+  detectedColumns = [],
   pendingImport,
   pendingMetadata,
   importErrors,
@@ -26,6 +29,26 @@ export function ImportacoesView({
   onExportOmieOfx,
   onConfirmImport
 }: ImportacoesViewProps) {
+  const [search, setSearch] = useState("");
+  const [direction, setDirection] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const categories = useMemo(
+    () => [...new Set(pendingImport.map((record) => record.category).filter(Boolean))].sort(),
+    [pendingImport]
+  );
+  const filteredRecords = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("pt-BR");
+    return pendingImport.filter((record) => {
+      const matchesSearch = !query || record.description.toLocaleLowerCase("pt-BR").includes(query) || (record.sourceRecordId ?? "").toLocaleLowerCase("pt-BR").includes(query);
+      const matchesDirection = direction === "all" || record.direction === direction;
+      const matchesCategory = category === "all" || record.category === category;
+      const matchesFrom = !dateFrom || record.date >= dateFrom;
+      const matchesTo = !dateTo || record.date <= dateTo;
+      return matchesSearch && matchesDirection && matchesCategory && matchesFrom && matchesTo;
+    });
+  }, [pendingImport, search, direction, category, dateFrom, dateTo]);
   return (
     <>
       <div className="page-heading">
@@ -64,6 +87,19 @@ export function ImportacoesView({
           </div>
         )}
 
+        {detectedColumns.length > 0 && (
+          <div className="import-column-map" style={{ marginTop: 16, padding: 14, border: "1px solid var(--border)", borderRadius: 10 }}>
+            <strong>Estrutura identificada</strong>
+            <p style={{ fontSize: 12, color: "var(--muted-foreground)", margin: "4px 0 10px" }}>O RSBUILD reconheceu os cabeçalhos e associou os campos conhecidos ao padrão financeiro.</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {detectedColumns.map((column, index) => (
+                <span key={index} style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "5px 8px", borderRadius: 7, background: "var(--muted)", fontSize: 11 }}>
+                  <span>{column.source}</span><span aria-hidden="true">→</span><strong>{column.field ?? "Ignorada"}</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         {importErrors.length > 0 && (
           <div className="error-list">
             <strong>Revisar importação</strong>
@@ -82,7 +118,32 @@ export function ImportacoesView({
               </div>
               <span>{pendingImport.length} registros</span>
             </div>
-            <RecordTable records={pendingImport.slice(0, 8)} />
+            <div className="import-filters" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px", margin: "16px 0" }}>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Buscar descrição ou ID
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ex.: PIX, fornecedor..." />
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Movimento
+                <select value={direction} onChange={(e) => setDirection(e.target.value)}>
+                  <option value="all">Todos</option><option value="entrada">Entradas</option><option value="saída">Saídas</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Categoria
+                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="all">Todas</option>{categories.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>De
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Até
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              </label>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}>
+              <span>{filteredRecords.length} de {pendingImport.length} registros</span>
+              <button className="text-button" onClick={() => { setSearch(""); setDirection("all"); setCategory("all"); setDateFrom(""); setDateTo(""); }}>Limpar filtros</button>
+            </div>
+            <RecordTable records={filteredRecords.slice(0, 8)} />
             <div className="import-actions">
               <button className="secondary-button" onClick={onCancelImport}>
                 Cancelar
