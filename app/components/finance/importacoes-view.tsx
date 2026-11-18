@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BankMetadata, FinancialRecord, formatCurrency } from "@/lib/finance";
+import { BankMetadata, CsvColumnMatch, FinancialRecord, formatCurrency } from "@/lib/finance";
 import { RecordTable } from "./common";
 
 interface ImportacoesViewProps {
   fileName: string;
+  detectedColumns: CsvColumnMatch[];
   pendingImport: FinancialRecord[];
   pendingMetadata: BankMetadata | null;
   importErrors: string[];
@@ -18,6 +19,7 @@ interface ImportacoesViewProps {
 
 export function ImportacoesView({
   fileName,
+  detectedColumns,
   pendingImport,
   pendingMetadata,
   importErrors,
@@ -65,6 +67,19 @@ export function ImportacoesView({
           </div>
         )}
 
+        {detectedColumns.length > 0 && (
+          <div className="import-column-map" style={{ marginTop: 16, padding: 14, border: "1px solid var(--border)", borderRadius: 10 }}>
+            <strong>Estrutura identificada</strong>
+            <p style={{ fontSize: 12, color: "var(--muted-foreground)", margin: "4px 0 10px" }}>O RSBUILD reconheceu os cabeçalhos e associou os campos conhecidos ao padrão financeiro.</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {detectedColumns.map((column, index) => (
+                <span key={index} style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "5px 8px", borderRadius: 7, background: "var(--muted)", fontSize: 11 }}>
+                  <span>{column.source}</span><span aria-hidden="true">→</span><strong>{column.field ?? "Ignorada"}</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         {importErrors.length > 0 && (
           <div className="error-list">
             <strong>Revisar importação</strong>
