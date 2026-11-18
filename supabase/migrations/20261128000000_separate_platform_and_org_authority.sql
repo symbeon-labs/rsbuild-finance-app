@@ -455,7 +455,7 @@ begin
   end if;
 
   if not app_private.has_sandbox_capability_entitlements(
-    v_tenant_org_id, array['finance', 'reconciliation', 'logistics', 'audit']::text[]
+    v_sandbox_org_id, array['finance', 'reconciliation', 'logistics', 'audit']::text[]
   ) then
     raise exception 'sandbox_capability_not_entitled' using errcode = '42501';
   end if;
