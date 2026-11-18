@@ -336,9 +336,6 @@ export default function ControlTowerWorkspace({
           )}
           {section === "workspace" && (
             <HoldingWorkspaceManagementView
-              organizations={availableOrganizations}
-              sandboxOrganizations={availableSandboxOrganizations}
-              currentOrganizationId={organizationId}
               canManageCapabilities={organizationSlug === "rsbuild" && membershipRole === "owner"}
             />
           )}
@@ -361,7 +358,7 @@ export default function ControlTowerWorkspace({
             <AgentsGovernanceView canDecide={["owner", "admin"].includes(membershipRole)} />
           )}
           {!isProjectCollaborator && section === "sandbox" && (
-            <SandboxView />
+            <SandboxView qaOrganizations={availableOrganizations.filter((item) => item.slug.endsWith("_qa"))} sandboxOrganizations={availableSandboxOrganizations} />
           )}
         </div>
       </section>
