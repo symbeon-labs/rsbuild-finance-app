@@ -5,7 +5,12 @@
 revoke execute on function public.can_read_rsbuild_project(uuid) from anon;
 revoke execute on function public.can_operate_rsbuild_project(uuid) from anon;
 revoke execute on function public.sandbox_reset() from anon;
-revoke execute on function public.set_organization_capability_license(uuid, text, text, text, text) from anon;
+
+-- A migration 20261128000000 substituiu a RPC antiga de 5 argumentos
+-- por uma assinatura com escopo de ambientes e expiração (7 argumentos).
+revoke execute on function public.set_organization_capability_license(
+  uuid, text, text, text, text, text[], timestamptz
+) from anon;
 
 -- Auditoria: registra se restar algum EXECUTE de anon em função do schema public.
 do $$
