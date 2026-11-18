@@ -108,7 +108,7 @@ export function FinanceEvaluationGuide({
     const blob = new Blob([JSON.stringify(entries, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
-    anchor.href = url; anchor.download = "avaliacoes-financeiras-mundo-do-sabor-qa.json";
+    anchor.href = url; anchor.download = "avaliacoes-financeiras-qa.json";
     anchor.click(); URL.revokeObjectURL(url);
   }
 
