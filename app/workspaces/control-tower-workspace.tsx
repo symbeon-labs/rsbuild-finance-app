@@ -22,6 +22,7 @@ import { OrganizationAdminPanel } from "@/app/components/admin/organization-admi
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { SandboxView } from "@/app/components/admin/sandbox-view";
 import { AgentsGovernanceView } from "@/app/components/admin/agents-governance-view";
+import { AgentsInstitutionalView } from "@/app/components/admin/agents-institutional-view";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { LeadInboxView } from "@/app/components/admin/lead-inbox-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
@@ -357,7 +358,9 @@ export default function ControlTowerWorkspace({
             <AccessDirectoryView />
           )}
           {!isProjectCollaborator && section === "agentes" && (
-            <AgentsGovernanceView canDecide={["owner", "admin"].includes(membershipRole)} />
+            membershipRole === "owner"
+              ? <AgentsGovernanceView canDecide />
+              : <AgentsInstitutionalView />
           )}
           {!isProjectCollaborator && section === "sandbox" && (
             <SandboxView organizationId={organizationId} qaOrganizations={availableOrganizations.filter((item) => item.slug.endsWith("_qa"))} sandboxOrganizations={availableSandboxOrganizations} />

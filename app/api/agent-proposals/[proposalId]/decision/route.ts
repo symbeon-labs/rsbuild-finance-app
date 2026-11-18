@@ -9,9 +9,9 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 /**
  * Decide uma proposta de agente (HITL): approved | rejected.
- * Autorizado: owner/admin da RSBUILD ou owner/admin do tenant alvo.
- * O RLS da tabela reforça a mesma regra; aqui validamos antes para
- * devolver erros claros e registrar a decisão na trilha do tenant.
+ * Autorizado: owner institucional da RSBUILD ou owner do tenant alvo.
+ * Perfis admin/operator não recebem autoridade decisória por herança de
+ * membership. O RLS reforça a mesma alçada no banco.
  */
 export async function POST(
   request: Request,
@@ -59,7 +59,8 @@ export async function POST(
       return NextResponse.json({ error: "proposal_already_decided" }, { status: 409 });
     }
 
-    // Verifica alçada: owner/admin da RSBUILD ou owner/admin do tenant alvo
+    // Autoridade decisória é separada da administração operacional:
+    // somente owner institucional RSBUILD ou owner do tenant pode decidir.
     const { data: rsbuildMembership } = await supabase
       .from("organization_memberships")
       .select("role, organizations!inner(slug)")
@@ -67,20 +68,20 @@ export async function POST(
       .eq("organizations.slug", "rsbuild")
       .maybeSingle();
 
-    const isRsbuildAdmin = rsbuildMembership && ["owner", "admin"].includes(rsbuildMembership.role);
+    const isRsbuildOwner = rsbuildMembership?.role === "owner";
 
-    let isTenantAdmin = false;
-    if (!isRsbuildAdmin) {
+    let isTenantOwner = false;
+    if (!isRsbuildOwner) {
       const { data: tenantMembership } = await supabase
         .from("organization_memberships")
         .select("role")
         .eq("user_id", user.id)
         .eq("organization_id", proposal.organization_id)
         .maybeSingle();
-      isTenantAdmin = !!tenantMembership && ["owner", "admin"].includes(tenantMembership.role);
+      isTenantOwner = tenantMembership?.role === "owner";
     }
 
-    if (!isRsbuildAdmin && !isTenantAdmin) {
+    if (!isRsbuildOwner && !isTenantOwner) {
       await recordAuditEvent({
         organizationId: proposal.organization_id,
         actorId: user.id,
@@ -122,7 +123,7 @@ export async function POST(
       metadata: {
         agentId: proposal.agent_id,
         decisionReason: reason,
-        governanceLayer: isRsbuildAdmin ? "rsbuild" : "tenant"
+        governanceLayer: isRsbuildOwner ? "rsbuild_owner" : "tenant_owner"
       }
     });
 
