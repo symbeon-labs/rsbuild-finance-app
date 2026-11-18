@@ -70,10 +70,10 @@ async function getSandboxAccess(
 
 async function requireSandboxCapabilityEntitlements(
   supabase: SupabaseServerClient,
-  tenantOrganizationId: string
+  sandboxOrganizationId: string
 ): Promise<NextResponse | null> {
   const { data, error } = await supabase.rpc("has_sandbox_capability_entitlements", {
-    p_organization_id: tenantOrganizationId,
+    p_sandbox_organization_id: sandboxOrganizationId,
     p_capability_keys: ["finance", "reconciliation", "logistics", "audit"]
   });
 
