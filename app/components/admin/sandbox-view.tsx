@@ -176,7 +176,7 @@ export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }:
             {qaOrganizations.map((org) => <article key={org.id} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 14, display: "grid", gap: 8 }}>
               <span style={{ color: "#B7791F", fontSize: 10, fontWeight: 800 }}>QA · HOMOLOGAÇÃO</span>
               <strong style={{ color: "var(--ink)", fontSize: 14 }}>{org.name}</strong>
-              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(org.id) + "&tab=workspace")}>Abrir ambiente →</button>
+              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(org.id) + "&tab=visao-geral")}>Abrir ambiente →</button>
             </article>)}
           </div>
         </>}
