@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(14);
+select plan(16);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -66,6 +66,18 @@ select is(
 select lives_ok(
   $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','G01 authorized grant',array['qa'],null)$sql$,
   'platform administrator can grant a capability through the audited RPC'
+);
+select ok(
+  not has_table_privilege('authenticated','public.organization_capability_licenses','INSERT')
+  and not has_table_privilege('authenticated','public.organization_capability_licenses','UPDATE')
+  and not has_table_privilege('authenticated','public.organization_capability_licenses','DELETE'),
+  'authenticated clients cannot mutate licenses outside the audited RPC'
+);
+select ok(
+  not has_table_privilege('authenticated','public.capability_license_events','INSERT')
+  and not has_table_privilege('authenticated','public.capability_license_events','UPDATE')
+  and not has_table_privilege('authenticated','public.capability_license_events','DELETE'),
+  'license event history cannot be directly altered by authenticated clients'
 );
 select throws_ok(
   $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','missing environment',array[]::text[],null)$sql$,
