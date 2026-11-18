@@ -980,7 +980,7 @@ export default function OperationalWorkspace({
             </div>
           )}
           {organizationSlug === "mundo_sabor_qa" && (
-            <FinanceEvaluationGuide section={section} organizationName={organizationName} />
+            <FinanceEvaluationGuide section={section} organizationName={organizationName} organizationId={organizationId} />
           )}
           {section === "visao-geral" && (
             <VisaoGeralView
