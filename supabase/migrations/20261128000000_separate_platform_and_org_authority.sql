@@ -50,6 +50,109 @@ create policy "Platform administrators read organization directory"
   on public.organizations for select to authenticated
   using ((select public.is_platform_administrator()));
 
+-- Link each synthetic sandbox organization to its real tenant identity.
+-- This is metadata only; it does not copy production data into Sandbox.
+alter table sandbox.organizations
+  add column if not exists organization_id uuid;
+
+update sandbox.organizations so
+set organization_id = o.id
+from public.organizations o
+where so.organization_id is null
+  and so.slug = replace(o.slug, '_', '-') || '-sandbox';
+
+do $
+begin
+  if exists (select 1 from sandbox.organizations where organization_id is null) then
+    raise exception 'Every sandbox organization must map to a tenant organization before entitlement enforcement';
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'sandbox.organizations'::regclass
+      and conname = 'sandbox_organizations_tenant_fk'
+  ) then
+    alter table sandbox.organizations
+      add constraint sandbox_organizations_tenant_fk
+      foreign key (organization_id) references public.organizations(id) on delete restrict;
+  end if;
+end;
+$;
+
+alter table sandbox.organizations
+  alter column organization_id set not null;
+
+create index if not exists sandbox_organizations_tenant_idx
+  on sandbox.organizations(organization_id);
+
+-- Refresh the security-invoker view so the server can resolve the tenant link.
+create or replace view public.sandbox_organizations
+with (security_invoker = on) as
+select * from sandbox.organizations;
+
+-- Narrow boolean check for sandbox entitlement. It returns no license data and
+-- does not grant platform administration or tenant membership.
+create or replace function public.has_sandbox_capability_entitlements(
+  p_organization_id uuid,
+  p_capability_keys text[]
+)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null or p_organization_id is null
+    or p_capability_keys is null or cardinality(p_capability_keys) = 0 then
+    return false;
+  end if;
+
+  if not exists (
+    select 1
+    from public.organization_memberships m
+    join public.organizations o on o.id = m.organization_id
+    where o.slug = 'rsbuild'
+      and m.user_id = v_uid
+      and (
+        m.role in ('owner', 'admin')
+        or (
+          m.role = 'operator'
+          and exists (
+            select 1
+            from sandbox.organizations so
+            join sandbox.organization_memberships sm on sm.organization_id = so.id
+            where so.organization_id = p_organization_id
+              and sm.user_id = v_uid
+          )
+        )
+      )
+  ) then
+    return false;
+  end if;
+
+  return not exists (
+    select 1
+    from unnest(p_capability_keys) as requested(capability_key)
+    where requested.capability_key not in ('finance', 'reconciliation', 'logistics', 'audit')
+      or not exists (
+        select 1
+        from public.organization_capability_licenses l
+        where l.organization_id = p_organization_id
+          and l.capability_key = requested.capability_key
+          and l.license_status = 'granted'
+          and l.operational_status = 'active'
+          and l.entitled_environments @> array['sandbox']::text[]
+          and (l.expires_at is null or l.expires_at > now())
+      )
+  );
+end;
+$;
+
+revoke all on function public.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
+grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;
+
 -- Scope every license explicitly to environments and an optional validity window.
 alter table public.organization_capability_licenses
   add column if not exists entitled_environments text[] not null default '{}'::text[],
