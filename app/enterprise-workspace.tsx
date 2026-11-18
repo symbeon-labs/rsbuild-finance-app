@@ -97,7 +97,7 @@ export default function EnterpriseWorkspace({
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
     urlTab &&
-    ["visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"].includes(urlTab) &&
+    ["workspace", "visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios", "auditoria", "acessos", "mensagens", "agentes", "sandbox"].includes(urlTab) &&
     (urlTab !== "projetos" || canViewProjectPortfolio)
       ? urlTab
       : "visao-geral";
@@ -112,6 +112,19 @@ export default function EnterpriseWorkspace({
 
   const [section, setSection] = useState<NavSection>(initialSection);
   const [activeModule, setActiveModule] = useState<ModuleType>(getModuleForSection(initialSection));
+
+  // Keep the rendered workspace section synchronized with URL navigation.
+  // This is required for deep links such as Sandbox -> a selected lab.
+  useEffect(() => {
+    const validUrlSection = urlTab &&
+      ["workspace", "visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios", "auditoria", "acessos", "mensagens", "agentes", "sandbox"].includes(urlTab) &&
+      (urlTab !== "projetos" || canViewProjectPortfolio)
+        ? urlTab
+        : null;
+    if (!validUrlSection) return;
+    setSection(validUrlSection);
+    setActiveModule(getModuleForSection(validUrlSection));
+  }, [urlTab, canViewProjectPortfolio, organizationSlug]);
   const activeModuleRef = useRef(activeModule);
   const sectionRef = useRef(section);
   activeModuleRef.current = activeModule;
