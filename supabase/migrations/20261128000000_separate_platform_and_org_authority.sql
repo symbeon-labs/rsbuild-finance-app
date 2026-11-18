@@ -424,9 +424,11 @@ begin
     raise exception 'invalid_validation_request' using errcode = '22023';
   end if;
 
-  select so.id, so.organization_id
+  select so.id, coalesce(so.organization_id, o.id)
     into v_sandbox_org_id, v_tenant_org_id
   from sandbox.organizations so
+  left join public.organizations o
+    on so.slug = replace(o.slug, '_', '-') || '-sandbox'
   where so.slug = 'mundo-sabor-sandbox';
 
   if v_sandbox_org_id is null or v_tenant_org_id is null then
