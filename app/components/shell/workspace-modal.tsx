@@ -436,7 +436,7 @@ export function WorkspaceModal({
                 <div style={{ display: "grid", gap: "8px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
-                      PRODUTOS MODULARES CONTRATADOS
+                      CATÁLOGO DE CAPACIDADES RSBUILD
                     </span>
                     <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
                       <RsbuildIcon name="guardian" size={12} tone="accent" /> Governança Symbeon · {canManageModules ? "Administração da plataforma" : "Somente visualização — liberação pela RSBUILD"}
@@ -468,7 +468,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="finance" size={18} tone="accent" /> 1. Finanças & Caixa</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.finance ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.finance ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.finance ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -502,7 +502,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="reconciliation" size={18} tone="accent" /> 2. Reconciliação ERP</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.reconciliation ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.reconciliation ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.reconciliation ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -536,7 +536,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="logistics" size={18} tone="accent" /> 3. Logística & Expedição</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.logistics ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.logistics ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.logistics ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -570,7 +570,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="guardian" size={18} tone="accent" /> 4. Auditoria & RS Guardião</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.audit ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.audit ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.audit ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
