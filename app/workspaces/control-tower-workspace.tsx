@@ -132,15 +132,33 @@ export default function ControlTowerWorkspace({
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
       const savedLogo = localStorage.getItem(`rsbuild_workspace_logo_${organizationId}`);
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
-      if (savedModules) {
-        const parsed = JSON.parse(savedModules);
-        setEnabledModules({
-          finance: parsed.finance !== false,
-          reconciliation: parsed.reconciliation !== false,
-          logistics: parsed.logistics !== false,
-          audit: parsed.audit !== false
-        });
+      // A organização institucional RSBUILD não é um tenant operacional.
+      // Capacidades financeiras/logísticas de clientes nunca podem ser
+      // habilitadas por preferências locais ou estado legado do navegador.
+      if (currentOrgId === "rsbuild") {
+        const institutionalModules: EnabledModulesConfig = {
+          finance: false,
+          reconciliation: false,
+          logistics: false,
+          audit: true
+        };
+        setEnabledModules(institutionalModules);
+        localStorage.removeItem(`rsbuild_workspace_modules_${organizationId}`);
+      } else {
+        const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
+        if (savedModules) {
+          const parsed = JSON.parse(savedModules);
+          setEnabledModules({
+            finance: parsed.finance === true,
+            reconciliation: parsed.reconciliation === true,
+            logistics: parsed.logistics === true,
+            audit: parsed.audit !== false
+          });
+        } else {
+          setEnabledModules(organizationPreset?.enabledModules ?? {
+            finance: false, reconciliation: false, logistics: false, audit: true
+          });
+        }
       }
       const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "sand") {
@@ -176,10 +194,15 @@ export default function ControlTowerWorkspace({
         localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
     }
-    if (modules) {
+    if (modules && currentOrgId !== "rsbuild") {
       setEnabledModules(modules);
       try {
         localStorage.setItem(`rsbuild_workspace_modules_${organizationId}`, JSON.stringify(modules));
+      } catch {}
+    } else if (currentOrgId === "rsbuild") {
+      setEnabledModules({ finance: false, reconciliation: false, logistics: false, audit: true });
+      try {
+        localStorage.removeItem(`rsbuild_workspace_modules_${organizationId}`);
       } catch {}
     }
     try {
