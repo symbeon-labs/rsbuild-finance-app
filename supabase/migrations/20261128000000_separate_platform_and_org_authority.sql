@@ -40,7 +40,7 @@ as $$
   );
 $$;
 
-revoke all on function public.is_platform_administrator() from public;
+revoke all on function public.is_platform_administrator() from public, anon;
 grant execute on function public.is_platform_administrator() to authenticated;
 
 -- Platform administrators need the minimal organization directory required
