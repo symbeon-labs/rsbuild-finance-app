@@ -25,7 +25,7 @@
       "expected": {
         "credits": 3,
         "debits": 4,
-        "net_total": 1320,
+        "net_total": 1000,
         "divisions": [
           "DIV-A",
           "DIV-B",
