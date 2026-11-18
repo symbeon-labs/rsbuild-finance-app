@@ -18,6 +18,11 @@ insert into public.organizations (id, legal_name, display_name, slug)
 values ('d2222222-2222-4222-8222-222222222222','Tenant G01 Ltda','Tenant G01','g01_tenant')
 on conflict (id) do nothing;
 
+-- Sandbox homologation resolves its tenant to the matching QA organization.
+insert into public.organizations (id, legal_name, display_name, slug)
+values ('d5555555-5555-4555-8555-555555555555','Tenant G01 QA Ltda','Tenant G01 QA','g01_tenant_qa')
+on conflict (id) do nothing;
+
 insert into public.organization_memberships (organization_id,user_id,role)
 select id, 'c1111111-1111-4111-8111-111111111111', 'owner'::public.rsbuild_member_role
 from public.organizations where slug='rsbuild'
@@ -77,8 +82,8 @@ select is(
   1, 'platform administrator can resolve tenant identity for licensing'
 );
 select lives_ok(
-  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','finance','granted','active','G01 authorized grant',array['qa'],null)$sql$,
-  'platform administrator can grant a capability through the audited RPC'
+  $sql$select public.set_organization_capability_license('d5555555-5555-4555-8555-555555555555','finance','granted','active','G01 QA authorized grant',array['qa'],null)$sql$,
+  'platform administrator can grant a QA capability through the audited RPC'
 );
 select ok(
   not has_table_privilege('authenticated','public.organization_capability_licenses','INSERT')
@@ -131,7 +136,7 @@ select throws_ok(
   '22023', null, 'expired license grant is rejected'
 );
 select is(
-  (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='finance'),
+  (select count(*)::int from public.capability_license_events where organization_id='d5555555-5555-4555-8555-555555555555' and capability_key='finance'),
   1, 'license mutation appends one audit event and rejected grants append none'
 );
 select lives_ok(
@@ -147,7 +152,7 @@ select ok(
   public.has_sandbox_capability_entitlements(
     'd3333333-3333-4333-8333-333333333333', array['finance']::text[]
   ),
-  'RSBUILD owner with a valid Sandbox entitlement can access sandbox capability'
+  'RSBUILD owner can access Sandbox when the linked QA tenant has an active entitlement'
 );
 reset role;
 
