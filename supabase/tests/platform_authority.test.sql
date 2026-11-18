@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(16);
+select plan(17);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -78,6 +78,19 @@ select ok(
   and not has_table_privilege('authenticated','public.capability_license_events','UPDATE')
   and not has_table_privilege('authenticated','public.capability_license_events','DELETE'),
   'license event history cannot be directly altered by authenticated clients'
+);
+select ok(
+  not has_function_privilege('anon','public.can_operate_rsbuild_project(uuid)','EXECUTE')
+  and not has_function_privilege('anon','public.can_read_rsbuild_project(uuid)','EXECUTE')
+  and not has_function_privilege('anon','public.sandbox_reset()','EXECUTE')
+  and not (
+    select bool_or(p.prosecdef)
+    from pg_proc p
+    join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public'
+      and p.proname in ('can_operate_rsbuild_project','can_read_rsbuild_project','sandbox_reset')
+  ),
+  'privileged public RPC wrappers are invoker-only and unavailable to anon'
 );
 select throws_ok(
   $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','missing environment',array[]::text[],null)$sql$,
