@@ -1104,6 +1104,7 @@ export default function OperationalWorkspace({
         currentOrgRealId={organizationId}
         availableOrganizationSlugs={availableOrganizationSlugs}
         isSuperAdmin={isSuperAdmin}
+        canManageModules={false}
         enabledModules={enabledModules}
         brandColor={brandColor}
         onClose={() => setIsConfigOpen(false)}
