@@ -209,7 +209,7 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
           <span style={{ borderRadius: 20, padding: "6px 11px", background: "rgba(16,185,129,.12)", color: "#059669", fontSize: 11, fontWeight: 800 }}>● SANDBOX ISOLADO</span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {(["overview", "cases", "sprints", "history"] as const).map((tab) => {
+          {(["overview", "cases", ...(isMundoSaborSandbox ? ["sprints" as const] : []), "history"] as const).map((tab) => {
             const labels = { overview: "Visão geral", cases: "Casos de teste", sprints: "Vínculo com sprints", history: "Evidências e histórico" };
             return <button key={tab} type="button" style={buttonStyle(section === tab)} onClick={() => setSection(tab)}>{labels[tab]}</button>;
           })}
