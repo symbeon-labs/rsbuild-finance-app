@@ -996,7 +996,7 @@ export default function OperationalWorkspace({
               <button onClick={() => setNotice("")}>×</button>
             </div>
           )}
-          {organizationSlug === "mundo_sabor_qa" && (
+          {["mundo_sabor_qa", "hub_acai_qa"].includes(organizationSlug) && (
             <FinanceEvaluationGuide section={section} organizationName={organizationName} organizationId={organizationId} />
           )}
           {section === "visao-geral" && (
