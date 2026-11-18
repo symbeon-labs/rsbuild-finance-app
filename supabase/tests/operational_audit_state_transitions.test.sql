@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(8);
+select plan(11);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values ('77777777-7777-4777-8777-777777777777','00000000-0000-0000-0000-000000000000','authenticated','authenticated','audit-actor@test.invalid','',now(),now(),now())
@@ -65,10 +65,10 @@ select is(
 );
 
 insert into public.delivery_proofs (
-  id, organization_id, nfe_number, customer_name, status, created_by
+  id, organization_id, nfe_number, customer_name, status, receiver_document, proof_file_url, created_by
 ) values (
   '99999999-9999-4999-8999-999999999993','88888888-8888-4888-8888-888888888888',
-  'NF-QA-1028','Cliente Teste','pendente_entrega','77777777-7777-4777-8777-777777777777'
+  'NF-QA-1028','Cliente Teste','pendente_entrega','12345678900','https://private.invalid/proof.pdf','77777777-7777-4777-8777-777777777777'
 );
 update public.delivery_proofs set status='comprovado', updated_at=now()
 where id='99999999-9999-4999-8999-999999999993';
@@ -94,6 +94,47 @@ select is(
   (select metadata->'after'->>'financial_record_id' from public.audit_events where entity_id='99999999-9999-4999-8999-999999999994' order by id desc limit 1),
   '99999999-9999-4999-8999-999999999991',
   'reconciliation decision audit links to the financial record'
+);
+
+
+select ok(
+  position('12345678900' in (
+    select metadata::text from public.audit_events
+    where entity_id='99999999-9999-4999-8999-999999999993' order by id desc limit 1
+  )) = 0
+  and position('private.invalid' in (
+    select metadata::text from public.audit_events
+    where entity_id='99999999-9999-4999-8999-999999999993' order by id desc limit 1
+  )) = 0,
+  'audit metadata excludes receiver documents and proof URLs'
+);
+
+insert into public.whatsapp_orders (
+  id, organization_id, raw_message, customer_name, status, created_by
+) values (
+  '99999999-9999-4999-8999-999999999995','88888888-8888-4888-8888-888888888888',
+  'Mensagem sintética de QA','Cliente Teste','confirmado','77777777-7777-4777-8777-777777777777'
+);
+update public.whatsapp_orders set status='enviado_omie', updated_at=now()
+where id='99999999-9999-4999-8999-999999999995';
+select is(
+  (select metadata->'before'->>'status' from public.audit_events where entity_id='99999999-9999-4999-8999-999999999995' order by id desc limit 1),
+  'confirmado',
+  'order transition records its previous status'
+);
+
+insert into public.settlements (
+  id, organization_id, document_number, customer_name, amount_minor, settlement_date, status, created_by
+) values (
+  '99999999-9999-4999-8999-999999999996','88888888-8888-4888-8888-888888888888',
+  'QA-SET-1028','Cliente Teste',25000,'2026-11-18','confirmada','77777777-7777-4777-8777-777777777777'
+);
+update public.settlements set status='exportada'
+where id='99999999-9999-4999-8999-999999999996';
+select is(
+  (select metadata->'after'->>'status' from public.audit_events where entity_id='99999999-9999-4999-8999-999999999996' order by id desc limit 1),
+  'exportada',
+  'settlement transition records its new status'
 );
 
 select * from finish();
