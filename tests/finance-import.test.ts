@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { decodeImportText, parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
 
 test("decodifica CSV/OFX em UTF-8, Windows-1252 e UTF-16 com BOM", () => {
@@ -388,3 +389,43 @@ test("DASH-02: filterRecordsByPeriodOption filtra por opções contábeis e cust
   );
   assert.deepEqual(custom.map((r) => r.value), ["abril-inicio"]);
 });
+
+const readBankFixture = (name: string) =>
+  readFileSync(`tests/fixtures/bank-statements/${name}`, "utf8");
+
+test("FIXTURE Itaú CSV: importa lançamentos brasileiros e mantém créditos/débitos", () => {
+  const result = parseCsv(readBankFixture("itau-conta-corrente.csv"));
+  assert.equal(result.records.length, 5);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.records[0].description, "PIX RECEBIDO MERCADINHO SÃO JORGE LTDA");
+  assert.equal(result.records[0].amount, 2450);
+  assert.equal(result.records[0].direction, "entrada");
+  assert.equal(result.records[2].amount, 1320.75);
+  assert.equal(result.records[2].direction, "saída");
+});
+
+test("FIXTURE Inter OFX SGML: importa metadados, FITID, PIX, tarifa e estorno", () => {
+  const text = readBankFixture("inter-conta-corrente.ofx");
+  const bytes1252 = encodeWindows1252(text);
+  const decoded = decodeImportText(bytes1252);
+  const result = parseOfx(decoded);
+  assert.equal(result.records.length, 4);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.metadata?.bankName, "Banco Inter");
+  assert.equal(result.metadata?.accountId, "12345678-9");
+  assert.equal(result.records[0].sourceRecordId, "INTER-20261101-001");
+  assert.equal(result.records[2].description, "TARIFA BANCÁRIA");
+  assert.equal(result.records[3].direction, "entrada");
+});
+
+test("FIXTURE Banco do Brasil OFX XML: importa tags fechadas e metadados", () => {
+  const result = parseOfx(readBankFixture("banco-do-brasil-conta-corrente.ofx"));
+  assert.equal(result.records.length, 3);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.metadata?.bankName, "Banco do Brasil");
+  assert.equal(result.metadata?.branchId, "1234");
+  assert.equal(result.metadata?.accountId, "98765-4");
+  assert.equal(result.records[0].description, "DEPÓSITO IDENTIFICADO");
+  assert.equal(result.records[1].direction, "saída");
+});
+
