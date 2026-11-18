@@ -100,14 +100,31 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand-header">
-        <div className="brand-logo-card">
+        <div
+          className="brand-logo-card"
+          style={{
+            width: "100%",
+            height: "64px",
+            minWidth: 0,
+            overflow: "hidden",
+            boxSizing: "border-box"
+          }}
+        >
           {companyLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={companyLogoUrl}
               alt={companyName}
               className="brand-logo-img"
-              style={{ maxHeight: "44px", width: "auto", objectFit: "contain" }}
+              style={{
+                display: "block",
+                width: "100%",
+                height: "48px",
+                maxWidth: "100%",
+                maxHeight: "48px",
+                objectFit: "contain",
+                objectPosition: "center"
+              }}
             />
           ) : (
             <Image
@@ -117,6 +134,7 @@ export function Sidebar({
               height={64}
               priority
               className="brand-logo-img"
+              style={{ display: "block", width: "100%", height: "48px", maxWidth: "100%", objectFit: "contain" }}
             />
           )}
         </div>
