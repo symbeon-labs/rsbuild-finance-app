@@ -17,7 +17,7 @@ create table if not exists public.qa_evaluations (
   observation text not null default '' check (char_length(observation) <= 4000),
   operational_impact text not null default '' check (char_length(operational_impact) <= 2000),
   evidence_refs jsonb not null default '[]'::jsonb
-    check (jsonb_typeof(evidence_refs) = 'array' and jsonb_array_length(evidence_refs) <= 20),
+    check (case when jsonb_typeof(evidence_refs) = 'array' then jsonb_array_length(evidence_refs) <= 20 else false end),
   rubric_version text not null default 'finance-guide-v0.2'
     check (rubric_version = 'finance-guide-v0.2'),
   created_by uuid not null references auth.users(id) on delete restrict,
