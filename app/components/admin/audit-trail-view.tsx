@@ -101,7 +101,7 @@ function summarizeMetadata(meta: Record<string, unknown>): string {
   if (typeof meta.insertedCount === "number") parts.push(`${meta.insertedCount} registro(s)`);
   if (typeof meta.receivedCount === "number") parts.push(`${meta.receivedCount} recebido(s)`);
   if (typeof meta.parsedCount === "number") parts.push(`${meta.parsedCount} parseado(s)`);
-  if (typeof meta.status === "string') parts.push(`Status: ${meta.status}`);
+  if (typeof meta.status === "string") parts.push(`Status: ${meta.status}`);
   if (typeof meta.invitedEmail === "string") parts.push(`Para: ${meta.invitedEmail}`);
   if (typeof meta.role === "string") parts.push(`Papel: ${meta.role}`);
   if (typeof meta.path === "string") parts.push(meta.path);
