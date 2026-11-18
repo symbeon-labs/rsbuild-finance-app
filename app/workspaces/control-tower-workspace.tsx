@@ -336,6 +336,7 @@ export default function ControlTowerWorkspace({
           )}
           {section === "workspace" && (
             <HoldingWorkspaceManagementView
+              organizationName={organizationName}
               canManageCapabilities={organizationSlug === "rsbuild" && membershipRole === "owner"}
             />
           )}
