@@ -96,6 +96,7 @@ export function FinanceEvaluationGuide({
   );
 
   if (!item) return null;
+  const guideTitle = item.title;
 
   function saveEvaluation() {
     const entry: Evaluation = {
@@ -103,7 +104,7 @@ export function FinanceEvaluationGuide({
       organization: organizationName,
       environment: "QA",
       module: "Finanças",
-      feature: item.title,
+      feature: guideTitle,
       section,
       assessment,
       observation: observation.trim(),
