@@ -78,10 +78,12 @@ export function WorkspaceModal({
 
   useEffect(() => {
     let active = true;
-    if (isOpen && activeTab === "modulos" && currentOrgRealId) {
+    const selectedOrgRealId = ORG_ID_BY_SLUG[selectedOrg] ?? currentOrgRealId;
+    const selectedEnvironment = selectedOrg.endsWith("_qa") ? "qa" : currentEnvironment;
+    if (isOpen && activeTab === "modulos" && selectedOrgRealId) {
       setCapabilityStatusesLoading(true);
       setCapabilityStatusesError("");
-      getWorkspaceCapabilityAvailability(currentOrgRealId, currentEnvironment)
+      getWorkspaceCapabilityAvailability(selectedOrgRealId, selectedEnvironment)
         .then((result) => {
           if (!active) return;
           if (result.ok) setCapabilityStatuses(result.capabilities as Record<string, string>);
@@ -95,7 +97,7 @@ export function WorkspaceModal({
         });
     }
     return () => { active = false; };
-  }, [isOpen, activeTab, currentOrgRealId, currentEnvironment]);
+  }, [isOpen, activeTab, selectedOrg, currentOrgRealId, currentEnvironment]);
 
   if (!isOpen) return null;
 
