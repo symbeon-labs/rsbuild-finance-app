@@ -80,6 +80,13 @@ export function WorkspaceModal({
     let active = true;
     const selectedOrgRealId = ORG_ID_BY_SLUG[selectedOrg] ?? currentOrgRealId;
     const selectedEnvironment = selectedOrg.endsWith("_qa") ? "qa" : currentEnvironment;
+    // A holding RSBUILD não consome o catálogo comercial de capacidades dos workspaces clientes.
+    if (selectedOrg === "rsbuild") {
+      setCapabilityStatuses({});
+      setCapabilityStatusesLoading(false);
+      setCapabilityStatusesError("");
+      return () => { active = false; };
+    }
     if (isOpen && activeTab === "modulos" && selectedOrgRealId) {
       setCapabilityStatusesLoading(true);
       setCapabilityStatusesError("");
@@ -465,7 +472,40 @@ export function WorkspaceModal({
                   </div>
                 )}
 
-                {/* Catálogo: estado informativo derivado da licença real do tenant. */}
+                {selectedOrg === "rsbuild" ? (
+                  <section style={{ display: "grid", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
+                        NÚCLEOS INSTITUCIONAIS RSBUILD
+                      </span>
+                      <span style={{ fontSize: 9, background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "3px 7px", borderRadius: 5, fontWeight: 700 }}>
+                        GOVERNANÇA DA PLATAFORMA
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, color: "var(--muted)", fontSize: 10, lineHeight: 1.45 }}>
+                      Ambiente institucional da holding. Estes núcleos organizam a operação e a governança da RSBUILD; não representam módulos comerciais licenciados aos clientes.
+                    </p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 9 }}>
+                      {([
+                        { title: "1. Central de Operações", description: "Visão consolidada de workspaces, organizações e operação da plataforma.", icon: "control-tower" as const },
+                        { title: "2. Governança & RS Guardião", description: "Políticas, auditoria, acessos, identidades e trilhas de evidência.", icon: "guardian" as const },
+                        { title: "3. Projetos & Sprints", description: "Portfólio institucional, planejamento e acompanhamento de entregas.", icon: "document" as const },
+                        { title: "4. Sandbox & Laboratório", description: "Experimentação técnica isolada, simulações e validações internas.", icon: "approval" as const }
+                      ]).map((item) => (
+                        <article key={item.title} style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0, padding: "11px 12px", borderRadius: 9, border: "1px solid var(--line)", background: "var(--surface)" }}>
+                          <span aria-hidden="true" style={{ display: "grid", placeItems: "center", flex: "0 0 30px", width: 30, height: 30, borderRadius: 8, background: "var(--bg)", color: "var(--rsbuild-terracotta)" }}>
+                            <RsbuildIcon name={item.icon} size={17} tone="secondary" />
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <strong style={{ color: "var(--ink)", fontSize: 11.5, lineHeight: 1.35 }}>{item.title}</strong>
+                            <span style={{ display: "block", marginTop: 4, color: "var(--muted)", fontSize: 10, lineHeight: 1.4 }}>{item.description}</span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                ) : (
+                /* Catálogo: estado informativo derivado da licença real do tenant. */
                 <div style={{ display: "grid", gap: "10px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
@@ -539,6 +579,7 @@ export function WorkspaceModal({
                     </div>
                   )}
                 </div>
+                )}
               </>
             )}
 
@@ -618,13 +659,27 @@ export function WorkspaceModal({
               >
                 Cancelar
               </button>
-              {canManageModules && <button
-                type="submit"
-                className="primary-button"
-                style={{ padding: "8px 20px", fontSize: "12px", fontWeight: 700 }}
-              >
-                Salvar Alterações
-              </button>}
+              {(() => {
+                const selectedOrgRealId = ORG_ID_BY_SLUG[selectedOrg];
+                const isOrgChange = currentOrgRealId
+                  ? Boolean(selectedOrgRealId && selectedOrgRealId !== currentOrgRealId)
+                  : selectedOrg !== currentOrgId;
+                if (isOrgChange) {
+                  return (
+                    <button type="submit" className="primary-button" style={{ padding: "8px 20px", fontSize: "12px", fontWeight: 700 }}>
+                      Abrir workspace
+                    </button>
+                  );
+                }
+                if (canManageModules) {
+                  return (
+                    <button type="submit" className="primary-button" style={{ padding: "8px 20px", fontSize: "12px", fontWeight: 700 }}>
+                      Salvar Alterações
+                    </button>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         </form>
