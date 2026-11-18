@@ -22,9 +22,7 @@ const STATUS_LABELS: Record<Status, string> = {
   disqualified: "Desqualificada", converted: "Convertida"
 };
 const STATUS_OPTIONS: Status[] = ["new", "in_review", "qualified", "disqualified", "converted"];
-const dateTime = (value: string) => new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "medium", timeStyle: "short"
-}).format(new Date(value));
+const dateTime = (value: string) => formatDateTimePtBr(value);
 
 export function LeadInboxView() {
   const [requests, setRequests] = useState<DiagnosticRequest[]>([]);
