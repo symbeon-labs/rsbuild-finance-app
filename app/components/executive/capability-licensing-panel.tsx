@@ -46,7 +46,8 @@ export function CapabilityLicensingPanel() {
 
   function draftFor(key: string) {
     const existing = licenseFor(key);
-    return licenseDrafts[key] ?? {
+    const draftKey = `${selectedOrg}:${key}`;
+    return licenseDrafts[draftKey] ?? {
       licenseStatus: existing?.license_status ?? "blocked",
       operationalStatus: existing?.operational_status ?? "not_implemented",
       entitledEnvironments: existing?.entitled_environments ?? [],
@@ -56,7 +57,8 @@ export function CapabilityLicensingPanel() {
   }
 
   function updateDraft(key: string, patch: Partial<{ licenseStatus: string; operationalStatus: string; entitledEnvironments: string[]; expiresAt: string; reason: string }>) {
-    setLicenseDrafts((current) => ({ ...current, [key]: { ...draftFor(key), ...patch } }));
+    const draftKey = `${selectedOrg}:${key}`;
+    setLicenseDrafts((current) => ({ ...current, [draftKey]: { ...draftFor(key), ...patch } }));
   }
 
   function save(key: string) {
@@ -73,7 +75,8 @@ export function CapabilityLicensingPanel() {
       });
       setMessage(result.ok ? "Licença atualizada e registrada no histórico." : (result.error ?? "Não foi possível atualizar a licença."));
       if (result.ok) {
-        setLicenseDrafts((current) => { const next = { ...current }; delete next[key]; return next; });
+        const draftKey = `${selectedOrg}:${key}`;
+        setLicenseDrafts((current) => { const next = { ...current }; delete next[draftKey]; return next; });
         await refresh();
       }
     });
@@ -107,7 +110,7 @@ export function CapabilityLicensingPanel() {
               {data.catalog.map((capability) => {
                 const draft = draftFor(capability.capability_key);
                 const saved = licenseFor(capability.capability_key);
-                const dirty = !!licenseDrafts[capability.capability_key];
+                const dirty = !!licenseDrafts[`${selectedOrg}:${capability.capability_key}`];
                 return (
                   <article key={capability.capability_key} style={{ border: "1px solid var(--line)", borderRadius: 9, padding: 14, display: "grid", gap: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
