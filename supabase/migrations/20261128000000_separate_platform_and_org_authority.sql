@@ -454,11 +454,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if p_license_status not in ('blocked', 'granted', 'suspended', 'revoked') then
-    raise exception 'Invalid license status';
+  if p_license_status is null or p_license_status not in ('blocked', 'granted', 'suspended', 'revoked') then
+    raise exception 'Invalid license status' using errcode = '22023';
   end if;
-  if p_operational_status not in ('not_implemented', 'in_development', 'available', 'active') then
-    raise exception 'Invalid operational status';
+  if p_operational_status is null or p_operational_status not in ('not_implemented', 'in_development', 'available', 'active') then
+    raise exception 'Invalid operational status' using errcode = '22023';
   end if;
   if p_entitled_environments is null
     or exists (
@@ -499,11 +499,13 @@ begin
   on conflict (organization_id, capability_key) do update set
     license_status = excluded.license_status,
     operational_status = excluded.operational_status,
-    granted_by = case when excluded.license_status = 'granted'
-      then coalesce(organization_capability_licenses.granted_by, v_actor)
+    granted_by = case
+      when excluded.license_status = 'granted'
+        and organization_capability_licenses.license_status <> 'granted' then v_actor
       else organization_capability_licenses.granted_by end,
-    granted_at = case when excluded.license_status = 'granted'
-      then coalesce(organization_capability_licenses.granted_at, now())
+    granted_at = case
+      when excluded.license_status = 'granted'
+        and organization_capability_licenses.license_status <> 'granted' then now()
       else organization_capability_licenses.granted_at end,
     updated_by = v_actor,
     updated_at = now(),
