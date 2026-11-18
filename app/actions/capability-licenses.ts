@@ -17,16 +17,11 @@ export async function setCapabilityLicense(input: {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { ok: false, error: "Sessão inválida. Entre novamente." };
 
-  const { data: ownerMembership, error: ownerError } = await supabase
-    .from("organization_memberships")
-    .select("organization_id, organizations!inner(slug)")
-    .eq("user_id", user.id)
-    .eq("role", "owner")
-    .eq("organizations.slug", "rsbuild")
-    .maybeSingle();
+  const { data: isPlatformAdministrator, error: platformAdminError } =
+    await supabase.rpc("is_platform_administrator");
 
-  if (ownerError || !ownerMembership) {
-    return { ok: false, error: "Somente o Owner institucional da RSBUILD pode liberar capacidades." };
+  if (platformAdminError || isPlatformAdministrator !== true) {
+    return { ok: false, error: "Ação restrita a um administrador autorizado da plataforma Symbeon." };
   }
 
   if (!input.organizationId || !input.capabilityKey ||
@@ -56,15 +51,12 @@ export async function getCapabilityLicensingData() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: "Sessão inválida." };
 
-  const { data: ownerMembership } = await supabase
-    .from("organization_memberships")
-    .select("organization_id, organizations!inner(slug)")
-    .eq("user_id", user.id)
-    .eq("role", "owner")
-    .eq("organizations.slug", "rsbuild")
-    .maybeSingle();
+  const { data: isPlatformAdministrator, error: platformAdminError } =
+    await supabase.rpc("is_platform_administrator");
 
-  if (!ownerMembership) return { ok: false as const, error: "Acesso restrito ao Owner institucional." };
+  if (platformAdminError || isPlatformAdministrator !== true) {
+    return { ok: false as const, error: "Acesso restrito a um administrador autorizado da plataforma Symbeon." };
+  }
 
   const [{ data: catalog, error: catalogError }, { data: licenses, error: licensesError },
     { data: events, error: eventsError }, { data: organizations, error: organizationsError }] = await Promise.all([
