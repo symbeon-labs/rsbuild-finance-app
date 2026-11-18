@@ -7,7 +7,7 @@ begin;
 create or replace function public.can_read_rsbuild_project(target_project_id uuid)
 returns boolean
 language sql stable security definer
-set search_path = public
+set search_path = pg_catalog, public
 as $$
   select
     exists (
@@ -33,7 +33,7 @@ $$;
 create or replace function public.can_operate_rsbuild_project(target_project_id uuid)
 returns boolean
 language sql stable security definer
-set search_path = public
+set search_path = pg_catalog, public
 as $$
   select
     exists (
