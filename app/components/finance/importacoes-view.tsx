@@ -29,6 +29,26 @@ export function ImportacoesView({
   onExportOmieOfx,
   onConfirmImport
 }: ImportacoesViewProps) {
+  const [search, setSearch] = useState("");
+  const [direction, setDirection] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const categories = useMemo(
+    () => [...new Set(pendingImport.map((record) => record.category).filter(Boolean))].sort(),
+    [pendingImport]
+  );
+  const filteredRecords = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("pt-BR");
+    return pendingImport.filter((record) => {
+      const matchesSearch = !query || record.description.toLocaleLowerCase("pt-BR").includes(query) || (record.sourceRecordId ?? "").toLocaleLowerCase("pt-BR").includes(query);
+      const matchesDirection = direction === "all" || record.direction === direction;
+      const matchesCategory = category === "all" || record.category === category;
+      const matchesFrom = !dateFrom || record.date >= dateFrom;
+      const matchesTo = !dateTo || record.date <= dateTo;
+      return matchesSearch && matchesDirection && matchesCategory && matchesFrom && matchesTo;
+    });
+  }, [pendingImport, search, direction, category, dateFrom, dateTo]);
   return (
     <>
       <div className="page-heading">
