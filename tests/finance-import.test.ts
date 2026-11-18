@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { decodeImportText, parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
+import { decodeImportText, discoverCsvColumns, parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
 
 test("decodifica CSV/OFX em UTF-8, Windows-1252 e UTF-16 com BOM", () => {
   const utf8 = new TextEncoder().encode("Descrição;Valor\\nAção;10,00");
@@ -426,6 +426,26 @@ test("FIXTURE Banco do Brasil OFX XML: importa tags fechadas e metadados", () =>
   assert.equal(result.metadata?.branchId, "1234");
   assert.equal(result.metadata?.accountId, "98765-4");
   assert.equal(result.records[0].description, "DEPÓSITO IDENTIFICADO");
+  assert.equal(result.records[1].direction, "saída");
+});
+
+
+test("descobre colunas financeiras por aliases semânticos", () => {
+  const columns = discoverCsvColumns("Dt. Movimento;Histórico;Vlr. Lançamento;Natureza;Setor;Documento");
+  assert.deepEqual(columns.map((column) => column.field), ["date", "description", "amount", "direction", "cost_center", "document"]);
+  assert.equal(columns.filter((column) => column.required).length, 3);
+});
+
+test("normaliza CSV com cabeçalhos alternativos para o esquema financeiro", () => {
+  const result = parseCsv([
+    "Dt. Movimento;Histórico;Vlr. Lançamento;Natureza;Setor",
+    "18/11/2026;PIX RECEBIDO CLIENTE;1.250,00;Entrada;Vendas",
+    "19/11/2026;PAGAMENTO FORNECEDOR;-250,00;Saída;Compras"
+  ].join("\\n"));
+  assert.equal(result.records.length, 2);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.records[0].amount, 1250);
+  assert.equal(result.records[0].direction, "entrada");
   assert.equal(result.records[1].direction, "saída");
 });
 
