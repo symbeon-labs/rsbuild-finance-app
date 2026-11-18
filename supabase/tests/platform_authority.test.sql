@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(11);
+select plan(14);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -23,6 +23,10 @@ insert into public.capability_catalog (capability_key, display_name, description
 values ('g01_test','G01 Test Capability','pgTAP fixture')
 on conflict (capability_key) do nothing;
 
+insert into sandbox.organizations (slug, display_name, organization_id)
+values ('g01-tenant-sandbox','G01 Tenant Sandbox','d2222222-2222-4222-8222-222222222222')
+on conflict (slug) do nothing;
+
 insert into public.platform_administrators (user_id, granted_by, reason)
 values ('c2222222-2222-4222-8222-222222222222','c2222222-2222-4222-8222-222222222222','G01 pgTAP fixture')
 on conflict (user_id) do update set revoked_at = null, revoked_by = null;
@@ -38,6 +42,12 @@ select throws_ok(
 select is(
   (select count(*)::int from public.organizations where id='d2222222-2222-4222-8222-222222222222'),
   0, 'RSBUILD owner cannot inspect unrelated tenant directory through platform policy'
+);
+select ok(
+  not public.has_sandbox_capability_entitlements(
+    'd2222222-2222-4222-8222-222222222222', array['finance']::text[]
+  ),
+  'RSBUILD owner without a sandbox entitlement cannot access the capability in Sandbox'
 );
 reset role;
 
@@ -68,6 +78,20 @@ select throws_ok(
 select is(
   (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='g01_test'),
   1, 'license mutation appends one audit event and rejected grants append none'
+);
+select is(
+  (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='g01_test'),
+  1, 'license mutation appends one audit event and rejected grants append none'
+);
+select lives_ok(
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','G01 sandbox grant',array['sandbox'],null)$sql$,
+  'platform administrator can explicitly grant Sandbox scope'
+);
+select ok(
+  public.has_sandbox_capability_entitlements(
+    'd2222222-2222-4222-8222-222222222222', array['finance']::text[]
+  ),
+  'RSBUILD owner with a valid Sandbox entitlement can access sandbox capability'
 );
 reset role;
 
