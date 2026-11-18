@@ -359,7 +359,7 @@ export default function OperationalWorkspace({
   function handleSaveCompanyConfig(
     name: string,
     logo: string,
-    modules?: EnabledModulesConfig,
+    _modules?: EnabledModulesConfig,
     orgId?: OrganizationId,
     newBrandColor?: string
   ) {
