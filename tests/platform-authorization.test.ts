@@ -4,7 +4,8 @@ import {
   canAdministerOrganization,
   canAdministerPlatform,
   canManageCapabilityLicenses,
-  isCapabilityUsable
+  isCapabilityUsable,
+  resolveOrganizationEnvironment
 } from "../lib/platform-authorization";
 
 test("organization owner administers its organization, not the platform", () => {
@@ -37,4 +38,13 @@ test("capability requires granted license, active implementation and environment
   assert.equal(isCapabilityUsable({ ...base, expiresAt: "2020-01-01T00:00:00.000Z", now: new Date("2026-11-18T12:00:00.000Z") }), false);
   assert.equal(isCapabilityUsable({ ...base, expiresAt: "not-a-date", now: new Date("2026-11-18T12:00:00.000Z") }), false);
   assert.equal(isCapabilityUsable({ ...base, expiresAt: "2027-01-01T00:00:00.000Z", now: new Date("2026-11-18T12:00:00.000Z") }), true);
+});
+
+
+test("organization environment is resolved from its trusted server-side slug", () => {
+  assert.equal(resolveOrganizationEnvironment("mundo_sabor_qa"), "qa");
+  assert.equal(resolveOrganizationEnvironment("hub_acai_qa"), "qa");
+  assert.equal(resolveOrganizationEnvironment("rsbuild_qa_alpha"), "qa");
+  assert.equal(resolveOrganizationEnvironment("mundo_sabor"), "production");
+  assert.equal(resolveOrganizationEnvironment("hub_acai"), "production");
 });
