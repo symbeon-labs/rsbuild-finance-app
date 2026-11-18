@@ -70,10 +70,10 @@ async function getSandboxAccess(
 
 async function requireSandboxCapabilityEntitlements(
   supabase: SupabaseServerClient,
-  organizationId: string
+  sandboxOrganizationId: string
 ): Promise<NextResponse | null> {
   const { data, error } = await supabase.rpc("has_sandbox_capability_entitlements", {
-    p_organization_id: organizationId,
+    p_sandbox_organization_id: sandboxOrganizationId,
     p_capability_keys: ["finance", "reconciliation", "logistics", "audit"]
   });
 
@@ -113,13 +113,13 @@ export async function GET(request: Request) {
     // Esta primeira fase homologa exclusivamente Mundo do Sabor.
     const { data: mundoOrg, error: mundoOrgError } = await supabase
       .from("sandbox_organizations")
-      .select("id,slug,organization_id")
+      .select("id,slug")
       .eq("slug", "mundo-sabor-sandbox")
       .maybeSingle();
     if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
       return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
     }
-    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.organization_id);
+    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.id);
     if (entitlementDenial) return entitlementDenial;
 
     const [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes, casesRes] = await Promise.all([
@@ -209,7 +209,7 @@ export async function POST(request: Request) {
 
     const { data: mundoOrg, error: mundoOrgError } = await supabase
       .from("sandbox_organizations")
-      .select("id,organization_id")
+      .select("id")
       .eq("slug", "mundo-sabor-sandbox")
       .maybeSingle();
     if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
