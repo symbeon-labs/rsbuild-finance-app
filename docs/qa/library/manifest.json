@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "classification": "SYNTHETIC_TEST_DATA",
   "customer_context": "MUNDO_DO_SABOR",
-  "environment_allowlist": ["MUNDO_DO_SABOR_QA", "SANDBOX"],
+  "environment_allowlist": [
+    "MUNDO_DO_SABOR_QA",
+    "SANDBOX"
+  ],
   "production_allowed": false,
   "raw_customer_data_included": false,
   "source_context": [
@@ -11,11 +14,85 @@
     "Cycle 01 Sprint A2 tasks A2.1-A2.7 and Sprint A3 tasks A3.1-A3.6"
   ],
   "datasets": [
-    {"id":"MS-QA-BANK-001","version":"1.0.0","file":"bank-statements-synthetic.csv","format":"csv","records":6,"sha256":"TO_BE_COMPUTED","purpose":"Synthetic bank statement transactions for Itaú, Inter and BNB parser and multiconta scenarios","expected":{"credits":3,"debits":3,"net_total":1030.00,"divisions":["DIV-A","DIV-B","DIV-C","DIV-D","DIV-E"]}},
-    {"id":"MS-QA-AR-001","version":"1.0.0","file":"receivables-synthetic.csv","format":"csv","records":6,"sha256":"TO_BE_COMPUTED","purpose":"Synthetic receivables covering boleto, PIX, cheque and card","expected":{"gross_total":5150.00,"open_items":4,"overdue_items":2}},
-    {"id":"MS-QA-REC-001","version":"1.0.0","file":"reconciliation-expected-results.csv","format":"csv","records":6,"sha256":"TO_BE_COMPUTED","purpose":"Expected match classifications including exact, partial, unmatched, duplicate and manual review","expected":{"exact_matches":2,"partial_matches":1,"unmatched":1,"duplicate":1,"manual_review":1}},
-    {"id":"MS-QA-BATCH-001","version":"1.0.0","file":"batch-settlement-synthetic.csv","format":"csv","records":5,"sha256":"TO_BE_COMPUTED","purpose":"Synthetic batch preparation with accepted, duplicate, missing-match and review rows; never executes payment","expected":{"items":5,"preparable":2,"rejected_or_review":3,"payment_executed":false}},
-    {"id":"MS-QA-POD-001","version":"1.0.0","file":"proof-of-delivery-index-synthetic.csv","format":"csv","records":4,"sha256":"TO_BE_COMPUTED","purpose":"Synthetic proof-of-delivery metadata indexed by fictional invoice reference","expected":{"indexed":3,"missing_document":1}}
+    {
+      "id": "MS-QA-BANK-001",
+      "version": "1.0.0",
+      "file": "bank-statements-synthetic.csv",
+      "format": "csv",
+      "records": 7,
+      "sha256": null,
+      "purpose": "Synthetic bank statement transactions for Itaú, Inter and BNB parser and multiconta scenarios",
+      "expected": {
+        "credits": 3,
+        "debits": 4,
+        "net_total": 1320,
+        "divisions": [
+          "DIV-A",
+          "DIV-B",
+          "DIV-C",
+          "DIV-D",
+          "DIV-E"
+        ]
+      }
+    },
+    {
+      "id": "MS-QA-AR-001",
+      "version": "1.0.0",
+      "file": "receivables-synthetic.csv",
+      "format": "csv",
+      "records": 6,
+      "sha256": null,
+      "purpose": "Synthetic receivables covering boleto, PIX, cheque and card",
+      "expected": {
+        "gross_total": 5150,
+        "open_items": 4,
+        "overdue_items": 2
+      }
+    },
+    {
+      "id": "MS-QA-REC-001",
+      "version": "1.0.0",
+      "file": "reconciliation-expected-results.csv",
+      "format": "csv",
+      "records": 6,
+      "sha256": null,
+      "purpose": "Expected match classifications including exact, partial, unmatched, duplicate and manual review",
+      "expected": {
+        "exact_matches": 2,
+        "partial_matches": 1,
+        "unmatched": 1,
+        "duplicate": 1,
+        "manual_review": 1
+      }
+    },
+    {
+      "id": "MS-QA-BATCH-001",
+      "version": "1.0.0",
+      "file": "batch-settlement-synthetic.csv",
+      "format": "csv",
+      "records": 5,
+      "sha256": null,
+      "purpose": "Synthetic batch preparation with accepted, duplicate, missing-match and review rows; never executes payment",
+      "expected": {
+        "items": 5,
+        "preparable": 2,
+        "rejected_or_review": 3,
+        "payment_executed": false
+      }
+    },
+    {
+      "id": "MS-QA-POD-001",
+      "version": "1.0.0",
+      "file": "proof-of-delivery-index-synthetic.csv",
+      "format": "csv",
+      "records": 4,
+      "sha256": null,
+      "purpose": "Synthetic proof-of-delivery metadata indexed by fictional invoice reference",
+      "expected": {
+        "indexed": 3,
+        "missing_document": 1
+      }
+    }
   ],
   "provenance_policy": {
     "real_source_files_replicated": false,
