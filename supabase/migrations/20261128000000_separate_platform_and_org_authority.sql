@@ -512,6 +512,7 @@ drop policy if exists "RSBUILD owners read capability license events" on public.
 drop policy if exists "RSBUILD owners append capability license events" on public.capability_license_events;
 
 drop policy if exists "Platform administrators manage capability licenses" on public.organization_capability_licenses;
+drop policy if exists "Platform administrators read all capability licenses" on public.organization_capability_licenses;
 create policy "Platform administrators read all capability licenses"
   on public.organization_capability_licenses for select to authenticated
   using ((select public.is_platform_administrator()));
