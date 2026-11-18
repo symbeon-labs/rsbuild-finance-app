@@ -68,6 +68,25 @@ async function getSandboxAccess(
   };
 }
 
+async function requireSandboxCapabilityEntitlements(
+  supabase: SupabaseServerClient,
+  organizationId: string
+): Promise<NextResponse | null> {
+  const { data, error } = await supabase.rpc("has_sandbox_capability_entitlements", {
+    p_organization_id: organizationId,
+    p_capability_keys: ["finance", "reconciliation", "logistics", "audit"]
+  });
+
+  if (error) {
+    console.error("Sandbox capability entitlement lookup failed:", error.code);
+    return NextResponse.json({ error: "sandbox_entitlement_unavailable" }, { status: 503 });
+  }
+  if (data !== true) {
+    return NextResponse.json({ error: "sandbox_capability_not_entitled" }, { status: 403 });
+  }
+  return null;
+}
+
 /** Reads only synthetic data belonging to sandboxes the user is authorized to access. */
 export async function GET(request: Request) {
   try {
@@ -94,12 +113,14 @@ export async function GET(request: Request) {
     // Esta primeira fase homologa exclusivamente Mundo do Sabor.
     const { data: mundoOrg, error: mundoOrgError } = await supabase
       .from("sandbox_organizations")
-      .select("id,slug")
+      .select("id,slug,organization_id")
       .eq("slug", "mundo-sabor-sandbox")
       .maybeSingle();
     if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
       return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
     }
+    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.organization_id);
+    if (entitlementDenial) return entitlementDenial;
 
     const [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes, casesRes] = await Promise.all([
       supabase.from("sandbox_organizations").select("*").eq("id", mundoOrg.id),
@@ -188,12 +209,14 @@ export async function POST(request: Request) {
 
     const { data: mundoOrg, error: mundoOrgError } = await supabase
       .from("sandbox_organizations")
-      .select("id")
+      .select("id,organization_id")
       .eq("slug", "mundo-sabor-sandbox")
       .maybeSingle();
     if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
       return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
     }
+    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.organization_id);
+    if (entitlementDenial) return entitlementDenial;
 
     const { data: validationCase, error: caseError } = await supabase
       .from("sandbox_validation_cases")
