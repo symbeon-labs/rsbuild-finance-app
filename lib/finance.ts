@@ -226,7 +226,7 @@ export type CsvColumnMatch = {
 const CSV_FIELD_ALIASES: Record<CsvCanonicalField, string[]> = {
   date: ["data", "date", "data movimento", "data_movimento", "data lancamento", "dt movimento", "dt lancamento", "data transacao", "transaction date", "posting date", "dt"],
   description: ["descricao", "description", "historico", "memo", "lancamento", "name", "detalhe", "identificacao", "complemento", "favorecido", "beneficiario"],
-  amount: ["valor", "amount", "montante", "vlr", "vl lancamento", "valor lancamento", "valor total", "value", "quantia"],
+  amount: ["valor", "amount", "montante", "vlr", "vl lancamento", "vlr lancamento", "valor lancamento", "valor total", "value", "quantia"],
   direction: ["tipo", "direcao", "direction", "natureza", "tipo movimento", "operacao", "credito debito", "dc"],
   category: ["categoria", "category", "grupo", "classificacao", "tipo despesa"],
   cost_center: ["centro de custo", "cost center", "setor", "departamento", "unidade"],
