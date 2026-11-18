@@ -360,7 +360,7 @@ export default function ControlTowerWorkspace({
             <AgentsGovernanceView canDecide={["owner", "admin"].includes(membershipRole)} />
           )}
           {!isProjectCollaborator && section === "sandbox" && (
-            <SandboxView qaOrganizations={availableOrganizations.filter((item) => item.slug.endsWith("_qa"))} sandboxOrganizations={availableSandboxOrganizations} />
+            <SandboxView organizationId={organizationId} qaOrganizations={availableOrganizations.filter((item) => item.slug.endsWith("_qa"))} sandboxOrganizations={availableSandboxOrganizations} />
           )}
         </div>
       </section>
