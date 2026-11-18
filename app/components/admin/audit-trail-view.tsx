@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatDateTimePtBr } from "@/lib/date-format";
 
 type AuditEvent = {
   id: number;
