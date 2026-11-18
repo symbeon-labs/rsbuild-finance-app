@@ -136,6 +136,7 @@ export default async function Home({ searchParams }: Props) {
     if (!firstClientOrganization) redirect("/login?reason=platform_workspace_restricted");
     selected = firstClientOrganization;
   }
+  if (!selected) redirect("/login?reason=workspace_not_found");
 
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
   const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor", "hub_acai_qa", "mundo_sabor_qa"];
