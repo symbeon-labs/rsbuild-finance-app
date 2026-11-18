@@ -526,7 +526,7 @@ export function WorkspaceModal({
                                 {module.description}
                               </span>
                               {available && <span style={{ display: "inline-flex", marginTop: 7, padding: "3px 7px", borderRadius: 999, background: "rgba(5,150,105,.12)", color: "#047857", fontSize: 8, fontWeight: 800, letterSpacing: ".04em" }}>
-                                ✓ LIBERADO PARA {currentEnvironment.toUpperCase()}
+                                ✓ LIBERADO PARA {selectedOrg.endsWith("_qa") ? "QA" : "PRODUÇÃO"}
                               </span>}
                             </div>
                           </article>
