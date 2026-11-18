@@ -178,10 +178,16 @@ drop policy if exists "RSBUILD owners read all capability licenses" on public.or
 drop policy if exists "RSBUILD owners read capability license events" on public.capability_license_events;
 drop policy if exists "RSBUILD owners append capability license events" on public.capability_license_events;
 
-create policy "Platform administrators manage capability licenses"
-  on public.organization_capability_licenses for all to authenticated
-  using ((select public.is_platform_administrator()))
-  with check ((select public.is_platform_administrator()));
+drop policy if exists "Platform administrators manage capability licenses" on public.organization_capability_licenses;
+create policy "Platform administrators read all capability licenses"
+  on public.organization_capability_licenses for select to authenticated
+  using ((select public.is_platform_administrator()));
+
+-- All license mutations must pass through the audited RPC. Direct client DML
+-- would bypass the atomic event write, even if an RLS policy allowed it.
+revoke insert, update, delete on public.organization_capability_licenses from anon, authenticated;
+revoke insert, update, delete on public.capability_license_events from anon, authenticated;
+drop policy if exists "Platform administrators append capability license events" on public.capability_license_events;
 
 create policy "Platform administrators read capability license events"
   on public.capability_license_events for select to authenticated
@@ -210,9 +216,9 @@ create function public.set_organization_capability_license(
 )
 returns public.organization_capability_licenses
 language plpgsql
-security invoker
-set search_path = public
-as $$
+security definer
+set search_path = ''
+as $
 declare
   v_actor uuid := auth.uid();
   v_previous public.organization_capability_licenses;
