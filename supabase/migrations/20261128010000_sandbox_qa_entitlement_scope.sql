@@ -1,6 +1,8 @@
--- Align the internal Mundo do Sabor sandbox with the capabilities enabled for QA.
--- Sandbox contains synthetic data; it must not require production licenses or modules
--- that are not part of the current finance homologation scope.
+-- Align sandbox capability checks with QA entitlements and institutional authority.
+-- Internal RSBUILD sandbox: institutional owner/admin of the RSBUILD tenant.
+-- Client sandboxes: RSBUILD institutional authority (or explicit sandbox
+-- membership for operators) plus active QA tenant licenses. Synthetic data
+-- only; never requires production licenses.
 
 create or replace function app_private.has_sandbox_capability_entitlements(
   p_sandbox_organization_id uuid,
@@ -15,7 +17,9 @@ as $function$
 declare
   v_uid uuid := auth.uid();
   v_tenant_organization_id uuid;
+  v_tenant_slug text;
   v_qa_organization_id uuid;
+  v_is_rsbuild_admin boolean := false;
 begin
   if v_uid is null
     or p_sandbox_organization_id is null
@@ -24,7 +28,14 @@ begin
     return false;
   end if;
 
-  -- Resolve the synthetic sandbox to its owning tenant.
+  if exists (
+    select 1
+    from unnest(p_capability_keys) as requested(capability_key)
+    where requested.capability_key not in ('finance', 'reconciliation', 'logistics', 'audit')
+  ) then
+    return false;
+  end if;
+
   select so.organization_id
     into v_tenant_organization_id
   from sandbox.organizations so
@@ -34,25 +45,34 @@ begin
     return false;
   end if;
 
-  -- Sandbox homologation follows the corresponding QA tenant, never production.
-  select qa.id
-    into v_qa_organization_id
-  from public.organizations tenant
-  join public.organizations qa
-    on qa.slug = tenant.slug || '_qa'
-  where tenant.id = v_tenant_organization_id;
+  select o.slug
+    into v_tenant_slug
+  from public.organizations o
+  where o.id = v_tenant_organization_id;
 
-  if v_qa_organization_id is null then
+  if v_tenant_slug is null then
     return false;
   end if;
 
-  -- RSBUILD owners/admins may oversee the sandbox. Operators must also
-  -- have an explicit membership in the requested sandbox organization.
+  select exists (
+    select 1
+    from public.organization_memberships m
+    where m.organization_id = v_tenant_organization_id
+      and m.user_id = v_uid
+      and m.role in ('owner', 'admin')
+  ) into v_is_rsbuild_admin;
+
+  -- Internal RSBUILD sandbox: only institutional owner/admin.
+  if v_tenant_slug = 'rsbuild' then
+    return v_is_rsbuild_admin;
+  end if;
+
+  -- Client sandboxes: require RSBUILD institutional authority or explicit
+  -- sandbox membership for an operator, plus an active QA entitlement.
   if not exists (
     select 1
     from public.organization_memberships m
-    join public.organizations o on o.id = m.organization_id
-    where o.slug = 'rsbuild'
+    where m.organization_id = (select id from public.organizations where slug = 'rsbuild')
       and m.user_id = v_uid
       and (
         m.role in ('owner', 'admin')
@@ -70,22 +90,28 @@ begin
     return false;
   end if;
 
-  -- Every requested capability must be active in QA. This intentionally
-  -- does not unlock production or grant unrequested modules.
+  select qa.id
+    into v_qa_organization_id
+  from public.organizations qa
+  where qa.slug = v_tenant_slug || '_qa';
+
+  if v_qa_organization_id is null then
+    return false;
+  end if;
+
   return not exists (
     select 1
     from unnest(p_capability_keys) as requested(capability_key)
-    where requested.capability_key not in ('finance', 'reconciliation', 'logistics', 'audit')
-      or not exists (
-        select 1
-        from public.organization_capability_licenses l
-        where l.organization_id = v_qa_organization_id
-          and l.capability_key = requested.capability_key
-          and l.license_status = 'granted'
-          and l.operational_status = 'active'
-          and l.entitled_environments @> array['qa']::text[]
-          and (l.expires_at is null or l.expires_at > now())
-      )
+    where not exists (
+      select 1
+      from public.organization_capability_licenses l
+      where l.organization_id = v_qa_organization_id
+        and l.capability_key = requested.capability_key
+        and l.license_status = 'granted'
+        and l.operational_status = 'active'
+        and l.entitled_environments @> array['qa']::text[]
+        and (l.expires_at is null or l.expires_at > now())
+    )
   );
 end;
 $function$;
