@@ -130,7 +130,7 @@ export function WorkspaceModal({
         <div className="workspace-modal-header" style={{ marginBottom: "12px", flexShrink: 0 }}>
           <div>
             <span className="eyebrow" style={{ fontSize: "10px", letterSpacing: "1px" }}>CUSTOMIZAÇÃO CORPORATIVA</span>
-            <h3 style={{ fontSize: "18px" }}>Identidade do Workspace</h3>
+            <h3 style={{ fontSize: "18px" }}>Configurações do Workspace</h3>
           </div>
           <button
             type="button"
@@ -496,7 +496,7 @@ export function WorkspaceModal({
                         const status = capabilityStatuses[module.key] ?? "blocked";
                         const available = status === "available";
                         const inDevelopment = status === "in_development" || status === "not_implemented" || status === "pending_activation";
-                        const tone = available ? "#059669" : inDevelopment ? "#B7791F" : "var(--muted)";
+                        const tone = available ? "#059669" : inDevelopment || status === "expired" ? "#B7791F" : "var(--muted)";
                         const label = available ? "DISPONÍVEL" : status === "in_development" ? "EM DESENVOLVIMENTO" : status === "not_implemented" ? "LIBERADO · NÃO IMPLEMENTADO" : status === "pending_activation" ? "AGUARDANDO ATIVAÇÃO" : status === "expired" ? "LICENÇA EXPIRADA" : status === "suspended" ? "SUSPENSO" : status === "revoked" ? "REVOGADO" : "AGUARDANDO LIBERAÇÃO";
                         return (
                           <article key={module.key} style={{
