@@ -22,6 +22,13 @@ export interface AuthorizationContext {
   platformAdministrator: boolean;
 }
 
+/** QA organizations use an explicit _qa suffix (including alpha/beta lanes).
+ * Sandbox is evaluated by its isolated schema and dedicated RPC, never here.
+ */
+export function resolveOrganizationEnvironment(slug: string): Environment {
+  return /_qa(?:_|$)/i.test(slug) ? "qa" : "production";
+}
+
 export function isOrganizationOwner(role: MemberRole): boolean {
   return role === "owner";
 }
