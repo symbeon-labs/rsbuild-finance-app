@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(11);
+select plan(12);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values ('77777777-7777-4777-8777-777777777777','00000000-0000-0000-0000-000000000000','authenticated','authenticated','audit-actor@test.invalid','',now(),now(),now())
@@ -44,6 +44,20 @@ select is(
   'conciliado',
   'financial record audit stores the new status'
 );
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.role','authenticated',true);
+select throws_ok(
+  $$update public.financial_records set status='pendente' where id='99999999-9999-4999-8999-999999999991'$$,
+  '42501',
+  null,
+  'operator remains blocked from direct financial record updates without the required table grant'
+);
+reset role;
+set local role service_role;
+select set_config('request.jwt.claim.role','service_role',true);
+
 select is(
   (select actor_id::text from public.audit_events where entity_id='99999999-9999-4999-8999-999999999991' order by id desc limit 1),
   '77777777-7777-4777-8777-777777777777',
