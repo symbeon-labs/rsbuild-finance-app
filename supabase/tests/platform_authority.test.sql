@@ -23,8 +23,8 @@ insert into public.capability_catalog (capability_key, display_name, description
 values ('finance','Finance','pgTAP fixture')
 on conflict (capability_key) do nothing;
 
-insert into sandbox.organizations (slug, display_name, organization_id)
-values ('g01-tenant-sandbox','G01 Tenant Sandbox','d2222222-2222-4222-8222-222222222222')
+insert into sandbox.organizations (id, slug, display_name, organization_id)
+values ('d3333333-3333-4333-8333-333333333333','g01-tenant-sandbox','G01 Tenant Sandbox','d2222222-2222-4222-8222-222222222222')
 on conflict (slug) do nothing;
 
 insert into public.platform_administrators (user_id, granted_by, reason)
@@ -99,6 +99,7 @@ select ok(
   and not has_function_privilege('anon','public.sandbox_reset()','EXECUTE')
   and not has_function_privilege('anon','public.is_platform_administrator()','EXECUTE')
   and not has_function_privilege('anon','public.has_sandbox_capability_entitlements(uuid,text[])','EXECUTE')
+  and not has_function_privilege('anon','public.sandbox_record_validation_run(text,text,text,jsonb)','EXECUTE')
   and not has_function_privilege('anon','public.set_organization_capability_license(uuid,text,text,text,text,text[],timestamp with time zone)','EXECUTE')
   and not has_function_privilege('anon','public.sandbox_record_validation_run(text,text,text,jsonb)','EXECUTE')
   and not (
@@ -109,7 +110,7 @@ select ok(
       and p.proname in (
         'can_operate_rsbuild_project','can_read_rsbuild_project','sandbox_reset',
         'is_platform_administrator','has_sandbox_capability_entitlements',
-        'set_organization_capability_license','sandbox_record_validation_run'
+        'set_organization_capability_license','sandbox_record_validation_run','sandbox_record_validation_run'
       )
   ),
   'privileged public RPC wrappers are invoker-only and unavailable to anon'
