@@ -1,6 +1,7 @@
 "use client";
 
 import React, { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { formatDatePtBr } from "@/lib/date-format";
 
 type ProjectTask = {
   id: string;
@@ -720,7 +721,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                                   {/* Datas */}
                                   <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "6px" }}>
                                     {sprint.start_date && sprint.end_date
-                                      ? `${sprint.start_date.slice(5).replace("-", "/")} → ${sprint.end_date.slice(5).replace("-", "/")}`
+                                      ? `${formatDatePtBr(sprint.start_date)} → ${formatDatePtBr(sprint.end_date)}`
                                       : "Janela a definir"}
                                   </div>
 
@@ -838,7 +839,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                                 </span>
                                 {(selectedSprint.start_date || selectedSprint.end_date) && (
                                   <span style={{ fontSize: "12px", color: "var(--muted)" }}>
-                                    Janela: {selectedSprint.start_date || "—"} até {selectedSprint.end_date || "—"}
+                                    Janela: {formatDatePtBr(selectedSprint.start_date)} até {formatDatePtBr(selectedSprint.end_date)}
                                   </span>
                                 )}
                               </div>
@@ -1192,7 +1193,7 @@ export function ProjectPortfolioView({ canManage }: { canManage: boolean }) {
                         </div>
                         {dependency.due_date && (
                           <div style={{ fontSize: "11px", color: "#D97706", marginTop: "2px" }}>
-                            Prazo: {dependency.due_date}
+                            Prazo: {formatDatePtBr(dependency.due_date)}
                           </div>
                         )}
                       </div>
