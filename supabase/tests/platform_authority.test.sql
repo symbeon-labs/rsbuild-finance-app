@@ -75,14 +75,23 @@ select lives_ok(
 select ok(
   not has_table_privilege('authenticated','public.organization_capability_licenses','INSERT')
   and not has_table_privilege('authenticated','public.organization_capability_licenses','UPDATE')
-  and not has_table_privilege('authenticated','public.organization_capability_licenses','DELETE'),
-  'authenticated clients cannot mutate licenses outside the audited RPC'
+  and not has_table_privilege('authenticated','public.organization_capability_licenses','DELETE')
+  and not has_table_privilege('anon','public.organization_capability_licenses','INSERT')
+  and not has_table_privilege('anon','public.organization_capability_licenses','UPDATE')
+  and not has_table_privilege('anon','public.organization_capability_licenses','DELETE')
+  and not has_table_privilege('authenticated','public.platform_administrators','INSERT')
+  and not has_table_privilege('authenticated','public.platform_administrators','UPDATE')
+  and not has_table_privilege('authenticated','public.platform_administrators','DELETE'),
+  'client roles cannot mutate licenses or self-provision platform authority'
 );
 select ok(
   not has_table_privilege('authenticated','public.capability_license_events','INSERT')
   and not has_table_privilege('authenticated','public.capability_license_events','UPDATE')
-  and not has_table_privilege('authenticated','public.capability_license_events','DELETE'),
-  'license event history cannot be directly altered by authenticated clients'
+  and not has_table_privilege('authenticated','public.capability_license_events','DELETE')
+  and not has_table_privilege('anon','public.capability_license_events','INSERT')
+  and not has_table_privilege('anon','public.capability_license_events','UPDATE')
+  and not has_table_privilege('anon','public.capability_license_events','DELETE'),
+  'license event history cannot be directly altered by client roles'
 );
 select ok(
   not has_function_privilege('anon','public.can_operate_rsbuild_project(uuid)','EXECUTE')
