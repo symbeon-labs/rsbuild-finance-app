@@ -161,6 +161,15 @@ export function FinanceEvaluationGuide({
             </div>
           </div>
           {feedback && <p className="qa-guide-feedback" role="status">{feedback}</p>}
+          {sectionEntries.length > 0 && <div className="qa-guide-history" aria-label="Histórico de avaliações">
+            <strong>Histórico registrado</strong>
+            {sectionEntries.map((entry) => <article key={entry.id}>
+              <div><b>{entry.assessment}</b><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString("pt-BR")}</time></div>
+              {entry.scenario_summary && <p><span>Cenário:</span> {entry.scenario_summary}</p>}
+              {entry.observation && <p><span>Resultado:</span> {entry.observation}</p>}
+              {entry.operational_impact && <p><span>Impacto:</span> {entry.operational_impact}</p>}
+            </article>)}
+          </div>}
           <p className="qa-guide-disclaimer">Os registros são vinculados ao avaliador e ao ambiente QA. A avaliação não altera lançamentos, saldos ou títulos e não representa homologação técnica.</p>
         </div>
       </>}
