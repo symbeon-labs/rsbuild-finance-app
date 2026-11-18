@@ -12,14 +12,14 @@ on conflict (id) do nothing;
 
 insert into public.organizations (id,legal_name,display_name,slug,status)
 values
- ('11111111-1111-4111-8111-111111111111','Mundo QA Ltda','Mundo do Sabor QA','mundo_sabor_qa','active'),
+ ('550e8400-e29b-41d4-a716-446655440002','Mundo QA Ltda','Mundo do Sabor QA','mundo_sabor_qa','active'),
  ('22222222-2222-4222-8222-222222222222','Other Ltda','Other Tenant','other_tenant','active')
 on conflict (id) do nothing;
 
 insert into public.organization_memberships (organization_id,user_id,role)
 values
- ('11111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','operator'),
- ('11111111-1111-4111-8111-111111111111','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','owner'),
+ ('550e8400-e29b-41d4-a716-446655440002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','operator'),
+ ('550e8400-e29b-41d4-a716-446655440002','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','owner'),
  ('22222222-2222-4222-8222-222222222222','cccccccc-cccc-4ccc-8ccc-cccccccccccc','operator')
 on conflict do nothing;
 
@@ -28,10 +28,10 @@ select set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 select lives_ok(
  $$insert into public.qa_evaluations
    (organization_id,workspace_slug,environment,module_key,feature_key,assessment,observation,created_by)
-   values ('11111111-1111-4111-8111-111111111111','mundo_sabor_qa','qa','finance','importacoes','Atendeu ao esperado','Importação verificada','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')$$,
+   values ('550e8400-e29b-41d4-a716-446655440002','mundo_sabor_qa','qa','finance','importacoes','Atendeu ao esperado','Importação verificada','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')$$,
  'QA evaluator can submit an evaluation in the authorized QA workspace'
 );
-select is((select count(*)::int from public.qa_evaluations where organization_id='11111111-1111-4111-8111-111111111111'),1,
+select is((select count(*)::int from public.qa_evaluations where organization_id='550e8400-e29b-41d4-a716-446655440002'),1,
  'evaluation is persisted in the QA tenant');
 select is((select count(*)::int from public.qa_evaluations),1,
  'evaluator can read their own evaluation');
@@ -44,13 +44,13 @@ select throws_ok(
 select throws_ok(
  $$insert into public.qa_evaluations
    (organization_id,workspace_slug,environment,module_key,feature_key,assessment,created_by)
-   values ('11111111-1111-4111-8111-111111111111','mundo_sabor_qa','qa','finance','importacoes','Atendeu ao esperado','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')$$,
+   values ('550e8400-e29b-41d4-a716-446655440002','mundo_sabor_qa','qa','finance','importacoes','Atendeu ao esperado','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')$$,
  '42501', null, 'evaluator cannot forge another author'
 );
 select throws_ok(
  $$insert into public.qa_evaluations
    (organization_id,workspace_slug,environment,module_key,feature_key,assessment,created_by)
-   values ('11111111-1111-4111-8111-111111111111','mundo_sabor','qa','finance','importacoes','Atendeu ao esperado','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')$$,
+   values ('550e8400-e29b-41d4-a716-446655440002','mundo_sabor','qa','finance','importacoes','Atendeu ao esperado','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')$$,
  '23514', null, 'official workspace slug is rejected'
 );
 select ok(not has_table_privilege('authenticated','public.qa_evaluations','UPDATE'),
@@ -72,7 +72,7 @@ select is((select count(*)::int from public.qa_evaluations),0,
 select throws_ok(
  $$insert into public.qa_evaluations
    (organization_id,workspace_slug,environment,module_key,feature_key,assessment,created_by)
-   values ('11111111-1111-4111-8111-111111111111','mundo_sabor_qa','qa','finance','importacoes','Atendeu ao esperado','cccccccc-cccc-4ccc-8ccc-cccccccccccc')$$,
+   values ('550e8400-e29b-41d4-a716-446655440002','mundo_sabor_qa','qa','finance','importacoes','Atendeu ao esperado','cccccccc-cccc-4ccc-8ccc-cccccccccccc')$$,
  '42501', null, 'another tenant cannot submit into Mundo do Sabor QA'
 );
 reset role;
