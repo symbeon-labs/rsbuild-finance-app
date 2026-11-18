@@ -17,7 +17,8 @@
 3. Capability-license RLS policies moved from RSBUILD organization owner to explicit platform administrators.
 4. Capability-license RPC authorization moved to the same platform boundary.
 5. TypeScript authorization vocabulary and unit tests proving that organization ownership does not imply platform authority.
-6. Capability-use predicate requiring a granted license, active implementation and explicit environment entitlement.
+6. Capability-use predicate requiring a granted license, active implementation, explicit environment entitlement and a non-expired validity window.
+7. Licensing UI and RPC persist QA/Sandbox/Production scope and optional expiration.
 
 ## Bootstrap — mandatory before applying in production
 
@@ -34,7 +35,7 @@ No automatic seed is intentional: an automatic grant to the RSBUILD owner would 
 
 ## Important integration boundary
 
-The TypeScript predicate is a pure policy helper, not an authorization source. Runtime enforcement must query the database grant and entitlement server-side. Do not accept `platformAdministrator`, capability status, environment, organization ID or role from browser payloads as authoritative.
+The TypeScript predicate is a pure policy helper, not an authorization source. Runtime enforcement must query the database grant and entitlement server-side. The licensing record now stores an explicit environment allow-list and optional expiration; a granted license without an environment is rejected. Do not accept `platformAdministrator`, capability status, environment, organization ID or role from browser payloads as authoritative.
 
 All capability-protected API routes and server actions must call a shared server-side guard before data access or mutation. This PR establishes the database authority boundary for licensing administration; it does not yet retrofit every module route or provision the initial Symbeon administrator.
 
@@ -50,7 +51,6 @@ All capability-protected API routes and server actions must call a shared server
 
 ## Required follow-up
 
-- Add environment scope and validity window to entitlement records if not already modeled elsewhere.
 - Centralize capability enforcement in all protected API routes.
 - Add pgTAP tests for platform administrator isolation and license lifecycle.
 - Define break-glass, MFA and periodic access review.
