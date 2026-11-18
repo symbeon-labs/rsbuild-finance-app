@@ -20,7 +20,7 @@
       "file": "bank-statements-synthetic.csv",
       "format": "csv",
       "records": 7,
-      "sha256": null,
+      "sha256": "f5f264c856078eb1bf71ac90e1fec433940008a1d61f6b9971955f19c88691a4",
       "purpose": "Synthetic bank statement transactions for Itaú, Inter and BNB parser and multiconta scenarios",
       "expected": {
         "credits": 3,
@@ -41,7 +41,7 @@
       "file": "receivables-synthetic.csv",
       "format": "csv",
       "records": 6,
-      "sha256": null,
+      "sha256": "707a1d2eb88d228e1201bffc0386d15b3d5aa1b04611b73827df7f8534796e98",
       "purpose": "Synthetic receivables covering boleto, PIX, cheque and card",
       "expected": {
         "gross_total": 5150,
@@ -55,7 +55,7 @@
       "file": "reconciliation-expected-results.csv",
       "format": "csv",
       "records": 6,
-      "sha256": null,
+      "sha256": "4d0517acc671bb15bd3292dd6ec116abaa40d4f2d889321dc63bfcaeac0d5302",
       "purpose": "Expected match classifications including exact, partial, unmatched, duplicate and manual review",
       "expected": {
         "exact_matches": 2,
@@ -71,7 +71,7 @@
       "file": "batch-settlement-synthetic.csv",
       "format": "csv",
       "records": 5,
-      "sha256": null,
+      "sha256": "7cd33f366886d1c99ad660c872ba91041ebae4b6c841310ae23ac86e53eb030d",
       "purpose": "Synthetic batch preparation with accepted, duplicate, missing-match and review rows; never executes payment",
       "expected": {
         "items": 5,
@@ -86,7 +86,7 @@
       "file": "proof-of-delivery-index-synthetic.csv",
       "format": "csv",
       "records": 4,
-      "sha256": null,
+      "sha256": "ccd6fa017fdc73cc2346c55e59e4f36c9ae3b9985532edbca92c768ca0cd014a",
       "purpose": "Synthetic proof-of-delivery metadata indexed by fictional invoice reference",
       "expected": {
         "indexed": 3,
