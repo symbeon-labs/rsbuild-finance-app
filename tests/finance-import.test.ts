@@ -441,7 +441,7 @@ test("normaliza CSV com cabeçalhos alternativos para o esquema financeiro", () 
     "Dt. Movimento;Histórico;Vlr. Lançamento;Natureza;Setor",
     "18/11/2026;PIX RECEBIDO CLIENTE;1.250,00;Entrada;Vendas",
     "19/11/2026;PAGAMENTO FORNECEDOR;-250,00;Saída;Compras"
-  ].join("\\n"));
+  ].join("\n"));
   assert.equal(result.records.length, 2);
   assert.deepEqual(result.errors, []);
   assert.equal(result.records[0].amount, 1250);
