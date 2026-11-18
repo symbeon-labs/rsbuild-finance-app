@@ -84,7 +84,7 @@ export function FinanceEvaluationGuide({
   if (!item) return null;
 
   async function saveEvaluation() {
-    if (assessment === "Não avaliado" && !scenarioSummary.trim() && !observation.trim() && !operationalImpact.trim()) return;
+    if (assessment === "Não avaliado") return;
     setSaving(true);
     try {
       const response = await fetch("/api/qa-evaluations", {
@@ -155,7 +155,7 @@ export function FinanceEvaluationGuide({
             <span>{organizationName} · QA · Finanças · Guia v0.2 · Registro centralizado</span>
             <div>
               <button type="button" className="secondary-button" onClick={exportEvaluations} disabled={!entries.length}>Exportar avaliações</button>
-              <button type="button" className="primary-button" onClick={saveEvaluation} disabled={saving || (assessment === "Não avaliado" && !scenarioSummary.trim() && !observation.trim() && !operationalImpact.trim())}>
+              <button type="button" className="primary-button" onClick={saveEvaluation} disabled={saving || assessment === "Não avaliado" || (!scenarioSummary.trim() && !observation.trim() && !operationalImpact.trim())}>
                 {saving ? "Salvando…" : "Registrar avaliação"}
               </button>
             </div>
