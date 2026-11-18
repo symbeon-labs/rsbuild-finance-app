@@ -7,14 +7,19 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
  * later with PostgreSQL permission errors (42501), which obscures the actual
  * configuration problem.
  */
+function normalizeKey(key: string): string {
+  return key.trim();
+}
+
 function isElevatedKey(key: string): boolean {
-  if (key.startsWith("sb_secret_")) return true;
+  const normalized = normalizeKey(key);
+  if (normalized.startsWith("sb_secret_")) return true;
 
   // Legacy service_role keys are JWTs. Inspect only the role claim; never log
   // or return the token itself.
-  if (key.startsWith("eyJ")) {
+  if (normalized.startsWith("eyJ")) {
     try {
-      const payload = key.split(".")[1];
+      const payload = normalized.split(".")[1];
       if (!payload) return false;
       const decoded = JSON.parse(
         Buffer.from(payload.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8")
@@ -33,7 +38,9 @@ export function getAdminClient(): SupabaseClient | null {
   const candidates = [
     process.env.SUPABASE_SECRET_KEY,
     process.env.SUPABASE_SERVICE_ROLE_KEY
-  ].filter((value): value is string => Boolean(value));
+  ]
+    .map((value) => value ? normalizeKey(value) : "")
+    .filter(Boolean);
 
   const secretKey = candidates.find(isElevatedKey);
   if (!url || !secretKey) {
