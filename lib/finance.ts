@@ -46,6 +46,29 @@ export type ImportResult = {
   metadata?: BankMetadata;
 };
 
+/**
+ * Decodifica extratos bancários sem presumir UTF-8.
+ * Bancos brasileiros frequentemente exportam CSV/OFX em Windows-1252;
+ * alguns arquivos também chegam com BOM UTF-16.
+ */
+export function decodeImportText(bytes: Uint8Array): string {
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return new TextDecoder("utf-16le", { fatal: true }).decode(bytes);
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return new TextDecoder("utf-16be", { fatal: true }).decode(bytes);
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    try {
+      return new TextDecoder("windows-1252", { fatal: true }).decode(bytes);
+    } catch {
+      throw new Error("Não foi possível identificar a codificação do arquivo. Exporte novamente em UTF-8 ou Windows-1252.");
+    }
+  }
+}
+
 export const KNOWN_BANKS: Record<string, string> = {
   "0341": "Itaú Unibanco",
   "341": "Itaú Unibanco",
