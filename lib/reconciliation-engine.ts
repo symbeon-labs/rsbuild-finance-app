@@ -42,11 +42,23 @@ const normalize = (value: string) => value
 
 const cents = (value: number) => Number.isFinite(value) ? Math.round(value * 100) : NaN;
 
+function parseIsoDate(value: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const timestamp = Date.parse(value + "T00:00:00Z");
+  if (!Number.isFinite(timestamp)) return null;
+  const parsed = new Date(timestamp);
+  const roundTrip = [
+    parsed.getUTCFullYear().toString().padStart(4, "0"),
+    (parsed.getUTCMonth() + 1).toString().padStart(2, "0"),
+    parsed.getUTCDate().toString().padStart(2, "0")
+  ].join("-");
+  return roundTrip === value ? timestamp : null;
+}
+
 function dayDistance(a: string, b: string): number | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(a) || !/^\d{4}-\d{2}-\d{2}$/.test(b)) return null;
-  const left = Date.parse(a + "T00:00:00Z");
-  const right = Date.parse(b + "T00:00:00Z");
-  if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+  const left = parseIsoDate(a);
+  const right = parseIsoDate(b);
+  if (left === null || right === null) return null;
   return Math.abs(Math.round((left - right) / 86_400_000));
 }
 
@@ -65,7 +77,11 @@ export function matchFinancialTitlesWithRecords(
   const maxDays = options.maxDaysTolerance ?? 5;
   const minimumScore = options.autoMatchMinimumScore ?? 90;
   if (!Number.isInteger(maxDays) || maxDays < 0) throw new Error("maxDaysTolerance must be a non-negative integer.");
-  if (!Number.isInteger(minimumScore) || minimumScore < 1 || minimumScore > 100) throw new Error("autoMatchMinimumScore must be between 1 and 100.");
+  // The scoring model is additive: document (55) + counterparty (35) +
+  // exact amount (30) + same date (10), for a maximum of 130.
+  if (!Number.isInteger(minimumScore) || minimumScore < 1 || minimumScore > 130) {
+    throw new Error("autoMatchMinimumScore must be between 1 and 130.");
+  }
 
   const eligibleTitles = titles.filter((title) => title.status === "pendente");
   const eligibleRecords = records.filter((record) => record.status === "pendente");
@@ -87,8 +103,9 @@ export function matchFinancialTitlesWithRecords(
       const recordText = normalize(record.description);
       const docMatch = titleDoc.length >= 3 && recordText.includes(titleDoc);
       const nameMatch = titleName.length >= 5 && recordText.includes(titleName);
-      const amountDifference = Math.round((recordAmount - titleAmount)) / 100;
-      const exactAmount = recordAmount === titleAmount;
+      const differenceCents = recordAmount - titleAmount;
+      const amountDifference = differenceCents / 100;
+      const exactAmount = differenceCents === 0;
       const evidence: string[] = [];
       if (docMatch) evidence.push("document_reference");
       if (nameMatch) evidence.push("counterparty_name");
