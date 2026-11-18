@@ -6,6 +6,8 @@ import { consumeRateLimit } from "@/lib/api/rate-limit";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export type OrgRole = "owner" | "admin" | "operator" | "viewer";
+export type CapabilityKey = "finance" | "reconciliation" | "logistics" | "audit";
+export type CapabilityEnvironment = "qa" | "sandbox" | "production";
 
 export type OrgContext = {
   supabase: Awaited<ReturnType<typeof createClient>>;
@@ -28,11 +30,13 @@ function deny(status: number, error: string): GuardResult {
  * - exige sessão autenticada
  * - valida UUID da organização
  * - exige membership e, opcionalmente, um dos papéis permitidos
+ * - quando solicitado, valida entitlement de capacidade e ambiente no banco
  */
 export async function requireOrgContext(
   request: Request,
   organizationId: string,
-  allowedRoles: OrgRole[] = ["owner", "admin", "operator", "viewer"]
+  allowedRoles: OrgRole[] = ["owner", "admin", "operator", "viewer"],
+  requiredCapability?: CapabilityKey
 ): Promise<GuardResult> {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) {
@@ -53,7 +57,7 @@ export async function requireOrgContext(
 
   const { data: membership, error: membershipError } = await supabase
     .from("organization_memberships")
-    .select("role")
+    .select("role, organizations!inner(slug)")
     .eq("organization_id", organizationId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -82,6 +86,58 @@ export async function requireOrgContext(
       metadata: { reason: "insufficient_role", requiredRoles: allowedRoles, actualRole: role, path: new URL(request.url).pathname, method: request.method }
     });
     return deny(403, "insufficient_role");
+  }
+
+  if (requiredCapability) {
+    const organizationRelation = membership.organizations as unknown as { slug?: string } | null;
+    const slug = organizationRelation?.slug ?? "";
+    // QA is derived from the server-side organization record, never from request data.
+    const environment: CapabilityEnvironment =
+      slug.endsWith("_qa") || slug.includes("_qa_") ? "qa" : "production";
+
+    const { data: entitlement, error: entitlementError } = await supabase
+      .from("organization_capability_licenses")
+      .select("license_status, operational_status, entitled_environments, expires_at")
+      .eq("organization_id", organizationId)
+      .eq("capability_key", requiredCapability)
+      .maybeSingle();
+
+    if (entitlementError) {
+      console.error(JSON.stringify({
+        event: "capability_entitlement_lookup_failed",
+        organizationId,
+        capability: requiredCapability,
+        code: entitlementError.code
+      }));
+      return deny(503, "capability_entitlement_unavailable");
+    }
+
+    const expiry = entitlement?.expires_at ? Date.parse(entitlement.expires_at) : null;
+    const validUntil = expiry === null || (Number.isFinite(expiry) && expiry > Date.now());
+    const allowed = entitlement?.license_status === "granted"
+      && entitlement.operational_status === "active"
+      && Array.isArray(entitlement.entitled_environments)
+      && entitlement.entitled_environments.includes(environment)
+      && validUntil;
+
+    if (!allowed) {
+      await recordAuditEvent({
+        organizationId,
+        actorId: user.id,
+        actorEmail: user.email ?? null,
+        eventType: "access.denied",
+        entityType: "capability",
+        entityId: null,
+        metadata: {
+          reason: "capability_not_entitled",
+          capability: requiredCapability,
+          environment,
+          path: pathname,
+          method: request.method
+        }
+      });
+      return deny(403, "capability_not_entitled");
+    }
   }
 
   return { ok: true, ctx: { supabase, userId: user.id, userEmail: user.email ?? "", role } };
