@@ -64,6 +64,7 @@ import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
+import { FinanceEvaluationGuide } from "@/app/components/finance/finance-evaluation-guide";
 
 type OperationalWorkspaceProps = {
   organizationId: string;
@@ -977,6 +978,9 @@ export default function OperationalWorkspace({
               {notice}
               <button onClick={() => setNotice("")}>×</button>
             </div>
+          )}
+          {organizationSlug === "mundo_sabor_qa" && (
+            <FinanceEvaluationGuide section={section} organizationName={organizationName} />
           )}
           {section === "visao-geral" && (
             <VisaoGeralView
