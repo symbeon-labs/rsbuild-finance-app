@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateTimePtBr } from "@/lib/date-format";
+
 import { useCallback, useEffect, useState } from "react";
 
 type Agent = {
@@ -259,7 +261,7 @@ export function AgentsGovernanceView({ canDecide }: { canDecide: boolean }) {
                     <StatusBadge status={p.status} />
                   </div>
                   <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>
-                    {p.agentName ?? "Agente"} → {p.organizationName ?? "—"} · {p.actionType} · {new Date(p.requestedAt).toLocaleString("pt-BR")}
+                    {p.agentName ?? "Agente"} → {p.organizationName ?? "—"} · {p.actionType} · {formatDateTimePtBr(p.requestedAt)}
                   </div>
                   {p.summary && (
                     <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "var(--ink)", lineHeight: 1.55 }}>{p.summary}</p>
