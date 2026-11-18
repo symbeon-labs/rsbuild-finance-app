@@ -86,7 +86,7 @@ from public.organizations o
 where so.organization_id is null
   and so.slug = replace(o.slug, '_', '-') || '-sandbox';
 
-do $
+do $$
 begin
   if not exists (
     select 1 from pg_constraint
