@@ -6,7 +6,7 @@ import OperationalWorkspace from "./workspaces/operational-workspace";
 import { OnboardingExperience } from "@/app/components/auth/onboarding-experience";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
-import type { OrganizationId } from "@/app/types/workspace";
+import type { EnabledModulesConfig, OrganizationId } from "@/app/types/workspace";
 import { canEnterOrganizationWorkspace } from "@/lib/platform-authorization";
 
 export const dynamic = "force-dynamic";
@@ -160,6 +160,41 @@ export default async function Home({ searchParams }: Props) {
   const organizationSlug = selected.slug as OrganizationId;
   const isRsbuild = organizationSlug === "rsbuild";
 
+  // A licença persistida no banco é a única fonte de disponibilidade dos módulos.
+  // Falha de leitura fecha o acesso visual; as rotas continuam validando no backend.
+  const emptyModules: EnabledModulesConfig = {
+    finance: false, reconciliation: false, logistics: false, audit: false
+  };
+  let enabledModules: EnabledModulesConfig = emptyModules;
+  if (isRsbuild) {
+    enabledModules = { finance: false, reconciliation: false, logistics: false, audit: true };
+  } else {
+    const { data: licenses, error: licensesError } = await supabase
+      .from("organization_capability_licenses")
+      .select("capability_key, license_status, operational_status, entitled_environments, expires_at")
+      .eq("organization_id", selected.id);
+    if (!licensesError && licenses) {
+      const environment = /_qa(?:_|$)/i.test(organizationSlug) ? "qa" : "production";
+      const now = Date.now();
+      enabledModules = {
+        finance: false, reconciliation: false, logistics: false, audit: false
+      };
+      for (const license of licenses) {
+        const key = license.capability_key as keyof EnabledModulesConfig;
+        const expiry = license.expires_at ? Date.parse(license.expires_at) : null;
+        const validUntil = expiry === null || (Number.isFinite(expiry) && expiry > now);
+        if (
+          key in enabledModules &&
+          license.license_status === "granted" &&
+          license.operational_status === "active" &&
+          Array.isArray(license.entitled_environments) &&
+          license.entitled_environments.includes(environment) &&
+          validUntil
+        ) enabledModules[key] = true;
+      }
+    }
+  }
+
   // Ambientes de homologação são concedidos por membership próprio.
   // Sandbox também exige vínculo explícito para operadores; owners/admins da holding
   // mantêm a visão global já prevista.
@@ -204,6 +239,7 @@ export default async function Home({ searchParams }: Props) {
     organizationId: selected.id,
     organizationSlug,
     organizationName: selected.display_name,
+    enabledModules,
     availableOrganizationSlugs: organizations
       .filter((organization) => canEnterOrganizationWorkspace({
         organizationSlug: organization.slug,
