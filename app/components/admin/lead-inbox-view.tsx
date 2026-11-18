@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatDateTimePtBr } from "@/lib/date-format";
 
 type Status = "new" | "in_review" | "qualified" | "disqualified" | "converted";
 type DiagnosticRequest = {
