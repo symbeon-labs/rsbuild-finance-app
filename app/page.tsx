@@ -130,7 +130,8 @@ export default async function Home({ searchParams }: Props) {
 
   // Usuários de clientes não entram no workspace institucional RSBUILD, mesmo
   // que uma membership legada ou URL/cookie tente selecioná-lo.
-  if (!isPlatformAdministrator && selected.slug === "rsbuild") {
+  const selectedOrganizationRole = memberships.find((membership) => membership.organization_id === selected.id)?.role;
+  if (!isPlatformAdministrator && selected.slug === "rsbuild" && selectedOrganizationRole !== "operator") {
     const firstClientOrganization = organizations.find((organization) => organization.slug !== "rsbuild");
     if (!firstClientOrganization) redirect("/login?reason=platform_workspace_restricted");
     selected = firstClientOrganization;
