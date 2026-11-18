@@ -365,7 +365,7 @@ export default function ControlTowerWorkspace({
         </div>
       </section>
       <WorkspaceModal
-        isOpen={isConfigOpen && !isProjectCollaborator && isPlatformAdministrator}
+        isOpen={isConfigOpen && !isProjectCollaborator}
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
