@@ -449,3 +449,14 @@ test("normaliza CSV com cabeçalhos alternativos para o esquema financeiro", () 
   assert.equal(result.records[1].direction, "saída");
 });
 
+
+
+test("biblioteca sintética Mundo do Sabor: CSV bancário é compatível com o parser financeiro", () => {
+  const syntheticBankCsv = readFileSync("docs/qa/library/bank-statements-synthetic.csv", "utf8");
+  const result = parseCsv(syntheticBankCsv);
+  assert.equal(result.records.length, 7);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.records.filter((record) => record.direction === "entrada").length, 3);
+  assert.equal(result.records.filter((record) => record.direction === "saída").length, 4);
+  assert.equal(result.records.reduce((sum, record) => sum + (record.direction === "entrada" ? record.amount : -record.amount), 0), 1000);
+});

@@ -1,0 +1,104 @@
+{
+  "library": "RSBUILD_QA_DATA_LIBRARY",
+  "version": "1.0.0",
+  "classification": "SYNTHETIC_TEST_DATA",
+  "customer_context": "MUNDO_DO_SABOR",
+  "environment_allowlist": [
+    "MUNDO_DO_SABOR_QA",
+    "SANDBOX"
+  ],
+  "production_allowed": false,
+  "raw_customer_data_included": false,
+  "source_context": [
+    "Operational diagnostic: banking flows, multi-division accounting, receivables, manual reconciliation, batch settlement, proof-of-delivery traceability",
+    "Cycle 01 Sprint A2 tasks A2.1-A2.7 and Sprint A3 tasks A3.1-A3.6"
+  ],
+  "datasets": [
+    {
+      "id": "MS-QA-BANK-001",
+      "version": "1.0.0",
+      "file": "bank-statements-synthetic.csv",
+      "format": "csv",
+      "records": 7,
+      "sha256": "f5f264c856078eb1bf71ac90e1fec433940008a1d61f6b9971955f19c88691a4",
+      "purpose": "Synthetic bank statement transactions for Itaú, Inter and BNB parser and multiconta scenarios",
+      "expected": {
+        "credits": 3,
+        "debits": 4,
+        "net_total": 1000,
+        "divisions": [
+          "DIV-A",
+          "DIV-B",
+          "DIV-C",
+          "DIV-D",
+          "DIV-E"
+        ]
+      }
+    },
+    {
+      "id": "MS-QA-AR-001",
+      "version": "1.0.0",
+      "file": "receivables-synthetic.csv",
+      "format": "csv",
+      "records": 6,
+      "sha256": "707a1d2eb88d228e1201bffc0386d15b3d5aa1b04611b73827df7f8534796e98",
+      "purpose": "Synthetic receivables covering boleto, PIX, cheque and card",
+      "expected": {
+        "gross_total": 5150,
+        "open_items": 4,
+        "overdue_items": 2
+      }
+    },
+    {
+      "id": "MS-QA-REC-001",
+      "version": "1.0.0",
+      "file": "reconciliation-expected-results.csv",
+      "format": "csv",
+      "records": 6,
+      "sha256": "4d0517acc671bb15bd3292dd6ec116abaa40d4f2d889321dc63bfcaeac0d5302",
+      "purpose": "Expected match classifications including exact, partial, unmatched, duplicate and manual review",
+      "expected": {
+        "exact_matches": 2,
+        "partial_matches": 1,
+        "unmatched": 1,
+        "duplicate": 1,
+        "manual_review": 1
+      }
+    },
+    {
+      "id": "MS-QA-BATCH-001",
+      "version": "1.0.0",
+      "file": "batch-settlement-synthetic.csv",
+      "format": "csv",
+      "records": 5,
+      "sha256": "7cd33f366886d1c99ad660c872ba91041ebae4b6c841310ae23ac86e53eb030d",
+      "purpose": "Synthetic batch preparation with accepted, duplicate, missing-match and review rows; never executes payment",
+      "expected": {
+        "items": 5,
+        "preparable": 2,
+        "rejected_or_review": 3,
+        "payment_executed": false
+      }
+    },
+    {
+      "id": "MS-QA-POD-001",
+      "version": "1.0.0",
+      "file": "proof-of-delivery-index-synthetic.csv",
+      "format": "csv",
+      "records": 4,
+      "sha256": "ccd6fa017fdc73cc2346c55e59e4f36c9ae3b9985532edbca92c768ca0cd014a",
+      "purpose": "Synthetic proof-of-delivery metadata indexed by fictional invoice reference",
+      "expected": {
+        "indexed": 3,
+        "missing_document": 1
+      }
+    }
+  ],
+  "provenance_policy": {
+    "real_source_files_replicated": false,
+    "raw_files_accessed_for_dataset_generation": false,
+    "values_and_identifiers": "fictional",
+    "aliases_are_not_customer_legal_entities": true,
+    "no_real_person_or_supplier_names": true
+  }
+}

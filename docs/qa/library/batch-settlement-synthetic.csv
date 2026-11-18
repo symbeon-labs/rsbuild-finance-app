@@ -1,0 +1,6 @@
+dataset_id,batch_ref,title_ref,amount_brl,expected_status,expected_reason,payment_authorized
+MS-QA-BATCH-001,LOT-QA-001,TIT-QA-001,1250.00,PREPARABLE,Registro consistente para gerar arquivo de remessa,false
+MS-QA-BATCH-001,LOT-QA-001,TIT-QA-002,780.00,PREPARABLE,Registro consistente para gerar arquivo de remessa,false
+MS-QA-BATCH-001,LOT-QA-001,TIT-QA-003,920.00,REVIEW,Exige conferencia manual,false
+MS-QA-BATCH-001,LOT-QA-001,TIT-QA-004,650.00,REJECTED,Duplicidade sintetica,false
+MS-QA-BATCH-001,LOT-QA-001,TIT-QA-999,300.00,REJECTED,Titulo inexistente no dataset,false

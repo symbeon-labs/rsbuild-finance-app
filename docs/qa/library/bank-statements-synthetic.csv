@@ -1,0 +1,8 @@
+dataset_id,dataset_version,Data,Descrição,Valor,Tipo,Categoria,Documento,Banco,Divisao,FITID
+MS-QA-BANK-001,1.0.0,2026-11-02,Recebimento boleto sintetico,1250.00,Entrada,Recebimentos,DOC-QA-1001,ITAU,DIV-A,ITAU-QA-0001
+MS-QA-BANK-001,1.0.0,2026-11-03,Pagamento fornecedor ficticio,-420.00,Saída,Fornecedores,DOC-QA-2001,ITAU,DIV-B,ITAU-QA-0002
+MS-QA-BANK-001,1.0.0,2026-11-04,PIX recebido sintetico,780.00,Entrada,Recebimentos,DOC-QA-1002,INTER,DIV-C,INTER-QA-0001
+MS-QA-BANK-001,1.0.0,2026-11-05,Tarifa bancaria sintetica,-30.00,Saída,Tarifas,DOC-QA-2002,INTER,DIV-D,INTER-QA-0002
+MS-QA-BANK-001,1.0.0,2026-11-06,Credito operacional sintetico,600.00,Entrada,Recebimentos,DOC-QA-1003,BNB,DIV-E,BNB-QA-0001
+MS-QA-BANK-001,1.0.0,2026-11-07,Parcela financiamento sintetica,-1150.00,Saída,Financiamentos,DOC-QA-2003,BNB,DIV-A,BNB-QA-0002
+MS-QA-BANK-001,1.0.0,2026-11-05,Tarifa bancaria sintetica duplicada,-30.00,Saída,Tarifas,DOC-QA-2002,INTER,DIV-D,INTER-QA-0002
