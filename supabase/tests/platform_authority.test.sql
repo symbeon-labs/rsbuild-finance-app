@@ -11,6 +11,10 @@ values
 on conflict (id) do nothing;
 
 insert into public.organizations (id, legal_name, display_name, slug)
+values ('d1111111-1111-4111-8111-111111111111','RSBUILD G01 Ltda','RSBUILD G01','rsbuild')
+on conflict (slug) do nothing;
+
+insert into public.organizations (id, legal_name, display_name, slug)
 values ('d2222222-2222-4222-8222-222222222222','Tenant G01 Ltda','Tenant G01','g01_tenant')
 on conflict (id) do nothing;
 
