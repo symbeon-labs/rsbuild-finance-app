@@ -411,7 +411,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_uid uuid := auth.uid();
   v_email text;
@@ -483,7 +483,7 @@ begin
 
   return jsonb_build_object('success', true, 'run_id', v_run_id);
 end;
-$;
+$$;
 revoke all on function app_private.sandbox_record_validation_run(text, text, text, jsonb) from public, anon;
 grant execute on function app_private.sandbox_record_validation_run(text, text, text, jsonb) to authenticated;
 
@@ -497,9 +497,9 @@ returns jsonb
 language sql
 security invoker
 set search_path = ''
-as $
+as $$
   select app_private.sandbox_record_validation_run(p_case_code, p_status, p_summary, p_result);
-$;
+$$;
 revoke all on function public.sandbox_record_validation_run(text, text, text, jsonb) from public, anon;
 grant execute on function public.sandbox_record_validation_run(text, text, text, jsonb) to authenticated;
 
