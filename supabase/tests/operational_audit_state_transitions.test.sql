@@ -15,8 +15,8 @@ insert into public.organization_memberships (organization_id,user_id,role)
 values ('88888888-8888-4888-8888-888888888888','77777777-7777-4777-8777-777777777777','operator')
 on conflict do nothing;
 
-set local role authenticated;
-select set_config('request.jwt.claim.role','authenticated',true);
+set local role service_role;
+select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claim.sub','77777777-7777-4777-8777-777777777777',true);
 
 insert into public.financial_records (
