@@ -28,10 +28,9 @@ const statusColor: Record<string, string> = {
   passed: "#059669", failed: "#DC2626", blocked: "#B7791F", pending: "var(--muted)"
 };
 
-export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }: { qaOrganizations?: HoldingWorkspaceOrganization[]; sandboxOrganizations?: HoldingWorkspaceOrganization[] }) {
+export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrganizations = [] }: { organizationId: string; qaOrganizations?: HoldingWorkspaceOrganization[]; sandboxOrganizations?: HoldingWorkspaceOrganization[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentOrganizationId = searchParams.get("organizationId");
   const sandboxOrganizationId = searchParams.get("sandboxOrganizationId");
   const sandboxQuery = sandboxOrganizationId ? `?sandboxOrganizationId=${encodeURIComponent(sandboxOrganizationId)}` : "";
   const [data, setData] = useState<SandboxData | null>(null);
@@ -88,7 +87,7 @@ export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }:
     }
     load();
     return () => { active = false; };
-  }, []);
+  }, [sandboxQuery]);
 
   const cases = useMemo(
     () => (data?.validationCases ?? []).filter((item: any) => item.project_key === "mundo-do-sabor"),
@@ -191,7 +190,7 @@ export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }:
             {sandboxOrganizations.map((org) => <article key={org.id} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 14, display: "grid", gap: 8 }}>
               <span style={{ color: "#7C3AED", fontSize: 10, fontWeight: 800 }}>SANDBOX</span>
               <strong style={{ color: "var(--ink)", fontSize: 14 }}>{org.name}</strong>
-              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(currentOrganizationId ?? "") + "&tab=sandbox&sandboxOrganizationId=" + encodeURIComponent(org.id))}>Abrir laboratório →</button>
+              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(organizationId) + "&tab=sandbox&sandboxOrganizationId=" + encodeURIComponent(org.id))}>Abrir laboratório →</button>
             </article>)}
           </div>
         </>}
