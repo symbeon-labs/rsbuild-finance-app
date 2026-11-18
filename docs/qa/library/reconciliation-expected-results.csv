@@ -1,7 +1,7 @@
 dataset_id,bank_source_fitid,title_ref,expected_classification,expected_reason,manual_action_required
 MS-QA-REC-001,ITAU-QA-0001,TIT-QA-001,EXACT_MATCH,Valor e documento coincidem,false
 MS-QA-REC-001,INTER-QA-0001,TIT-QA-002,EXACT_MATCH,Valor e referencia coincidem,false
-MS-QA-REC-001,BNB-QA-0001,TIT-QA-003,PARTIAL_MATCH,Valor coincide com diferenca de data dentro da janela de teste,true
+MS-QA-REC-001,BNB-QA-0001,TIT-QA-003,PARTIAL_MATCH,Credito parcial de R$ 600,00 contra titulo de R$ 920,00; saldo remanescente de R$ 320,00,true
 MS-QA-REC-001,ITAU-QA-0002,,UNMATCHED,Nenhum titulo correspondente,true
 MS-QA-REC-001,INTER-QA-0002,,DUPLICATE,Mesmo identificador de origem reapresentado no arquivo de reprocessamento,true
 MS-QA-REC-001,BNB-QA-0002,TIT-QA-006,MANUAL_REVIEW,Movimento associado a conta/divisao com restricao operacional,true
