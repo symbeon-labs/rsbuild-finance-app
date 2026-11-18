@@ -193,12 +193,34 @@ export function Topbar({
         )}
 
         <button
-          className="avatar"
+          type="button"
+          className="workspace-switcher-trigger"
           onClick={onOpenConfig}
-          title={`Personalizar Workspace (${companyName})`}
-          style={{ border: "none", cursor: "pointer" }}
+          title={`Trocar workspace e consultar módulos disponíveis — ${companyName}`}
+          aria-label={`Workspaces e módulos. Workspace atual: ${companyName}. Abrir seletor.`}
+          aria-haspopup="dialog"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "9px",
+            minHeight: "38px",
+            padding: "0 13px",
+            marginLeft: "10px",
+            borderRadius: "9px",
+            border: "1px solid var(--rsbuild-terracotta, #B5583C)",
+            background: "var(--rsbuild-terracotta-soft, rgba(181, 88, 60, 0.10))",
+            color: "var(--rsbuild-terracotta, #B5583C)",
+            cursor: "pointer",
+            fontSize: "11px",
+            fontWeight: 750,
+            letterSpacing: "0.02em",
+            transition: "background 160ms ease, box-shadow 160ms ease, transform 160ms ease"
+          }}
         >
-          {companyName ? companyName.trim().charAt(0).toUpperCase() : "R"}
+          <RsbuildIcon name="integration" size={17} tone="accent" aria-hidden="true" />
+          <span>WORKSPACES</span>
+          <span aria-hidden="true" style={{ fontSize: "13px", lineHeight: 1 }}>⌄</span>
         </button>
       </div>
     </header>
