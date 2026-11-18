@@ -17,7 +17,7 @@ create index if not exists platform_administrators_active_idx
   on public.platform_administrators(user_id) where revoked_at is null;
 
 alter table public.platform_administrators enable row level security;
-revoke all on public.platform_administrators from anon, authenticated;
+revoke all on public.platform_administrators from public, anon, authenticated;
 grant select on public.platform_administrators to authenticated;
 
 drop policy if exists "Platform administrators read own grant" on public.platform_administrators;
@@ -516,8 +516,8 @@ create policy "Platform administrators read all capability licenses"
 
 -- All license mutations must pass through the audited RPC. Direct client DML
 -- would bypass the atomic event write, even if an RLS policy allowed it.
-revoke insert, update, delete on public.organization_capability_licenses from anon, authenticated;
-revoke insert, update, delete on public.capability_license_events from anon, authenticated;
+revoke insert, update, delete on public.organization_capability_licenses from public, anon, authenticated;
+revoke insert, update, delete on public.capability_license_events from public, anon, authenticated;
 drop policy if exists "Platform administrators append capability license events" on public.capability_license_events;
 
 create policy "Platform administrators read capability license events"
