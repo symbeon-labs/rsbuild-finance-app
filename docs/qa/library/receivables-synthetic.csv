@@ -1,0 +1,7 @@
+dataset_id,dataset_version,title_ref,issue_date,due_date,description,amount_brl,receivable_method,status,division_alias,customer_alias
+MS-QA-AR-001,1.0.0,TIT-QA-001,2026-10-15,2026-11-05,Boleto venda sintetica,1250.00,BOLETO,OPEN,DIV-A,CLI-QA-01
+MS-QA-AR-001,1.0.0,TIT-QA-002,2026-10-18,2026-11-08,PIX venda sintetica,780.00,PIX,OPEN,DIV-B,CLI-QA-02
+MS-QA-AR-001,1.0.0,TIT-QA-003,2026-10-20,2026-11-12,Cheque pre-datado sintetico,920.00,CHEQUE,OPEN,DIV-C,CLI-QA-03
+MS-QA-AR-001,1.0.0,TIT-QA-004,2026-10-22,2026-11-15,Cartao credito sintetico,650.00,CARD,OPEN,DIV-D,CLI-QA-04
+MS-QA-AR-001,1.0.0,TIT-QA-005,2026-09-10,2026-10-10,Boleto vencido sintetico,1050.00,BOLETO,OVERDUE,DIV-E,CLI-QA-05
+MS-QA-AR-001,1.0.0,TIT-QA-006,2026-09-12,2026-10-12,Cheque vencido sintetico,500.00,CHEQUE,OVERDUE,DIV-A,CLI-QA-06
