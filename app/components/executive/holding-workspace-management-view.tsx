@@ -3,6 +3,8 @@
 import { RsbuildIcon } from "@/app/components/rsbuild-icons";
 import { CapabilityLicensingPanel } from "@/app/components/executive/capability-licensing-panel";
 
+export type HoldingWorkspaceOrganization = { id: string; slug: string; name: string; };
+
 type Props = { canManageCapabilities?: boolean; };
 
 const CAPABILITIES = [
