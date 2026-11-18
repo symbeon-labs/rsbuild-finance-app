@@ -5,22 +5,22 @@ import { CapabilityLicensingPanel } from "@/app/components/executive/capability-
 
 export type HoldingWorkspaceOrganization = { id: string; slug: string; name: string; };
 
-type Props = { canManageCapabilities?: boolean; };
+type Props = { organizationName: string; canManageCapabilities?: boolean; };
 
 const CAPABILITIES = [
-  { name: "Finanças & Caixa", state: "planned", description: "Gestão financeira e movimentações por empresa." },
-  { name: "Reconciliação & Baixas", state: "planned", description: "Conferência bancária, títulos e baixas." },
-  { name: "Logística & Expedição", state: "planned", description: "Pedidos, expedição e comprovantes." },
-  { name: "Auditoria & Governança", state: "available", description: "Auditoria institucional, acessos e governança." }
+  { name: "Finanças & Caixa", state: "planned" },
+  { name: "Reconciliação & Baixas", state: "planned" },
+  { name: "Logística & Expedição", state: "planned" },
+  { name: "Auditoria & Governança", state: "available" }
 ] as const;
 
-export function HoldingWorkspaceManagementView({ canManageCapabilities = false }: Props) {
+export function HoldingWorkspaceManagementView({ organizationName, canManageCapabilities = false }: Props) {
 
   const sections = [
-    { title: "Organizações & unidades", detail: "Empresas e ambientes vinculados à estrutura institucional.", icon: "integration" as const },
-    { title: "Identidades & permissões", detail: "Acesso concedido por membership, papel e escopo de projeto.", icon: "users" as const },
-    { title: "Projetos & portfólio", detail: "Projetos, sprints, responsáveis, dependências e entregáveis.", icon: "document" as const },
-    { title: "Políticas & evidências", detail: "Governança, rastreabilidade e controles auditáveis.", icon: "guardian" as const }
+    { title: "Organizações & unidades", icon: "integration" as const },
+    { title: "Identidades & permissões", icon: "users" as const },
+    { title: "Projetos & portfólio", icon: "document" as const },
+    { title: "Políticas & evidências", icon: "guardian" as const }
   ];
 
   return (
@@ -34,13 +34,13 @@ export function HoldingWorkspaceManagementView({ canManageCapabilities = false }
         <span className="status-pill" style={{ fontSize: 11 }}>Camada institucional</span>
       </header>
 
-      {internal && (
+      {(
         <article className="card cockpit-card" style={{ padding: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", borderLeft: "4px solid var(--rsbuild-terracotta, #B5583C)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
             <RsbuildIcon name="control-tower" size={28} tone="accent" />
             <div>
               <div className="eyebrow">ORGANIZAÇÃO-MÃE · HOLDING</div>
-              <strong style={{ color: "var(--ink)", fontSize: 16 }}>{internal.name}</strong>
+              <strong style={{ color: "var(--ink)", fontSize: 16 }}>{organizationName}</strong>
               <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: 12 }}>Governança central, portfólio, identidades e observabilidade.</p>
             </div>
           </div>
