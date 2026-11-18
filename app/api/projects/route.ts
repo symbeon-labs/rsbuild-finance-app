@@ -27,6 +27,36 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "project_portfolio_forbidden" }, { status: 403 });
   }
 
+  // A visão institucional completa é exclusiva do Platform Admin. Para os
+  // demais usuários, o portfólio é limitado aos projetos explicitamente
+  // compartilhados com suas organizações clientes ou atribuídos diretamente.
+  const { data: platformAdministrator } = await supabase.rpc("is_platform_administrator");
+  let visibleProjectIds: Set<string> | null = null;
+  if (platformAdministrator !== true) {
+    const { data: clientMemberships, error: clientMembershipError } = await supabase
+      .from("organization_memberships")
+      .select("organization_id, organizations!inner(slug)")
+      .eq("user_id", user.id)
+      .neq("organizations.slug", "rsbuild");
+    if (clientMembershipError) {
+      return NextResponse.json({ error: "project_portfolio_unavailable" }, { status: 502 });
+    }
+    const clientOrganizationIds = (clientMemberships ?? []).map((membership: any) => membership.organization_id);
+    const [sharedAccess, directMemberships] = await Promise.all([
+      clientOrganizationIds.length
+        ? supabase.from("project_organization_access").select("project_id").in("client_organization_id", clientOrganizationIds)
+        : Promise.resolve({ data: [], error: null }),
+      supabase.from("project_memberships").select("project_id").eq("user_id", user.id)
+    ]);
+    if (sharedAccess.error || directMemberships.error) {
+      return NextResponse.json({ error: "project_portfolio_unavailable" }, { status: 502 });
+    }
+    visibleProjectIds = new Set([
+      ...(sharedAccess.data ?? []).map((item: any) => item.project_id),
+      ...(directMemberships.data ?? []).map((item: any) => item.project_id)
+    ]);
+  }
+
   const { data, error } = await supabase
     .from("projects")
     .select(`
@@ -46,7 +76,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "project_portfolio_unavailable" }, { status: 502 });
   }
 
-  const projects = (data ?? []).map((project: any) => ({
+  const visibleRows = visibleProjectIds === null
+    ? (data ?? [])
+    : (data ?? []).filter((project: any) => visibleProjectIds?.has(project.id));
+  const projects = visibleRows.map((project: any) => ({
     ...project,
     project_sprints: [...(project.project_sprints ?? [])]
       .sort((a: any, b: any) => a.sort_order - b.sort_order || a.sprint_number - b.sprint_number)

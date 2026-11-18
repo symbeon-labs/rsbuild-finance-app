@@ -124,6 +124,20 @@ export default async function Home({ searchParams }: Props) {
     );
   }
 
+  // A autoridade institucional da plataforma não é herdada do papel owner de um tenant.
+  const { data: platformAdministrator } = await supabase.rpc("is_platform_administrator");
+  const isPlatformAdministrator = platformAdministrator === true;
+
+  // Usuários de clientes não entram no workspace institucional RSBUILD, mesmo
+  // que uma membership legada ou URL/cookie tente selecioná-lo.
+  const selectedOrganizationRole = memberships.find((membership) => membership.organization_id === selected!.id)?.role;
+  if (!isPlatformAdministrator && selected.slug === "rsbuild" && selectedOrganizationRole !== "operator") {
+    const firstClientOrganization = organizations.find((organization) => organization.slug !== "rsbuild");
+    if (!firstClientOrganization) redirect("/login?reason=platform_workspace_restricted");
+    selected = firstClientOrganization;
+  }
+  if (!selected) redirect("/login?reason=workspace_not_found");
+
   const selectedMembership = memberships.find((membership) => membership.organization_id === selected.id);
   const validOrganizationSlugs: OrganizationId[] = ["rsbuild", "hub_acai", "mundo_sabor", "hub_acai_qa", "mundo_sabor_qa"];
   if (!validOrganizationSlugs.includes(selected.slug as OrganizationId)) {
@@ -185,10 +199,13 @@ export default async function Home({ searchParams }: Props) {
     organizationId: selected.id,
     organizationSlug,
     organizationName: selected.display_name,
-    availableOrganizationSlugs: organizations.map((organization) => organization.slug),
+    availableOrganizationSlugs: organizations
+      .filter((organization) => isPlatformAdministrator || organization.slug !== "rsbuild")
+      .map((organization) => organization.slug),
     availableOrganizations,
     availableSandboxOrganizations,
     membershipRole: selectedMembership?.role ?? "viewer",
+    isPlatformAdministrator,
     userEmail: user.email ?? "",
     userFullName:
       typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name :

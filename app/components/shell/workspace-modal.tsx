@@ -27,6 +27,8 @@ interface WorkspaceModalProps {
   currentOrgRealId?: string;
   availableOrganizationSlugs?: string[];
   isSuperAdmin: boolean;
+  /** Somente Platform Admin pode alterar a disponibilidade de capacidades. */
+  canManageModules?: boolean;
   enabledModules: EnabledModulesConfig;
   brandColor?: string;
   onClose: () => void;
@@ -42,6 +44,7 @@ export function WorkspaceModal({
   currentOrgRealId,
   availableOrganizationSlugs = [],
   isSuperAdmin,
+  canManageModules = false,
   enabledModules,
   brandColor = "#B5583C",
   onClose,
@@ -200,12 +203,12 @@ export function WorkspaceModal({
             const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
             const modAuditInput = form.elements.namedItem("modAudit") as HTMLInputElement;
 
-            const nextModules: EnabledModulesConfig = {
+            const nextModules: EnabledModulesConfig = canManageModules ? {
               finance: modFinanceInput ? modFinanceInput.checked : activeModulesState.finance,
               reconciliation: modReconciliationInput ? modReconciliationInput.checked : activeModulesState.reconciliation,
               logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics,
               audit: modAuditInput ? modAuditInput.checked : activeModulesState.audit
-            };
+            } : enabledModules;
 
             const targetName = nameInput ? nameInput.value : typedName;
             const targetLogo = urlInput ? (urlInput.value || companyLogoUrl) : companyLogoUrl;
@@ -433,10 +436,10 @@ export function WorkspaceModal({
                 <div style={{ display: "grid", gap: "8px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
-                      PRODUTOS MODULARES CONTRATADOS
+                      CATÁLOGO DE CAPACIDADES RSBUILD
                     </span>
                     <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                      <RsbuildIcon name="guardian" size={12} tone="accent" /> Governança Symbeon
+                      <RsbuildIcon name="guardian" size={12} tone="accent" /> Governança Symbeon · {canManageModules ? "Administração da plataforma" : "Somente visualização — liberação pela RSBUILD"}
                     </span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
@@ -456,6 +459,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modFinance"
+                        disabled={!canManageModules}
                         checked={activeModulesState.finance}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, finance: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
@@ -464,7 +468,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="finance" size={18} tone="accent" /> 1. Finanças & Caixa</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.finance ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.finance ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.finance ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -489,6 +493,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modReconciliation"
+                        disabled={!canManageModules}
                         checked={activeModulesState.reconciliation}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, reconciliation: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
@@ -497,7 +502,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="reconciliation" size={18} tone="accent" /> 2. Reconciliação ERP</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.reconciliation ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.reconciliation ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.reconciliation ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -522,6 +527,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modLogistics"
+                        disabled={!canManageModules}
                         checked={activeModulesState.logistics}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, logistics: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
@@ -530,7 +536,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="logistics" size={18} tone="accent" /> 3. Logística & Expedição</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.logistics ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.logistics ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.logistics ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
@@ -555,6 +561,7 @@ export function WorkspaceModal({
                       <input
                         type="checkbox"
                         name="modAudit"
+                        disabled={!canManageModules}
                         checked={activeModulesState.audit}
                         onChange={(e) => setActiveModulesState((curr) => ({ ...curr, audit: e.target.checked }))}
                         style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
@@ -563,7 +570,7 @@ export function WorkspaceModal({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="guardian" size={18} tone="accent" /> 4. Auditoria & RS Guardião</strong>
                           <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.audit ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {activeModulesState.audit ? "ATIVO" : "INATIVO"}
+                            {canManageModules ? (activeModulesState.audit ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
                           </span>
                         </div>
                         <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>

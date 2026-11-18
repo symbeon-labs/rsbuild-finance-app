@@ -1,9 +1,8 @@
 /**
  * RSBUILD OS — Matriz de Governança e Controle de Acesso (RBAC)
- * Níveis de Alçada para Multi-Tenant: RSBUILD, Diretoria e Operação
- * Conformidade com enum rsbuild_member_role e diretrizes periciais.
+ * Papéis organizacionais multi-tenant. Autoridade global da plataforma
+ * é independente e está definida em lib/platform-authorization.ts.
  */
-
 export type MemberRole = "owner" | "admin" | "operator" | "viewer";
 
 export interface RoleMetadata {
@@ -11,43 +10,40 @@ export interface RoleMetadata {
   label: string;
   badge: string;
   description: string;
-  level: number; // 0 = Owner/Holding, 1 = Diretoria/Admin, 2 = Operação, 3 = Consulta
+  level: number;
 }
 
 export const ROLE_HIERARCHY: Record<MemberRole, RoleMetadata> = {
   owner: {
     role: "owner",
-    label: "Proprietário / Holding",
+    label: "Responsável pela organização",
     badge: "👑 PROPRIETÁRIO",
-    description: "Alçada irrestrita na plataforma. Gestão total de workspaces, convites e aprovações financeiras.",
+    description: "Administra a organização, seus membros, workspaces e aprovações permitidas. Não recebe privilégios globais da plataforma.",
     level: 0
   },
   admin: {
     role: "admin",
     label: "Diretoria / Gestão",
     badge: "🏛 DIRETORIA",
-    description: "Diretoria e gerência da organização. Aprova baixas no ERP, conciliações com divergência e alçadas de crédito.",
+    description: "Gerencia a operação da organização e aprova ações financeiras dentro das alçadas configuradas.",
     level: 1
   },
   operator: {
     role: "operator",
-    label: "Operador de Chão de Fábrica / Vendas",
+    label: "Operação",
     badge: "⚡ OPERADOR",
-    description: "Equipe operacional. Importa arquivos, sugere conciliações e registra canhotos. Sem permissão de baixa ou exclusão.",
+    description: "Executa atividades operacionais habilitadas. Não administra membros nem concede capacidades.",
     level: 2
   },
   viewer: {
     role: "viewer",
-    label: "Auditoria / Consulta Externa",
+    label: "Consulta",
     badge: "👁 CONSULTA",
-    description: "Acesso somente-leitura para conferência contábil, fiscal e auditoria jurídica pericial.",
+    description: "Consulta informações autorizadas, sem permissão de alteração ou aprovação.",
     level: 3
   }
 };
 
-/**
- * Normaliza qualquer string para um MemberRole canônico
- */
 export function normalizeRole(role?: string | null): MemberRole {
   if (!role) return "viewer";
   const lower = role.toLowerCase().trim();
@@ -57,75 +53,44 @@ export function normalizeRole(role?: string | null): MemberRole {
   return "viewer";
 }
 
-/**
- * Retorna os metadados de apresentação do papel
- */
 export function getRoleMetadata(role?: string | null): RoleMetadata {
-  const norm = normalizeRole(role);
-  return ROLE_HIERARCHY[norm];
+  return ROLE_HIERARCHY[normalizeRole(role)];
 }
 
-/**
- * Verifica se o usuário tem alçada de Diretoria/Gestão (Owner ou Admin)
- */
 export function isExecutive(role?: string | null): boolean {
   const norm = normalizeRole(role);
   return norm === "owner" || norm === "admin";
 }
 
-/**
- * Verifica se o usuário pode gerar lote e aprovar baixas financeiras no ERP
- * REGRA RAQUEL: Apenas Diretoria/Admin pode gerar o arquivo de baixa oficial no Omie.
- */
 export function canApproveBatchSettlement(role?: string | null): boolean {
   return isExecutive(role);
 }
 
-/**
- * Verifica se o usuário pode autorizar conciliação manual com divergência de valor
- */
 export function canApproveDiscrepantMatch(role?: string | null): boolean {
   return isExecutive(role);
 }
 
-/**
- * Verifica se o usuário pode realizar conciliação manual
- * Operadores podem casar se os valores forem iguais. Viewers não podem casar.
- */
 export function canPerformManualMatch(role?: string | null): boolean {
   const norm = normalizeRole(role);
   return norm === "owner" || norm === "admin" || norm === "operator";
 }
 
-/**
- * Verifica se o usuário pode cancelar ou excluir pedidos comerciais
- * REGRA RAQUEL: Vendedores e operadores não podem excluir pedidos para evitar manipulação de comissão/fraude.
- */
 export function canDeleteOrCancelOrder(role?: string | null): boolean {
   return isExecutive(role);
 }
 
-/**
- * Verifica se o usuário pode confirmar importação de arquivos para o banco/sessão
- */
 export function canConfirmImport(role?: string | null): boolean {
-  const norm = normalizeRole(role);
-  return norm !== "viewer";
+  return normalizeRole(role) !== "viewer";
 }
 
-/**
- * Verifica se o usuário pode gerenciar integrantes e emitir convites
- */
 export function canManageMembers(role?: string | null): boolean {
   return isExecutive(role);
 }
 
 /**
- * Zona de Sprints: restrita ao owner do tenant RSBUILD.
- * A autorização adicional de engenharia é resolvida no servidor.
+ * Acesso ao portfólio interno RSBUILD. Não é uma concessão de autoridade
+ * de plataforma; privilégios de plataforma exigem platform_administrators.
  */
 export function canAccessSprintZone(role?: string | null, orgSlug?: string | null): boolean {
   return normalizeRole(role) === "owner" && orgSlug === "rsbuild";
 }
-
-

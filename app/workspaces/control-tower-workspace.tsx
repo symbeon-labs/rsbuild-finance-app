@@ -36,6 +36,7 @@ type ControlTowerWorkspaceProps = {
   availableOrganizations: HoldingWorkspaceOrganization[];
   availableSandboxOrganizations: HoldingWorkspaceOrganization[];
   membershipRole: string;
+  isPlatformAdministrator?: boolean;
   userEmail: string;
   isDeveloperAuthorized?: boolean;
   canAccessSandbox?: boolean;
@@ -52,6 +53,7 @@ export default function ControlTowerWorkspace({
   availableOrganizations,
   availableSandboxOrganizations,
   membershipRole,
+  isPlatformAdministrator = false,
   userEmail,
   isDeveloperAuthorized = false,
   canAccessSandbox = false,
@@ -64,7 +66,7 @@ export default function ControlTowerWorkspace({
   const [, startSignOutTransition] = useTransition();
   const isProjectCollaborator = organizationSlug === "rsbuild" && membershipRole === "operator";
 
-  const canViewProjectPortfolio = true;
+  const canViewProjectPortfolio = isPlatformAdministrator || isProjectCollaborator;
 
 
   const urlTab = searchParams.get("tab") as NavSection | null;
@@ -277,7 +279,7 @@ export default function ControlTowerWorkspace({
           if (mod === "audit") navigateTo("auditoria");
         }}
         onSelectSection={navigateTo}
-        onOpenConfig={() => { if (!isProjectCollaborator) setIsConfigOpen(true); }}
+        onOpenConfig={() => { if (!isProjectCollaborator && isPlatformAdministrator) setIsConfigOpen(true); }}
         onSignOut={() =>
           new Promise<void>((resolve) => {
             startSignOutTransition(async () => {
@@ -337,7 +339,6 @@ export default function ControlTowerWorkspace({
           {section === "workspace" && (
             <HoldingWorkspaceManagementView
               organizationName={organizationName}
-              canManageCapabilities={organizationSlug === "rsbuild" && membershipRole === "owner"}
             />
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
@@ -364,13 +365,14 @@ export default function ControlTowerWorkspace({
         </div>
       </section>
       <WorkspaceModal
-        isOpen={isConfigOpen && !isProjectCollaborator}
+        isOpen={isConfigOpen && !isProjectCollaborator && isPlatformAdministrator}
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
         currentOrgRealId={organizationId}
         availableOrganizationSlugs={availableOrganizationSlugs}
         isSuperAdmin={isSuperAdmin}
+        canManageModules={isPlatformAdministrator}
         enabledModules={enabledModules}
         brandColor={brandColor}
         onClose={() => setIsConfigOpen(false)}

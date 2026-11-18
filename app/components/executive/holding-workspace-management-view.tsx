@@ -1,11 +1,9 @@
 "use client";
 
 import { RsbuildIcon } from "@/app/components/rsbuild-icons";
-import { CapabilityLicensingPanel } from "@/app/components/executive/capability-licensing-panel";
-
 export type HoldingWorkspaceOrganization = { id: string; slug: string; name: string; };
 
-type Props = { organizationName: string; canManageCapabilities?: boolean; };
+type Props = { organizationName: string; };
 
 const CAPABILITIES = [
   { name: "Finanças & Caixa", state: "planned" },
@@ -14,7 +12,7 @@ const CAPABILITIES = [
   { name: "Auditoria & Governança", state: "available" }
 ] as const;
 
-export function HoldingWorkspaceManagementView({ organizationName, canManageCapabilities = false }: Props) {
+export function HoldingWorkspaceManagementView({ organizationName }: Props) {
 
   const sections = [
     { title: "Organizações & unidades", icon: "integration" as const },
@@ -84,13 +82,7 @@ export function HoldingWorkspaceManagementView({ organizationName, canManageCapa
         </div>
       </section>
 
-      {canManageCapabilities && <section style={{ display: "grid", gap: 12 }}>
-        <div>
-          <div className="eyebrow">03 · AUTORIZAÇÃO INSTITUCIONAL</div>
-          <h2 style={{ color: "var(--ink)", margin: "4px 0", fontSize: 18 }}>Licenças por organização</h2>
-        </div>
-        <CapabilityLicensingPanel />
-      </section>}
+
 
     </section>
   );

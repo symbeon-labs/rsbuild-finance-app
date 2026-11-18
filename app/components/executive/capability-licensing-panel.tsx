@@ -5,7 +5,7 @@ import { getCapabilityLicensingData, setCapabilityLicense } from "@/app/actions/
 
 type CatalogItem = { capability_key: string; display_name: string; description: string };
 type Organization = { id: string; display_name: string; slug: string };
-type License = { organization_id: string; capability_key: string; license_status: string; operational_status: string; notes: string | null; updated_at: string };
+type License = { organization_id: string; capability_key: string; license_status: string; operational_status: string; notes: string | null; updated_at: string; entitled_environments: string[]; expires_at: string | null };
 type Event = { id: string; organization_id: string; capability_key: string; event_type: string; reason: string | null; created_at: string };
 
 const LICENSE_LABELS: Record<string, string> = {
@@ -19,7 +19,7 @@ const OPERATIONAL_LABELS: Record<string, string> = {
 export function CapabilityLicensingPanel() {
   const [data, setData] = useState<{ catalog: CatalogItem[]; organizations: Organization[]; licenses: License[]; events: Event[] } | null>(null);
   const [selectedOrg, setSelectedOrg] = useState("");
-  const [licenseDrafts, setLicenseDrafts] = useState<Record<string, { licenseStatus: string; operationalStatus: string; reason: string }>>({});
+  const [licenseDrafts, setLicenseDrafts] = useState<Record<string, { licenseStatus: string; operationalStatus: string; entitledEnvironments: string[]; expiresAt: string; reason: string }>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
@@ -46,15 +46,19 @@ export function CapabilityLicensingPanel() {
 
   function draftFor(key: string) {
     const existing = licenseFor(key);
-    return licenseDrafts[key] ?? {
+    const draftKey = `${selectedOrg}:${key}`;
+    return licenseDrafts[draftKey] ?? {
       licenseStatus: existing?.license_status ?? "blocked",
       operationalStatus: existing?.operational_status ?? "not_implemented",
+      entitledEnvironments: existing?.entitled_environments ?? [],
+      expiresAt: existing?.expires_at ? new Date(existing.expires_at).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : "",
       reason: ""
     };
   }
 
-  function updateDraft(key: string, patch: Partial<{ licenseStatus: string; operationalStatus: string; reason: string }>) {
-    setLicenseDrafts((current) => ({ ...current, [key]: { ...draftFor(key), ...patch } }));
+  function updateDraft(key: string, patch: Partial<{ licenseStatus: string; operationalStatus: string; entitledEnvironments: string[]; expiresAt: string; reason: string }>) {
+    const draftKey = `${selectedOrg}:${key}`;
+    setLicenseDrafts((current) => ({ ...current, [draftKey]: { ...draftFor(key), ...patch } }));
   }
 
   function save(key: string) {
@@ -65,11 +69,14 @@ export function CapabilityLicensingPanel() {
         capabilityKey: key,
         licenseStatus: draft.licenseStatus,
         operationalStatus: draft.operationalStatus,
+        entitledEnvironments: draft.entitledEnvironments,
+        expiresAt: draft.expiresAt || null,
         reason: draft.reason
       });
       setMessage(result.ok ? "Licença atualizada e registrada no histórico." : (result.error ?? "Não foi possível atualizar a licença."));
       if (result.ok) {
-        setLicenseDrafts((current) => { const next = { ...current }; delete next[key]; return next; });
+        const draftKey = `${selectedOrg}:${key}`;
+        setLicenseDrafts((current) => { const next = { ...current }; delete next[draftKey]; return next; });
         await refresh();
       }
     });
@@ -79,7 +86,7 @@ export function CapabilityLicensingPanel() {
     <section className="card cockpit-card" style={{ padding: 20, display: "grid", gap: 16, borderTop: "3px solid var(--rsbuild-terracotta, #B5583C)" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div className="eyebrow">CONTROLE EXCLUSIVO DO OWNER</div>
+          <div className="eyebrow">ADMINISTRAÇÃO DA PLATAFORMA SYMBEON</div>
           <h2 style={{ margin: "4px 0", color: "var(--ink)", fontSize: 19 }}>Licenciamento de capacidades</h2>
           <p style={{ margin: 0, color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
             Libere, suspenda ou revogue módulos por organização. A autorização não altera os papéis nem as permissões dos usuários.
@@ -103,7 +110,7 @@ export function CapabilityLicensingPanel() {
               {data.catalog.map((capability) => {
                 const draft = draftFor(capability.capability_key);
                 const saved = licenseFor(capability.capability_key);
-                const dirty = !!licenseDrafts[capability.capability_key];
+                const dirty = !!licenseDrafts[`${selectedOrg}:${capability.capability_key}`];
                 return (
                   <article key={capability.capability_key} style={{ border: "1px solid var(--line)", borderRadius: 9, padding: 14, display: "grid", gap: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -123,6 +130,29 @@ export function CapabilityLicensingPanel() {
                         <select value={draft.operationalStatus} onChange={(e) => updateDraft(capability.capability_key, { operationalStatus: e.target.value })} style={{ height: 36, border: "1px solid var(--line)", borderRadius: 6, padding: "0 8px", background: "var(--bg)", color: "var(--ink)" }}>
                           {Object.entries(OPERATIONAL_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </select>
+                      </label>
+                    </div>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <span style={{ color: "var(--muted)", fontSize: 10, fontWeight: 700 }}>AMBIENTES AUTORIZADOS</span>
+                      <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                        {(["qa", "sandbox", "production"] as const).map((environment) => (
+                          <label key={environment} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 11 }}>
+                            <input
+                              type="checkbox"
+                              checked={draft.entitledEnvironments.includes(environment)}
+                              onChange={(event) => updateDraft(capability.capability_key, {
+                                entitledEnvironments: event.target.checked
+                                  ? [...draft.entitledEnvironments, environment]
+                                  : draft.entitledEnvironments.filter((item) => item !== environment)
+                              })}
+                            />
+                            {environment === "qa" ? "QA" : environment === "sandbox" ? "Sandbox" : "Produção"}
+                          </label>
+                        ))}
+                      </div>
+                      <label style={{ display: "grid", gap: 5, maxWidth: 240, color: "var(--muted)", fontSize: 10, fontWeight: 700 }}>
+                        VALIDADE ATÉ (OPCIONAL)
+                        <input type="date" value={draft.expiresAt} onChange={(event) => updateDraft(capability.capability_key, { expiresAt: event.target.value })} style={{ height: 36, border: "1px solid var(--line)", borderRadius: 6, padding: "0 8px", background: "var(--bg)", color: "var(--ink)" }} />
                       </label>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
