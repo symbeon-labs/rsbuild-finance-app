@@ -64,7 +64,7 @@ export function ImportacoesView({
           <div className="upload-icon">⇧</div>
           <h2>Importar extrato financeiro</h2>
           <p>Selecione um arquivo CSV ou OFX para visualizar os registros.</p>
-          <button className="secondary-button" onClick={onSelectFile}>
+          <button type="button" className="secondary-button" onClick={onSelectFile}>
             Selecionar arquivo
           </button>
           <span className="file-hint">CSV ou OFX · Até 10 MB</span>
@@ -145,17 +145,24 @@ export function ImportacoesView({
             </div>
             <RecordTable records={filteredRecords.slice(0, 8)} />
             <div className="import-actions">
-              <button className="secondary-button" onClick={onCancelImport}>
+              <button type="button" className="secondary-button" onClick={onCancelImport}>
                 Cancelar
               </button>
               <button
+                type="button"
                 className="secondary-button"
                 onClick={onExportOmieOfx}
                 title="Exportar lote normalizado pronto para Omie"
               >
                 ⚡ Exportar OFX (Omie)
               </button>
-              <button className="primary-button" onClick={onConfirmImport} disabled={isImporting || importErrors.length > 0}>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => { void onConfirmImport(); }}
+                disabled={isImporting || importErrors.length > 0 || pendingImport.length === 0}
+                aria-busy={isImporting}
+              >
                 {isImporting ? "Persistindo..." : "Confirmar importação"}
               </button>
             </div>

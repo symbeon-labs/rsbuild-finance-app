@@ -515,34 +515,51 @@ export default function EnterpriseWorkspace({
   }
 
   async function confirmImport() {
-    if (isImporting || !pendingImport.length || importErrors.length) return;
+    if (isImporting) return;
+    if (!pendingImport.length) {
+      setNotice("Nenhum registro válido está aguardando confirmação.");
+      return;
+    }
+    if (importErrors.length) {
+      setNotice("Corrija os problemas identificados no arquivo antes de confirmar a importação.");
+      return;
+    }
     setIsImporting(true);
-    setNotice("");
+    setNotice("Enviando arquivo para validação e persistência...");
     try {
       const form = new FormData();
       const selectedFile = pendingFileRef.current;
-      if (!selectedFile) throw new Error("Selecione novamente o arquivo para confirmar a importação.");
+      if (!selectedFile) throw new Error("O arquivo original não está mais disponível. Selecione-o novamente antes de confirmar.");
       form.set("organizationId", organizationId);
       form.set("file", selectedFile);
       const response = await fetch("/api/imports", { method: "POST", body: form });
-      const payload = await response.json();
+      const responseText = await response.text();
+      let payload: Record<string, unknown> = {};
+      try { payload = responseText ? JSON.parse(responseText) as Record<string, unknown> : {}; }
+      catch { throw new Error(`O servidor respondeu de forma inesperada (HTTP ${response.status}). Tente novamente; se persistir, informe o horário do teste.`); }
       if (!response.ok) {
-        const detail = Array.isArray(payload.details) && payload.details.length ? ` ${payload.details.join(" ")}` : "";
-        throw new Error((payload.error || "Falha ao persistir a importação.") + detail);
+        const details = Array.isArray(payload.details) ? payload.details.filter((item): item is string => typeof item === "string").join(" ") : "";
+        const reason = typeof payload.message === "string" ? payload.message : typeof payload.error === "string" ? payload.error : "Falha ao persistir a importação.";
+        throw new Error(`${reason}${details ? ` — ${details}` : ""} (HTTP ${response.status})`);
       }
       const refresh = await fetch(`/api/imports?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
-      const refreshed = await refresh.json();
-      if (!refresh.ok) throw new Error("Importação gravada, mas não foi possível atualizar o dashboard. Recarregue a página.");
-      setRecords(Array.isArray(refreshed.records) ? refreshed.records : []);
-      setNotice(`Importação persistida: ${payload.insertedCount ?? 0} novo(s) registro(s), ${payload.duplicateCount ?? 0} duplicado(s) ignorado(s).`);
+      const refreshText = await refresh.text();
+      let refreshed: Record<string, unknown> = {};
+      try { refreshed = refreshText ? JSON.parse(refreshText) as Record<string, unknown> : {}; }
+      catch { throw new Error("Importação enviada, mas a resposta de atualização do painel foi inválida. Recarregue a página para conferir a persistência."); }
+      if (!refresh.ok) throw new Error("Importação gravada, mas não foi possível atualizar o painel. Recarregue a página para conferir os registros.");
+      setRecords(Array.isArray(refreshed.records) ? refreshed.records as FinancialRecord[] : []);
+      setNotice(`Importação persistida: ${typeof payload.insertedCount === "number" ? payload.insertedCount : 0} novo(s) registro(s), ${typeof payload.duplicateCount === "number" ? payload.duplicateCount : 0} duplicado(s) ignorado(s).`);
       setPendingImport([]);
       setPendingMetadata(null);
       setImportErrors([]);
       setFileName("");
       pendingFileRef.current = null;
       if (inputRef.current) inputRef.current.value = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Não foi possível concluir a importação.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setIsImporting(false);
     }
