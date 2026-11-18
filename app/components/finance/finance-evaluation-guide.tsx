@@ -118,7 +118,8 @@ export function FinanceEvaluationGuide({
         <div>
           <div className="qa-guide-kicker">GUIA DE AVALIAÇÃO · AMBIENTE QA</div>
           <h2 id="qa-guide-title">{item.title}</h2>
-          <p>Use este roteiro para verificar o comportamento apresentado e registrar evidências da operação.</p>
+          <p>Verifique o comportamento apresentado, compare com os critérios e registre evidências observáveis da operação.</p>
+          <div className="qa-guide-context"><span>AMBIENTE QA</span><span>ROTEIRO v0.2</span><span>REGISTRO AUDITÁVEL</span></div>
         </div>
         <button type="button" className="qa-guide-toggle" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
           {expanded ? "Recolher guia" : "Abrir guia"}
@@ -164,7 +165,12 @@ export function FinanceEvaluationGuide({
           {sectionEntries.length > 0 && <div className="qa-guide-history" aria-label="Histórico de avaliações">
             <strong>Histórico registrado</strong>
             {sectionEntries.map((entry) => <article key={entry.id}>
-              <div><b>{entry.assessment}</b><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString("pt-BR")}</time></div>
+              <div className="qa-history-meta">
+                <b>{entry.assessment}</b>
+                <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString("pt-BR")}</time>
+                <span className="qa-history-id" title={entry.id}>ID {entry.id.slice(0, 8)}…</span>
+                <button type="button" onClick={() => void navigator.clipboard.writeText(entry.id)} aria-label="Copiar identificador da avaliação">Copiar ID</button>
+              </div>
               {entry.scenario_summary && <p><span>Cenário:</span> {entry.scenario_summary}</p>}
               {entry.observation && <p><span>Resultado:</span> {entry.observation}</p>}
               {entry.operational_impact && <p><span>Impacto:</span> {entry.operational_impact}</p>}
