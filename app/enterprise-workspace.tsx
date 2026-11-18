@@ -61,6 +61,7 @@ import { TorreControleView } from "@/app/components/executive/torre-controle-vie
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
+import { getWorkspaceCapabilityAvailability } from "@/app/actions/capability-licenses";
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
@@ -306,6 +307,60 @@ export default function EnterpriseWorkspace({
       // Ignora falhas em sandbox restrito / SSR
     }
   }, [organizationId, currentOrgId]);
+
+  // Entitlements são a fonte autoritativa da navegação nos workspaces de clientes.
+  // Preferências locais/presets nunca podem reabilitar capacidades sem licença ativa.
+  useEffect(() => {
+    if (organizationSlug === "rsbuild") return;
+    let active = true;
+    const environment = organizationSlug.endsWith("_qa") ? "qa" : "production";
+
+    getWorkspaceCapabilityAvailability(organizationId, environment)
+      .then((result) => {
+        if (!active) return;
+        const capabilities = result.ok ? result.capabilities : {};
+        const nextModules: EnabledModulesConfig = {
+          finance: capabilities.finance === "available",
+          reconciliation: capabilities.reconciliation === "available",
+          logistics: capabilities.logistics === "available",
+          audit: capabilities.audit === "available"
+        };
+        setEnabledModules(nextModules);
+
+        const firstAvailable = (["finance", "reconciliation", "logistics", "audit"] as ModuleType[])
+          .find((module) => nextModules[module]);
+
+        if (!nextModules[activeModule]) {
+          const safeModule = firstAvailable ?? "finance";
+          setActiveModule(safeModule);
+          setSection("visao-geral");
+          router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
+        } else if (section === "conciliacao" || section === "baixas") {
+          if (!nextModules.reconciliation) {
+            setSection("visao-geral");
+            router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
+          }
+        } else if (section === "pedidos-ha" || section === "canhotos") {
+          if (!nextModules.logistics) {
+            setSection("visao-geral");
+            router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
+          }
+        } else if (section === "auditoria" || section === "agentes" || section === "acessos" || section === "torre-controle") {
+          if (!nextModules.audit) {
+            setSection("visao-geral");
+            router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
+          }
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setEnabledModules({ finance: false, reconciliation: false, logistics: false, audit: false });
+        setSection("visao-geral");
+        router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
+      });
+
+    return () => { active = false; };
+  }, [organizationId, organizationSlug]);
 
   // Persiste os dados de sessão sempre que mudam, somente após a hidratação da org ativa.
   // Evita gravar dados da organização anterior sob a chave da nova organização.
