@@ -523,6 +523,8 @@ revoke insert, update, delete on public.organization_capability_licenses from pu
 revoke insert, update, delete on public.capability_license_events from public, anon, authenticated;
 drop policy if exists "Platform administrators append capability license events" on public.capability_license_events;
 
+drop policy if exists "Platform administrators read capability license events" on public.capability_license_events;
+
 create policy "Platform administrators read capability license events"
   on public.capability_license_events for select to authenticated
   using ((select public.is_platform_administrator()));
