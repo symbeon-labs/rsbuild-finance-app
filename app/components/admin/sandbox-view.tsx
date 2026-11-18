@@ -57,6 +57,9 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
 
   useEffect(() => {
     let active = true;
+    setSection("overview");
+    setSelectedCase(null);
+    setFeedback(null);
     async function load() {
       try {
         const [sandboxResponse, portfolioResponse] = await Promise.all([
