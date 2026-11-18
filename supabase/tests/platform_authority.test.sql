@@ -11,13 +11,12 @@ values
 on conflict (id) do nothing;
 
 insert into public.organizations (id, legal_name, display_name, slug)
-values
- ('d1111111-1111-4111-8111-111111111111','RSBUILD G01 Ltda','RSBUILD G01','rsbuild'),
- ('d2222222-2222-4222-8222-222222222222','Tenant G01 Ltda','Tenant G01','g01_tenant')
+values ('d2222222-2222-4222-8222-222222222222','Tenant G01 Ltda','Tenant G01','g01_tenant')
 on conflict (id) do nothing;
 
 insert into public.organization_memberships (organization_id,user_id,role)
-values ('d1111111-1111-4111-8111-111111111111','c1111111-1111-4111-8111-111111111111','owner')
+select id, 'c1111111-1111-4111-8111-111111111111', 'owner'::public.rsbuild_member_role
+from public.organizations where slug='rsbuild'
 on conflict do nothing;
 
 insert into public.capability_catalog (capability_key, display_name, description)
