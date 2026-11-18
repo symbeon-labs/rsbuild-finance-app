@@ -1,6 +1,6 @@
 # Plano de Rastreabilidade Operacional — RSBUILD Finance
 
-**Status:** diagnóstico iniciado  
+**Status:** D01 implementado em branch; validação automatizada pendente  
 **Branch:** `feat/operational-audit-traceability`  
 **Base:** `main`  
 **Escopo inicial:** trilha de auditoria e operações financeiras do workspace QA.
@@ -76,7 +76,24 @@ Campos conceituais (não representam migração aprovada):
 
 Não registrar snapshots integrais de entidades como substituto de histórico. Preservar a fonte de verdade nos registros operacionais e usar eventos para explicar ações e transições.
 
-## 5. Sequência de implementação
+## 5. Implementação inicial registrada
+
+### D01 — Transições operacionais e consulta paginada
+
+Branch `feat/operational-audit-traceability`.
+
+- Migration `20261118000002_operational_audit_state_transitions.sql` adiciona captura no banco para atualizações em movimentações financeiras, títulos, canhotos, pedidos e baixas.
+- A trilha registra evento por entidade, ator quando disponível, campos alterados e deltas mínimos `before`/`after` para uma allowlist de campos operacionais.
+- A migration também registra cada decisão de conciliação com seu próprio ID e referência à movimentação financeira.
+- Os eventos são gravados na mesma transação da alteração que disparou o trigger; se a gravação falhar, a alteração também falha.
+- Metadata não inclui snapshots integrais nem documentos pessoais, mensagens brutas, URLs de comprovantes ou payloads completos.
+- `GET /api/audit-events` passa a usar paginação por cursor composto (`occurred_at`, `id`), com limite configurável de 1 a 100 e escopo obrigatório por organização.
+- A interface de auditoria passa a carregar eventos anteriores e apresentar transições permitidas.
+- Teste pgTAP cobre evento por entidade, estado anterior/posterior, ator e vínculo da decisão.
+
+**Limites desta entrega:** eventos históricos anteriores à migration não ganham deltas retroativamente. Criações em lote continuam com os eventos agregados existentes; a correlação individual de cada item importado permanece como próxima lacuna. A imutabilidade global da tabela ainda não está declarada nem comprovada.
+
+## 6. Sequência de implementação
 
 ### D01 — Inventário e contrato
 Mapear rotas, funções de domínio, eventos emitidos e entidades. Confirmar schema e políticas atuais.
@@ -93,7 +110,7 @@ Implementar paginação, filtros úteis e visualização de detalhes/histórico 
 ### D05 — Verificação
 Testar isolamento multi-tenant, autorização, integridade, cobertura, ordenação e comportamento sob falhas.
 
-## 6. Critérios de aceite
+## 7. Critérios de aceite
 
 - Todas as ações sensíveis mapeadas têm evento ou justificativa documentada.
 - Eventos são correlacionáveis a entidades reais por IDs estáveis.
@@ -105,7 +122,7 @@ Testar isolamento multi-tenant, autorização, integridade, cobertura, ordenaç�
 - Testes demonstram isolamento entre organizações.
 - Alegações de imutabilidade e completude só aparecem após comprovação técnica.
 
-## 7. Limites de rollout
+## 8. Limites de rollout
 
 - Desenvolvimento em branch isolada.
 - Homologação inicial em QA com dados sintéticos ou controlados.
