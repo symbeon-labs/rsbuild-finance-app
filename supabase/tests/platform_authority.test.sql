@@ -91,14 +91,15 @@ select is(
   (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='g01_test'),
   1, 'license mutation appends one audit event and rejected grants append none'
 );
-select is(
-  (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='g01_test'),
-  1, 'license mutation appends one audit event and rejected grants append none'
-);
 select lives_ok(
   $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','G01 sandbox grant',array['sandbox'],null)$sql$,
   'platform administrator can explicitly grant Sandbox scope'
 );
+reset role;
+
+-- A tenant operator/owner may use the Sandbox entitlement without platform rights.
+set local role authenticated;
+select set_config('request.jwt.claim.sub','c1111111-1111-4111-8111-111111111111',true);
 select ok(
   public.has_sandbox_capability_entitlements(
     'd2222222-2222-4222-8222-222222222222', array['finance']::text[]
