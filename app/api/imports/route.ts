@@ -6,6 +6,7 @@ import { decodeImportText, parseCsv, parseOfx } from "@/lib/finance";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 import { recordAuditEvent } from "@/lib/api/audit";
+import { requireOrgContext } from "@/lib/api/org-guard";
 import { consumeRateLimit } from "@/lib/api/rate-limit";
 
 export const runtime = "nodejs";
@@ -19,9 +20,6 @@ export async function GET(request: Request) {
   const userClient = await createClient();
   const { data: { user }, error: authError } = await userClient.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-  if (!consumeRateLimit(`${user.id}:/api/imports`)) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-  }
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(organizationId)) {
     return NextResponse.json({ error: "invalid_organization" }, { status: 400 });
@@ -41,6 +39,9 @@ export async function GET(request: Request) {
     });
     return NextResponse.json({ error: "organization_access_denied" }, { status: 403 });
   }
+  const capabilityGuard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], "finance");
+  if (!capabilityGuard.ok) return capabilityGuard.response;
+
   const { data, error } = await userClient.from("financial_records")
     .select("id, organization_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at")
     .eq("organization_id", organizationId)
@@ -111,6 +112,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ error: "organization_access_denied" }, { status: 403 });
   }
+
+  const capabilityGuard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "finance");
+  if (!capabilityGuard.ok) return capabilityGuard.response;
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const fileHash = createHash("sha256").update(bytes).digest("hex");
