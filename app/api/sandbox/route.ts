@@ -110,27 +110,42 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "sandbox_forbidden" }, { status: 403 });
     }
 
-    // Esta primeira fase homologa exclusivamente Mundo do Sabor.
-    const { data: mundoOrg, error: mundoOrgError } = await supabase
+    const requestedSandboxId = new URL(request.url).searchParams.get("sandboxOrganizationId");
+    const { data: sandboxOrganizations, error: sandboxOrganizationsError } = await supabase
       .from("sandbox_organizations")
-      .select("id,slug")
-      .eq("slug", "mundo-sabor-sandbox")
-      .maybeSingle();
-    if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
-      return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
+      .select("id,slug,display_name,status")
+      .in("id", access.organizationIds)
+      .eq("status", "active")
+      .order("display_name");
+    if (sandboxOrganizationsError) {
+      return NextResponse.json({ error: "sandbox_directory_unavailable" }, { status: 502 });
     }
-    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.id);
+
+    const defaultSandbox = (sandboxOrganizations ?? []).find((org) => org.slug === "mundo-sabor-sandbox")
+      ?? sandboxOrganizations?.[0];
+    const sandboxOrg = (sandboxOrganizations ?? []).find((org) =>
+      requestedSandboxId ? org.id === requestedSandboxId : org.id === defaultSandbox?.id
+    );
+    if (!sandboxOrg || !access.organizationIds.includes(sandboxOrg.id)) {
+      return NextResponse.json({ error: "sandbox_organization_forbidden" }, { status: 403 });
+    }
+
+    const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, sandboxOrg.id);
     if (entitlementDenial) return entitlementDenial;
 
+    // O catálogo de homologação manual ainda pertence exclusivamente ao projeto Mundo do Sabor.
+    const isMundoSabor = sandboxOrg.slug === "mundo-sabor-sandbox";
     const [orgsRes, membersRes, accountsRes, recordsRes, titlesRes, proofsRes, auditRes, casesRes] = await Promise.all([
-      supabase.from("sandbox_organizations").select("*").eq("id", mundoOrg.id),
-      supabase.from("sandbox_organization_memberships").select("*").eq("organization_id", mundoOrg.id).limit(1000),
-      supabase.from("sandbox_financial_accounts").select("*").eq("organization_id", mundoOrg.id).limit(1000),
-      supabase.from("sandbox_financial_records").select("*").eq("organization_id", mundoOrg.id).order("transaction_date", { ascending: false }).limit(1000),
-      supabase.from("sandbox_receivable_titles").select("*").eq("organization_id", mundoOrg.id).order("due_date").limit(1000),
-      supabase.from("sandbox_delivery_proofs").select("*").eq("organization_id", mundoOrg.id).order("delivery_date", { ascending: false }).limit(1000),
-      supabase.from("sandbox_audit_events").select("*").eq("organization_id", mundoOrg.id).order("created_at", { ascending: false }).limit(1000),
-      supabase.from("sandbox_validation_cases").select("*").eq("project_key", "mundo-do-sabor").eq("enabled", true).order("sprint_number").order("sort_order")
+      supabase.from("sandbox_organizations").select("*").eq("id", sandboxOrg.id),
+      supabase.from("sandbox_organization_memberships").select("*").eq("organization_id", sandboxOrg.id).limit(1000),
+      supabase.from("sandbox_financial_accounts").select("*").eq("organization_id", sandboxOrg.id).limit(1000),
+      supabase.from("sandbox_financial_records").select("*").eq("organization_id", sandboxOrg.id).order("transaction_date", { ascending: false }).limit(1000),
+      supabase.from("sandbox_receivable_titles").select("*").eq("organization_id", sandboxOrg.id).order("due_date").limit(1000),
+      supabase.from("sandbox_delivery_proofs").select("*").eq("organization_id", sandboxOrg.id).order("delivery_date", { ascending: false }).limit(1000),
+      supabase.from("sandbox_audit_events").select("*").eq("organization_id", sandboxOrg.id).order("created_at", { ascending: false }).limit(1000),
+      isMundoSabor
+        ? supabase.from("sandbox_validation_cases").select("*").eq("project_key", "mundo-do-sabor").eq("enabled", true).order("sprint_number").order("sort_order")
+        : Promise.resolve({ data: [], error: null })
     ]);
     const caseCodes = (casesRes.data ?? []).map((item) => item.case_code);
     const runsRes = caseCodes.length
@@ -157,7 +172,8 @@ export async function GET(request: Request) {
       auditEvents: auditRes.data ?? [],
       validationCases: casesRes.data ?? [],
       validationRuns: runsRes.data ?? [],
-      isSandbox: true
+      isSandbox: true,
+      activeSandboxOrganization: sandboxOrg
     }, {
       status: 200,
       headers: { "Cache-Control": "private, no-store" }
@@ -191,6 +207,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
+    const requestedSandboxId = typeof body.sandboxOrganizationId === "string" ? body.sandboxOrganizationId : "";
     const caseCode = typeof body.caseCode === "string" ? body.caseCode : "";
     const status = body.status;
     const summary = typeof body.summary === "string" ? body.summary.trim() : "";
@@ -209,11 +226,15 @@ export async function POST(request: Request) {
 
     const { data: mundoOrg, error: mundoOrgError } = await supabase
       .from("sandbox_organizations")
-      .select("id")
+      .select("id,slug,status")
       .eq("slug", "mundo-sabor-sandbox")
       .maybeSingle();
-    if (mundoOrgError || !mundoOrg || !access.organizationIds.includes(mundoOrg.id)) {
-      return NextResponse.json({ error: "mundo_sabor_sandbox_forbidden" }, { status: 403 });
+    if (
+      mundoOrgError || !mundoOrg || mundoOrg.status !== "active" ||
+      !access.organizationIds.includes(mundoOrg.id) ||
+      (requestedSandboxId && requestedSandboxId !== mundoOrg.id)
+    ) {
+      return NextResponse.json({ error: "manual_homologation_only_for_mundo_sabor" }, { status: 403 });
     }
     const entitlementDenial = await requireSandboxCapabilityEntitlements(supabase, mundoOrg.id);
     if (entitlementDenial) return entitlementDenial;
