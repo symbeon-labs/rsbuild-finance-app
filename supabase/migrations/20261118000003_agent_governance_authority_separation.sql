@@ -124,3 +124,10 @@ with check (
       and tm.role = 'owner'
   )
 );
+
+-- Limit authenticated proposal updates to the decision fields used by the
+-- server endpoint. RLS controls which row can be decided; column grants
+-- prevent direct clients from rewriting proposal content or ownership.
+revoke update on public.agent_action_proposals from authenticated, anon;
+grant update (status, decided_by, decided_at, decision_reason, updated_at)
+on public.agent_action_proposals to authenticated;
