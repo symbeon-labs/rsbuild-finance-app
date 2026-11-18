@@ -217,12 +217,46 @@ export default function ControlTowerWorkspace({
   }
 
   function handleLogoUploadFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const res = event.target?.result as string;
-      if (res) handleSaveCompanyConfig(companyName, res);
+    if (!file.type.startsWith("image/")) {
+      setNotice("Selecione um arquivo de imagem válido.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setNotice("A logo deve ter no máximo 10 MB.");
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    const image = new window.Image();
+    image.onload = () => {
+      try {
+        // Normaliza logos grandes para um canvas transparente, sem cortar
+        // nem distorcer a proporção original.
+        const maxWidth = 640;
+        const maxHeight = 240;
+        const scale = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight, 1);
+        const width = Math.max(1, Math.round(image.naturalWidth * scale));
+        const height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Não foi possível processar a imagem.");
+        context.clearRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+        const normalizedLogo = canvas.toDataURL("image/webp", 0.9);
+        handleSaveCompanyConfig(companyName, normalizedLogo);
+      } catch {
+        setNotice("Não foi possível ajustar essa imagem. Tente enviar PNG, JPG ou WebP.");
+      } finally {
+        URL.revokeObjectURL(imageUrl);
+      }
     };
-    reader.readAsDataURL(file);
+    image.onerror = () => {
+      URL.revokeObjectURL(imageUrl);
+      setNotice("Não foi possível abrir essa imagem. Tente outro arquivo.");
+    };
+    image.src = imageUrl;
   }
 
   return (
