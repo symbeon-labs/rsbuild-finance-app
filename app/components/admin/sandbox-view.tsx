@@ -15,6 +15,7 @@ type SandboxData = {
   validationCases: any[];
   validationRuns: any[];
   isSandbox: boolean;
+  activeSandboxOrganization?: { id: string; slug: string; display_name: string; status: string };
 };
 type PortfolioTask = { id: string; title: string; acceptance_criteria: string; status: string; priority: string };
 type PortfolioSprint = { id: string; sprint_number: number; title: string; objective: string; completion_criteria: string; status: string; project_tasks: PortfolioTask[] };
@@ -56,6 +57,9 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
 
   useEffect(() => {
     let active = true;
+    setSection("overview");
+    setSelectedCase(null);
+    setFeedback(null);
     async function load() {
       try {
         const [sandboxResponse, portfolioResponse] = await Promise.all([
@@ -67,16 +71,18 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
         if (!active) return;
         setData(sandboxPayload);
 
-        if (!portfolioResponse || !portfolioResponse.ok) {
-          setPortfolioError("O vínculo com as sprints está temporariamente indisponível.");
-        } else {
-          try {
-            const portfolioPayload = await portfolioResponse.json();
-            if (!active) return;
-            const allProjects = Array.isArray(portfolioPayload.projects) ? portfolioPayload.projects : [];
-            setProjects(allProjects.filter((project: PortfolioProject) => project.project_key === "mundo-do-sabor"));
-          } catch {
-            if (active) setPortfolioError("Não foi possível interpretar os dados do portfólio de sprints.");
+        if (sandboxPayload.activeSandboxOrganization?.slug === "mundo-sabor-sandbox") {
+          if (!portfolioResponse || !portfolioResponse.ok) {
+            setPortfolioError("O vínculo com as sprints está temporariamente indisponível.");
+          } else {
+            try {
+              const portfolioPayload = await portfolioResponse.json();
+              if (!active) return;
+              const allProjects = Array.isArray(portfolioPayload.projects) ? portfolioPayload.projects : [];
+              setProjects(allProjects.filter((project: PortfolioProject) => project.project_key === "mundo-do-sabor"));
+            } catch {
+              if (active) setPortfolioError("Não foi possível interpretar os dados do portfólio de sprints.");
+            }
           }
         }
       } catch (cause) {
@@ -89,10 +95,10 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
     return () => { active = false; };
   }, [sandboxQuery]);
 
-  const cases = useMemo(
-    () => (data?.validationCases ?? []).filter((item: any) => item.project_key === "mundo-do-sabor"),
-    [data]
-  );
+  const activeSandbox = data?.activeSandboxOrganization;
+  const isMundoSaborSandbox = activeSandbox?.slug === "mundo-sabor-sandbox";
+  const sandboxDisplayName = activeSandbox?.display_name ?? "Laboratório selecionado";
+  const cases = useMemo(() => data?.validationCases ?? [], [data]);
   const latestByCase = useMemo(() => {
     const map = new Map<string, any>();
     for (const run of data?.validationRuns ?? []) {
@@ -200,13 +206,13 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div className="eyebrow">RSBUILD OS · AMBIENTE CONTROLADO</div>
-            <h2 style={{ margin: "5px 0", color: "var(--ink)", fontSize: 22 }}>Homologação · Mundo do Sabor</h2>
+            <h2 style={{ margin: "5px 0", color: "var(--ink)", fontSize: 22 }}>Laboratório · {sandboxDisplayName}</h2>
             <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>Validação funcional manual em dados sintéticos. Execuções não alteram o workspace operacional do cliente.</p>
           </div>
           <span style={{ borderRadius: 20, padding: "6px 11px", background: "rgba(16,185,129,.12)", color: "#059669", fontSize: 11, fontWeight: 800 }}>● SANDBOX ISOLADO</span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {(["overview", "cases", "sprints", "history"] as const).map((tab) => {
+          {(["overview", "cases", ...(isMundoSaborSandbox ? ["sprints" as const] : []), "history"] as const).map((tab) => {
             const labels = { overview: "Visão geral", cases: "Casos de teste", sprints: "Vínculo com sprints", history: "Evidências e histórico" };
             return <button key={tab} type="button" style={buttonStyle(section === tab)} onClick={() => setSection(tab)}>{labels[tab]}</button>;
           })}
@@ -225,7 +231,7 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
           ].map(([label, value]) => <div key={label} className="card cockpit-card" style={{ padding: 16 }}><div style={{ color: "var(--muted)", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{label}</div><div style={{ color: "var(--ink)", fontSize: 27, fontWeight: 800 }}>{value}</div></div>)}
         </div>
         <div className="card cockpit-card" style={{ ...panel, display: "grid", gap: 12 }}>
-          <div><div className="eyebrow">AMBIENTE SELECIONADO</div><h3 style={{ margin: "4px 0", color: "var(--ink)" }}>Mundo do Sabor Sandbox</h3><span style={{ color: "var(--muted)", fontSize: 12 }}>mundo-sabor-sandbox · dados sintéticos · execução manual</span></div>
+          <div><div className="eyebrow">AMBIENTE SELECIONADO</div><h3 style={{ margin: "4px 0", color: "var(--ink)" }}>{sandboxDisplayName}</h3><span style={{ color: "var(--muted)", fontSize: 12 }}>{activeSandbox?.slug ?? "sandbox"} · dados sintéticos · ambiente isolado</span></div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12, color: "var(--muted)" }}>
             <span>{data.financialAccounts.length} contas sintéticas</span><span>{data.financialRecords.length} lançamentos</span><span>{data.receivableTitles.length} títulos</span><span>{data.deliveryProofs.length} comprovantes</span>
           </div>
@@ -240,7 +246,7 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
       </>}
 
       {section === "cases" && <div className="card cockpit-card" style={{ ...panel, display: "grid", gap: 12 }}>
-        <div><div className="eyebrow">SUÍTE · MUNDO DO SABOR</div><h3 style={{ margin: "4px 0", color: "var(--ink)" }}>Casos de teste manuais</h3><p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>Cada resultado é informado pelo homologador. Nenhum teste automatizado é disparado nesta interface.</p></div>
+        <div><div className="eyebrow">HOMOLOGAÇÃO · {sandboxDisplayName.toUpperCase()}</div><h3 style={{ margin: "4px 0", color: "var(--ink)" }}>Casos de teste manuais</h3><p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>Cada resultado é informado pelo homologador. Nenhum teste automatizado é disparado nesta interface.</p></div>
         {cases.map((item: any) => {
           const latest = latestByCase.get(item.case_code);
           return <article key={item.case_code} style={{ ...panel, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -252,7 +258,7 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
             <button type="button" className="secondary-button" onClick={() => { setSelectedCase(item); setFeedback(null); }}>Registrar homologação</button>
           </article>;
         })}
-        {cases.length === 0 && <p style={{ color: "var(--muted)" }}>Não há casos de teste cadastrados para Mundo do Sabor.</p>}
+        {cases.length === 0 && <p style={{ color: "var(--muted)" }}>{isMundoSaborSandbox ? "Não há casos de teste cadastrados para este laboratório." : "Este laboratório ainda não possui uma suíte de homologação manual vinculada. Os dados sintéticos e os controles de isolamento continuam disponíveis."}</p>}
       </div>}
 
       {section === "sprints" && <div className="card cockpit-card" style={{ ...panel, display: "grid", gap: 14 }}>
@@ -293,7 +299,7 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
             </div>
           </div>;
         }))}
-        {projects.length === 0 && !portfolioError && <p style={{ color: "var(--muted)" }}>Projeto Mundo do Sabor não encontrado no portfólio desta sessão.</p>}
+        {projects.length === 0 && !portfolioError && <p style={{ color: "var(--muted)" }}>{isMundoSaborSandbox ? "Projeto Mundo do Sabor não encontrado no portfólio desta sessão." : "O vínculo com sprints é específico do laboratório Mundo do Sabor e não se aplica a este ambiente."}</p>}
       </div>}
 
       {section === "history" && <div className="card cockpit-card" style={{ ...panel, display: "grid", gap: 10 }}>
