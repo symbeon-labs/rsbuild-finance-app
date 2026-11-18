@@ -83,12 +83,19 @@ select ok(
   not has_function_privilege('anon','public.can_operate_rsbuild_project(uuid)','EXECUTE')
   and not has_function_privilege('anon','public.can_read_rsbuild_project(uuid)','EXECUTE')
   and not has_function_privilege('anon','public.sandbox_reset()','EXECUTE')
+  and not has_function_privilege('anon','public.is_platform_administrator()','EXECUTE')
+  and not has_function_privilege('anon','public.has_sandbox_capability_entitlements(uuid,text[])','EXECUTE')
+  and not has_function_privilege('anon','public.set_organization_capability_license(uuid,text,text,text,text,text[],timestamp with time zone)','EXECUTE')
   and not (
     select bool_or(p.prosecdef)
     from pg_proc p
     join pg_namespace n on n.oid=p.pronamespace
     where n.nspname='public'
-      and p.proname in ('can_operate_rsbuild_project','can_read_rsbuild_project','sandbox_reset')
+      and p.proname in (
+        'can_operate_rsbuild_project','can_read_rsbuild_project','sandbox_reset',
+        'is_platform_administrator','has_sandbox_capability_entitlements',
+        'set_organization_capability_license'
+      )
   ),
   'privileged public RPC wrappers are invoker-only and unavailable to anon'
 );
