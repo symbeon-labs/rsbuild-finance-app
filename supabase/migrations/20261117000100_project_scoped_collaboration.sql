@@ -1,6 +1,6 @@
--- RSBUILD OS: explicit project-scoped collaboration grants
--- Flavio is an operational contributor only on projects explicitly assigned to him.
--- This migration intentionally does not grant access to client production workspaces.
+-- RSBUILD OS: project-scoped authorization for project metadata.
+-- Institutional roles and tenant financial-data access remain separate.
+-- This migration does not modify user memberships or grant client-production access.
 
 begin;
 
@@ -56,28 +56,9 @@ revoke all on function public.can_operate_rsbuild_project(uuid) from public;
 grant execute on function public.can_read_rsbuild_project(uuid) to authenticated;
 grant execute on function public.can_operate_rsbuild_project(uuid) to authenticated;
 
-update public.organization_memberships
-set role='operator'::public.rsbuild_member_role
-where user_id='d4bc4a75-8271-41d7-b992-543b4da7d502'
-  and organization_id=(select id from public.organizations where slug='rsbuild');
-
-delete from public.organization_memberships
-where user_id='d4bc4a75-8271-41d7-b992-543b4da7d502'
-  and organization_id in (
-    select id from public.organizations where slug in ('hub_acai_qa','mundo_sabor_qa')
-  );
-
-insert into public.project_memberships
-  (project_id,managing_organization_id,user_id,access_level,created_by)
-select p.id,p.managing_organization_id,
-       'd4bc4a75-8271-41d7-b992-543b4da7d502'::uuid,
-       'contributor',
-       '7378d4ff-97ea-431c-8d78-1e5af14cb946'::uuid
-from public.projects p
-where p.project_key in ('hub-acai','mundo-do-sabor')
-on conflict (project_id,user_id)
-do update set access_level='contributor',
-              managing_organization_id=excluded.managing_organization_id;
+-- Memberships are managed independently from this policy migration.
+-- Keep the RSBUILD institutional role and explicit QA/Sandbox grants intact.
+-- No client-production organization membership is created here.
 
 drop policy if exists "portfolio members and project members read projects" on public.projects;
 create policy "authorized users read scoped projects"
