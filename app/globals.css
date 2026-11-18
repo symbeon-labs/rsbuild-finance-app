@@ -5753,3 +5753,99 @@ html:has(.inst-page) {
 .qa-guide-disclaimer { margin: 9px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
 @media(max-width: 900px) { .qa-guide-grid { grid-template-columns: 1fr; } .qa-guide-form { grid-template-columns: 1fr; } }
 @media(max-width: 600px) { .qa-evaluation-guide { padding: 15px; } .qa-guide-header, .qa-guide-actions { flex-direction: column; } .qa-guide-actions > div { width: 100%; } .qa-guide-actions button { flex: 1 1 auto; justify-content: center; } }
+
+
+/* QA Experience v1 — leitura confortável, hierarquia clara e rastreabilidade explicada. */
+.qa-evaluation-guide {
+  padding: 24px 26px;
+  border-left-width: 4px;
+  border-radius: 12px;
+}
+.qa-guide-kicker { font-size: 11px; letter-spacing: 1.1px; }
+.qa-guide-header h2 { font-size: 20px; line-height: 1.3; letter-spacing: -0.02em; }
+.qa-guide-header p, .qa-guide-evaluation-title p { font-size: 14px; line-height: 1.65; max-width: 760px; }
+.qa-guide-toggle { padding: 9px 13px; font-size: 12px; }
+.qa-guide-grid { gap: 14px; margin-top: 20px; }
+.qa-guide-grid article { padding: 17px 18px; border-radius: 10px; }
+.qa-guide-grid article > span { font-size: 11px; letter-spacing: .8px; }
+.qa-guide-grid article p, .qa-guide-grid article li { font-size: 14px; line-height: 1.7; }
+.qa-guide-grid article ul { padding-left: 19px; }
+.qa-guide-grid article li + li { margin-top: 7px; }
+.qa-guide-evaluation { margin-top: 20px; padding-top: 20px; }
+.qa-guide-evaluation-title strong { font-size: 16px; }
+.qa-guide-evaluation-title > span, .qa-guide-actions > span { font-size: 12px; }
+.qa-guide-form { gap: 15px; margin-top: 17px; }
+.qa-guide-form label { gap: 8px; font-size: 13px; color: var(--ink); }
+.qa-guide-form select, .qa-guide-form textarea {
+  border-radius: 9px;
+  padding: 12px 13px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.qa-guide-form select:focus, .qa-guide-form textarea:focus {
+  outline: 3px solid rgba(181, 88, 60, .14);
+  border-color: var(--rsbuild-terracotta);
+}
+.qa-guide-actions { margin-top: 17px; gap: 14px; }
+.qa-guide-actions button { font-size: 13px; }
+.qa-guide-feedback { font-size: 13px; line-height: 1.5; }
+.qa-guide-disclaimer { font-size: 12px; line-height: 1.6; }
+.qa-guide-context { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.qa-guide-context span {
+  display: inline-flex; align-items: center; border: 1px solid var(--line);
+  border-radius: 999px; padding: 5px 9px; background: var(--bg);
+  color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .45px;
+}
+.qa-guide-history { margin-top: 20px; }
+.qa-guide-history > strong { display: block; margin-bottom: 10px; font-size: 15px; }
+.qa-guide-history article { padding: 14px 15px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); }
+.qa-guide-history article + article { margin-top: 9px; }
+.qa-guide-history article p { font-size: 13px; line-height: 1.6; }
+.qa-guide-history article p span { color: var(--muted); font-weight: 700; }
+.qa-history-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.qa-history-meta b { font-size: 13px; }
+.qa-history-meta time, .qa-history-id { color: var(--muted); font-size: 12px; }
+.qa-history-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.qa-history-meta button {
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px;
+  background: var(--surface); color: var(--ink); font-size: 11px;
+}
+.traceability-legend {
+  margin: 0 0 12px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--surface); color: var(--ink);
+}
+.traceability-legend summary {
+  cursor: pointer; list-style: none; padding: 11px 13px;
+  color: var(--rsbuild-terracotta); font-size: 12px; font-weight: 700;
+}
+.traceability-legend summary::-webkit-details-marker { display: none; }
+.traceability-legend-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px; padding: 0 13px 13px;
+}
+.traceability-legend-grid p {
+  display: grid; gap: 4px; margin: 0; padding: 10px;
+  border-radius: 7px; background: var(--bg);
+}
+.traceability-legend-grid b { font-size: 11px; }
+.traceability-legend-grid span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.traceability-stack { display: grid; gap: 4px; margin-top: 7px; }
+.traceability-code { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted); }
+.traceability-code > span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.traceability-code b { font-size: 9px; letter-spacing: .35px; }
+.traceability-code code { color: var(--ink); font-size: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.traceability-code button {
+  border: 0; padding: 2px 4px; border-radius: 4px;
+  background: transparent; color: var(--rsbuild-terracotta); font-size: 10px;
+}
+.traceability-code button:hover, .qa-history-meta button:hover { background: var(--rsbuild-terracotta-soft); }
+@media(max-width: 900px) { .traceability-legend-grid { grid-template-columns: 1fr; } }
+@media(max-width: 600px) {
+  .qa-evaluation-guide { padding: 17px; }
+  .qa-guide-header, .qa-guide-actions { align-items: stretch; }
+  .qa-guide-header h2 { font-size: 18px; }
+  .qa-guide-header p, .qa-guide-evaluation-title p { font-size: 13px; }
+  .qa-guide-grid article p, .qa-guide-grid article li { font-size: 13px; }
+  .qa-history-meta { align-items: flex-start; }
+  .traceability-code { flex-wrap: wrap; }
+}

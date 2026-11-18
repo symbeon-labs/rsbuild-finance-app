@@ -63,6 +63,23 @@ import { TorreControleView } from "@/app/components/executive/torre-controle-vie
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
+ 
+function formatOperationalNotice(message: string): string {
+  if (message.includes("capability_entitlement_unavailable")) {
+    return "Este módulo ainda não está liberado para este ambiente. A administração da RSBUILD pode revisar e autorizar o acesso.";
+  }
+  if (message.includes("financial_records_unavailable")) {
+    return "Não foi possível consultar os registros financeiros agora. Tente novamente em instantes; se o problema continuar, informe a administração.";
+  }
+  if (message.includes("unauthenticated")) {
+    return "Sua sessão precisa ser renovada. Entre novamente para continuar.";
+  }
+  if (message.includes("forbidden") || message.includes("organization_access_denied")) {
+    return "Seu perfil não possui autorização para realizar esta ação neste ambiente.";
+  }
+  return message;
+}
+
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 import { FinanceEvaluationGuide } from "@/app/components/finance/finance-evaluation-guide";
 
@@ -975,7 +992,7 @@ export default function OperationalWorkspace({
           {isAdminPanelOpen && <OrganizationAdminPanel organizationId={organizationId} organizationName={organizationName} role={effectiveRole} />}
           {notice && (
             <div className="notice" role="status">
-              {notice}
+              {formatOperationalNotice(notice)}
               <button onClick={() => setNotice("")}>×</button>
             </div>
           )}
