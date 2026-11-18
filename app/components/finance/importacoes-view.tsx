@@ -151,7 +151,7 @@ export function ImportacoesView({
               <button
                 type="button"
                 className="secondary-button"
-                onClick={onExportOmieOfx
+                onClick={onExportOmieOfx}
                 title="Exportar lote normalizado pronto para Omie"
               >
                 ⚡ Exportar OFX (Omie)
