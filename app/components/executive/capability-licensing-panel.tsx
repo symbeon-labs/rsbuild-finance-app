@@ -50,7 +50,7 @@ export function CapabilityLicensingPanel() {
       licenseStatus: existing?.license_status ?? "blocked",
       operationalStatus: existing?.operational_status ?? "not_implemented",
       entitledEnvironments: existing?.entitled_environments ?? [],
-      expiresAt: existing?.expires_at ? existing.expires_at.slice(0, 10) : "",
+      expiresAt: existing?.expires_at ? new Date(existing.expires_at).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : "",
       reason: ""
     };
   }
