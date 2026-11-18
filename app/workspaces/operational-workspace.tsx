@@ -374,17 +374,7 @@ export default function OperationalWorkspace({
         localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
     }
-    if (modules) {
-      setEnabledModules(modules);
-      try {
-        localStorage.setItem(`rsbuild_workspace_modules_${organizationId}`, JSON.stringify(modules));
-      } catch {}
-      if (!modules.finance && modules.logistics && activeModule === "finance") {
-        navigateTo("pedidos-ha");
-      } else if (!modules.logistics && modules.finance && activeModule === "logistics") {
-        navigateTo("visao-geral");
-      }
-    }
+    // Módulos são administrados exclusivamente pela licença da organização no servidor.
     try {
       if (logo) {
         localStorage.setItem(`rsbuild_workspace_logo_${organizationId}`, logo);
