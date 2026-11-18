@@ -37,6 +37,23 @@ export function canAdministerOrganization(role: MemberRole): boolean {
   return role === "owner" || role === "admin";
 }
 
+/**
+ * Access to the RSBUILD tenant workspace is granted by an explicit
+ * membership in that organization. This is separate from platform-wide
+ * administration and does not expose the internal sprint portfolio.
+ */
+export function canEnterOrganizationWorkspace(input: {
+  organizationSlug: string;
+  organizationRole?: MemberRole | null;
+  platformAdministrator: boolean;
+}): boolean {
+  if (input.organizationSlug !== "rsbuild") return true;
+  if (input.platformAdministrator) return true;
+  return input.organizationRole === "owner"
+    || input.organizationRole === "admin"
+    || input.organizationRole === "operator";
+}
+
 /** Never infer this privilege from owner/admin membership. */
 export function canAdministerPlatform(
   context: Pick<AuthorizationContext, "platformAdministrator">
