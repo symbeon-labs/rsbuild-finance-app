@@ -61,15 +61,18 @@ grant execute on function public.can_operate_rsbuild_project(uuid) to authentica
 -- No client-production organization membership is created here.
 
 drop policy if exists "portfolio members and project members read projects" on public.projects;
+drop policy if exists "authorized users read scoped projects" on public.projects;
 create policy "authorized users read scoped projects"
 on public.projects for select to authenticated
 using (public.can_read_rsbuild_project(id));
 
 drop policy if exists "project readers read sprints" on public.project_sprints;
 drop policy if exists "RSBUILD operators manage sprints" on public.project_sprints;
+drop policy if exists "authorized project members read sprints" on public.project_sprints;
 create policy "authorized project members read sprints"
 on public.project_sprints for select to authenticated
 using (public.can_read_rsbuild_project(project_id));
+drop policy if exists "authorized project contributors manage sprints" on public.project_sprints;
 create policy "authorized project contributors manage sprints"
 on public.project_sprints for all to authenticated
 using (public.can_operate_rsbuild_project(project_id))
@@ -77,9 +80,11 @@ with check (public.can_operate_rsbuild_project(project_id));
 
 drop policy if exists "project readers read tasks" on public.project_tasks;
 drop policy if exists "RSBUILD operators manage tasks" on public.project_tasks;
+drop policy if exists "authorized project members read tasks" on public.project_tasks;
 create policy "authorized project members read tasks"
 on public.project_tasks for select to authenticated
 using (public.can_read_rsbuild_project(project_id));
+drop policy if exists "authorized project contributors manage tasks" on public.project_tasks;
 create policy "authorized project contributors manage tasks"
 on public.project_tasks for all to authenticated
 using (public.can_operate_rsbuild_project(project_id))
@@ -87,9 +92,11 @@ with check (public.can_operate_rsbuild_project(project_id));
 
 drop policy if exists "project readers read deliverables" on public.project_deliverables;
 drop policy if exists "RSBUILD operators manage deliverables" on public.project_deliverables;
+drop policy if exists "authorized project members read deliverables" on public.project_deliverables;
 create policy "authorized project members read deliverables"
 on public.project_deliverables for select to authenticated
 using (public.can_read_rsbuild_project(project_id));
+drop policy if exists "authorized project contributors manage deliverables" on public.project_deliverables;
 create policy "authorized project contributors manage deliverables"
 on public.project_deliverables for all to authenticated
 using (public.can_operate_rsbuild_project(project_id))
@@ -97,9 +104,11 @@ with check (public.can_operate_rsbuild_project(project_id));
 
 drop policy if exists "project readers read dependencies" on public.project_dependencies;
 drop policy if exists "RSBUILD operators manage dependencies" on public.project_dependencies;
+drop policy if exists "authorized project members read dependencies" on public.project_dependencies;
 create policy "authorized project members read dependencies"
 on public.project_dependencies for select to authenticated
 using (public.can_read_rsbuild_project(project_id));
+drop policy if exists "authorized project contributors manage dependencies" on public.project_dependencies;
 create policy "authorized project contributors manage dependencies"
 on public.project_dependencies for all to authenticated
 using (public.can_operate_rsbuild_project(project_id))
