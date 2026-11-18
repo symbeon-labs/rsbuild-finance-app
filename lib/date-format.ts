@@ -7,7 +7,7 @@ const SAO_PAULO_TIME_ZONE = "America/Sao_Paulo";
 export function formatDatePtBr(value: string | null | undefined): string {
   if (!value) return "—";
 
-  const dateOnly = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (dateOnly) {
     const [, year, month, day] = dateOnly;
     const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
@@ -58,7 +58,7 @@ export function todayIsoDateSaoPaulo(now: Date = new Date()): string {
 /** Converte valor de data para input[type=date], preservando datas-calendário. */
 export function toDateInputValue(value: string | null | undefined): string {
   if (!value) return "";
-  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const formatted = formatDatePtBr(value);
     return formatted === value ? "" : value;
   }
