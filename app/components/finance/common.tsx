@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { FinancialRecord, formatCurrency, formatDate } from "@/lib/finance";
 
 export function Metric({
