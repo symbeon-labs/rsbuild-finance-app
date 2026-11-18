@@ -89,11 +89,10 @@ export async function requireOrgContext(
   }
 
   if (requiredCapability) {
-    const organizationRelation = membership.organizations as unknown as { slug?: string } | null;
-    const slug = organizationRelation?.slug ?? "";
-    // QA is derived from the server-side organization record, never from request data.
-    const environment: CapabilityEnvironment =
-      slug.endsWith("_qa") || slug.includes("_qa_") ? "qa" : "production";
+    // This guard protects public-schema production tenant routes.
+    // Sandbox routes use a separate RPC and an explicit sandbox entitlement check.
+    // QA is not exposed through this route family yet.
+    const environment: CapabilityEnvironment = "production";
 
     const { data: entitlement, error: entitlementError } = await supabase
       .from("organization_capability_licenses")
