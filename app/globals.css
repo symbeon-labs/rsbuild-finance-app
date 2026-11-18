@@ -5723,3 +5723,33 @@ html:has(.inst-page) {
   .rs-architecture-details > summary small { max-width: 260px; }
   .rs-architecture-details-content { padding: 0 8px 8px; }
 }
+
+/* Guia de avaliação operacional — exclusivo do workspace QA. */
+.qa-evaluation-guide { margin: 0 0 22px; padding: 20px 22px; border: 1px solid var(--line); border-left: 3px solid #2563EB; border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
+.qa-guide-header, .qa-guide-evaluation-title, .qa-guide-actions { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.qa-guide-kicker { margin-bottom: 7px; color: #2563EB; font-size: 9px; font-weight: 800; letter-spacing: 1.15px; }
+.qa-guide-header h2 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 700; }
+.qa-guide-header p, .qa-guide-evaluation-title p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.qa-guide-toggle { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; background: var(--surface); color: var(--ink); font-size: 10px; font-weight: 700; }
+.qa-guide-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 17px; }
+.qa-guide-grid article { min-width: 0; padding: 13px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.qa-guide-grid article > span { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .7px; }
+.qa-guide-grid article p, .qa-guide-grid article li { color: var(--ink); font-size: 11px; line-height: 1.6; }
+.qa-guide-grid article p { margin: 8px 0 0; }
+.qa-guide-grid article ul { margin: 8px 0 0; padding-left: 17px; }
+.qa-guide-grid article li + li { margin-top: 4px; }
+.qa-guide-evaluation { margin-top: 14px; padding-top: 15px; border-top: 1px solid var(--line); }
+.qa-guide-evaluation-title { align-items: center; }
+.qa-guide-evaluation-title strong { color: var(--ink); font-size: 12px; }
+.qa-guide-evaluation-title > span, .qa-guide-actions > span { color: var(--muted); font-size: 9px; }
+.qa-guide-form { display: grid; grid-template-columns: minmax(190px, .7fr) minmax(260px, 1.5fr); gap: 12px; margin-top: 13px; }
+.qa-guide-form label { display: grid; align-content: start; gap: 6px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.qa-guide-form select, .qa-guide-form textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 7px; padding: 9px 10px; background: var(--surface); color: var(--ink); font-size: 11px; }
+.qa-guide-form textarea { resize: vertical; line-height: 1.5; }
+.qa-guide-actions { align-items: center; margin-top: 12px; }
+.qa-guide-actions > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.qa-guide-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.qa-guide-feedback { margin: 9px 0 0; color: var(--green); font-size: 10px; }
+.qa-guide-disclaimer { margin: 9px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+@media(max-width: 900px) { .qa-guide-grid { grid-template-columns: 1fr; } .qa-guide-form { grid-template-columns: 1fr; } }
+@media(max-width: 600px) { .qa-evaluation-guide { padding: 15px; } .qa-guide-header, .qa-guide-actions { flex-direction: column; } .qa-guide-actions > div { width: 100%; } .qa-guide-actions button { flex: 1 1 auto; justify-content: center; } }
