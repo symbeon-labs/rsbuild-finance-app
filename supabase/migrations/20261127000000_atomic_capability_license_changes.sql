@@ -1,5 +1,23 @@
 -- Atomic, owner-only capability license changes with an append-only event.
 
+-- Holding owner can list organization identities for licensing administration;
+-- this does not grant access to tenant operational data.
+drop policy if exists "RSBUILD owners read organization directory" on public.organizations;
+create policy "RSBUILD owners read organization directory"
+  on public.organizations for select to authenticated
+  using (
+    exists (
+      select 1
+      from public.organization_memberships m
+      join public.organizations holding on holding.id = m.organization_id
+      where holding.slug = 'rsbuild'
+        and m.user_id = (select auth.uid())
+        and m.role = 'owner'::public.rsbuild_member_role
+    )
+  );
+
+
+
 -- Institutional owner must inspect all tenant entitlements from the holding workspace.
 drop policy if exists "RSBUILD owners read all capability licenses" on public.organization_capability_licenses;
 create policy "RSBUILD owners read all capability licenses"
