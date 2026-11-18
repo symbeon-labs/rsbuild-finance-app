@@ -19,7 +19,7 @@ const OPERATIONAL_LABELS: Record<string, string> = {
 export function CapabilityLicensingPanel() {
   const [data, setData] = useState<{ catalog: CatalogItem[]; organizations: Organization[]; licenses: License[]; events: Event[] } | null>(null);
   const [selectedOrg, setSelectedOrg] = useState("");
-  const [licenseDrafts, setLicenseDrafts] = useState<Record<string, { licenseStatus: string; operationalStatus: string; reason: string }>>({});
+  const [licenseDrafts, setLicenseDrafts] = useState<Record<string, { licenseStatus: string; operationalStatus: string; entitledEnvironments: string[]; expiresAt: string; reason: string }>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
