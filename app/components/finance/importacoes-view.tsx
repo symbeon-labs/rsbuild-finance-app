@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { BankMetadata, FinancialRecord, formatCurrency } from "@/lib/finance";
 import { RecordTable } from "./common";
 
@@ -82,7 +83,32 @@ export function ImportacoesView({
               </div>
               <span>{pendingImport.length} registros</span>
             </div>
-            <RecordTable records={pendingImport.slice(0, 8)} />
+            <div className="import-filters" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px", margin: "16px 0" }}>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Buscar descrição ou ID
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ex.: PIX, fornecedor..." />
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Movimento
+                <select value={direction} onChange={(e) => setDirection(e.target.value)}>
+                  <option value="all">Todos</option><option value="entrada">Entradas</option><option value="saída">Saídas</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Categoria
+                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="all">Todas</option>{categories.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>De
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              </label>
+              <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Até
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              </label>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}>
+              <span>{filteredRecords.length} de {pendingImport.length} registros</span>
+              <button className="text-button" onClick={() => { setSearch(""); setDirection("all"); setCategory("all"); setDateFrom(""); setDateTo(""); }}>Limpar filtros</button>
+            </div>
+            <RecordTable records={filteredRecords.slice(0, 8)} />
             <div className="import-actions">
               <button className="secondary-button" onClick={onCancelImport}>
                 Cancelar
