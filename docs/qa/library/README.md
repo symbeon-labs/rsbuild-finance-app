@@ -39,7 +39,7 @@ Os aliases não correspondem a CNPJs, contas, nomes ou entidades jurídicas reai
 | MS-QA-POD-001 | proof-of-delivery-index-synthetic.csv | Índice sintético de canhotos, sem imagem real |
 
 ## Reprodutibilidade
-Cada dataset possui ID, versão, SHA-256, quantidade de linhas e expectativa documentada em manifest.json. O hash deve ser recalculado após qualquer alteração. Mudança de conteúdo exige nova versão.
+Cada dataset possui ID, versão, quantidade de linhas e expectativa documentada em manifest.json. Execute node scripts/qa/verify-synthetic-library.mjs para validar os totais e gerar os SHA-256 de cada arquivo. O hash deve ser registrado na evidência da execução. Mudança de conteúdo exige nova versão.
 
 ## Relação com planejamento
 A biblioteca apoia tarefas já existentes do Ciclo 01 — especialmente Sprint A2 (A2.1 a A2.6) e prepara fixtures para A3 (A3.1 a A3.6). Não cria sprint, tarefa, escopo contratual ou critério de aceite novo. O vínculo operacional definitivo deve apontar para os registros correspondentes em Projects & Sprints no workspace RSBUILD OS.
