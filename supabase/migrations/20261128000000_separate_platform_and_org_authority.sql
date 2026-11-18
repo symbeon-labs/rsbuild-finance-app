@@ -43,6 +43,13 @@ $$;
 revoke all on function public.is_platform_administrator() from public;
 grant execute on function public.is_platform_administrator() to authenticated;
 
+-- Platform administrators need the minimal organization directory required
+-- by the SECURITY INVOKER licensing RPC. This does not grant tenant data access.
+drop policy if exists "Platform administrators read organization directory" on public.organizations;
+create policy "Platform administrators read organization directory"
+  on public.organizations for select to authenticated
+  using ((select public.is_platform_administrator()));
+
 -- Remove organization-owner authority over platform-wide licensing.
 drop policy if exists "RSBUILD owners manage capability licenses" on public.organization_capability_licenses;
 drop policy if exists "RSBUILD owners read all capability licenses" on public.organization_capability_licenses;
