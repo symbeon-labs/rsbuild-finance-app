@@ -105,7 +105,6 @@ select ok(
   and not has_function_privilege('anon','public.has_sandbox_capability_entitlements(uuid,text[])','EXECUTE')
   and not has_function_privilege('anon','public.sandbox_record_validation_run(text,text,text,jsonb)','EXECUTE')
   and not has_function_privilege('anon','public.set_organization_capability_license(uuid,text,text,text,text,text[],timestamp with time zone)','EXECUTE')
-  and not has_function_privilege('anon','public.sandbox_record_validation_run(text,text,text,jsonb)','EXECUTE')
   and not (
     select bool_or(p.prosecdef)
     from pg_proc p
@@ -114,7 +113,7 @@ select ok(
       and p.proname in (
         'can_operate_rsbuild_project','can_read_rsbuild_project','sandbox_reset',
         'is_platform_administrator','has_sandbox_capability_entitlements',
-        'set_organization_capability_license','sandbox_record_validation_run','sandbox_record_validation_run'
+        'set_organization_capability_license','sandbox_record_validation_run'
       )
   ),
   'privileged public RPC wrappers are invoker-only and unavailable to anon'
