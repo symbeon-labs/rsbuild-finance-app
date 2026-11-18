@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
 import { RsbuildIcon, type RsbuildIconName } from "@/app/components/rsbuild-icons";
+import { getWorkspaceCapabilityAvailability } from "@/app/actions/capability-licenses";
 
 function getPresetIdentity(preset: OrganizationPreset) {
   if (preset.id.endsWith("_qa")) return { label: "AMBIENTE QA", icon: "approval" as RsbuildIconName };
@@ -25,6 +26,7 @@ interface WorkspaceModalProps {
   companyLogoUrl: string;
   currentOrgId?: OrganizationId;
   currentOrgRealId?: string;
+  currentEnvironment?: "qa" | "production";
   availableOrganizationSlugs?: string[];
   isSuperAdmin: boolean;
   /** Somente Platform Admin pode alterar a disponibilidade de capacidades. */
@@ -42,6 +44,7 @@ export function WorkspaceModal({
   companyLogoUrl,
   currentOrgId = "rsbuild",
   currentOrgRealId,
+  currentEnvironment = "production",
   availableOrganizationSlugs = [],
   isSuperAdmin,
   canManageModules = false,
@@ -58,6 +61,9 @@ export function WorkspaceModal({
   const [activeModulesState, setActiveModulesState] = useState<EnabledModulesConfig>(enabledModules);
   const [currentColor, setCurrentColor] = useState<string>(brandColor);
   const [showTenantSelector, setShowTenantSelector] = useState(false);
+  const [capabilityStatuses, setCapabilityStatuses] = useState<Record<string, string>>({});
+  const [capabilityStatusesLoading, setCapabilityStatusesLoading] = useState(false);
+  const [capabilityStatusesError, setCapabilityStatusesError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -66,9 +72,32 @@ export function WorkspaceModal({
       setActiveModulesState(enabledModules);
       setCurrentColor(brandColor);
       setShowTenantSelector(false); // Garante que começa recolhido para reuniões
-      setActiveTab("marca");
+      setActiveTab(canManageModules ? "marca" : "modulos");
     }
-  }, [isOpen, currentOrgId, companyName, enabledModules, brandColor]);
+  }, [isOpen, currentOrgId, companyName, enabledModules, brandColor, canManageModules]);
+
+  useEffect(() => {
+    let active = true;
+    const selectedOrgRealId = ORG_ID_BY_SLUG[selectedOrg] ?? currentOrgRealId;
+    const selectedEnvironment = selectedOrg.endsWith("_qa") ? "qa" : currentEnvironment;
+    if (isOpen && activeTab === "modulos" && selectedOrgRealId) {
+      setCapabilityStatusesLoading(true);
+      setCapabilityStatusesError("");
+      getWorkspaceCapabilityAvailability(selectedOrgRealId, selectedEnvironment)
+        .then((result) => {
+          if (!active) return;
+          if (result.ok) setCapabilityStatuses(result.capabilities as Record<string, string>);
+          else setCapabilityStatusesError(result.error);
+        })
+        .catch(() => {
+          if (active) setCapabilityStatusesError("Não foi possível consultar a disponibilidade dos módulos.");
+        })
+        .finally(() => {
+          if (active) setCapabilityStatusesLoading(false);
+        });
+    }
+    return () => { active = false; };
+  }, [isOpen, activeTab, selectedOrg, currentOrgRealId, currentEnvironment]);
 
   if (!isOpen) return null;
 
@@ -101,7 +130,7 @@ export function WorkspaceModal({
         <div className="workspace-modal-header" style={{ marginBottom: "12px", flexShrink: 0 }}>
           <div>
             <span className="eyebrow" style={{ fontSize: "10px", letterSpacing: "1px" }}>CUSTOMIZAÇÃO CORPORATIVA</span>
-            <h3 style={{ fontSize: "18px" }}>Identidade do Workspace</h3>
+            <h3 style={{ fontSize: "18px" }}>Configurações do Workspace</h3>
           </div>
           <button
             type="button"
@@ -124,7 +153,7 @@ export function WorkspaceModal({
             flexShrink: 0
           }}
         >
-          <button
+          {canManageModules && <button
             type="button"
             onClick={() => setActiveTab("marca")}
             style={{
@@ -140,7 +169,7 @@ export function WorkspaceModal({
             }}
           >
             <RsbuildIcon name="users" size={15} tone={activeTab === "marca" ? "accent" : "secondary"} /> Identidade & Marca
-          </button>
+          </button>}
           <button
             type="button"
             onClick={() => setActiveTab("modulos")}
@@ -224,13 +253,17 @@ export function WorkspaceModal({
               return;
             }
 
-            onSave(targetName, targetLogo, nextModules, selectedOrg, currentColor);
+            if (canManageModules) {
+              onSave(targetName, targetLogo, nextModules, selectedOrg, currentColor);
+            } else {
+              onClose();
+            }
           }}
           style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
         >
           {/* Conteúdo com Scroll Próprio */}
           <div style={{ flex: 1, overflowY: "auto", paddingRight: "4px", display: "grid", gap: "14px", alignContent: "start" }}>
-            {activeTab === "marca" && (
+            {activeTab === "marca" && canManageModules && (
               <>
                 <label className="login-field" style={{ fontSize: "11px" }}>
                   <span>NOME DA EMPRESA OU WORKSPACE</span>
@@ -432,153 +465,79 @@ export function WorkspaceModal({
                   </div>
                 )}
 
-                {/* Grid dos 4 Produtos Contratados */}
-                <div style={{ display: "grid", gap: "8px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
+                {/* Catálogo: estado informativo derivado da licença real do tenant. */}
+                <div style={{ display: "grid", gap: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--rsbuild-terracotta)", letterSpacing: "1px", fontFamily: "var(--font-brand)" }}>
                       CATÁLOGO DE CAPACIDADES RSBUILD
                     </span>
-                    <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                      <RsbuildIcon name="guardian" size={12} tone="accent" /> Governança Symbeon · {canManageModules ? "Administração da plataforma" : "Somente visualização — liberação pela RSBUILD"}
+                    <span style={{ fontSize: "9px", background: "var(--rsbuild-terracotta-soft)", color: "var(--rsbuild-terracotta)", padding: "3px 7px", borderRadius: "5px", fontWeight: 700 }}>
+                      <RsbuildIcon name="guardian" size={12} tone="accent" /> DISPONIBILIDADE CONTROLADA PELA RSBUILD
                     </span>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
-                    {/* 1. Finanças */}
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "10px",
-                        padding: "8px 10px",
-                        borderRadius: "8px",
-                        border: activeModulesState.finance ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
-                        background: activeModulesState.finance ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
-                        cursor: "pointer"
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        name="modFinance"
-                        disabled={!canManageModules}
-                        checked={activeModulesState.finance}
-                        onChange={(e) => setActiveModulesState((curr) => ({ ...curr, finance: e.target.checked }))}
-                        style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="finance" size={18} tone="accent" /> 1. Finanças & Caixa</strong>
-                          <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.finance ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {canManageModules ? (activeModulesState.finance ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
-                          Extratos bancários multibanco e DRE.
-                        </span>
-                      </div>
-                    </label>
-
-                    {/* 2. Reconciliação */}
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "10px",
-                        padding: "8px 10px",
-                        borderRadius: "8px",
-                        border: activeModulesState.reconciliation ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
-                        background: activeModulesState.reconciliation ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
-                        cursor: "pointer"
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        name="modReconciliation"
-                        disabled={!canManageModules}
-                        checked={activeModulesState.reconciliation}
-                        onChange={(e) => setActiveModulesState((curr) => ({ ...curr, reconciliation: e.target.checked }))}
-                        style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="reconciliation" size={18} tone="accent" /> 2. Reconciliação ERP</strong>
-                          <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.reconciliation ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {canManageModules ? (activeModulesState.reconciliation ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
-                          Matching autônomo e baixas em lote Omie.
-                        </span>
-                      </div>
-                    </label>
-
-                    {/* 3. Logística */}
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "10px",
-                        padding: "8px 10px",
-                        borderRadius: "8px",
-                        border: activeModulesState.logistics ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
-                        background: activeModulesState.logistics ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
-                        cursor: "pointer"
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        name="modLogistics"
-                        disabled={!canManageModules}
-                        checked={activeModulesState.logistics}
-                        onChange={(e) => setActiveModulesState((curr) => ({ ...curr, logistics: e.target.checked }))}
-                        style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="logistics" size={18} tone="accent" /> 3. Logística & Expedição</strong>
-                          <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.logistics ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {canManageModules ? (activeModulesState.logistics ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
-                          WhatsApp B2B, cubagem e canhotos.
-                        </span>
-                      </div>
-                    </label>
-
-                    {/* 4. Auditoria */}
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "10px",
-                        padding: "8px 10px",
-                        borderRadius: "8px",
-                        border: activeModulesState.audit ? "1.5px solid var(--rsbuild-terracotta)" : "1px solid var(--line)",
-                        background: activeModulesState.audit ? "rgba(181, 88, 60, 0.08)" : "var(--surface)",
-                        cursor: "pointer"
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        name="modAudit"
-                        disabled={!canManageModules}
-                        checked={activeModulesState.audit}
-                        onChange={(e) => setActiveModulesState((curr) => ({ ...curr, audit: e.target.checked }))}
-                        style={{ accentColor: "var(--rsbuild-terracotta)", width: "16px", height: "16px", marginTop: "2px" }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <strong style={{ fontSize: "11.5px", color: "var(--ink)" }}><RsbuildIcon name="guardian" size={18} tone="accent" /> 4. Auditoria & RS Guardião</strong>
-                          <span style={{ fontSize: "8.5px", fontWeight: 700, color: activeModulesState.audit ? "var(--green-text, #10B981)" : "var(--muted)" }}>
-                            {canManageModules ? (activeModulesState.audit ? "ATIVO" : "INATIVO") : "AGUARDANDO LIBERAÇÃO"}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: "10px", color: "var(--muted)", display: "block", marginTop: "2px", lineHeight: "1.2" }}>
-                          Blindagem Lei 5.474/68 e contencioso RS.
-                        </span>
-                      </div>
-                    </label>
-                  </div>
+                  <p style={{ margin: 0, color: "var(--muted)", fontSize: "10px", lineHeight: 1.45 }}>
+                    A situação abaixo reflete a licença desta organização para o ambiente {selectedOrg.endsWith("_qa") ? "QA" : "PRODUÇÃO"}. Os indicadores são informativos; a gestão de licenças ocorre na governança da plataforma.
+                  </p>
+                  <p style={{ margin: 0, color: "var(--muted)", fontSize: "9px", lineHeight: 1.4 }}>
+                    O Sandbox é um laboratório interno isolado, acessado pela Central RSBUILD. Ele não é um workspace QA nem utiliza este catálogo de licenças diretamente.
+                  </p>
+                  {capabilityStatusesLoading ? (
+                    <div role="status" style={{ padding: 14, border: "1px solid var(--line)", borderRadius: 8, color: "var(--muted)", fontSize: 11 }}>
+                      Consultando disponibilidade dos módulos…
+                    </div>
+                  ) : capabilityStatusesError ? (
+                    <div role="alert" style={{ padding: 12, border: "1px solid rgba(217,119,6,.35)", borderRadius: 8, background: "rgba(245,158,11,.07)", color: "var(--muted)", fontSize: 11 }}>
+                      {capabilityStatusesError}
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 9 }}>
+                      {([
+                        { key: "finance", title: "1. Finanças & Caixa", description: "Extratos bancários multibanco e DRE.", icon: "finance" as const },
+                        { key: "reconciliation", title: "2. Reconciliação ERP", description: "Matching bancário, títulos e baixas em lote Omie.", icon: "reconciliation" as const },
+                        { key: "logistics", title: "3. Logística & Expedição", description: "Pedidos, cubagem e comprovantes de entrega.", icon: "logistics" as const },
+                        { key: "audit", title: "4. Auditoria & RS Guardião", description: "Auditoria, evidências e governança.", icon: "guardian" as const }
+                      ]).map((module) => {
+                        const status = capabilityStatuses[module.key] ?? "blocked";
+                        const available = status === "available";
+                        const inDevelopment = status === "in_development" || status === "not_implemented" || status === "pending_activation";
+                        const tone = available ? "#059669" : inDevelopment || status === "expired" ? "#B7791F" : "var(--muted)";
+                        const label = available ? "DISPONÍVEL" : status === "in_development" ? "EM DESENVOLVIMENTO" : status === "not_implemented" ? "LIBERADO · NÃO IMPLEMENTADO" : status === "pending_activation" ? "AGUARDANDO ATIVAÇÃO" : status === "expired" ? "LICENÇA EXPIRADA" : status === "suspended" ? "SUSPENSO" : status === "revoked" ? "REVOGADO" : "AGUARDANDO LIBERAÇÃO";
+                        return (
+                          <article key={module.key} style={{
+                            display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0,
+                            padding: "11px 12px", borderRadius: 9,
+                            border: available ? "1.5px solid rgba(5,150,105,.55)" : "1px solid var(--line)",
+                            background: available ? "rgba(16,185,129,.075)" : "var(--surface)",
+                            boxShadow: available ? "inset 3px 0 0 #059669" : "none"
+                          }}>
+                            <span aria-hidden="true" style={{
+                              display: "grid", placeItems: "center", flex: "0 0 30px", width: 30, height: 30,
+                              borderRadius: 8, background: available ? "rgba(5,150,105,.12)" : "var(--bg)", color: tone
+                            }}>
+                              <RsbuildIcon name={module.icon} size={17} tone="secondary" />
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                                <strong style={{ color: "var(--ink)", fontSize: 11.5, lineHeight: 1.35 }}>{module.title}</strong>
+                                <span style={{
+                                  flex: "0 0 auto", maxWidth: 132, textAlign: "right", fontSize: 8, lineHeight: 1.3,
+                                  fontWeight: 800, letterSpacing: ".025em", color: tone
+                                }}>
+                                  {label}
+                                </span>
+                              </div>
+                              <span style={{ display: "block", marginTop: 4, color: "var(--muted)", fontSize: 10, lineHeight: 1.4 }}>
+                                {module.description}
+                              </span>
+                              {available && <span style={{ display: "inline-flex", marginTop: 7, padding: "3px 7px", borderRadius: 999, background: "rgba(5,150,105,.12)", color: "#047857", fontSize: 8, fontWeight: 800, letterSpacing: ".04em" }}>
+                                ✓ LIBERADO PARA {selectedOrg.endsWith("_qa") ? "QA" : "PRODUÇÃO"}
+                              </span>}
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -659,13 +618,13 @@ export function WorkspaceModal({
               >
                 Cancelar
               </button>
-              <button
+              {canManageModules && <button
                 type="submit"
                 className="primary-button"
                 style={{ padding: "8px 20px", fontSize: "12px", fontWeight: 700 }}
               >
                 Salvar Alterações
-              </button>
+              </button>}
             </div>
           </div>
         </form>

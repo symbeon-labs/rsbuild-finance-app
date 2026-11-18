@@ -79,3 +79,55 @@ export async function getCapabilityLicensingData() {
 
   return { ok: true as const, catalog: catalog ?? [], licenses: licenses ?? [], events: events ?? [], organizations: organizations ?? [] };
 }
+
+
+/** Read-only capability availability for a member of the selected organization. */
+export async function getWorkspaceCapabilityAvailability(
+  organizationId: string,
+  environment: "qa" | "production"
+) {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { ok: false as const, error: "Sessão inválida." };
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("organization_memberships")
+    .select("organization_id")
+    .eq("organization_id", organizationId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (membershipError || !membership) {
+    return { ok: false as const, error: "Você não possui acesso a esta organização." };
+  }
+
+  const { data: licenses, error } = await supabase
+    .from("organization_capability_licenses")
+    .select("capability_key, license_status, operational_status, entitled_environments, expires_at")
+    .eq("organization_id", organizationId);
+
+  if (error) return { ok: false as const, error: "Não foi possível consultar a disponibilidade dos módulos." };
+
+  const now = Date.now();
+  const capabilities = Object.fromEntries(
+    (licenses ?? []).map((license) => {
+      const entitled = (license.entitled_environments ?? []).includes(environment);
+      const expired = Boolean(license.expires_at && new Date(license.expires_at).getTime() <= now);
+      const granted = license.license_status === "granted" && entitled && !expired;
+      const status = expired
+        ? "expired"
+        : !granted
+          ? (license.license_status === "suspended" ? "suspended" : license.license_status === "revoked" ? "revoked" : "blocked")
+          : license.operational_status === "active"
+            ? "available"
+            : license.operational_status === "in_development"
+              ? "in_development"
+              : license.operational_status === "available"
+                ? "pending_activation"
+                : "not_implemented";
+      return [license.capability_key, status];
+    })
+  );
+
+  return { ok: true as const, capabilities };
+}

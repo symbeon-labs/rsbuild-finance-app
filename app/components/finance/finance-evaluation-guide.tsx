@@ -60,7 +60,7 @@ export function FinanceEvaluationGuide({
   const [observation, setObservation] = useState("");
   const [operationalImpact, setOperationalImpact] = useState("");
   const [entries, setEntries] = useState<Evaluation[]>([]);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,6 +81,10 @@ export function FinanceEvaluationGuide({
   useEffect(() => { void loadEvaluations(); }, [organizationId]);
 
   const sectionEntries = useMemo(() => entries.filter((entry) => entry.feature_key === section), [entries, section]);
+  const latestSectionEntry = sectionEntries[0];
+  const latestSectionDate = latestSectionEntry
+    ? new Date(latestSectionEntry.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+    : null;
   if (!item) return null;
 
   async function saveEvaluation() {
@@ -114,18 +118,29 @@ export function FinanceEvaluationGuide({
 
   return (
     <section className="qa-evaluation-guide" aria-labelledby="qa-guide-title">
-      <div className="qa-guide-header">
-        <div>
-          <div className="qa-guide-kicker">GUIA DE AVALIAÇÃO · AMBIENTE QA</div>
+      <div className={`qa-guide-header${expanded ? " is-expanded" : " is-compact"}`}>
+        <div className="qa-guide-heading">
+          <div className="qa-guide-kicker"><span className="qa-guide-kicker-dot" /> HOMOLOGAÇÃO · AMBIENTE QA</div>
           <h2 id="qa-guide-title">{item.title}</h2>
-          <p>Verifique o comportamento apresentado, compare com os critérios e registre evidências observáveis da operação.</p>
-          <div className="qa-guide-context"><span>AMBIENTE QA</span><span>ROTEIRO v0.2</span><span>REGISTRO AUDITÁVEL</span></div>
+          {expanded && <>
+            <p>Verifique o comportamento apresentado, compare com os critérios e registre evidências observáveis da operação.</p>
+            <div className="qa-guide-context"><span>ROTEIRO v0.2</span><span>REGISTRO AUDITÁVEL</span></div>
+          </>}
         </div>
-        <button type="button" className="qa-guide-toggle" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
-          {expanded ? "Recolher guia" : "Abrir guia"}
-        </button>
+        <div className="qa-guide-header-meta">
+          <div className="qa-guide-count" aria-live="polite">
+            <strong>{loading ? "…" : sectionEntries.length}</strong>
+            <span>{sectionEntries.length === 1 ? "avaliação registrada" : "avaliações registradas"}</span>
+          </div>
+          {latestSectionDate && <span className="qa-guide-last-activity">Último registro · {latestSectionDate}</span>}
+          <button type="button" className="qa-guide-toggle" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-controls="qa-guide-content">
+            <span>{expanded ? "Recolher" : "Abrir roteiro"}</span>
+            <span className={`qa-guide-toggle-icon${expanded ? " is-open" : ""}`} aria-hidden="true">⌄</span>
+          </button>
+        </div>
       </div>
-      {expanded && <>
+      {feedback && !expanded && <p className="qa-guide-feedback qa-guide-feedback-compact" role="status">{feedback}</p>}
+      {expanded && <div id="qa-guide-content" className="qa-guide-content">
         <div className="qa-guide-grid">
           <article><span>FINALIDADE</span><p>{item.purpose}</p></article>
           <article><span>BENEFÍCIO OPERACIONAL</span><p>{item.benefit}</p></article>
@@ -178,7 +193,7 @@ export function FinanceEvaluationGuide({
           </div>}
           <p className="qa-guide-disclaimer">Os registros são vinculados ao avaliador e ao ambiente QA. A avaliação não altera lançamentos, saldos ou títulos e não representa homologação técnica.</p>
         </div>
-      </>}
+      </div>}
     </section>
   );
 }
