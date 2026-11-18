@@ -72,7 +72,7 @@ export function FinanceEvaluationGuide({
   organizationName: string;
 }) {
   const item = GUIDE[section];
-  const [assessment, setAssessment] = useState("Ainda não avaliado");
+  const [assessment, setAssessment] = useState("Não avaliado");
   const [observation, setObservation] = useState("");
   const [entries, setEntries] = useState<Evaluation[]>([]);
   const [expanded, setExpanded] = useState(true);
@@ -91,7 +91,7 @@ export function FinanceEvaluationGuide({
   }, []);
 
   const sectionEntries = useMemo(
-    () => entries.filter((entry) => entry.section === section),
+    () => entries.filter((entry) => entry.organization === organizationName && entry.environment === "QA" && entry.module === "Finanças" && entry.section === section),
     [entries, section],
   );
 
@@ -123,7 +123,7 @@ export function FinanceEvaluationGuide({
   }
 
   function exportEvaluations() {
-    const payload = entries.filter((entry) => entry.organization === organizationName);
+    const payload = entries.filter((entry) => entry.organization === organizationName && entry.environment === "QA" && entry.module === "Finanças");
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -139,7 +139,7 @@ export function FinanceEvaluationGuide({
         <div>
           <div className="qa-guide-kicker">GUIA DE AVALIAÇÃO · AMBIENTE QA</div>
           <h2 id="qa-guide-title">{item.title}</h2>
-          <p>Orientação para avaliação operacional desta funcionalidade.</p>
+          <p>Use este roteiro para verificar o comportamento apresentado e registrar evidências da operação.</p>
         </div>
         <button type="button" className="qa-guide-toggle" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
           {expanded ? "Recolher guia" : "Abrir guia"}
@@ -150,7 +150,7 @@ export function FinanceEvaluationGuide({
         <>
           <div className="qa-guide-grid">
             <article>
-              <span>O QUE FAZ</span>
+              <span>FINALIDADE</span>
               <p>{item.purpose}</p>
             </article>
             <article>
@@ -158,7 +158,7 @@ export function FinanceEvaluationGuide({
               <p>{item.benefit}</p>
             </article>
             <article>
-              <span>O QUE OBSERVAR</span>
+              <span>CRITÉRIOS DE VERIFICAÇÃO</span>
               <ul>{item.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul>
             </article>
           </div>
@@ -166,8 +166,8 @@ export function FinanceEvaluationGuide({
           <div className="qa-guide-evaluation">
             <div className="qa-guide-evaluation-title">
               <div>
-                <strong>Registrar avaliação</strong>
-                <p>Informe como a funcionalidade se comportou durante a análise.</p>
+                <strong>Resultado da verificação</strong>
+                <p>Compare o comportamento observado com os critérios acima. Registre o que conseguiu validar e o que ficou pendente.</p>
               </div>
               <span>{sectionEntries.length} registro(s) nesta área</span>
             </div>
@@ -175,27 +175,28 @@ export function FinanceEvaluationGuide({
               <label>
                 Resultado da avaliação
                 <select value={assessment} onChange={(event) => setAssessment(event.target.value)}>
-                  <option>Ainda não avaliado</option>
-                  <option>Funcionou como esperado</option>
-                  <option>Precisa de ajuste</option>
-                  <option>Não compreendi a finalidade</option>
-                  <option>Não foi possível testar</option>
+                  <option>Não avaliado</option>
+                  <option>Atendeu ao esperado</option>
+                  <option>Atendeu parcialmente</option>
+                  <option>Não atendeu</option>
+                  <option>Não foi possível verificar</option>
+                  <option>Não se aplica</option>
                 </select>
               </label>
               <label className="qa-guide-observation">
                 Observações do avaliador
-                <textarea value={observation} onChange={(event) => setObservation(event.target.value)} placeholder="Descreva o que observou, uma dificuldade ou uma sugestão operacional." rows={3} />
+                <textarea value={observation} onChange={(event) => setObservation(event.target.value)} placeholder="Descreva o cenário testado, o resultado observado, eventuais divergências e o que precisa ser ajustado." rows={3} />
               </label>
             </div>
             <div className="qa-guide-actions">
-              <span>Ambiente: Mundo do Sabor QA · Versão do guia: v0.1 · Salvamento local neste navegador</span>
+              <span>Mundo do Sabor · QA · Finanças · Guia v0.1 · Registro local neste navegador</span>
               <div>
                 <button type="button" className="secondary-button" onClick={exportEvaluations} disabled={!entries.length}>Exportar avaliações</button>
-                <button type="button" className="primary-button" onClick={saveEvaluation} disabled={assessment === "Ainda não avaliado" && !observation.trim()}>Salvar avaliação</button>
+                <button type="button" className="primary-button" onClick={saveEvaluation} disabled={assessment === "Não avaliado" && !observation.trim()}>Salvar avaliação</button>
               </div>
             </div>
             {feedback && <p className="qa-guide-feedback" role="status">{feedback}</p>}
-            <p className="qa-guide-disclaimer">As avaliações são registros de observação do ambiente de testes. Não alteram lançamentos, saldos, títulos ou dados financeiros.</p>
+            <p className="qa-guide-disclaimer">Este guia apenas registra a avaliação. O registro não altera lançamentos, saldos ou títulos; ações executadas nas próprias funcionalidades continuam sujeitas aos seus fluxos e permissões.</p>
           </div>
         </>
       )}
