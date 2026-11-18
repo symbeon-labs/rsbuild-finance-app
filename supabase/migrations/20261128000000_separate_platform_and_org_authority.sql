@@ -45,6 +45,10 @@ grant execute on function public.is_platform_administrator() to authenticated;
 
 -- Platform administrators need the minimal organization directory required
 -- by the SECURITY INVOKER licensing RPC. This does not grant tenant data access.
+-- Remove the former institutional-owner directory grant. Platform identity
+-- metadata is now visible only to explicit platform administrators.
+drop policy if exists "RSBUILD owners read organization directory" on public.organizations;
+
 drop policy if exists "Platform administrators read organization directory" on public.organizations;
 create policy "Platform administrators read organization directory"
   on public.organizations for select to authenticated
