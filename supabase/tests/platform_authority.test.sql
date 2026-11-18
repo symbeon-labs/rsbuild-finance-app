@@ -49,7 +49,7 @@ select is(
 );
 select ok(
   not public.has_sandbox_capability_entitlements(
-    (select organization_id from sandbox.organizations where slug='g01-tenant-sandbox'), array['finance']::text[]
+    'd3333333-3333-4333-8333-333333333333', array['finance']::text[]
   ),
   'RSBUILD owner without a sandbox entitlement cannot access the capability in Sandbox'
 );
@@ -142,7 +142,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','c1111111-1111-4111-8111-111111111111',true);
 select ok(
   public.has_sandbox_capability_entitlements(
-    (select organization_id from sandbox.organizations where slug='g01-tenant-sandbox'), array['finance']::text[]
+    'd3333333-3333-4333-8333-333333333333', array['finance']::text[]
   ),
   'RSBUILD owner with a valid Sandbox entitlement can access sandbox capability'
 );
