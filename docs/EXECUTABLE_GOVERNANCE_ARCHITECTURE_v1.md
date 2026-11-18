@@ -15,10 +15,12 @@
 1. A fail-closed `platform_administrators` registry with revocation metadata.
 2. A server-side `is_platform_administrator()` database predicate based on `auth.uid()`.
 3. Capability-license RLS policies moved from RSBUILD organization owner to explicit platform administrators.
-4. Capability-license RPC authorization moved to the same platform boundary.
-5. TypeScript authorization vocabulary and unit tests proving that organization ownership does not imply platform authority.
-6. Capability-use predicate requiring a granted license, active implementation, explicit environment entitlement and a non-expired validity window.
-7. Licensing UI and RPC persist QA/Sandbox/Production scope and optional expiration.
+4. Capability-license mutations run through a narrowly scoped SECURITY DEFINER RPC with explicit platform-grant verification; direct authenticated DML on license and event tables is revoked.
+5. Organization owners retain tenant-scoped access but cannot administer platform licenses. Platform administrators can inspect the minimal organization directory needed for licensing without receiving tenant membership or operational data access.
+6. License records persist an explicit QA/Sandbox/Production allow-list and optional expiration. A grant without an environment is rejected.
+7. Shared server-side guards enforce Finance, Reconciliation, Logistics and Audit entitlements on the corresponding operational API routes. QA vs Production is derived from the organization slug on the server.
+8. Sandbox organizations are explicitly linked to their tenant identity. A narrow boolean RPC checks Sandbox entitlements without exposing license records or granting platform authority.
+9. A dedicated /platform-admin route exposes the licensing controls only after server-side verification. Unit and pgTAP tests cover authority separation, mutation boundaries, expiry, environment scope and revocation.
 
 ## Bootstrap — mandatory before applying in production
 
@@ -37,7 +39,7 @@ No automatic seed is intentional: an automatic grant to the RSBUILD owner would 
 
 The TypeScript predicate is a pure policy helper, not an authorization source. Runtime enforcement must query the database grant and entitlement server-side. The licensing record now stores an explicit environment allow-list and optional expiration; a granted license without an environment is rejected. Do not accept `platformAdministrator`, capability status, environment, organization ID or role from browser payloads as authoritative.
 
-All capability-protected API routes and server actions must call a shared server-side guard before data access or mutation. This PR establishes the database authority boundary for licensing administration; it does not yet retrofit every module route or provision the initial Symbeon administrator.
+The shared guard is wired to the Finance, Reconciliation, Logistics and Audit operational routes, and the Sandbox API uses a separate narrow entitlement check. Other API surfaces that are not part of those four capability domains still require their own explicit capability mapping. The pure TypeScript helper remains a policy/test utility, never an authorization source. The initial Symbeon administrator is not provisioned by this migration.
 
 ## Deployment sequence
 
@@ -51,7 +53,6 @@ All capability-protected API routes and server actions must call a shared server
 
 ## Required follow-up
 
-- Centralize capability enforcement in all protected API routes.
-- Add pgTAP tests for platform administrator isolation and license lifecycle.
+- Audit remaining API surfaces and assign capability mappings where applicable.
 - Define break-glass, MFA and periodic access review.
 - Confirm the legal license/IP policy with counsel before external reliance.
