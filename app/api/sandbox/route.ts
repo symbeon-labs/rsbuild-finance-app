@@ -74,7 +74,7 @@ async function requireSandboxCapabilityEntitlements(
 ): Promise<NextResponse | null> {
   const { data, error } = await supabase.rpc("has_sandbox_capability_entitlements", {
     p_sandbox_organization_id: sandboxOrganizationId,
-    p_capability_keys: ["finance", "reconciliation", "logistics", "audit"]
+    p_capability_keys: ["finance"]
   });
 
   if (error) {
