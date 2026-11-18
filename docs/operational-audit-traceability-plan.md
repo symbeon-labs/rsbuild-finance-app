@@ -1,9 +1,10 @@
 # Plano de Rastreabilidade Operacional — RSBUILD Finance
 
-**Status:** D01 implementado em branch; validação automatizada pendente  
-**Branch:** `feat/operational-audit-traceability`  
-**Base:** `main`  
-**Escopo inicial:** trilha de auditoria e operações financeiras do workspace QA.
+**Atualizado:** 18/11/2026  
+**Marco de implementação:** PR #81 — merged em 18/11/2026  
+**Commit de merge:** `59f5aaa0ddf9eaf5ac49e5d7de5825489310b91e`  
+**Escopo inicial:** trilha de auditoria e operações financeiras do workspace QA.  
+**Estado geral:** fundação implementada parcialmente; homologação técnica e rollout ainda pendentes.
 
 ## 1. Objetivo
 
@@ -11,121 +12,121 @@ Permitir reconstruir, com evidências proporcionais à operação, a sequência 
 
 A iniciativa evolui a infraestrutura existente de `audit_events`. Não cria uma segunda trilha e não confunde auditoria operacional com avaliações do roteiro QA.
 
-## 2. Baseline confirmado em main
+## 2. Baseline arquitetural
 
 ### 2.1 Escrita de eventos
 
-Arquivo: `lib/api/audit.ts`
+Arquivo de referência: `lib/api/audit.ts`.
 
-O contrato atual `AuditEventInput` contém:
-- `organizationId`
-- `actorId` e `actorEmail` opcionais
-- `eventType`
-- `entityType`
-- `entityId` opcional
-- `metadata` opcional
+O contrato existente `AuditEventInput` contém organização, ator opcional, tipo de evento, tipo/ID de entidade e metadata. O helper utiliza service role e captura/loga erros sem propagá-los ao fluxo chamador.
 
-O helper escreve em `audit_events` usando service role. Erros são capturados e logados, sem serem propagados ao fluxo chamador.
+**Implicação:** a escrita existente é best-effort. A nova captura transacional introduzida pela PR #81 tem comportamento diferente: quando o trigger falha, a transação da alteração que o disparou também falha. A política definitiva deve ser classificada por criticidade, sem tornar toda auditoria indiscriminadamente bloqueante.
 
-**Implicação:** a trilha é atualmente best-effort. Uma operação pode continuar mesmo quando a escrita do evento falha. A política adequada precisa ser definida por criticidade; não se deve tornar toda auditoria bloqueante indiscriminadamente.
+### 2.2 Consulta anterior à PR #81
 
-### 2.2 Consulta
+A implementação anterior exigia contexto da organização, filtrava por `organization_id`, ordenava por `occurred_at` e limitava a consulta aos 300 eventos mais recentes, sem paginação.
 
-Arquivo: `app/api/audit-events/route.ts`
+### 2.3 Integridade e linguagem da interface
 
-- Exige contexto da organização por `requireOrgContext`.
-- Filtra por `organization_id`.
-- Ordena por `occurred_at` decrescente.
-- Limita a resposta aos 300 eventos mais recentes.
-- Retorna ator, ação, entidade, horário e metadata.
+A alegação de “registro imutável” não deve ser usada como garantia global até que schema, grants, RLS e caminhos de alteração/exclusão sejam verificados. Captura transacional e trilha de auditoria, isoladamente, não provam imutabilidade global nem completude histórica.
 
-**Implicação:** a consulta é tenant-scoped, mas não oferece paginação; o limite de 300 impede afirmar que a interface apresenta o histórico completo.
+## 3. Entrega da PR #81
 
-### 2.3 Apresentação
+A PR #81, intitulada **feat(audit): transições operacionais e histórico paginado**, foi merged em 18/11/2026. Ela entregou partes de D03 e D04; não representa a conclusão de D01.
 
-Arquivo: `app/components/admin/audit-trail-view.tsx`
+Arquivos alterados:
+- `supabase/migrations/20261118000002_operational_audit_state_transitions.sql`
+- `supabase/tests/operational_audit_state_transitions.test.sql`
+- `app/api/audit-events/route.ts`
+- `app/components/admin/audit-trail-view.tsx`
+- este documento de planejamento.
 
-A interface apresenta data/hora, usuário, ação, entidade e resumo de metadata. Há filtros por tipo de evento e busca textual por e-mail, ação e ID da entidade.
+### 3.1 Capacidades implementadas na PR
 
-O texto atual da interface afirma “Registro imutável de ações, alterações e tentativas de acesso negadas”. A imutabilidade ainda precisa ser demonstrada por schema, grants, RLS e ausência de caminhos de update/delete. Até essa verificação, essa afirmação deve ser considerada não comprovada.
+- Trigger transacional para atualizações em movimentações financeiras, títulos, canhotos, pedidos e baixas.
+- Evento individual para cada decisão de conciliação, com ID próprio e referência à movimentação financeira.
+- Deltas mínimos de estado anterior/posterior, limitados a uma allowlist de campos operacionais.
+- Metadata sem snapshots integrais, documentos pessoais, mensagens brutas, URLs de comprovantes ou payloads completos.
+- Consulta com paginação por cursor composto (`occurred_at`, `id`), limite de 1 a 100 e filtro obrigatório por organização.
+- Interface capaz de carregar eventos anteriores e apresentar transições.
+- Teste pgTAP para eventos, ator, estados anterior/posterior e vínculo da decisão.
 
-## 3. Lacunas a investigar
+### 3.2 Limites conhecidos da entrega
 
-1. **Cobertura:** mapear cada operação sensível e localizar o evento emitido no caminho de sucesso, falha e negação.
-2. **Correlação:** garantir referências estáveis entre importações e registros derivados, títulos, pedidos, canhotos, baixas e decisões de conciliação.
-3. **Transições:** registrar estado anterior e posterior quando a operação alterar status ou produzir decisão relevante.
-4. **Identidade:** distinguir usuário humano, processo automatizado e ação de sistema; não inferir ator quando ausente.
-5. **Falha de auditoria:** classificar eventos obrigatórios e best-effort, com política explícita por criticidade.
-6. **Consulta:** substituir limite fixo por paginação cursor-based ou mecanismo equivalente, mantendo filtros no servidor.
-7. **Integridade e isolamento:** verificar constraints, grants, RLS, acesso via service role e testes cross-tenant.
-8. **Privacidade:** restringir metadata a dados necessários; não armazenar tokens, segredos, payloads completos ou dados pessoais excessivos.
+- A migration é aditiva e, no momento da PR, ainda não havia sido aplicada a banco remoto.
+- Eventos anteriores à migration não recebem histórico retroativo.
+- Criações em lote continuam com eventos agregados; a correlação individual de cada item importado permanece pendente.
+- A PR não alterou dados financeiros, workspace oficial, Sandbox, memberships, RBAC, RLS ou regras de contabilização.
+- Não foi declarada nem comprovada imutabilidade global ou cobertura completa da auditoria.
+- O Preview da Vercel não é gate técnico enquanto houver bloqueio de quota do provedor.
 
-## 4. Contrato-alvo de evento
+### 3.3 Validação pendente
 
-Campos conceituais (não representam migração aprovada):
-- identidade do evento e timestamp gerado no servidor;
-- organização proprietária;
-- ator tipado: usuário, serviço ou sistema;
-- ação/event type versionado;
-- entidade e ID estável;
-- correlation ID e causation/reference IDs quando aplicáveis;
-- resultado: sucesso, falha, negado ou parcial;
-- justificativa/motivo quando necessário;
-- delta mínimo de estado anterior/novo, apenas para transições relevantes;
-- metadata validada por allowlist e sem dados sensíveis desnecessários.
+Na revisão da PR foi reportada falha no Database Tests #243 em `operational_audit_state_transitions.test.sql`, com `permission denied for table financial_records`, antes da execução das assertions. A orientação registrada foi corrigir o fixture para realizar a transição positiva com um ator/caminho autorizado pelas policies existentes, sem ampliar grants de produção, e manter um caso negativo demonstrando que o papel sem autorização continua bloqueado.
 
-Não registrar snapshots integrais de entidades como substituto de histórico. Preservar a fonte de verdade nos registros operacionais e usar eventos para explicar ações e transições.
+Até que os testes sejam executados com sucesso, D03 e D04 devem ser tratados como **implementados parcialmente, ainda não homologados**. A migration também precisa ser aplicada e validada no ambiente QA autorizado antes de qualquer conclusão de rollout.
 
-## 5. Implementação inicial registrada
+## 4. Roadmap e estado real
 
-### D01 — Transições operacionais e consulta paginada
-
-Branch `feat/operational-audit-traceability`.
-
-- Migration `20261118000002_operational_audit_state_transitions.sql` adiciona captura no banco para atualizações em movimentações financeiras, títulos, canhotos, pedidos e baixas.
-- A trilha registra evento por entidade, ator quando disponível, campos alterados e deltas mínimos `before`/`after` para uma allowlist de campos operacionais.
-- A migration também registra cada decisão de conciliação com seu próprio ID e referência à movimentação financeira.
-- Os eventos são gravados na mesma transação da alteração que disparou o trigger; se a gravação falhar, a alteração também falha.
-- Metadata não inclui snapshots integrais nem documentos pessoais, mensagens brutas, URLs de comprovantes ou payloads completos.
-- `GET /api/audit-events` passa a usar paginação por cursor composto (`occurred_at`, `id`), com limite configurável de 1 a 100 e escopo obrigatório por organização.
-- A interface de auditoria passa a carregar eventos anteriores e apresentar transições permitidas.
-- Teste pgTAP cobre evento por entidade, estado anterior/posterior, ator e vínculo da decisão.
-
-**Limites desta entrega:** eventos históricos anteriores à migration não ganham deltas retroativamente. Criações em lote continuam com os eventos agregados existentes; a correlação individual de cada item importado permanece como próxima lacuna. A imutabilidade global da tabela ainda não está declarada nem comprovada.
-
-## 6. Sequência de implementação
+A sequência abaixo é a referência normativa. Uma PR pode entregar componentes de mais de uma etapa; isso não altera a ordem lógica nem permite marcar uma etapa como concluída sem seus critérios de aceite.
 
 ### D01 — Inventário e contrato
-Mapear rotas, funções de domínio, eventos emitidos e entidades. Confirmar schema e políticas atuais.
 
-### D02 — Cobertura e correlação
-Completar eventos ausentes e vínculos entre registros de origem e derivados. Evitar duplicidade e eventos sem referência.
+Mapear rotas, funções de domínio, eventos emitidos, entidades, atores e contratos atuais. Confirmar schema e políticas existentes.
+
+**Estado:** baseline inicial documentado; inventário sistemático e contrato ponta a ponta ainda precisam ser concluídos.
+
+### D02 — Cobertura e correlação entre entidades
+
+Conectar pedido, título, recebimento, canhoto, importação e conciliação por referências identificáveis. Completar eventos ausentes e vínculos entre registros de origem e derivados. Evitar duplicidade e eventos sem referência.
+
+**Estado:** pendente. A correlação individual de registros criados por importações em lote é uma lacuna explicitamente conhecida.
 
 ### D03 — Transições e confiabilidade
-Adicionar deltas mínimos e política de falha por criticidade, com testes de falha de escrita.
 
-### D04 — Consulta e experiência
-Implementar paginação, filtros úteis e visualização de detalhes/histórico por entidade.
+Registrar estado anterior e posterior nas transições relevantes, com deltas mínimos e política de falha por criticidade. Testar sucesso, falha de gravação e identidade do ator.
+
+**Estado:** implementação inicial entregue pela PR #81; homologação pendente. A política de falha por criticidade ainda precisa ser formalizada e testada.
+
+### D04 — Consulta e evidências
+
+Permitir localizar um registro e reconstruir sua sequência de acontecimentos, com filtros e paginação. A consulta deve preservar escopo organizacional e autorização no servidor; a interface deve apresentar a trajetória e os vínculos relevantes sem sugerir evidências inexistentes.
+
+**Estado:** paginação por cursor e carregamento progressivo implementados pela PR #81; experiência completa de consulta por entidade, filtros necessários e reconstrução da cadeia entre entidades dependem de D02 e de validação funcional.
 
 ### D05 — Verificação
-Testar isolamento multi-tenant, autorização, integridade, cobertura, ordenação e comportamento sob falhas.
 
-## 7. Critérios de aceite
+Testar isolamento entre organizações, permissões, falhas de registro, consistência temporal e integridade dos eventos. Verificar também cobertura, ordenação, comportamento sob falhas e ausência de exposição indevida de metadata.
 
-- Todas as ações sensíveis mapeadas têm evento ou justificativa documentada.
-- Eventos são correlacionáveis a entidades reais por IDs estáveis.
-- Transições relevantes permitem identificar estado anterior e posterior sem inventar dados ausentes.
-- Ator e origem da ação são explicitamente tipados.
+**Estado:** pendente. A falha reportada no teste pgTAP precisa ser resolvida e a suíte completa deve passar antes da homologação.
+
+## 5. Critérios de aceite globais
+
+- Ações sensíveis mapeadas têm evento ou justificativa documentada.
+- Pedido, título, recebimento, canhoto, importação e conciliação são correlacionáveis por IDs/referências estáveis, sem inferências.
+- Transições relevantes identificam estado anterior e posterior sem inventar dados ausentes.
+- Ator e origem da ação são explicitamente identificados quando disponíveis; ausência não deve ser mascarada por inferência.
 - Política de falha está definida e testada por criticidade.
 - Consulta paginada preserva escopo da organização e autorização no servidor.
-- Nenhum segredo ou payload excessivo é armazenado em metadata.
-- Testes demonstram isolamento entre organizações.
-- Alegações de imutabilidade e completude só aparecem após comprovação técnica.
+- É possível localizar um registro e reconstruir sua sequência de eventos e relações.
+- Testes demonstram isolamento entre organizações e bloqueio de operações não autorizadas.
+- Consistência temporal, integridade e comportamento sob falhas são verificados.
+- Metadata não armazena segredos, documentos pessoais desnecessários ou payloads excessivos.
+- Alegações de imutabilidade, completude ou cobertura integral só aparecem após comprovação técnica específica.
 
-## 8. Limites de rollout
+## 6. Próxima sequência de trabalho
+
+1. **Fechar D01:** completar o inventário de operações, entidades, atores e eventos.
+2. **Executar D02:** estabelecer referências identificáveis entre pedido, título, recebimento, canhoto, importação e conciliação, priorizando a correlação individual dos itens importados.
+3. **Homologar D03:** corrigir o fixture do pgTAP sem ampliar permissões de produção; formalizar e testar a política de falha dos eventos.
+4. **Completar D04:** validar consulta por registro e reconstrução da trajetória com filtros e paginação.
+5. **Executar D05:** validar isolamento multi-tenant, permissões, falhas, ordenação, integridade e consistência temporal.
+
+## 7. Limites de rollout
 
 - Desenvolvimento em branch isolada.
 - Homologação inicial em QA com dados sintéticos ou controlados.
 - Nenhuma alteração no workspace oficial ou Sandbox nesta etapa.
-- Sem merge ou deploy de produção automático.
+- Nenhum deploy de produção automático decorrente deste plano.
 - Mudanças em regras financeiras ficam fora do escopo, salvo dependência técnica comprovada e aprovada.
+- Aplicação de migration em ambiente remoto exige confirmação do ambiente-alvo e validação prévia.
