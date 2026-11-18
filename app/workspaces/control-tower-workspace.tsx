@@ -62,7 +62,7 @@ export default function ControlTowerWorkspace({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
-  const isProjectCollaborator = membershipRole === "operator";
+  const isProjectCollaborator = organizationSlug === "rsbuild" && membershipRole === "operator";
 
   const canViewProjectPortfolio = true;
 
