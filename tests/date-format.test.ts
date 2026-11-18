@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatDatePtBr, formatDateTimePtBr, todayIsoDateSaoPaulo } from "../lib/date-format";
+import { formatDatePtBr, formatDateTimePtBr, todayIsoDateSaoPaulo, toDateInputValue } from "../lib/date-format";
 
 test("formatDatePtBr formats calendar dates without timezone drift", () => {
   assert.equal(formatDatePtBr("2026-11-18"), "18/11/2026");
@@ -25,4 +25,13 @@ test("formatters preserve empty and invalid values safely", () => {
 
 test("todayIsoDateSaoPaulo derives the calendar day from Sao Paulo", () => {
   assert.equal(todayIsoDateSaoPaulo(new Date("2026-11-18T02:30:00.000Z")), "2026-11-17");
+});
+
+test("toDateInputValue preserves date-only values and rejects invalid dates", () => {
+  assert.equal(toDateInputValue("2026-11-18"), "2026-11-18");
+  assert.equal(toDateInputValue("2026-02-31"), "");
+});
+
+test("toDateInputValue converts timestamps to the Sao Paulo calendar day", () => {
+  assert.equal(toDateInputValue("2026-11-18T02:30:00.000Z"), "2026-11-17");
 });
