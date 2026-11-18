@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { HoldingWorkspaceOrganization } from "@/app/components/executive/holding-workspace-management-view";
 
 type SandboxData = {
@@ -30,6 +30,10 @@ const statusColor: Record<string, string> = {
 
 export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }: { qaOrganizations?: HoldingWorkspaceOrganization[]; sandboxOrganizations?: HoldingWorkspaceOrganization[] }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentOrganizationId = searchParams.get("organizationId");
+  const sandboxOrganizationId = searchParams.get("sandboxOrganizationId");
+  const sandboxQuery = sandboxOrganizationId ? `?sandboxOrganizationId=${encodeURIComponent(sandboxOrganizationId)}` : "";
   const [data, setData] = useState<SandboxData | null>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +49,7 @@ export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }:
   const [feedback, setFeedback] = useState<string | null>(null);
 
   async function refresh() {
-    const response = await fetch("/api/sandbox", { cache: "no-store" });
+    const response = await fetch(`/api/sandbox${sandboxQuery}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Falha ao carregar o ambiente.");
     setData(payload);
@@ -56,7 +60,7 @@ export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }:
     async function load() {
       try {
         const [sandboxResponse, portfolioResponse] = await Promise.all([
-          fetch("/api/sandbox", { cache: "no-store" }),
+          fetch(`/api/sandbox${sandboxQuery}`, { cache: "no-store" }),
           fetch("/api/projects", { cache: "no-store" }).catch(() => null)
         ]);
         const sandboxPayload = await sandboxResponse.json();
@@ -120,6 +124,7 @@ export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: "manual",
+          sandboxOrganizationId,
           caseCode: selectedCase.case_code,
           status: manualStatus,
           summary: summary.trim(),
@@ -186,7 +191,7 @@ export function SandboxView({ qaOrganizations = [], sandboxOrganizations = [] }:
             {sandboxOrganizations.map((org) => <article key={org.id} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 14, display: "grid", gap: 8 }}>
               <span style={{ color: "#7C3AED", fontSize: 10, fontWeight: 800 }}>SANDBOX</span>
               <strong style={{ color: "var(--ink)", fontSize: 14 }}>{org.name}</strong>
-              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(org.id) + "&tab=sandbox")}>Abrir laboratório →</button>
+              <button type="button" className="secondary-button" style={{ justifySelf: "start" }} onClick={() => router.push("/?organizationId=" + encodeURIComponent(currentOrganizationId ?? "") + "&tab=sandbox&sandboxOrganizationId=" + encodeURIComponent(org.id))}>Abrir laboratório →</button>
             </article>)}
           </div>
         </>}
