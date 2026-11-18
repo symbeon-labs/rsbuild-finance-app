@@ -7,6 +7,7 @@ import { OnboardingExperience } from "@/app/components/auth/onboarding-experienc
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import type { OrganizationId } from "@/app/types/workspace";
+import { canEnterOrganizationWorkspace } from "@/lib/platform-authorization";
 
 export const dynamic = "force-dynamic";
 
@@ -131,7 +132,11 @@ export default async function Home({ searchParams }: Props) {
   // Usuários de clientes não entram no workspace institucional RSBUILD, mesmo
   // que uma membership legada ou URL/cookie tente selecioná-lo.
   const selectedOrganizationRole = memberships.find((membership) => membership.organization_id === selected!.id)?.role;
-  if (!isPlatformAdministrator && selected.slug === "rsbuild" && selectedOrganizationRole !== "operator") {
+  if (!canEnterOrganizationWorkspace({
+    organizationSlug: selected.slug,
+    organizationRole: selectedOrganizationRole,
+    platformAdministrator: isPlatformAdministrator
+  })) {
     const firstClientOrganization = organizations.find((organization) => organization.slug !== "rsbuild");
     if (!firstClientOrganization) redirect("/login?reason=platform_workspace_restricted");
     selected = firstClientOrganization;
@@ -200,7 +205,11 @@ export default async function Home({ searchParams }: Props) {
     organizationSlug,
     organizationName: selected.display_name,
     availableOrganizationSlugs: organizations
-      .filter((organization) => isPlatformAdministrator || organization.slug !== "rsbuild")
+      .filter((organization) => canEnterOrganizationWorkspace({
+        organizationSlug: organization.slug,
+        organizationRole: memberships.find((membership) => membership.organization_id === organization.id)?.role,
+        platformAdministrator: isPlatformAdministrator
+      }))
       .map((organization) => organization.slug),
     availableOrganizations,
     availableSandboxOrganizations,
