@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { NavSection } from "@/app/types/workspace";
+import { formatDatePtBr } from "@/lib/date-format";
 
 type ProjectSummary = {
   id: string;
@@ -460,7 +461,7 @@ export function HoldingOverviewCockpit({
                       <span>{projectDoneTasks} de {projectAllTasks.length} tarefas concluídas</span>
                       {activeSprint?.start_date && activeSprint?.end_date && (
                         <span>
-                          {activeSprint.start_date.slice(5)} a {activeSprint.end_date.slice(5)}
+                          {formatDatePtBr(activeSprint.start_date)} a {formatDatePtBr(activeSprint.end_date)}
                         </span>
                       )}
                     </div>

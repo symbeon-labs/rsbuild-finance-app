@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateTimePtBr } from "@/lib/date-format";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { HoldingWorkspaceOrganization } from "@/app/components/executive/holding-workspace-management-view";
@@ -307,7 +309,7 @@ export function SandboxView({ organizationId, qaOrganizations = [], sandboxOrgan
         {(data.validationRuns ?? []).length === 0 ? <p style={{ color: "var(--muted)" }}>Nenhuma homologação registrada.</p> : [...data.validationRuns].map((run: any) => <article key={run.id} style={{ ...panel, display: "grid", gap: 5 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><strong style={{ color: "var(--ink)", fontSize: 12 }}>{run.case_code}</strong><strong style={{ color: statusColor[run.status], fontSize: 10 }}>{statusLabel[run.status] ?? run.status.toUpperCase()}</strong></div>
           <p style={{ margin: 0, color: "var(--ink)", fontSize: 12 }}>{run.summary}</p>
-          <span style={{ color: "var(--muted)", fontSize: 10 }}>{run.actor_email ?? "Homologador"} · {new Date(run.executed_at).toLocaleString("pt-BR")}</span>
+          <span style={{ color: "var(--muted)", fontSize: 10 }}>{run.actor_email ?? "Homologador"} · {formatDateTimePtBr(run.executed_at)}</span>
           {run.result?.observed && <p style={{ margin: 0, color: "var(--muted)", fontSize: 11 }}>Observado: {run.result.observed}</p>}
           {run.result?.evidenceRef && <p style={{ margin: 0, color: "var(--muted)", fontSize: 11 }}>Referência: {run.result.evidenceRef}</p>}
         </article>)}

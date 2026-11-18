@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { getCapabilityLicensingData, setCapabilityLicense } from "@/app/actions/capability-licenses";
+import { formatDateTimePtBr, toDateInputValue } from "@/lib/date-format";
 
 type CatalogItem = { capability_key: string; display_name: string; description: string };
 type Organization = { id: string; display_name: string; slug: string };
@@ -51,7 +52,7 @@ export function CapabilityLicensingPanel() {
       licenseStatus: existing?.license_status ?? "blocked",
       operationalStatus: existing?.operational_status ?? "not_implemented",
       entitledEnvironments: existing?.entitled_environments ?? [],
-      expiresAt: existing?.expires_at ? new Date(existing.expires_at).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : "",
+      expiresAt: existing?.expires_at ? toDateInputValue(existing.expires_at) : "",
       reason: ""
     };
   }
@@ -171,7 +172,7 @@ export function CapabilityLicensingPanel() {
               const cap = data.catalog.find((item) => item.capability_key === event.capability_key);
               return <div key={event.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", borderBottom: "1px solid var(--line)", padding: "7px 0", fontSize: 11 }}>
                 <span style={{ color: "var(--ink)" }}>{org?.display_name ?? "Organização"} · {cap?.display_name ?? event.capability_key} · {event.event_type}</span>
-                <span style={{ color: "var(--muted)" }}>{new Date(event.created_at).toLocaleString("pt-BR")}{event.reason ? " · " + event.reason : ""}</span>
+                <span style={{ color: "var(--muted)" }}>{formatDateTimePtBr(event.created_at)}{event.reason ? " · " + event.reason : ""}</span>
               </div>;
             }) : <p style={{ margin: 0, color: "var(--muted)", fontSize: 11 }}>Nenhuma decisão registrada ainda.</p>}
           </div>
