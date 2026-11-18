@@ -26,7 +26,7 @@ interface WorkspaceModalProps {
   companyLogoUrl: string;
   currentOrgId?: OrganizationId;
   currentOrgRealId?: string;
-  currentEnvironment?: "qa" | "sandbox" | "production";
+  currentEnvironment?: "qa" | "production";
   availableOrganizationSlugs?: string[];
   isSuperAdmin: boolean;
   /** Somente Platform Admin pode alterar a disponibilidade de capacidades. */
@@ -472,7 +472,10 @@ export function WorkspaceModal({
                     </span>
                   </div>
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: "10px", lineHeight: 1.45 }}>
-                    A situação abaixo reflete a licença desta organização para o ambiente {currentEnvironment.toUpperCase()}. Os indicadores são informativos; a gestão de licenças ocorre na governança da plataforma.
+                    A situação abaixo reflete a licença desta organização para o ambiente {selectedOrg.endsWith("_qa") ? "QA" : "PRODUÇÃO"}. Os indicadores são informativos; a gestão de licenças ocorre na governança da plataforma.
+                  </p>
+                  <p style={{ margin: 0, color: "var(--muted)", fontSize: "9px", lineHeight: 1.4 }}>
+                    O Sandbox é um laboratório interno isolado, acessado pela Central RSBUILD. Ele não é um workspace QA nem utiliza este catálogo de licenças diretamente.
                   </p>
                   {capabilityStatusesLoading ? (
                     <div role="status" style={{ padding: 14, border: "1px solid var(--line)", borderRadius: 8, color: "var(--muted)", fontSize: 11 }}>
@@ -492,9 +495,9 @@ export function WorkspaceModal({
                       ]).map((module) => {
                         const status = capabilityStatuses[module.key] ?? "blocked";
                         const available = status === "available";
-                        const inDevelopment = status === "in_development" || status === "not_implemented";
+                        const inDevelopment = status === "in_development" || status === "not_implemented" || status === "pending_activation";
                         const tone = available ? "#059669" : inDevelopment ? "#B7791F" : "var(--muted)";
-                        const label = available ? "DISPONÍVEL" : status === "in_development" ? "EM DESENVOLVIMENTO" : status === "not_implemented" ? "LIBERADO · NÃO IMPLEMENTADO" : status === "suspended" ? "SUSPENSO" : status === "revoked" ? "REVOGADO" : "AGUARDANDO LIBERAÇÃO";
+                        const label = available ? "DISPONÍVEL" : status === "in_development" ? "EM DESENVOLVIMENTO" : status === "not_implemented" ? "LIBERADO · NÃO IMPLEMENTADO" : status === "pending_activation" ? "AGUARDANDO ATIVAÇÃO" : status === "expired" ? "LICENÇA EXPIRADA" : status === "suspended" ? "SUSPENSO" : status === "revoked" ? "REVOGADO" : "AGUARDANDO LIBERAÇÃO";
                         return (
                           <article key={module.key} style={{
                             display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0,
