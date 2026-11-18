@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(9);
+select plan(11);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -54,12 +54,20 @@ select is(
   1, 'platform administrator can resolve tenant identity for licensing'
 );
 select lives_ok(
-  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','G01 authorized grant')$sql$,
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','G01 authorized grant',array['qa'],null)$sql$,
   'platform administrator can grant a capability through the audited RPC'
+);
+select throws_ok(
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','missing environment',array[]::text[],null)$sql$,
+  '22023', null, 'granted license without environment scope is rejected'
+);
+select throws_ok(
+  $sql$select public.set_organization_capability_license('d2222222-2222-4222-8222-222222222222','g01_test','granted','active','expired license',array['qa'],now() - interval '1 hour')$sql$,
+  '22023', null, 'expired license grant is rejected'
 );
 select is(
   (select count(*)::int from public.capability_license_events where organization_id='d2222222-2222-4222-8222-222222222222' and capability_key='g01_test'),
-  1, 'license mutation appends one audit event'
+  1, 'license mutation appends one audit event and rejected grants append none'
 );
 reset role;
 
