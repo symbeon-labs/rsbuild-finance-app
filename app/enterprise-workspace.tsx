@@ -829,6 +829,8 @@ export default function EnterpriseWorkspace({
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
+        currentOrgRealId={organizationId}
+        currentEnvironment={organizationSlug.endsWith("_qa") ? "qa" : "production"}
         isSuperAdmin={isSuperAdmin}
         enabledModules={enabledModules}
         brandColor={brandColor}
