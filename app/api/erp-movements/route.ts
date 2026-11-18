@@ -9,7 +9,7 @@ const MOVEMENT_DIRECTIONS = ["entrada", "saída"];
 
 export async function GET(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], "finance");
   if (!guard.ok) return guard.response;
   const { supabase } = guard.ctx;
 
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "finance");
   if (!guard.ok) return guard.response;
   const { supabase, userId, userEmail } = guard.ctx;
 

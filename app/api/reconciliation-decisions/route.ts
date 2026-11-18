@@ -8,7 +8,7 @@ const DECISION_TYPES = ["manual_match", "unmatch", "erp_match"];
 
 export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "reconciliation");
   if (!guard.ok) return guard.response;
   const { supabase, userId, userEmail } = guard.ctx;
 

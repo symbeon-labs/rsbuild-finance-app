@@ -337,7 +337,6 @@ export default function ControlTowerWorkspace({
           {section === "workspace" && (
             <HoldingWorkspaceManagementView
               organizationName={organizationName}
-              canManageCapabilities={organizationSlug === "rsbuild" && membershipRole === "owner"}
             />
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}

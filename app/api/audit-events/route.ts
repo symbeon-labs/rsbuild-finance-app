@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "invalid_cursor" }, { status: 400 });
   }
 
-  const guard = await requireOrgContext(request, organizationId);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], "audit");
   if (!guard.ok) return guard.response;
   const { supabase } = guard.ctx;
 

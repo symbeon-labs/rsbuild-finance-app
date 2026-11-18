@@ -10,7 +10,7 @@ const ORDER_STATUSES = ["rascunho", "confirmado", "enviado_omie"];
 
 export async function GET(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], "logistics");
   if (!guard.ok) return guard.response;
   const { supabase } = guard.ctx;
 
@@ -56,7 +56,7 @@ type OrderInput = {
 
 export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "logistics");
   if (!guard.ok) return guard.response;
   const { supabase, userId, userEmail } = guard.ctx;
 
