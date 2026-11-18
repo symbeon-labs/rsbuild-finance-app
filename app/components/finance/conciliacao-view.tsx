@@ -12,6 +12,7 @@ import {
   MatchResult
 } from "@/lib/finance";
 import { detectInternalTransfers } from "@/lib/internal-transfers";
+import { formatDatePtBr } from "@/lib/date-format";
 import {
   canPerformManualMatch,
   canApproveDiscrepantMatch,
@@ -297,13 +298,13 @@ export function ConciliacaoView({
                       <div style={{ padding: "10px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.04))" }}>
                         <div className="eyebrow">SAÍDA</div>
                         <strong style={{ display: "block", margin: "5px 0" }}>{formatCurrency(transfer.outgoing.amount)}</strong>
-                        <div style={{ fontSize: "11px", color: "var(--muted)" }}>{transfer.outgoing.date} · {outgoingAccount}</div>
+                        <div style={{ fontSize: "11px", color: "var(--muted)" }}>{formatDatePtBr(transfer.outgoing.date)} · {outgoingAccount}</div>
                         <div style={{ fontSize: "12px", marginTop: "6px" }}>{transfer.outgoing.description}</div>
                       </div>
                       <div style={{ padding: "10px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.04))" }}>
                         <div className="eyebrow">ENTRADA</div>
                         <strong style={{ display: "block", margin: "5px 0" }}>{formatCurrency(transfer.incoming.amount)}</strong>
-                        <div style={{ fontSize: "11px", color: "var(--muted)" }}>{transfer.incoming.date} · {incomingAccount}</div>
+                        <div style={{ fontSize: "11px", color: "var(--muted)" }}>{formatDatePtBr(transfer.incoming.date)} · {incomingAccount}</div>
                         <div style={{ fontSize: "12px", marginTop: "6px" }}>{transfer.incoming.description}</div>
                       </div>
                     </div>
@@ -354,7 +355,7 @@ export function ConciliacaoView({
               ) : (
                 matched.map((m, idx) => (
                   <tr key={idx}>
-                    <td>{m.bankRecord.date}</td>
+                    <td>{formatDatePtBr(m.bankRecord.date)}</td>
                     <td>{m.bankRecord.description}</td>
                     <td><strong>{formatCurrency(m.bankRecord.amount)}</strong></td>
                     <td>{m.omieRecord?.description || "-"}</td>
@@ -420,7 +421,7 @@ export function ConciliacaoView({
                           onChange={() => setSelectedBankId(record.id)}
                         />
                       </td>
-                      <td>{record.date}</td>
+                      <td>{formatDatePtBr(record.date)}</td>
                       <td style={{ fontSize: "11px" }}>{record.description}</td>
                       <td><strong>{formatCurrency(record.amount)}</strong></td>
                       <td>{record.bankName || "-"}</td>
@@ -464,7 +465,7 @@ export function ConciliacaoView({
                             onChange={() => setSelectedOmieId(record.id)}
                           />
                         </td>
-                        <td>{record.date}</td>
+                        <td>{formatDatePtBr(record.date)}</td>
                         <td style={{ fontSize: "11px" }}>{record.description}</td>
                         <td><strong>{formatCurrency(record.amount)}</strong></td>
                         <td>{record.documentNumber || "-"}</td>
