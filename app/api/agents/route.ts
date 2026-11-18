@@ -5,9 +5,9 @@ import { consumeRateLimit } from "@/lib/api/rate-limit";
 export const dynamic = "force-dynamic";
 
 /**
- * Agent Governance API — registro de agentes, escopo por organização
- * e fila HITL de propostas. Restrito a membros da organização RSBUILD
- * (o RLS das tabelas reforça o mesmo limite no banco).
+ * Agent Governance API — console técnico com registro, escopos e fila HITL.
+ * Restrito ao owner institucional RSBUILD. Administradores e operadores
+ * recebem apenas a visão institucional sanitizada no frontend.
  */
 export async function GET(request: Request) {
   try {
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       .eq("organizations.slug", "rsbuild")
       .maybeSingle();
 
-    if (membershipError || !membership || !["owner", "admin", "operator"].includes(membership.role)) {
+    if (membershipError || !membership || membership.role !== "owner") {
       return NextResponse.json({ error: "agents_forbidden" }, { status: 403 });
     }
 
