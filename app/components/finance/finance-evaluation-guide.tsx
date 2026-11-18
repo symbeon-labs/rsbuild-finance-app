@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { NavSection } from "@/app/types/workspace";
+import { formatDatePtBr, formatDateTimePtBr } from "@/lib/date-format";
 
 type GuideItem = { title: string; purpose: string; benefit: string; evidence: string[] };
 type Evaluation = {
@@ -83,7 +84,7 @@ export function FinanceEvaluationGuide({
   const sectionEntries = useMemo(() => entries.filter((entry) => entry.feature_key === section), [entries, section]);
   const latestSectionEntry = sectionEntries[0];
   const latestSectionDate = latestSectionEntry
-    ? new Date(latestSectionEntry.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+    ? formatDatePtBr(latestSectionEntry.created_at)
     : null;
   if (!item) return null;
 
@@ -182,7 +183,7 @@ export function FinanceEvaluationGuide({
             {sectionEntries.map((entry) => <article key={entry.id}>
               <div className="qa-history-meta">
                 <b>{entry.assessment}</b>
-                <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString("pt-BR")}</time>
+                <time dateTime={entry.created_at}>{formatDateTimePtBr(entry.created_at)}</time>
                 <span className="qa-history-id" title={entry.id}>ID {entry.id.slice(0, 8)}…</span>
                 <button type="button" onClick={() => void navigator.clipboard.writeText(entry.id)} aria-label="Copiar identificador da avaliação">Copiar ID</button>
               </div>
