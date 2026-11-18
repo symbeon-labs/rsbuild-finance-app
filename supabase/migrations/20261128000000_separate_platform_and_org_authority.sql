@@ -50,6 +50,27 @@ create policy "Platform administrators read organization directory"
   on public.organizations for select to authenticated
   using ((select public.is_platform_administrator()));
 
+
+
+-- Scope every license explicitly to environments and an optional validity window.
+alter table public.organization_capability_licenses
+  add column if not exists entitled_environments text[] not null default '{}'::text[],
+  add column if not exists expires_at timestamptz;
+
+do $
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.organization_capability_licenses'::regclass
+      and conname = 'organization_capability_licenses_environment_scope_check'
+  ) then
+    alter table public.organization_capability_licenses
+      add constraint organization_capability_licenses_environment_scope_check
+      check (entitled_environments <@ array['qa','sandbox','production']::text[]);
+  end if;
+end;
+$;
+
 -- Link each synthetic sandbox organization to its real tenant identity.
 -- This is metadata only; it does not copy production data into Sandbox.
 alter table sandbox.organizations
@@ -151,28 +172,7 @@ end;
 $;
 
 revoke all on function public.has_sandbox_capability_entitlements(uuid, text[]) from public, anon;
-grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;
-
--- Scope every license explicitly to environments and an optional validity window.
-alter table public.organization_capability_licenses
-  add column if not exists entitled_environments text[] not null default '{}'::text[],
-  add column if not exists expires_at timestamptz;
-
-do $
-begin
-  if not exists (
-    select 1 from pg_constraint
-    where conrelid = 'public.organization_capability_licenses'::regclass
-      and conname = 'organization_capability_licenses_environment_scope_check'
-  ) then
-    alter table public.organization_capability_licenses
-      add constraint organization_capability_licenses_environment_scope_check
-      check (entitled_environments <@ array['qa','sandbox','production']::text[]);
-  end if;
-end;
-$;
-
--- Remove organization-owner authority over platform-wide licensing.
+grant execute on function public.has_sandbox_capability_entitlements(uuid, text[]) to authenticated;\n\n-- Remove organization-owner authority over platform-wide licensing.
 drop policy if exists "RSBUILD owners manage capability licenses" on public.organization_capability_licenses;
 drop policy if exists "RSBUILD owners read all capability licenses" on public.organization_capability_licenses;
 drop policy if exists "RSBUILD owners read capability license events" on public.capability_license_events;
