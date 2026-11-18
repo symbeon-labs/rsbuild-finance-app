@@ -72,9 +72,9 @@ export function WorkspaceModal({
       setActiveModulesState(enabledModules);
       setCurrentColor(brandColor);
       setShowTenantSelector(false); // Garante que começa recolhido para reuniões
-      setActiveTab("marca");
+      setActiveTab(canManageModules ? "marca" : "modulos");
     }
-  }, [isOpen, currentOrgId, companyName, enabledModules, brandColor]);
+  }, [isOpen, currentOrgId, companyName, enabledModules, brandColor, canManageModules]);
 
   useEffect(() => {
     let active = true;
@@ -153,7 +153,7 @@ export function WorkspaceModal({
             flexShrink: 0
           }}
         >
-          <button
+          {canManageModules && <button
             type="button"
             onClick={() => setActiveTab("marca")}
             style={{
@@ -169,7 +169,7 @@ export function WorkspaceModal({
             }}
           >
             <RsbuildIcon name="users" size={15} tone={activeTab === "marca" ? "accent" : "secondary"} /> Identidade & Marca
-          </button>
+          </button>}
           <button
             type="button"
             onClick={() => setActiveTab("modulos")}
@@ -253,13 +253,17 @@ export function WorkspaceModal({
               return;
             }
 
-            onSave(targetName, targetLogo, nextModules, selectedOrg, currentColor);
+            if (canManageModules) {
+              onSave(targetName, targetLogo, nextModules, selectedOrg, currentColor);
+            } else {
+              onClose();
+            }
           }}
           style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
         >
           {/* Conteúdo com Scroll Próprio */}
           <div style={{ flex: 1, overflowY: "auto", paddingRight: "4px", display: "grid", gap: "14px", alignContent: "start" }}>
-            {activeTab === "marca" && (
+            {activeTab === "marca" && canManageModules && (
               <>
                 <label className="login-field" style={{ fontSize: "11px" }}>
                   <span>NOME DA EMPRESA OU WORKSPACE</span>
@@ -614,13 +618,13 @@ export function WorkspaceModal({
               >
                 Cancelar
               </button>
-              <button
+              {canManageModules && <button
                 type="submit"
                 className="primary-button"
                 style={{ padding: "8px 20px", fontSize: "12px", fontWeight: 700 }}
               >
                 Salvar Alterações
-              </button>
+              </button>}
             </div>
           </div>
         </form>
