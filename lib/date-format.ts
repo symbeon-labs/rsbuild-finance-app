@@ -54,3 +54,20 @@ export function todayIsoDateSaoPaulo(now: Date = new Date()): string {
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
 }
+
+/** Converte valor de data para input[type=date], preservando datas-calendário. */
+export function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return "";
+  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+    const formatted = formatDatePtBr(value);
+    return formatted === value ? "" : value;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    timeZone: SAO_PAULO_TIME_ZONE,
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
