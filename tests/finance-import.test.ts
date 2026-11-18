@@ -1,6 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
+import { decodeImportText, parseCsv, parseOfx, formatCurrency, formatDate, identifyBank, generateOmieOfx, encodeWindows1252, filterRecordsByPeriod, filterRecordsByPeriodOption } from "../lib/finance";
+
+test("decodifica CSV/OFX em UTF-8, Windows-1252 e UTF-16 com BOM", () => {
+  const utf8 = new TextEncoder().encode("Descrição;Valor\\nAção;10,00");
+  assert.match(decodeImportText(utf8), /Ação/);
+
+  const windows1252 = new Uint8Array([68,101,115,99,114,105,231,227,111,59,86,97,108,111,114,10,65,231,227,111,59,49,48,44,48,48]);
+  assert.match(decodeImportText(windows1252), /Descrição;Valor/);
+  assert.match(decodeImportText(windows1252), /Ação/);
+
+  const utf16 = new Uint8Array([0xff, 0xfe, 68, 0, 97, 0, 116, 0, 97, 0]);
+  assert.equal(decodeImportText(utf16), "Data");
+});
 
 const csv = [
   "Data;Descrição;Valor;Tipo;Categoria",
