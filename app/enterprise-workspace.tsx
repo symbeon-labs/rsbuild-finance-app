@@ -816,7 +816,7 @@ export default function EnterpriseWorkspace({
             </div>
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
-          {section === "visao-geral" && (
+          {modulesResolved && enabledModules.finance && section === "visao-geral" && (
             <VisaoGeralView
               records={filteredRecords}
               totals={totals}
@@ -824,7 +824,7 @@ export default function EnterpriseWorkspace({
               onOpenImport={() => inputRef.current?.click()}
             />
           )}
-          {section === "torre-controle" && (
+          {modulesResolved && enabledModules.audit && section === "torre-controle" && (
             <TorreControleView
               companyName={companyName}
               isDirector={isSuperAdmin}
@@ -842,14 +842,14 @@ export default function EnterpriseWorkspace({
               onNavigateToTab={navigateTo}
             />
           )}
-          {section === "movimentacoes" && (
+          {modulesResolved && enabledModules.finance && section === "movimentacoes" && (
             <MovimentacoesView
               records={filteredRecords}
               onOpenImport={() => inputRef.current?.click()}
               onExportOmie={handleExportOmie}
             />
           )}
-          {section === "importacoes" && (
+          {modulesResolved && enabledModules.finance && section === "importacoes" && (
             <ImportacoesView
               fileName={fileName}
               pendingImport={pendingImport}
@@ -862,7 +862,7 @@ export default function EnterpriseWorkspace({
               onConfirmImport={confirmImport}
             />
           )}
-          {section === "conciliacao" && (
+          {modulesResolved && enabledModules.reconciliation && section === "conciliacao" && (
             <ConciliacaoView
               bankRecords={filteredRecords}
               omieRecords={omieRecords}
@@ -872,7 +872,7 @@ export default function EnterpriseWorkspace({
               onImportOmieRecords={setOmieRecords}
             />
           )}
-          {section === "baixas" && (
+          {modulesResolved && enabledModules.reconciliation && section === "baixas" && (
             <BaixasView
               titles={titles}
               matches={matches}
@@ -883,7 +883,7 @@ export default function EnterpriseWorkspace({
               onExportBatchSettlement={handleExportBatchSettlement}
             />
           )}
-          {section === "canhotos" && (
+          {modulesResolved && enabledModules.logistics && section === "canhotos" && (
             <CanhotosView
               proofs={proofs}
               deliveryMetrics={deliveryMetrics}
@@ -893,7 +893,7 @@ export default function EnterpriseWorkspace({
               onConfirmReceipt={handleConfirmReceipt}
             />
           )}
-          {section === "pedidos-ha" && (
+          {modulesResolved && enabledModules.logistics && section === "pedidos-ha" && (
             <PedidosHaView
               orders={orders}
               hubAcaiMetrics={hubAcaiMetrics}
@@ -917,7 +917,7 @@ export default function EnterpriseWorkspace({
               }
             />
           )}
-          {section === "relatorios" && <RelatoriosDreView />}
+          {modulesResolved && enabledModules.finance && section === "relatorios" && <RelatoriosDreView />}
         </div>
       </section>
       <input
