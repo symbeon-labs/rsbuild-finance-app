@@ -55,7 +55,7 @@ begin
     or p_file_sha256 is null or length(p_file_sha256) <> 64
     or translate(p_file_sha256, '0123456789abcdef', '') <> ''
     or p_file_size_bytes is null or p_file_size_bytes < 1 or p_file_size_bytes > 10485760
-    or p_media_type not in ('text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    or p_media_type is null or p_media_type not in ('text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     or p_parser_version is null or length(p_parser_version) not between 1 and 40
     or p_parsed_count is null or p_parsed_count < 1 or p_parsed_count > 5000
     or p_rejected_count is null or p_rejected_count < 0
