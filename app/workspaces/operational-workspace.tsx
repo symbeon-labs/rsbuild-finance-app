@@ -45,7 +45,7 @@ import {
   orgHasExecutiveTower
 } from "@/app/types/workspace";
 import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
-import { applyBrandColor } from "@/app/lib/brand-color";
+import { applyBrandColor, deriveBrandTokens } from "@/app/lib/brand-color";
 import { MODULE_CONFIGS, Sidebar } from "@/app/components/shell/sidebar";
 import { RsbuildIcon } from "@/app/components/rsbuild-icons";
 import { Topbar } from "@/app/components/shell/topbar";
@@ -342,10 +342,18 @@ export default function OperationalWorkspace({
 
       {
         const savedBrandColor = localStorage.getItem(`rsbuild_workspace_brand_color_${organizationId}`);
-        const colorToApply = savedBrandColor || organizationPreset?.brandColor || "#B5583C";
-        setBrandColor(colorToApply);
-        applyBrandColor(colorToApply);
+        const fallbackColor = savedBrandColor || organizationPreset?.brandColor || "#B5583C";
+        setBrandColor(fallbackColor);
+        applyBrandColor(fallbackColor);
       }
+      fetch(`/api/organization-branding?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : null)
+        .then((branding) => {
+          if (!branding?.brandColor) return;
+          setBrandColor(branding.brandColor);
+          applyBrandColor(branding.brandColor);
+        })
+        .catch(() => {});
 
       const savedPeriod = localStorage.getItem(`rsbuild_period_option_${organizationId}`) as PeriodOption | null;
       if (savedPeriod) setPeriod(savedPeriod);
@@ -375,6 +383,12 @@ export default function OperationalWorkspace({
       try {
         localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
+      const { main, hover, soft } = deriveBrandTokens(colorToApply);
+      fetch("/api/organization-branding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId, brandColor: main, brandColorHover: hover, brandColorSoft: soft })
+      }).catch(() => {});
     }
     if (modules) {
       setEnabledModules(modules);
