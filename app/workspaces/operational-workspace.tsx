@@ -403,6 +403,7 @@ export default function OperationalWorkspace({
     orgId?: OrganizationId,
     newBrandColor?: string
   ) {
+    void modules; // Módulos são controlados exclusivamente pelo licenciamento no servidor.
     setCompanyName(name);
     setCompanyLogoUrl(logo);
     if (orgId) {
