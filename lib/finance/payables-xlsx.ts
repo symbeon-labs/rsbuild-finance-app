@@ -89,7 +89,7 @@ function isDateNumberFormat(formatCode: string): boolean {
   const normalized = formatCode
     .replace(/"(?:[^"]|"")*"/g, "")
     .replace(/\\./g, "")
-    .replace(/_.|\\*./g, "")
+    .replace(/_.|\*./g, "")
     .replace(/\[[^\]]*\]/g, "")
     .toLowerCase()
     .replace(/am\/pm/g, "");
