@@ -1,10 +1,6 @@
 -- F03 — Atomic receivables settlement confirmation.
 -- The settlement row and receivable title state transition must commit or roll back together.
 
-create unique index if not exists settlements_org_source_record_id_uidx
-  on public.settlements (organization_id, source_record_id)
-  where source_record_id is not null and btrim(source_record_id) <> '';
-
 create or replace function public.confirm_receivable_settlements(
   p_organization_id uuid,
   p_settlements jsonb
@@ -30,7 +26,8 @@ begin
   end if;
 
   if p_organization_id is null
-     or jsonb_typeof(p_settlements) <> 'array'
+     or p_settlements is null
+     or jsonb_typeof(p_settlements) is distinct from 'array'
      or jsonb_array_length(p_settlements) = 0
      or jsonb_array_length(p_settlements) > 500 then
     raise exception 'invalid_settlements_payload' using errcode = '22023';
