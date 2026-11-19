@@ -55,3 +55,12 @@ test("preview exige fornecedor, documento, vencimento e valor no cabeçalho", ()
   assert.equal(result.rows.length, 0);
   assert.equal(result.errors[0].code, "invalid_columns");
 });
+
+test("preview preserva o número físico da linha após linhas vazias", () => {
+  const result = previewPayablesCsv([
+    "Fornecedor;Documento;Vencimento;Valor",
+    "",
+    "Fornecedor A;NF-1;01/12/2026;10,00"
+  ].join("\\n"));
+  assert.equal(result.rows[0].rowNumber, 3);
+});
