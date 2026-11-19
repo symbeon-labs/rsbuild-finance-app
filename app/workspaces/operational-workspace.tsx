@@ -94,6 +94,7 @@ type OperationalWorkspaceProps = {
   userFullName?: string;
   userRoleTitle?: string;
   preferredTheme?: "sand" | "dark";
+  enabledModules: EnabledModulesConfig;
 };
 
 const OPERATIONAL_NAV_SECTIONS: NavSection[] = [
@@ -121,7 +122,8 @@ export default function OperationalWorkspace({
   isDeveloperAuthorized = false,
   userFullName,
   userRoleTitle,
-  preferredTheme
+  preferredTheme,
+  enabledModules: licensedModules
 }: OperationalWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -139,16 +141,25 @@ export default function OperationalWorkspace({
   );
 
   useEffect(() => {
-    const nextSection: NavSection =
+    const requestedSection: NavSection =
       urlTab && OPERATIONAL_NAV_SECTIONS.includes(urlTab) ? urlTab : "workspace";
+    const requestedModule = getOperationalModuleForSection(requestedSection, organizationSlug);
+    const nextSection = requestedSection !== "workspace" && !licensedModules[requestedModule]
+      ? "workspace"
+      : requestedSection;
     setSection(nextSection);
     setActiveModule(getOperationalModuleForSection(nextSection, organizationSlug));
-    if (!urlTab || !OPERATIONAL_NAV_SECTIONS.includes(urlTab)) {
-      router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
+    if (!urlTab || !OPERATIONAL_NAV_SECTIONS.includes(urlTab) || nextSection !== requestedSection) {
+      router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=${nextSection}`, { scroll: false });
     }
-  }, [urlTab, organizationSlug, organizationId, router]);
+  }, [urlTab, organizationSlug, organizationId, router, licensedModules]);
 
   function navigateTo(nextSection: NavSection) {
+    const requestedModule = getOperationalModuleForSection(nextSection, organizationSlug);
+    if (nextSection !== "workspace" && !licensedModules[requestedModule]) {
+      setNotice("Este módulo não está licenciado ou ativo para este ambiente.");
+      return;
+    }
     setSection(nextSection);
     if (nextSection !== "visao-geral") {
       setActiveModule(getOperationalModuleForSection(nextSection, organizationSlug));
@@ -216,9 +227,8 @@ export default function OperationalWorkspace({
   const [brandColor, setBrandColor] = useState<string>("#B5583C");
 
   const organizationPreset = ORGANIZATION_PRESETS.find((preset) => preset.id === currentOrgId);
-  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>(
-    organizationPreset?.enabledModules ?? { finance: true, reconciliation: false, logistics: false, audit: false }
-  );
+  // Disponibilidade vem do servidor/banco; presets e localStorage nunca concedem módulos.
+  const enabledModules = licensedModules;
 
   const [titles, setTitles] = useState<ReceivableTitle[]>([]);
   const [proofs, setProofs] = useState<DeliveryProof[]>([]);
@@ -322,16 +332,6 @@ export default function OperationalWorkspace({
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
       const savedLogo = localStorage.getItem(`rsbuild_workspace_logo_${organizationId}`);
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
-      if (savedModules) {
-        const parsed = JSON.parse(savedModules);
-        setEnabledModules({
-          finance: parsed.finance !== false,
-          reconciliation: parsed.reconciliation !== false,
-          logistics: parsed.logistics !== false,
-          audit: parsed.audit !== false
-        });
-      }
       const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "sand") {
         setTheme(savedTheme);
@@ -359,7 +359,7 @@ export default function OperationalWorkspace({
   function handleSaveCompanyConfig(
     name: string,
     logo: string,
-    modules?: EnabledModulesConfig,
+    _modules?: EnabledModulesConfig,
     orgId?: OrganizationId,
     newBrandColor?: string
   ) {
@@ -374,17 +374,7 @@ export default function OperationalWorkspace({
         localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
     }
-    if (modules) {
-      setEnabledModules(modules);
-      try {
-        localStorage.setItem(`rsbuild_workspace_modules_${organizationId}`, JSON.stringify(modules));
-      } catch {}
-      if (!modules.finance && modules.logistics && activeModule === "finance") {
-        navigateTo("pedidos-ha");
-      } else if (!modules.logistics && modules.finance && activeModule === "logistics") {
-        navigateTo("visao-geral");
-      }
-    }
+    // Módulos são administrados exclusivamente pela licença da organização no servidor.
     try {
       if (logo) {
         localStorage.setItem(`rsbuild_workspace_logo_${organizationId}`, logo);
