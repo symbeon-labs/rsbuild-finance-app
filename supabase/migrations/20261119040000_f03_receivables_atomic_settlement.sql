@@ -53,8 +53,51 @@ begin
       raise exception 'invalid_settlement_item' using errcode = '22023';
     end;
 
-    if v_amount_minor <= 0 then
-      raise exception 'invalid_settlement_amount' using errcode = '22023';
+    if v_amount_minor is null or v_amount_minor <= 0 or v_settlement_date is null
+       or coalesce(v_item ->> 'settlementDate', '') !~ '^\\d{4}-\\d{2}-\\d{2}
+
+    select *
+      into v_title
+    from public.receivable_titles
+    where id = v_title_id
+      and organization_id = p_organization_id
+    for update;
+
+    if not found then
+      raise exception 'receivable_title_not_found' using errcode = 'P0002';
+    end if;
+
+    if v_title.status <> 'pendente' then
+      raise exception 'receivable_title_not_pending' using errcode = '55000';
+    end if;
+
+    v_source_record_id := nullif(left(btrim(coalesce(v_item ->> 'sourceRecordId', '')), 120), '');
+    v_observation := nullif(left(coalesce(v_item ->> 'observation', ''), 2000), '');
+
+    insert into public.settlements (
+      organization_id, receivable_title_id, document_number, customer_name,
+      amount_minor, settlement_date, source_record_id, observation, status, created_by
+    ) values (
+      p_organization_id, v_title.id, v_title.document_number, v_title.customer_name,
+      v_amount_minor, v_settlement_date, v_source_record_id, v_observation, 'confirmada', v_actor_id
+    );
+
+    update public.receivable_titles
+       set status = 'baixado', updated_at = now()
+     where id = v_title.id
+       and organization_id = p_organization_id;
+
+    v_inserted := v_inserted + 1;
+  end loop;
+
+  return jsonb_build_object('insertedCount', v_inserted);
+end;
+$function$;
+
+revoke all on function public.confirm_receivable_settlements(uuid, jsonb) from public, anon;
+grant execute on function public.confirm_receivable_settlements(uuid, jsonb) to authenticated;
+ then
+      raise exception 'invalid_settlement_amount_or_date' using errcode = '22023';
     end if;
 
     select *
