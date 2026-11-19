@@ -197,7 +197,7 @@ test("GOV-09: rotas institucionais compartilhadas não exigem licença comercial
     finance: false, reconciliation: false, logistics: false, audit: false
   };
   assert.equal(canAccessWorkspaceSection("workspace", noCommercialModules), true);
-  assert.equal(canAccessWorkspaceSection("visao-geral", noCommercialModules), true);
+  assert.equal(canAccessWorkspaceSection("visao-geral", noCommercialModules), false);
   assert.equal(canAccessWorkspaceSection("sandbox", noCommercialModules), true);
   assert.equal(getRequiredModuleForSection("baixas"), "reconciliation");
   assert.equal(getRequiredModuleForSection("pedidos-ha"), "logistics");
