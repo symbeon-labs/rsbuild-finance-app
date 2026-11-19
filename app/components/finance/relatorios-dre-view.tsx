@@ -13,12 +13,18 @@ export function RelatoriosDreView({ records, isLoading = false }: RelatoriosDreV
   const [showRecords, setShowRecords] = useState(false);
   const [direction, setDirection] = useState<"all" | "entrada" | "saída">("all");
 
+  // OFX can contain daily available-balance snapshots; these are not transactions.
+  const movementRecords = useMemo(
+    () => records.filter((r) => !/\\bSALDO (?:TOTAL )?DISPON[IÍ]VEL DIA\\b|\\bSALDO (?:ANTERIOR|INICIAL|DE ABERTURA)\\b/i.test(r.description.normalize("NFD").replace(/[\\u0300-\\u036f]/g, ""))),
+    [records]
+  );
+
   const summary = useMemo(() => {
-    const incoming = records.filter((r) => r.direction === "entrada").reduce((sum, r) => sum + r.amount, 0);
-    const outgoing = records.filter((r) => r.direction === "saída").reduce((sum, r) => sum + r.amount, 0);
+    const incoming = movementRecords.filter((r) => r.direction === "entrada").reduce((sum, r) => sum + r.amount, 0);
+    const outgoing = movementRecords.filter((r) => r.direction === "saída").reduce((sum, r) => sum + r.amount, 0);
     const dates = records.map((r) => r.date).sort();
     const byDate = new Map<string, { incoming: number; outgoing: number; count: number }>();
-    for (const record of records) {
+    for (const record of movementRecords) {
       const day = byDate.get(record.date) ?? { incoming: 0, outgoing: 0, count: 0 };
       if (record.direction === "entrada") day.incoming += record.amount;
       else day.outgoing += record.amount;
@@ -26,11 +32,11 @@ export function RelatoriosDreView({ records, isLoading = false }: RelatoriosDreV
       byDate.set(record.date, day);
     }
     return { incoming, outgoing, net: incoming - outgoing, dates, byDate: [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)) };
-  }, [records]);
+  }, [movementRecords]);
 
   const visibleRecords = useMemo(
-    () => [...records].filter((r) => direction === "all" || r.direction === direction).sort((a, b) => b.date.localeCompare(a.date)),
-    [records, direction]
+    () => [...movementRecords].filter((r) => direction === "all" || r.direction === direction).sort((a, b) => b.date.localeCompare(a.date)),
+    [movementRecords, direction]
   );
 
   const dateLabel = summary.dates.length
@@ -51,7 +57,7 @@ export function RelatoriosDreView({ records, isLoading = false }: RelatoriosDreV
         <div className="panel-heading">
           <div>
             <h2>Consolidação do período</h2>
-            <p>{dateLabel} · valores em BRL · {records.length} lançamentos</p>
+            <p>{dateLabel} · valores em BRL · {movementRecords.length} movimentos válidos</p>
           </div>
           <span className="subtle-tag">QA · CAIXA</span>
         </div>
@@ -59,13 +65,19 @@ export function RelatoriosDreView({ records, isLoading = false }: RelatoriosDreV
           <p>Não há movimentos financeiros persistidos para esta organização.</p>
         ) : (
           <div className="metric-grid">
-            <Metric label="Entradas" value={formatCurrency(summary.incoming)} tone="positive" detail={`${records.filter(r => r.direction === "entrada").length} lançamentos`} icon="↙" />
-            <Metric label="Saídas" value={formatCurrency(summary.outgoing)} tone="negative" detail={`${records.filter(r => r.direction === "saída").length} lançamentos`} icon="↗" />
+            <Metric label="Entradas" value={formatCurrency(summary.incoming)} tone="positive" detail={`${movementRecords.filter(r => r.direction === "entrada").length} lançamentos`} icon="↙" />
+            <Metric label="Saídas" value={formatCurrency(summary.outgoing)} tone="negative" detail={`${movementRecords.filter(r => r.direction === "saída").length} lançamentos`} icon="↗" />
             <Metric label="Resultado líquido de caixa" value={formatCurrency(summary.net)} tone="neutral" detail="Entradas menos saídas" icon="＝" />
             <Metric label="Movimentos" value={String(records.length)} tone="neutral" detail="Registros persistidos no Supabase" icon="▤" />
           </div>
         )}
       </section>
+
+      {records.length !== movementRecords.length && (
+        <div className="inline-note" role="note" style={{ marginBottom: 16 }}>
+          {records.length - movementRecords.length} registro(s) de saldo diário foram excluídos dos cálculos por não representarem movimentações bancárias.
+        </div>
+      )}
 
       <section className="panel" style={{ marginBottom: 18 }}>
         <div className="panel-heading">
