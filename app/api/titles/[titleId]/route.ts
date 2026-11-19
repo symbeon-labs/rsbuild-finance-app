@@ -11,7 +11,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ title
   if (!UUID.test(titleId)) return NextResponse.json({ error: "invalid_title" }, { status: 400 });
 
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"]);
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "finance");
   if (!guard.ok) return guard.response;
   const { supabase, userId, userEmail } = guard.ctx;
 
@@ -19,7 +19,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ title
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "invalid_json" }, { status: 400 }); }
 
-  if (!["pendente", "baixado", "cancelado"].includes(String(body?.status))) {
+  if (!["pendente", "cancelado"].includes(String(body?.status))) {
     return NextResponse.json({ error: "invalid_status" }, { status: 400 });
   }
 
