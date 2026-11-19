@@ -31,7 +31,7 @@ function zipStored(files: Record<string, string>): Buffer {
   return Buffer.concat([...locals, centralBytes, end]);
 }
 
-function workbookFixture(): Buffer {
+function workbookFixture(date1904 = false): Buffer {
   const shared = ["Fornecedor", "Documento", "Vencimento", "Valor", "Distribuidora A", "NF-2026-01"];
   const sharedXml = `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${shared.map((value) => `<si><t>${value}</t></si>`).join("")}</sst>`;
   const workbook = `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><workbookPr date1904="${date1904 ? 1 : 0}"/><sheets><sheet name="Abertos" sheetId="1" r:id="rId1"/><sheet name="Pagos" sheetId="2" r:id="rId2"/></sheets></workbook>`;
