@@ -129,8 +129,12 @@ export function previewPayablesXlsx(bytes: Uint8Array, requestedSheetName?: stri
   }
   const sheets = [...workbook.matchAll(/<sheet\b([^>]*)\/?\s*>/g)].map((match) => {
     const attrs = match[1] ?? "";
-    return { name: xmlText(attr(attrs, "name") ?? ""), path: relationshipTargets.get(attr(attrs, "r:id") ?? "") ?? "" };
-  }).filter((sheet) => sheet.name && sheet.path && files.has(sheet.path));
+    return {
+      name: xmlText(attr(attrs, "name") ?? ""),
+      state: attr(attrs, "state") ?? "visible",
+      path: relationshipTargets.get(attr(attrs, "r:id") ?? "") ?? ""
+    };
+  }).filter((sheet) => sheet.name && sheet.path && files.has(sheet.path) && sheet.state === "visible");
   if (!sheets.length) throw new Error("O XLSX não contém planilhas legíveis.");
   const availableSheets = sheets.map((sheet) => sheet.name);
   const selected = requestedSheetName ? sheets.find((sheet) => sheet.name === requestedSheetName) : sheets[0];
