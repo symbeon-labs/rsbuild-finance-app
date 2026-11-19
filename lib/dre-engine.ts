@@ -97,9 +97,11 @@ const rateioFor = (code:string):Array<[DreUnit,number]> | null => {
   if(override) {
     const account=accountByCode.get(override.accountCode);
     if(!account) throw new Error("Código de rubrica manual desconhecido.");
-    const shares=override.unit?[[override.unit,100] as [DreUnit,number]]:rateioFor(account.code);
-    if(!shares) throw new Error("Informe a unidade ou uma regra de rateio documentada.");
-    return {recordId:record.id,account,confidence:1,status:"overridden",reason:override.reason,source:"manual",allocations:allocate(amountMinor,shares)};
+    const shares=account.treatment==="pnl"
+      ? (override.unit?[[override.unit,100] as [DreUnit,number]]:rateioFor(account.code))
+      : null;
+    if(account.treatment==="pnl"&&!shares) throw new Error("Informe a unidade ou uma regra de rateio documentada.");
+    return {recordId:record.id,account,confidence:1,status:account.treatment==="ignore"?"excluded":"overridden",reason:override.reason,source:"manual",allocations:shares?allocate(amountMinor,shares):[]};
   }
   const text=normalize(record.description||"");
   const candidates=rules.filter(r=>r.terms.some(term=>text.includes(normalize(term))) && accountByCode.get(r.code)?.directions.includes(record.direction));
