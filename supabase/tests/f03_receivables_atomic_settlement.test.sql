@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(9);
+select plan(12);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -30,7 +30,8 @@ insert into public.receivable_titles (
 ) values
   ('99999999-9999-4999-8999-999999999981','88888888-8888-4888-8888-888888888881','F03-OK','Cliente F03',10000,'2026-12-01','pendente','77777777-7777-4777-8777-777777777771'),
   ('99999999-9999-4999-8999-999999999982','88888888-8888-4888-8888-888888888881','F03-ROLLBACK','Cliente F03',20000,'2026-12-02','pendente','77777777-7777-4777-8777-777777777771'),
-  ('99999999-9999-4999-8999-999999999983','88888888-8888-4888-8888-888888888882','F03-OTHER-TENANT','Outro Cliente',30000,'2026-12-03','pendente','77777777-7777-4777-8777-777777777771');
+  ('99999999-9999-4999-8999-999999999983','88888888-8888-4888-8888-888888888882','F03-OTHER-TENANT','Outro Cliente',30000,'2026-12-03','pendente','77777777-7777-4777-8777-777777777771'),
+  ('99999999-9999-4999-8999-999999999984','88888888-8888-4888-8888-888888888881','F03-DIFFERENCE','Cliente F03',20000,'2026-12-04','pendente','77777777-7777-4777-8777-777777777771');
 
 reset role;
 set local role authenticated;
@@ -51,15 +52,24 @@ select is(
   'confirmed settlement changes title state durably'
 );
 
-select throws_ok(
-  $select public.confirm_receivable_settlements(
+select lives_ok(
+  $$select public.confirm_receivable_settlements(
     '88888888-8888-4888-8888-888888888881',
-    '[{"receivableTitleId":"99999999-9999-4999-8999-999999999982","amountMinor":19999,"settlementDate":"2026-11-19"}]'::jsonb
-  )$,
-  '22023',
-  null,
-  'partial or mismatched amount cannot mark a full title as paid'
+    '[{"receivableTitleId":"99999999-9999-4999-8999-999999999984","amountMinor":19999,"settlementDate":"2026-11-19","observation":"Valor original: R$ 200,00; juros: R$ 0,00; desconto: R$ 0,01"}]'::jsonb
+  )$$,
+  'documentary settlement variance is accepted when represented in the observation'
 );
+select is(
+  (select amount_minor from public.settlements where receivable_title_id='99999999-9999-4999-8999-999999999984'),
+  19999::bigint,
+  'the actually received amount is persisted'
+);
+select is(
+  (select observation from public.settlements where receivable_title_id='99999999-9999-4999-8999-999999999984'),
+  'Valor original: R$ 200,00; juros: R$ 0,00; desconto: R$ 0,01',
+  'original amount, interest and discount context is preserved'
+);
+
 select is(
   (select count(*)::integer from public.settlements where receivable_title_id='99999999-9999-4999-8999-999999999981'),
   1,
