@@ -16,8 +16,8 @@ export type DreOverride = { accountCode: string; unit?: DreUnit; treatment?: Dre
 export type DreEngineResult = {
   classifications: DreClassification[];
   summary: { total: number; classified: number; review: number; excluded: number; pnl: number; balanceSheet: number; financing: number; equity: number; receivable: number; };
-  pnl: Array<{ account: DreAccount; amountMinor: number; count: number }>;
-  monthly: Array<{ month: string; incomeMinor: number; expenseMinor: number; resultMinor: number; count: number }>;
+  pnl: Array<{ account: DreAccount; unit: DreUnit; amountMinor: number; count: number }>;
+  monthly: Array<{ month: string; unit: DreUnit; incomeMinor: number; expenseMinor: number; resultMinor: number; count: number }>;
 };
 
 const accounts: DreAccount[] = [
@@ -113,3 +113,40 @@ const rateioFor = (code:string):Array<[DreUnit,number]> | null => {
   const reason=canSuggest?winner.reason:`${winner.reason} Unidade/rateio não determinado; exige revisão humana.`;
   return {recordId:record.id,account,confidence:winner.confidence,status:canSuggest?"suggested":"review",reason,source:"rule",allocations:canSuggest?allocate(amountMinor,shares!):[]};
 }
+
+
+export function runDreEngine(records:FinancialRecord[], overrides:Record<string,DreOverride>={}):DreEngineResult {
+  const classifications=records.map(r=>classify(r,overrides[r.id]));
+  const summary={total:records.length,classified:0,review:0,excluded:0,pnl:0,balanceSheet:0,financing:0,equity:0,receivable:0};
+  const grouped=new Map<string,{account:DreAccount;unit:DreUnit;amountMinor:number;count:number}>();
+  const months=new Map<string,{month:string;unit:DreUnit;incomeMinor:number;expenseMinor:number;resultMinor:number;count:number}>();
+  for(let i=0;i<records.length;i++){
+    const classification=classifications[i], record=records[i];
+    if(classification.status==="review"||!classification.account){summary.review++;continue;}
+    if(classification.status==="excluded"){summary.excluded++;continue;}
+    summary.classified++;
+    const treatment=classification.account.treatment;
+    if(treatment==="pnl")summary.pnl++;
+    else if(treatment==="balance_sheet")summary.balanceSheet++;
+    else if(treatment==="financing")summary.financing++;
+    else if(treatment==="equity")summary.equity++;
+    else if(treatment==="receivable")summary.receivable++;
+    if(treatment!=="pnl")continue;
+    for(const allocation of classification.allocations){
+      const value=allocation.amountMinor;
+      const groupKey=`${classification.account.code}|${allocation.unit}`;
+      const current=grouped.get(groupKey)||{account:classification.account,unit:allocation.unit,amountMinor:0,count:0};
+      current.amountMinor+=value;current.count++;grouped.set(groupKey,current);
+      const month=record.date.slice(0,7), monthKey=`${month}|${allocation.unit}`;
+      const m=months.get(monthKey)||{month,unit:allocation.unit,incomeMinor:0,expenseMinor:0,resultMinor:0,count:0};
+      if(record.direction==="entrada")m.incomeMinor+=value;else m.expenseMinor+=value;
+      m.resultMinor=m.incomeMinor-m.expenseMinor;m.count++;months.set(monthKey,m);
+    }
+  }
+  return {
+    classifications,summary,
+    pnl:[...grouped.values()].sort((a,b)=>a.unit.localeCompare(b.unit)||b.amountMinor-a.amountMinor),
+    monthly:[...months.values()].sort((a,b)=>a.month.localeCompare(b.month)||a.unit.localeCompare(b.unit))
+  };
+}
+export const DRE_ACCOUNTS=accounts;
