@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 
 type Props = {
   organizationId: string;
@@ -9,6 +9,17 @@ type Props = {
 };
 
 type ActiveTab = "members" | "branding";
+
+type Invitation = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+  accepted_at?: string | null;
+  revoked_at?: string | null;
+};
 
 const ROLE_DESCRIPTIONS: Record<string, { label: string; desc: string; badgeBg: string; badgeColor: string }> = {
   viewer: {
@@ -44,6 +55,7 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
   // Equipe & Convites
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("viewer");
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   // Identidade Visual & Branding
   const [banner, setBanner] = useState<string | null>(null);
@@ -64,6 +76,34 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
     }
     return banner;
   }, [file, banner]);
+
+  const loadInvitations = useCallback(async () => {
+    if (!canAdmin) return;
+    const response = await fetch(`/api/organization-invitations?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    setInvitations(Array.isArray(data.invitations) ? data.invitations : []);
+  }, [canAdmin, organizationId]);
+
+  useEffect(() => {
+    loadInvitations().catch(() => {});
+  }, [loadInvitations]);
+
+  async function manageInvitation(invitationId: string) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/organization-invitations?organizationId=${encodeURIComponent(organizationId)}&invitationId=${encodeURIComponent(invitationId)}`, { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Falha ao revogar convite.");
+      setMessage({ text: "Convite revogado com sucesso.", type: "success" });
+      await loadInvitations();
+    } catch (error) {
+      setMessage({ text: error instanceof Error ? error.message : "Não foi possível revogar o convite.", type: "error" });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // Carregar dados de branding existentes
   useEffect(() => {
@@ -105,7 +145,7 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
         throw new Error(errDetail ? `Erro (${response.status}): ${errDetail}` : `Erro HTTP ${response.status}: Falha ao enviar convite.`);
       }
       setMessage({
-        text: `Convite enviado com sucesso para ${email}. O acesso está vinculado exclusivamente a ${organizationName}.`,
+        text: `Convite enviado para ${email}. O acesso será liberado após a aceitação do convite.`,
         type: "success"
       });
       setEmail("");
@@ -413,6 +453,68 @@ export function OrganizationAdminPanel({ organizationId, organizationName, role 
               ))}
             </div>
           </div>
+
+          {/* Convites pendentes e histórico */}
+          {canAdmin && (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                padding: "20px",
+                borderRadius: "10px",
+                background: "var(--surface-raised)",
+                border: "1px solid var(--line)"
+              }}
+            >
+              <h3 style={{ fontSize: "15px", fontWeight: 700, margin: "0 0 4px", color: "var(--ink)" }}>
+                Convites da Organização
+              </h3>
+              <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 14px" }}>
+                O acesso só é liberado após o aceite do convite. Convites expiram em 1 hora.
+              </p>
+              {invitations.length === 0 ? (
+                <p style={{ fontSize: "12px", color: "var(--muted)", margin: 0 }}>Nenhum convite registrado.</p>
+              ) : (
+                <div style={{ display: "grid", gap: "8px" }}>
+                  {invitations.map((invitation) => (
+                    <div
+                      key={invitation.id}
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "10px",
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--line)"
+                      }}
+                    >
+                      <div style={{ minWidth: "200px" }}>
+                        <strong style={{ fontSize: "12px", color: "var(--ink)" }}>{invitation.email}</strong>
+                        <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
+                          {invitation.role} · {invitation.status}
+                          {invitation.status === "sent" || invitation.status === "pending"
+                            ? ` · expira ${new Date(invitation.expires_at).toLocaleString("pt-BR")}`
+                            : ""}
+                        </div>
+                      </div>
+                      {["pending", "sent", "failed"].includes(invitation.status) && (
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          disabled={busy}
+                          onClick={() => manageInvitation(invitation.id)}
+                          style={{ fontSize: "11px", padding: "6px 12px" }}
+                        >
+                          Revogar
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
