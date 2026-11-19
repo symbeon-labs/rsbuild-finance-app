@@ -56,9 +56,11 @@ export function PayablesImportPanel({ organizationId }: PayablesImportPanelProps
   const [isCommitting, setIsCommitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<CommitResponse | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const availableSheets = preview?.availableSheets ?? [];
-  const canCommit = Boolean(file && preview && preview.acceptedCount > 0 && !isPreviewing && !isCommitting);
+  const previewMatchesSelection = Boolean(preview) && (preview?.sheetName ?? "") === sheetName;
+  const canCommit = Boolean(file && preview && previewMatchesSelection && preview.acceptedCount > 0 && !isPreviewing && !isCommitting);
   const rows = useMemo(() => preview?.rows.slice(0, 20) ?? [], [preview]);
 
   function reset() {
