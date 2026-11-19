@@ -2,7 +2,7 @@ name: Sandbox Access Verification
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/finance-payables-foundation]
     paths:
       - "app/api/sandbox/**"
       - "supabase/migrations/**"
