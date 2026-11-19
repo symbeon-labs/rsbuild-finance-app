@@ -28,6 +28,7 @@ The parser is not yet certified against the customer's actual workbook exports. 
 
 - Preview is read-only: it does not upload files or create database records.
 - Commit reparses the submitted file server-side; it does not trust a client-supplied preview payload.
+- The workspace exposes a dedicated payable-import panel alongside bank-statement imports. It supports CSV/XLSX selection, server preview, worksheet selection and re-preview, row-level issue review, and explicit commit confirmation. The commit endpoint reparses the same selected file and worksheet server-side.
 - The service-role RPC independently checks actor attribution, organization membership, source artifact ownership/path, file metadata, row counts and every persisted field.
 - The commit is atomic across import batch, source artifact, payable titles and audit event.
 - Title-level deduplication is enforced in the database. Re-imports may create a new audit/import batch while inserting zero duplicate titles; a file-level unique batch key is not part of this slice.
@@ -38,7 +39,6 @@ The parser is not yet certified against the customer's actual workbook exports. 
 - Automated endpoint integration tests for authenticated preview/commit, upload cleanup and tenant isolation.
 - Runtime application of the new migration in an isolated QA database.
 - Functional homologation with synthetic workbooks and then the customer's real workbook layouts.
-- UI wiring for preview review and explicit commit confirmation.
 - Production enablement.
 
 ## API contract
