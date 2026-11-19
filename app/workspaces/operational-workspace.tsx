@@ -141,6 +141,8 @@ export default function OperationalWorkspace({
   const [activeModule, setActiveModule] = useState<ModuleType>(
     getOperationalModuleForSection(initialSection, organizationSlug)
   );
+  const sectionRef = useRef(section);
+  sectionRef.current = section;
 
   useEffect(() => {
     const nextSection: NavSection =
@@ -242,7 +244,7 @@ export default function OperationalWorkspace({
         };
         setEnabledModules(nextModules);
         setModulesResolved(true);
-        if (!canAccessWorkspaceSection(section, nextModules)) {
+        if (!canAccessWorkspaceSection(sectionRef.current, nextModules)) {
           setSection("workspace");
           setActiveModule(nextModules.finance ? "finance" : nextModules.reconciliation ? "reconciliation" : nextModules.logistics ? "logistics" : "audit");
           router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
@@ -256,7 +258,7 @@ export default function OperationalWorkspace({
         router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
       });
     return () => { active = false; };
-  }, [organizationId, organizationSlug, router, section]);
+  }, [organizationId, organizationSlug, router]);
 
   const [titles, setTitles] = useState<ReceivableTitle[]>([]);
   const [proofs, setProofs] = useState<DeliveryProof[]>([]);
