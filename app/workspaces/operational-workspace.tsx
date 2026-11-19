@@ -1121,7 +1121,7 @@ export default function OperationalWorkspace({
               }
             />
           )}
-          {section === "relatorios" && <RelatoriosDreView />}
+          {section === "relatorios" && <RelatoriosDreView records={records} isLoading={isLoadingRecords} />}
           </>
           )}
         </div>
