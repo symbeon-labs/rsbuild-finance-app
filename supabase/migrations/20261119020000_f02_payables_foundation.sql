@@ -130,6 +130,27 @@ create trigger payable_titles_actor_guard before insert or update of created_by 
 create trigger audit_payable_titles_insert after insert on public.payable_titles for each row execute function private.capture_operational_audit_event('payable_title');
 create trigger audit_payable_titles_update after update on public.payable_titles for each row execute function private.capture_operational_audit_event('payable_title');
 create trigger payable_allocations_actor_guard before insert or update of created_by on public.payable_payment_allocations for each row execute function private.enforce_actor_attribution('created_by');
-create trigger payable_allocations_reversed_by_guard before insert or update of reversed_by on public.payable_payment_allocations for each row execute function private.enforce_actor_attribution('reversed_by');
+create function private.enforce_payable_reversal_actor()
+returns trigger
+language plpgsql
+set search_path to 'pg_catalog'
+as $function$
+begin
+  if new.status = 'reversed' then
+    if tg_op = 'INSERT' or old.status is distinct from 'reversed' then
+      new.reversed_by := coalesce(auth.uid(), new.reversed_by);
+    else
+      new.reversed_by := old.reversed_by;
+    end if;
+  else
+    new.reversed_by := null;
+  end if;
+  return new;
+end;
+$function$;
+
+create trigger payable_allocations_reversed_by_guard
+  before insert or update of status, reversed_by on public.payable_payment_allocations
+  for each row execute function private.enforce_payable_reversal_actor();
 create trigger audit_payable_allocations_insert after insert on public.payable_payment_allocations for each row execute function private.capture_operational_audit_event('payable_payment_allocation');
 create trigger audit_payable_allocations_update after update on public.payable_payment_allocations for each row execute function private.capture_operational_audit_event('payable_payment_allocation');
