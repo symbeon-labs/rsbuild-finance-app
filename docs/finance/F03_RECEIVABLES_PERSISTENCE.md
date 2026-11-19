@@ -24,7 +24,7 @@ Make the Accounts Receivable workspace read and write its operational titles thr
 
 ## Scope limits
 
-- This PR does not implement partial settlements or a receivable balance ledger. The current title state model only supports pending, paid, and cancelled.
+- This PR does not implement partial settlements or a receivable balance ledger. Documentary matches may include the existing matcher’s interest/discount variance; the actual amount, original amount, interest, and discount are retained in the settlement observation.
 - The existing reconciliation matcher remains a suggestion engine. Only owner/admin confirmation persists a settlement.
 - Proofs, WhatsApp orders, and Omie session data remain outside this PR and continue to use their existing temporary-session behavior.
 - No QA or production migration is applied by this PR.
