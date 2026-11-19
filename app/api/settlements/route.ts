@@ -16,7 +16,7 @@ type SettlementInput = {
 
 export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin"], "reconciliation");
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin"], "finance");
   if (!guard.ok) return guard.response;
   const { supabase, userId, userEmail } = guard.ctx;
 
