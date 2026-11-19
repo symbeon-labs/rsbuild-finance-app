@@ -43,6 +43,12 @@ One row allocates a payment amount to one payable title. This supports:
 
 A payment allocation is not a command to execute a bank transfer. It records a payment already confirmed by the operator/source system.
 
+## Audit and actor attribution
+
+Both entities install the existing database-level actor attribution and operational audit triggers. `payable_titles.updated_at` is maintained by the shared `private.touch_updated_at()` trigger. Inserts and updates (including allocation reversals) emit operational audit events. The shared audit function records only its configured allowlisted fields; it is not a full snapshot of supplier or payment details.
+
+The foundation intentionally has no authenticated write policies. The current pgTAP checks are structural; they do not simulate two authenticated tenants or prove runtime RLS behavior. Tenant-isolation behavior remains a required isolated-database integration test before remote application.
+
 ## Security boundary
 
 The foundation enables RLS and tenant-scoped member reads. It intentionally adds **no authenticated INSERT/UPDATE/DELETE policies**. The next implementation slice must add validated server-side commands / transactional RPCs before any write UI is exposed.
@@ -127,13 +133,13 @@ For Mundo do Sabor, the recurring-payables workbook overlaps the open-payables w
 - No real customer workbook or PDF has been imported.
 - No XLSX or PDF parser exists in this path.
 - No end-to-end QA upload was executed as part of this PR.
-- No test suite or migration test was executed by this authoring action.
+- Behavioral multi-tenant RLS simulation and full migration execution remain pending; structural pgTAP assertions are not a substitute.
 - The migration has not been applied to QA or production.
 
 ## Acceptance criteria before enabling real payables ingestion
 
 - [ ] Migration applies cleanly in an isolated test database and pgTAP passes.
-- [ ] RLS tests prove tenant isolation and member read-only access.
+- [ ] Isolated integration tests prove tenant isolation, member read-only access, and authenticated write denial. The current pgTAP file is structural and does not claim this behavioral proof.
 - [ ] Server commands prove operator/admin boundaries and atomic allocation limits.
 - [ ] Reimporting the same file creates no duplicate titles or allocations.
 - [ ] XLSX fixtures cover all received workbook layouts, Brazilian dates/decimals, empty rows, formulas and multiple sheets.
