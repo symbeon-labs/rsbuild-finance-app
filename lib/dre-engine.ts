@@ -68,7 +68,7 @@ const rules: Rule[] = [
   {code:"TELECOM",terms:["internet","telefonia","vivo","claro","algar"],confidence:.88,reason:"Despesa de comunicação identificada."},
   {code:"SOFTWARE",terms:["omie","software","licenca sistema","assinatura sistema","hospedagem site"],confidence:.89,reason:"Despesa de sistema ou software identificada."},
   {code:"OFFICE",terms:["material escritorio","papelaria","toner","cilindro impressora"],confidence:.90,reason:"Material de escritório identificado."},
-  {code:"CLEANING",terms:["material limpeza","produto limpeza","desinfetante","detergente"],confidence:.89,reason:"Material de limpeza identificado."},
+  {code:"CLEANING",terms:["material limpeza","produto limpeza","desinfetante","detergente"],confidence:.90,reason:"Material de limpeza identificado."},
   {code:"VEHICLE",terms:["combustivel","combustível","posto","pedagio","pedágio","estacionamento","rastreador","seguro veiculo","ipva"],confidence:.88,reason:"Despesa associada a veículo."},
   {code:"MAINTENANCE",terms:["manutencao","manutenção","conserto","reparo","recarga extintor","manutencao forno"],confidence:.88,reason:"Despesa de manutenção identificada."},
   {code:"MARKETING",terms:["marketing","grafica","gráfica","anuncio","publicidade","impulsionamento"],confidence:.91,reason:"Despesa de marketing ou comunicação visual."},
