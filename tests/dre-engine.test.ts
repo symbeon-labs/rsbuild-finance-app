@@ -18,7 +18,7 @@ test("keeps financing and asset purchases outside operating expenses",()=>{
  assert.equal(r.summary.financing,1);assert.equal(r.summary.balanceSheet,1);assert.equal(r.pnl.length,0);
 });
 test("manual override enters P&L and allocates exact integer cents",()=>{
- const r=runDreEngine([record("1","PIX saída fornecedor","saída",100.01)],{"1":{accountCode:"COGS_MERCH",reason:"Nota fiscal validada"}});
+ const r=runDreEngine([record("1","PIX saída fornecedor","saída",100.01)],{"1":{accountCode:"COGS_MERCH",unit:"RRT",reason:"Nota fiscal validada e centro de custo RRT confirmado"}});
  const allocations=r.classifications[0].allocations;
  assert.equal(allocations.reduce((s,a)=>s+a.amountMinor,0),10001);
  assert.equal(r.summary.pnl,1);
@@ -26,4 +26,16 @@ test("manual override enters P&L and allocates exact integer cents",()=>{
 test("ambiguous transaction stays in review",()=>{
  const r=runDreEngine([record("1","Pagamento diversos","saída",75)]);
  assert.equal(r.summary.review,1);assert.equal(r.classifications[0].allocations.length,0);
+});
+
+test("does not invent a default allocation for categories without source-backed percentages",()=>{
+ const r=runDreEngine([record("1","Pagamento salário equipe","saída",1000)]);
+ assert.equal(r.classifications[0].status,"review");
+ assert.equal(r.classifications[0].allocations.length,0);
+});
+test("uses only explicit cleaning allocation from the source workbook",()=>{
+ const r=runDreEngine([record("1","Compra material limpeza","saída",100)]);
+ const a=r.classifications[0].allocations;
+ assert.equal(r.classifications[0].status,"suggested");
+ assert.deepEqual(a.map(x=>[x.unit,x.amountMinor]),[["ALS/CSN",5200],["P&L",1100],["RRT",3700]]);
 });
