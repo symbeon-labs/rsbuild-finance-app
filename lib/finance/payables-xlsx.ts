@@ -136,7 +136,7 @@ export function previewPayablesXlsx(bytes: Uint8Array, requestedSheetName?: stri
   const selected = requestedSheetName ? sheets.find((sheet) => sheet.name === requestedSheetName) : sheets[0];
   if (!selected) throw new Error("Planilha solicitada não encontrada no arquivo XLSX.");
 
-  const strings = sharedStrings(files.get("xl/sharedStrings.xml")?.toString("utf8"));
+  const date1904 = /<workbookPr\\b[^>]*date1904="1"/.test(workbook);\n  const strings = sharedStrings(files.get("xl/sharedStrings.xml")?.toString("utf8"));
   const dateStyles = dateStyleIndexes(files.get("xl/styles.xml")?.toString("utf8"));
   const sheetXml = files.get(selected.path)!.toString("utf8");
   const rows: string[][] = [], rowNumbers: number[] = [];
@@ -164,7 +164,7 @@ export function previewPayablesXlsx(bytes: Uint8Array, requestedSheetName?: stri
           const decoded = xmlText(raw);
           if (type === "s") value = strings[Number(decoded)] ?? "";
           else if (type === "b") value = decoded === "1" ? "TRUE" : "FALSE";
-          else if (dateStyles.has(style) && Number.isFinite(Number(decoded))) value = excelSerialToIso(Number(decoded));
+          else if (dateStyles.has(style) && Number.isFinite(Number(decoded))) value = excelSerialToIso(Number(decoded), date1904);
           else value = decoded;
         }
       }
