@@ -9,6 +9,7 @@ drop policy if exists "RSBUILD admins manage agents" on public.agents;
 drop policy if exists "RSBUILD admins manage agent grants" on public.agent_organization_grants;
 drop policy if exists "governance decides proposals" on public.agent_action_proposals;
 
+drop policy if exists "RSBUILD owner reads agents" on public.agents;
 create policy "RSBUILD owner reads agents"
 on public.agents for select to authenticated
 using (exists (
@@ -20,6 +21,7 @@ using (exists (
     and m.role = 'owner'
 ));
 
+drop policy if exists "RSBUILD owner reads agent grants" on public.agent_organization_grants;
 create policy "RSBUILD owner reads agent grants"
 on public.agent_organization_grants for select to authenticated
 using (exists (
@@ -31,6 +33,7 @@ using (exists (
     and m.role = 'owner'
 ));
 
+drop policy if exists "owner governance and tenant read proposals" on public.agent_action_proposals;
 create policy "owner governance and tenant read proposals"
 on public.agent_action_proposals for select to authenticated
 using (
@@ -50,6 +53,7 @@ using (
   )
 );
 
+drop policy if exists "RSBUILD owner manages agents" on public.agents;
 create policy "RSBUILD owner manages agents"
 on public.agents for all to authenticated
 using (exists (
@@ -69,6 +73,7 @@ with check (exists (
     and m.role = 'owner'
 ));
 
+drop policy if exists "RSBUILD owner manages agent grants" on public.agent_organization_grants;
 create policy "RSBUILD owner manages agent grants"
 on public.agent_organization_grants for all to authenticated
 using (exists (
@@ -88,6 +93,7 @@ with check (exists (
     and m.role = 'owner'
 ));
 
+drop policy if exists "owners decide agent proposals" on public.agent_action_proposals;
 create policy "owners decide agent proposals"
 on public.agent_action_proposals for update to authenticated
 using (
