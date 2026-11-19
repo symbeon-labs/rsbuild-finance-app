@@ -385,8 +385,8 @@ export function parseOfx(text: string): ImportResult {
     const description = get(block, "NAME") || get(block, "MEMO") || "Movimento bancário";
     // OFX de alguns bancos representa o saldo de abertura como STMTTRN.
     // Esse valor é posição inicial, não fluxo financeiro, e nunca deve virar lançamento.
-    const normalizedDescription = description.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim().toLocaleUpperCase("pt-BR");
-    if (/^(SALDO ANTERIOR|SALDO INICIAL|SALDO DE ABERTURA)(?:\\b|\\s|$)/.test(normalizedDescription)) return;
+    const normalizedDescription = description.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleUpperCase("pt-BR");
+    if (/^(SALDO ANTERIOR|SALDO INICIAL|SALDO DE ABERTURA)(?:\b|\s|$)/.test(normalizedDescription)) return;
     const direction: Direction = trnType === "DEBIT" ? "saída" : trnType === "CREDIT" ? "entrada" : signedAmount < 0 ? "saída" : "entrada";
     records.push({
       id: "ofx-" + importBatchId + "-" + (index + 1),
