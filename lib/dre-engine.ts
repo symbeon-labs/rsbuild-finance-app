@@ -85,18 +85,20 @@ function allocate(amountMinor:number, shares:Array<[DreUnit,number]>):Array<{uni
   let assigned=0;
   return shares.map(([unit,p],i)=>{const value=i===shares.length-1?amountMinor-assigned:Math.floor(amountMinor*p/100);assigned+=value;return {unit,amountMinor:value};});
 }
-const rateioFor = (code:string):Array<[DreUnit,number]> => {
-  if(["VEHICLE"].includes(code)) return [["ALS/CSN",30],["P&L",20],["RRT",50]];
-  if(["OFFICE","CLEANING","SOFTWARE","MAINTENANCE","MARKETING","DELIVERY","BANK_FEES","PAYROLL","BENEFITS","TAXES","UTILITIES","TELECOM","RENT","COGS_MERCH","COGS_FREIGHT","GAS"].includes(code)) return [["ALS/CSN",50],["P&L",25],["RRT",25]];
-  return [["ALS/CSN",100]];
-};
-
-function classify(record:FinancialRecord, override?:DreOverride):DreClassification {
+const rateioFor = (code:string):Array<[DreUnit,number]> | null => {
+  // Percentuais abaixo são os que constam explicitamente em RATEIO FIXO / RATEIO MENSAL.
+  // Não há rateio padrão: rubricas sem regra documentada exigem unidade/cost center manual.
+  if(code==="VEHICLE") return [["ALS/CSN",30],["P&L",20],["RRT",50]];
+  if(code==="OFFICE") return [["ALS/CSN",66],["P&L",20],["RRT",14]];
+  if(code==="CLEANING") return [["ALS/CSN",52],["P&L",11],["RRT",37]];
+  return null;
+};function classify(record:FinancialRecord, override?:DreOverride):DreClassification {
   const amountMinor=Math.round(Math.abs(record.amount)*100);
   if(override) {
     const account=accountByCode.get(override.accountCode);
     if(!account) throw new Error("Código de rubrica manual desconhecido.");
     const shares=override.unit?[[override.unit,100] as [DreUnit,number]]:rateioFor(account.code);
+    if(!shares) throw new Error("Informe a unidade ou uma regra de rateio documentada.");
     return {recordId:record.id,account,confidence:1,status:"overridden",reason:override.reason,source:"manual",allocations:allocate(amountMinor,shares)};
   }
   const text=normalize(record.description||"");
@@ -105,31 +107,9 @@ function classify(record:FinancialRecord, override?:DreOverride):DreClassificati
   const winner=candidates[0];
   if(!winner) return {recordId:record.id,account:null,confidence:0,status:"review",reason:"Sem regra determinística segura. Exige classificação humana.",source:"none",allocations:[]};
   const account=accountByCode.get(winner.code)!;
-  const status=winner.confidence>=.90 && account.treatment!=="pnl" ? (account.treatment==="ignore"?"excluded":"suggested") : winner.confidence>=.90?"suggested":"review";
-  return {recordId:record.id,account,confidence:winner.confidence,status,reason:winner.reason,source:"rule",allocations:status==="review"||account.treatment==="ignore"?[]:allocate(amountMinor,rateioFor(account.code))};
+  if(account.treatment==="ignore") return {recordId:record.id,account,confidence:winner.confidence,status:"excluded",reason:winner.reason,source:"rule",allocations:[]};
+  const shares=rateioFor(account.code);
+  const canSuggest=winner.confidence>=.90 && (shares!==null);
+  const reason=canSuggest?winner.reason:`${winner.reason} Unidade/rateio não determinado; exige revisão humana.`;
+  return {recordId:record.id,account,confidence:winner.confidence,status:canSuggest?"suggested":"review",reason,source:"rule",allocations:canSuggest?allocate(amountMinor,shares!):[]};
 }
-
-export function runDreEngine(records:FinancialRecord[], overrides:Record<string,DreOverride>={}):DreEngineResult {
-  const classifications=records.map(r=>classify(r,overrides[r.id]));
-  const summary={total:records.length,classified:0,review:0,excluded:0,pnl:0,balanceSheet:0,financing:0,equity:0,receivable:0};
-  const grouped=new Map<string,{account:DreAccount;amountMinor:number;count:number}>();
-  const months=new Map<string,{month:string;incomeMinor:number;expenseMinor:number;resultMinor:number;count:number}>();
-  for(let i=0;i<records.length;i++){
-    const c=classifications[i], r=records[i];
-    if(c.status==="review"||!c.account){summary.review++;continue;}
-    if(c.status==="excluded"){summary.excluded++;continue;}
-    summary.classified++;
-    const t=c.account.treatment;
-    if(t==="pnl")summary.pnl++; else if(t==="balance_sheet")summary.balanceSheet++; else if(t==="financing")summary.financing++; else if(t==="equity")summary.equity++; else if(t==="receivable")summary.receivable++;
-    if(t==="pnl"){
-      const value=Math.round(Math.abs(r.amount)*100);
-      const current=grouped.get(c.account.code)||{account:c.account,amountMinor:0,count:0};
-      current.amountMinor+=value;current.count++;grouped.set(c.account.code,current);
-      const month=r.date.slice(0,7), m=months.get(month)||{month,incomeMinor:0,expenseMinor:0,resultMinor:0,count:0};
-      if(r.direction==="entrada")m.incomeMinor+=value;else m.expenseMinor+=value;
-      m.resultMinor=m.incomeMinor-m.expenseMinor;m.count++;months.set(month,m);
-    }
-  }
-  return {classifications,summary,pnl:[...grouped.values()].sort((a,b)=>b.amountMinor-a.amountMinor),monthly:[...months.values()].sort((a,b)=>a.month.localeCompare(b.month))};
-}
-export const DRE_ACCOUNTS=accounts;
