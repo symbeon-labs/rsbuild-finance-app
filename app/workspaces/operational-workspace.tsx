@@ -45,7 +45,7 @@ import {
   orgHasExecutiveTower
 } from "@/app/types/workspace";
 import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
-import { applyBrandColor } from "@/app/lib/brand-color";
+import { applyBrandColor, deriveBrandTokens } from "@/app/lib/brand-color";
 import { MODULE_CONFIGS, Sidebar } from "@/app/components/shell/sidebar";
 import { RsbuildIcon } from "@/app/components/rsbuild-icons";
 import { Topbar } from "@/app/components/shell/topbar";
@@ -383,7 +383,7 @@ export default function OperationalWorkspace({
       try {
         localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
-      const { main, hover, soft } = (require("@/app/lib/brand-color") as typeof import("@/app/lib/brand-color")).deriveBrandTokens(colorToApply);
+      const { main, hover, soft } = deriveBrandTokens(colorToApply);
       fetch("/api/organization-branding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
