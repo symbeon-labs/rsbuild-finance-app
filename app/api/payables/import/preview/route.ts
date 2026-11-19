@@ -4,13 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
 import { decodeImportText } from "@/lib/finance";
 import { previewPayablesCsv } from "@/lib/finance/payables-import";
+import { previewPayablesXlsx } from "@/lib/finance/payables-xlsx";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_ROWS = 5000;
-const PARSER_VERSION = "payables-csv/1";
+const PARSER_VERSION = "payables-csv-xlsx/2";
 
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
