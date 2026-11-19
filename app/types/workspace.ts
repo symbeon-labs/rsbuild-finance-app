@@ -114,7 +114,7 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     },
     hasExecutiveTower: true,
     description: "Distribuição expressa com pedidos WhatsApp, cubagem do caminhão HR (350 cx), reconciliação Omie e auditoria de canhotos com inteligência jurídica.",
-    // Cor Hub Açaí: roxo vibrante
+    // Identidade Hub Açaí: roxo institucional, também aplicada ao ambiente QA.
     brandColor: "#7C3AED",
     brandColorHover: "#6D28D9",
     brandColorSoft: "#F5F3FF",
@@ -135,10 +135,10 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     },
     hasExecutiveTower: true,
     description: "Indústria alimentícia com conciliação multibanco, motor de reconciliação Omie, canhotos SEFAZ e auditoria de conformidade.",
-    // Cor Mundo do Sabor: azul corporate
-    brandColor: "#2563EB",
-    brandColorHover: "#1D4ED8",
-    brandColorSoft: "#EFF6FF"
+    // Identidade Mundo do Sabor: laranja mais intenso que o terracota RSBUILD.
+    brandColor: "#E56A2F",
+    brandColorHover: "#C95420",
+    brandColorSoft: "#FFF1E9"
   },
   {
     id: "hub_acai_qa",
@@ -155,10 +155,10 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     },
     hasExecutiveTower: true,
     description: "Ambiente de teste isolado para validação de funcionalidades do Hub Açaí. Dados sintéticos para testes de pedidos, logística e reconciliação.",
-    // Cor QA: amarelo ouro
-    brandColor: "#F59E0B",
-    brandColorHover: "#D97706",
-    brandColorSoft: "#FFFBEB",
+    // Ambiente QA mantém a identidade roxa do Hub Açaí.
+    brandColor: "#7C3AED",
+    brandColorHover: "#6D28D9",
+    brandColorSoft: "#F5F3FF",
     contacts: HUB_ACAI_CONTACTS
   },
   {
@@ -176,10 +176,10 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     },
     hasExecutiveTower: true,
     description: "Ambiente de teste isolado para validação de funcionalidades do Mundo do Sabor. Dados sintéticos para testes financeiros, conciliação e auditoria.",
-    // Cor QA: verde esmeralda
-    brandColor: "#10B981",
-    brandColorHover: "#059669",
-    brandColorSoft: "#ECFDF5"
+    // Ambiente QA mantém a identidade laranja do Mundo do Sabor.
+    brandColor: "#E56A2F",
+    brandColorHover: "#C95420",
+    brandColorSoft: "#FFF1E9"
   }
 ];
 
