@@ -165,7 +165,7 @@ export function previewPayablesGrid(sourceRows: ParsedGridRow[]): PayableCsvPrev
     const candidate: PayableImportRow = {
       rowNumber: source.rowNumber, supplierName,
       ...optional, documentNumber,
-      issueDate, dueDate, amountMinor, deduplicationKey: ""
+      issueDate: issueDate ?? undefined, dueDate, amountMinor, deduplicationKey: ""
     };
     candidate.deduplicationKey = fingerprint(candidate);
     if (seen.has(candidate.deduplicationKey)) {
