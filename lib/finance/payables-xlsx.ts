@@ -136,7 +136,8 @@ export function previewPayablesXlsx(bytes: Uint8Array, requestedSheetName?: stri
   const selected = requestedSheetName ? sheets.find((sheet) => sheet.name === requestedSheetName) : sheets[0];
   if (!selected) throw new Error("Planilha solicitada não encontrada no arquivo XLSX.");
 
-  const date1904 = /<workbookPr\\b[^>]*date1904="1"/.test(workbook);\n  const strings = sharedStrings(files.get("xl/sharedStrings.xml")?.toString("utf8"));
+  const date1904 = /<workbookPr\\b[^>]*date1904="1"/.test(workbook);
+  const strings = sharedStrings(files.get("xl/sharedStrings.xml")?.toString("utf8"));
   const dateStyles = dateStyleIndexes(files.get("xl/styles.xml")?.toString("utf8"));
   const sheetXml = files.get(selected.path)!.toString("utf8");
   const rows: string[][] = [], rowNumbers: number[] = [];
