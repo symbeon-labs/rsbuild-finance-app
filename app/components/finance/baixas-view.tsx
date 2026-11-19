@@ -124,7 +124,9 @@ export function BaixasView({
           )}
         </div>
 
-        {isLoading ? (\n          <div className="empty-state">Carregando títulos persistidos...</div>\n        ) : titles.length ? (
+        {isLoading ? (
+          <div className="empty-state" role="status">Carregando títulos persistidos...</div>
+        ) : titles.length ? (
           <div className="table-wrap">
             <table className="sticky-actions">
               <thead>
