@@ -122,15 +122,16 @@ export function runDreEngine(records:FinancialRecord[], overrides:Record<string,
   const months=new Map<string,{month:string;unit:DreUnit;incomeMinor:number;expenseMinor:number;resultMinor:number;count:number}>();
   for(let i=0;i<records.length;i++){
     const classification=classifications[i], record=records[i];
-    if(classification.status==="review"||!classification.account){summary.review++;continue;}
-    if(classification.status==="excluded"){summary.excluded++;continue;}
-    summary.classified++;
-    const treatment=classification.account.treatment;
+    const treatment=classification.account?.treatment;
+    // Treatment counters include detected candidates, even when unit allocation still awaits review.
     if(treatment==="pnl")summary.pnl++;
     else if(treatment==="balance_sheet")summary.balanceSheet++;
     else if(treatment==="financing")summary.financing++;
     else if(treatment==="equity")summary.equity++;
     else if(treatment==="receivable")summary.receivable++;
+    if(classification.status==="review"||!classification.account){summary.review++;continue;}
+    if(classification.status==="excluded"){summary.excluded++;continue;}
+    summary.classified++;
     if(treatment!=="pnl")continue;
     for(const allocation of classification.allocations){
       const value=allocation.amountMinor;
