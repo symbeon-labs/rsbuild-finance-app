@@ -575,9 +575,17 @@ export function WorkspaceModal({
                       <RsbuildIcon name="guardian" size={12} tone="accent" /> DISPONIBILIDADE CONTROLADA PELA RSBUILD
                     </span>
                   </div>
-                  <p style={{ margin: 0, color: "var(--muted)", fontSize: "10px", lineHeight: 1.45 }}>
-                    A situação abaixo reflete a licença desta organização para o ambiente {selectedOrg.endsWith("_qa") ? "QA" : "PRODUÇÃO"}. Os indicadores são informativos; a gestão de licenças ocorre na governança da plataforma.
-                  </p>
+                  {selectedOrg.endsWith("_qa") && (
+                    <div role="note" style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 10px", borderRadius: 6, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--muted)", fontSize: 9.5, lineHeight: 1.4 }}>
+                      <RsbuildIcon name="approval" size={13} tone="secondary" />
+                      <span><strong style={{ color: "var(--ink)", fontWeight: 700 }}>IMPLANTAÇÃO PROGRESSIVA</strong> — Estamos validando as capacidades do RSBUILD OS em etapas, priorizando a integração, a consistência dos dados e a confiabilidade operacional.</span>
+                    </div>
+                  )}
+                  {!selectedOrg.endsWith("_qa") && (
+                    <p style={{ margin: 0, color: "var(--muted)", fontSize: "10px", lineHeight: 1.45 }}>
+                      A situação abaixo reflete a licença desta organização para o ambiente PRODUÇÃO. Os indicadores são informativos; a gestão de licenças ocorre na governança da plataforma.
+                    </p>
+                  )}
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: "9px", lineHeight: 1.4 }}>
                     O Sandbox é um laboratório interno isolado, acessado pela Central RSBUILD. Ele não é um workspace QA nem utiliza este catálogo de licenças diretamente.
                   </p>
