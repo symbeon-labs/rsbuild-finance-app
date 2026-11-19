@@ -26,9 +26,13 @@ Percentuais reproduzidos da planilha DRE 2026.xlsx:
 
 Outros rateios presentes na planilha (copa/mercado, farmácia, cursos, brindes, TI, gráfica, bonificação, folha por colaborador, entre outros) ainda não são aplicados pelo motor. Precisam de mapeamento por rubrica e revisão da origem antes de ativação.
 
-## Limites desta entrega
-- A tela exibe a prévia e a fila de revisão, mas ainda não persiste decisões manuais.
-- O catálogo de regras é código versionado; a gestão de regras por tenant e vigência ainda não foi implementada.
+## Persistência e governança das decisões
+- A tabela `dre_classifications` mantém o estado atual por lançamento e organização.
+- A tabela `dre_classification_events` preserva o histórico de sugestões, aprovações, reclassificações e exclusões.
+- A RPC `save_dre_classification` valida sessão, membership, papel, lançamento de origem e conservação do valor rateado; estado e evento são gravados na mesma transação.
+- As tabelas usam RLS por organização. Clientes autenticados não recebem escrita direta; a RPC SECURITY DEFINER é a única fronteira de escrita e valida owner/admin/operator.
+- A interface permite selecionar rubrica, unidade e justificativa e consultar as decisões persistidas.
+- O catálogo de regras segue versionado no código; gestão de regras por tenant e vigência ainda não foi implementada.
 - A estrutura fonte possui ALS/CSN, P&L e RRT; confirmar o mapeamento jurídico/operacional do tenant antes de consolidar.
 - O ambiente Supabase consultado contém zero movimentações em mundo_sabor_qa; três registros sintéticos pertencem a hub_acai_qa. Não usar esses três registros para validar Mundo do Sabor.
 - Nenhum valor da planilha de referência foi copiado para o banco ou para o código.
