@@ -824,7 +824,7 @@ export default function EnterpriseWorkspace({
             </div>
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
-          {modulesResolved && enabledModules.finance && section === "visao-geral" && (
+          {modulesResolved && Object.values(enabledModules).some(Boolean) && section === "visao-geral" && (
             <VisaoGeralView
               records={filteredRecords}
               totals={totals}
