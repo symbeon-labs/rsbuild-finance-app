@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   const access = await authorize(organizationId);
   if (access.error) return NextResponse.json({ error: access.error }, { status: access.error === "unauthenticated" ? 401 : 403 });
   const session = await createClient();
-  const { data, error } = await session.from("organization_branding").select("banner_path,banner_position_x,banner_position_y,banner_zoom")
+  const { data, error } = await session.from("organization_branding").select("banner_path,banner_position_x,banner_position_y,banner_zoom,brand_color,brand_color_hover,brand_color_soft")
     .eq("organization_id", organizationId).maybeSingle();
   if (error) return NextResponse.json({ error: "branding_read_failed" }, { status: 502 });
   let bannerUrl: string | null = null;
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const { data: publicUrl } = admin.storage.from(BUCKET).getPublicUrl(data.banner_path);
     bannerUrl = publicUrl.publicUrl;
   }
-  return NextResponse.json({ bannerUrl, positionX: data?.banner_position_x ?? 50, positionY: data?.banner_position_y ?? 50, zoom: data?.banner_zoom ?? 1 },
+  return NextResponse.json({ bannerUrl, positionX: data?.banner_position_x ?? 50, positionY: data?.banner_position_y ?? 50, zoom: data?.banner_zoom ?? 1, brandColor: data?.brand_color ?? null, brandColorHover: data?.brand_color_hover ?? null, brandColorSoft: data?.brand_color_soft ?? null },
     { headers: { "Cache-Control": "private, no-store" } });
 }
 
@@ -75,4 +75,29 @@ export async function POST(request: Request) {
   const { data: publicUrl } = admin.storage.from(BUCKET).getPublicUrl(path);
   return NextResponse.json({ ok: true, bannerUrl: publicUrl.publicUrl, positionX, positionY, zoom },
     { status: 201, headers: { "Cache-Control": "private, no-store" } });
+}
+
+export async function PATCH(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: "origin_forbidden" }, { status: 403 });
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  const organizationId = String(body.organizationId ?? "");
+  const access = await authorize(organizationId, true);
+  if (access.error || !access.user) return NextResponse.json({ error: access.error }, { status: access.error === "unauthenticated" ? 401 : 403 });
+  const hex = (value: unknown) => typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
+  if (!hex(body.brandColor) || !hex(body.brandColorHover) || !hex(body.brandColorSoft)) {
+    return NextResponse.json({ error: "invalid_brand_colors" }, { status: 400 });
+  }
+  const admin = createAdminClient();
+  const { error } = await admin.from("organization_branding").upsert({
+    organization_id: organizationId,
+    brand_color: body.brandColor,
+    brand_color_hover: body.brandColorHover,
+    brand_color_soft: body.brandColorSoft,
+    updated_by: access.user.id,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "organization_id" });
+  if (error) return NextResponse.json({ error: "branding_colors_save_failed" }, { status: 502 });
+  return NextResponse.json({ ok: true, brandColor: body.brandColor, brandColorHover: body.brandColorHover, brandColorSoft: body.brandColorSoft }, { headers: { "Cache-Control": "private, no-store" } });
 }
