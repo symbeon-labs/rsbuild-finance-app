@@ -925,7 +925,7 @@ export default function EnterpriseWorkspace({
               }
             />
           )}
-          {modulesResolved && enabledModules.finance && section === "relatorios" && <RelatoriosDreView />}
+          {modulesResolved && enabledModules.finance && section === "relatorios" && <RelatoriosDreView records={filteredRecords} isLoading={isLoadingRecords} />}
         </div>
       </section>
       <input
