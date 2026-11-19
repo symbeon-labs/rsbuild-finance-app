@@ -107,7 +107,7 @@ export function Sidebar({
           className="brand-logo-card"
           style={{
             width: "100%",
-            height: "64px",
+            height: currentOrgId === "rsbuild" ? "64px" : "112px",
             minWidth: 0,
             overflow: "hidden",
             boxSizing: "border-box"
@@ -122,9 +122,9 @@ export function Sidebar({
               style={{
                 display: "block",
                 width: "100%",
-                height: "48px",
+                height: currentOrgId === "rsbuild" ? "48px" : "96px",
                 maxWidth: "100%",
-                maxHeight: "48px",
+                maxHeight: currentOrgId === "rsbuild" ? "48px" : "96px",
                 objectFit: "contain",
                 objectPosition: "center"
               }}
