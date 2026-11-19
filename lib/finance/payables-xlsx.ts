@@ -5,7 +5,7 @@ const MAX_ENTRIES = 2000;
 const MAX_ENTRY_BYTES = 12 * 1024 * 1024;
 const MAX_TOTAL_UNCOMPRESSED = 30 * 1024 * 1024;
 
-type ZipEntry = { name: string; method: number; compressedSize: number; size: number; localOffset: number };
+type ZipEntry = { name: string; flags: number; method: number; compressedSize: number; size: number; localOffset: number };
 
 function readZipDirectory(bytes: Buffer): Map<string, Buffer> {
   let eocd = -1;
@@ -31,7 +31,7 @@ function readZipDirectory(bytes: Buffer): Map<string, Buffer> {
     if (size > MAX_ENTRY_BYTES) throw new Error("Uma parte interna do XLSX excede o limite permitido.");
     total += size;
     if (total > MAX_TOTAL_UNCOMPRESSED) throw new Error("O XLSX excede o limite de descompressão.");
-    entries.push({ name, method, compressedSize, size, localOffset });
+    entries.push({ name, flags, method, compressedSize, size, localOffset });
     cursor += 46 + nameLength + extraLength + commentLength;
   }
 
@@ -43,8 +43,8 @@ function readZipDirectory(bytes: Buffer): Map<string, Buffer> {
     if (offset + 30 > bytes.length || bytes.readUInt32LE(offset) !== 0x04034b50) throw new Error("Entrada ZIP XLSX corrompida.");
     const localFlags = bytes.readUInt16LE(offset + 6), localMethod = bytes.readUInt16LE(offset + 8);
     const nameLength = bytes.readUInt16LE(offset + 26), extraLength = bytes.readUInt16LE(offset + 28);
-    const localName = bytes.subarray(offset + 30, offset + 30 + nameLength).toString("utf8").replace(/\\\\/g, "/");
-    if (localName !== entry.name || localMethod !== entry.method || ((localFlags ^ bytes.readUInt16LE(offset + 6)) & 1) !== 0) throw new Error("Cabeçalho local ZIP XLSX inconsistente.");
+    const localName = bytes.subarray(offset + 30, offset + 30 + nameLength).toString("utf8").replace(/\\/g, "/");
+    if (localName !== entry.name || localMethod !== entry.method || localFlags !== entry.flags) throw new Error("Cabeçalho local ZIP XLSX inconsistente.");
     const start = offset + 30 + nameLength + extraLength, end = start + entry.compressedSize;
     if (end > bytes.length) throw new Error("Conteúdo ZIP XLSX truncado.");
     const compressed = bytes.subarray(start, end);
@@ -88,28 +88,28 @@ function isDateNumberFormat(formatCode: string): boolean {
   // bracket metadata (colors, conditions and locale IDs) before token checks.
   const normalized = formatCode
     .replace(/"(?:[^"]|"")*"/g, "")
-    .replace(/\\\\./g, "")
+    .replace(/\\./g, "")
     .replace(/_.|\\*./g, "")
-    .replace(/\\[[^\\]]*\\]/g, "")
+    .replace(/\[[^\]]*\]/g, "")
     .toLowerCase()
-    .replace(/am\\/pm/g, "");
+    .replace(/am\/pm/g, "");
   // A year/day token is unambiguous. Month-only patterns are dates only when
   // paired with a date separator or another date/time token.
-  return /[dy]/.test(normalized) || (/m/.test(normalized) && (/[\\/.-]/.test(normalized) || /[hs]/.test(normalized)));
+  return /[dy]/.test(normalized) || (/m/.test(normalized) && (/[\/.-]/.test(normalized) || /[hs]/.test(normalized)));
 }
 
 function dateStyleIndexes(xml: string | undefined): Set<number> {
   if (!xml) return new Set();
   const custom = new Map<number, string>();
-  for (const match of xml.matchAll(/<numFmt\\b([^>]*)\\/?\\s*>/g)) {
+  for (const match of xml.matchAll(/<numFmt\b([^>]*)\/?\s*>/g)) {
     const id = Number(attr(match[1] ?? "", "numFmtId"));
     const code = attr(match[1] ?? "", "formatCode") ?? "";
     if (Number.isFinite(id)) custom.set(id, code);
   }
-  const xfs = xml.match(/<cellXfs\\b[^>]*>([\\s\\S]*?)<\\/cellXfs>/)?.[1] ?? "";
+  const xfs = xml.match(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/)?.[1] ?? "";
   const result = new Set<number>();
   let index = 0;
-  for (const match of xfs.matchAll(/<xf\\b([^>]*)\\/?\\s*>/g)) {
+  for (const match of xfs.matchAll(/<xf\b([^>]*)\/?\s*>/g)) {
     const id = Number(attr(match[1] ?? "", "numFmtId") ?? 0);
     const code = custom.get(id) ?? "";
     if ((id >= 14 && id <= 22) || isDateNumberFormat(code)) result.add(index);
