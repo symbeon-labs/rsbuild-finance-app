@@ -64,3 +64,12 @@ test("preview preserva o número físico da linha após linhas vazias", () => {
   ].join("\\n"));
   assert.equal(result.rows[0].rowNumber, 3);
 });
+
+test("preview rejeita emissão inválida e campos que excedem os limites do banco", () => {
+  const result = previewPayablesCsv([
+    "Fornecedor;Documento;Emissão;Vencimento;Valor",
+    "Fornecedor A;NF-1;31/02/2026;01/12/2026;10,00",
+    "X".repeat(201) + ";NF-2;;01/12/2026;10,00"
+  ].join("\\n"));
+  assert.deepEqual(result.errors.map((error) => error.code), ["invalid_issue_date", "field_too_long"]);
+});
