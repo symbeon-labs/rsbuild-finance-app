@@ -832,7 +832,7 @@ export default function EnterpriseWorkspace({
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
           <div className="inline-note" role="note">
-            Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
+            Contas a receber e baixas são persistidas no servidor por organização. Canhotos e pedidos continuam temporários nesta etapa.
           </div>
           {isLoadingRecords && <div className="inline-note" role="status">Carregando movimentos financeiros da organização...</div>}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
