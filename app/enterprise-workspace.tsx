@@ -107,7 +107,7 @@ export default function EnterpriseWorkspace({
   function getModuleForSection(s: NavSection): ModuleType {
     if (s === "baixas" || s === "conciliacao") return "reconciliation";
     if (s === "pedidos-ha" || s === "canhotos") return "logistics";
-    if (s === "torre-controle") return "audit";
+    if (s === "torre-controle" || s === "auditoria" || s === "agentes" || s === "acessos") return "audit";
     if (s === "projetos") return ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.defaultModule ?? "finance";
     return "finance";
   }
@@ -804,6 +804,14 @@ export default function EnterpriseWorkspace({
           <div className="inline-note" role="note">
             Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
           </div>
+          {!modulesResolved && (
+            <div className="inline-note" role="status">Verificando os módulos autorizados para esta organização…</div>
+          )}
+          {modulesResolved && !canAccessWorkspaceSection(section, enabledModules) && (
+            <div className="inline-note" role="alert">
+              Este módulo não está habilitado para a organização neste ambiente. O acesso permanece bloqueado.
+            </div>
+          )}
           {isLoadingRecords && <div className="inline-note" role="status">Carregando movimentos financeiros da organização...</div>}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button className="secondary-button" type="button" onClick={() => setIsAdminPanelOpen((open) => !open)}>{isAdminPanelOpen ? "Fechar administração" : "Equipe e identidade"}</button>
