@@ -36,15 +36,21 @@ function readZipDirectory(bytes: Buffer): Map<string, Buffer> {
   }
 
   const files = new Map<string, Buffer>();
+  let actualTotalUncompressed = 0;
   for (const entry of entries) {
     if (entry.name.startsWith("/") || entry.name.split("/").includes("..")) throw new Error("Caminho interno inválido no XLSX.");
     const offset = entry.localOffset;
     if (offset + 30 > bytes.length || bytes.readUInt32LE(offset) !== 0x04034b50) throw new Error("Entrada ZIP XLSX corrompida.");
+    const localFlags = bytes.readUInt16LE(offset + 6), localMethod = bytes.readUInt16LE(offset + 8);
     const nameLength = bytes.readUInt16LE(offset + 26), extraLength = bytes.readUInt16LE(offset + 28);
+    const localName = bytes.subarray(offset + 30, offset + 30 + nameLength).toString("utf8").replace(/\\\\/g, "/");
+    if (localName !== entry.name || localMethod !== entry.method || ((localFlags ^ bytes.readUInt16LE(offset + 6)) & 1) !== 0) throw new Error("Cabeçalho local ZIP XLSX inconsistente.");
     const start = offset + 30 + nameLength + extraLength, end = start + entry.compressedSize;
     if (end > bytes.length) throw new Error("Conteúdo ZIP XLSX truncado.");
     const compressed = bytes.subarray(start, end);
     const data = entry.method === 0 ? Buffer.from(compressed) : inflateRawSync(compressed, { maxOutputLength: MAX_ENTRY_BYTES });
+    actualTotalUncompressed += data.length;
+    if (actualTotalUncompressed > MAX_TOTAL_UNCOMPRESSED) throw new Error("O XLSX excede o limite real de descompressão.");
     if (data.length !== entry.size) throw new Error("Tamanho descompactado XLSX inconsistente.");
     files.set(entry.name, data);
   }
@@ -77,27 +83,43 @@ function sharedStrings(xml: string | undefined): string[] {
   );
 }
 
+function isDateNumberFormat(formatCode: string): boolean {
+  // Remove Excel literals, escaped characters, spacing/fill directives and
+  // bracket metadata (colors, conditions and locale IDs) before token checks.
+  const normalized = formatCode
+    .replace(/"(?:[^"]|"")*"/g, "")
+    .replace(/\\\\./g, "")
+    .replace(/_.|\\*./g, "")
+    .replace(/\\[[^\\]]*\\]/g, "")
+    .toLowerCase()
+    .replace(/am\\/pm/g, "");
+  // A year/day token is unambiguous. Month-only patterns are dates only when
+  // paired with a date separator or another date/time token.
+  return /[dy]/.test(normalized) || (/m/.test(normalized) && (/[\\/.-]/.test(normalized) || /[hs]/.test(normalized)));
+}
+
 function dateStyleIndexes(xml: string | undefined): Set<number> {
   if (!xml) return new Set();
   const custom = new Map<number, string>();
-  for (const match of xml.matchAll(/<numFmt\b([^>]*)\/?\s*>/g)) {
+  for (const match of xml.matchAll(/<numFmt\\b([^>]*)\\/?\\s*>/g)) {
     const id = Number(attr(match[1] ?? "", "numFmtId"));
     const code = attr(match[1] ?? "", "formatCode") ?? "";
     if (Number.isFinite(id)) custom.set(id, code);
   }
-  const xfs = xml.match(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/)?.[1] ?? "";
+  const xfs = xml.match(/<cellXfs\\b[^>]*>([\\s\\S]*?)<\\/cellXfs>/)?.[1] ?? "";
   const result = new Set<number>();
   let index = 0;
-  for (const match of xfs.matchAll(/<xf\b([^>]*)\/?\s*>/g)) {
+  for (const match of xfs.matchAll(/<xf\\b([^>]*)\\/?\\s*>/g)) {
     const id = Number(attr(match[1] ?? "", "numFmtId") ?? 0);
     const code = custom.get(id) ?? "";
-    if ((id >= 14 && id <= 22) || /[dmy]/i.test(code.replace(/"[^"]*"/g, ""))) result.add(index);
+    if ((id >= 14 && id <= 22) || isDateNumberFormat(code)) result.add(index);
     index++;
   }
   return result;
 }
 
 function excelSerialToIso(value: number, date1904 = false): string {
+  if (!Number.isFinite(value) || value < 0 || (!date1904 && Math.floor(value) === 60)) throw new Error("Data serial inválida no XLSX.");
   const epoch = date1904 ? Date.UTC(1904, 0, 1) : Date.UTC(1899, 11, 30);
   const date = new Date(epoch + Math.floor(value) * 86400000);
   return `${date.getUTCFullYear().toString().padStart(4, "0")}-${(date.getUTCMonth() + 1).toString().padStart(2, "0")}-${date.getUTCDate().toString().padStart(2, "0")}`;
