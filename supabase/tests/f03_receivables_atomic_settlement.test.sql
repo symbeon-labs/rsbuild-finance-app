@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(9);
+select plan(10);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -49,6 +49,16 @@ select is(
   (select status from public.receivable_titles where id='99999999-9999-4999-8999-999999999981'),
   'baixado',
   'confirmed settlement changes title state durably'
+);
+
+select throws_ok(
+  $select public.confirm_receivable_settlements(
+    '88888888-8888-4888-8888-888888888881',
+    '[{"receivableTitleId":"99999999-9999-4999-8999-999999999982","amountMinor":19999,"settlementDate":"2026-11-19"}]'::jsonb
+  )$,
+  '22023',
+  null,
+  'partial or mismatched amount cannot mark a full title as paid'
 );
 select is(
   (select count(*)::integer from public.settlements where receivable_title_id='99999999-9999-4999-8999-999999999981'),
