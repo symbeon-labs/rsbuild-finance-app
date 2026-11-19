@@ -37,8 +37,13 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
   return result;
  },[saved]);
  const [year,setYear]=useState("all");
- const years=useMemo(()=>[...new Set(records.map(r=>r.date.slice(0,4)))].sort().reverse(),[records]);
- const rows=useMemo(()=>records.filter(r=>year==="all"||r.date.startsWith(year)),[records,year]);
+ // OFX saldo snapshots are informational balances, not financial movements.
+ const movementRecords=useMemo(()=>records.filter(record=>{
+  const description=(record.description||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleUpperCase("pt-BR").replace(/\\s+/g," ").trim();
+  return !/\\bSALDO (?:TOTAL )?DISPONIVEL DIA\\b|\\bSALDO (?:ANTERIOR|INICIAL|DE ABERTURA)\\b/.test(description);
+ }),[records]);
+ const years=useMemo(()=>[...new Set(movementRecords.map(r=>r.date.slice(0,4)))].sort().reverse(),[movementRecords]);
+ const rows=useMemo(()=>movementRecords.filter(r=>year==="all"||r.date.startsWith(year)),[movementRecords,year]);
  const dreEngine=useMemo(()=>runDreEngine(rows,overrides),[rows,overrides]);
  const totals=useMemo<Totals>(()=>rows.reduce((a,r)=>{if(r.direction==="entrada")a.incoming+=Math.abs(r.amount);else a.outgoing+=Math.abs(r.amount);a.count++;a.result=a.incoming-a.outgoing;return a;},{incoming:0,outgoing:0,result:0,count:0}),[rows]);
  const categories=useMemo(()=>{const map=new Map<string,{direction:string;category:string;amount:number;count:number}>();rows.forEach(r=>{const category=r.category?.trim()||"Não classificado";const key=r.direction+"|"+category;const v=map.get(key)||{direction:r.direction,category,amount:0,count:0};v.amount+=Math.abs(r.amount);v.count++;map.set(key,v)});return [...map.values()].sort((a,b)=>b.amount-a.amount)},[rows]);
