@@ -925,7 +925,7 @@ export default function EnterpriseWorkspace({
               }
             />
           )}
-          {modulesResolved && enabledModules.finance && section === "relatorios" && <RelatoriosDreView records={filteredRecords} isLoading={isLoadingRecords} periodLabel={period === "all" ? "Todo o histórico disponível" : period} />}
+          {modulesResolved && enabledModules.finance && section === "relatorios" && <RelatoriosDreView records={filteredRecords} organizationId={organizationId} isLoading={isLoadingRecords} periodLabel={period === "all" ? "Todo o histórico disponível" : period} />}
         </div>
       </section>
       <input
