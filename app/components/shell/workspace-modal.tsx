@@ -636,10 +636,7 @@ export function WorkspaceModal({
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                                 <strong style={{ color: "var(--ink)", fontSize: 11.5, lineHeight: 1.35 }}>{module.title}</strong>
-                                <span style={{
-                                  flex: "0 0 auto", maxWidth: 132, textAlign: "right", fontSize: 8, lineHeight: 1.3,
-                                  fontWeight: 800, letterSpacing: ".025em", color: tone
-                                }}>
+                                <span className={`capability-status-badge ${status === "blocked" || status === "pending_activation" ? "is-awaiting" : ""} ${module.key === "reconciliation" && (status === "blocked" || status === "pending_activation") ? "is-processing" : ""}`}>
                                   {label}
                                 </span>
                               </div>
