@@ -13,16 +13,16 @@
 - Shared strings, inline strings, rich text runs, cached formula values and Excel 1900/1904 date systems.
 - Source sheet and physical source row provenance.
 - Brazilian and ISO dates; currency amounts converted to integer BRL centavos.
-- Per-row validation and in-file SHA-256 deduplication.
+- Per-row validation and in-file SHA-256 deduplication; supplier CPF/CNPJ participates in the fingerprint when present, normalized independently of punctuation.
 - Commit uploads the original artifact to the private tenant path, then invokes a service-role-only transactional RPC.
 - The RPC creates an import batch and source artifact, inserts payable titles, records audit metadata, and uses tenant-scoped unique constraints for duplicate protection.
 - Invalid rows and in-file duplicates are counted separately; database conflicts are included in the duplicate count.
 
 ## XLSX parser boundaries
 
-The XLSX reader is deliberately bounded: maximum 10 MiB upload, 2,000 ZIP entries, 12 MiB per uncompressed entry and 30 MiB total uncompressed content. It rejects encrypted and ZIP64 workbooks, unsupported compression methods, path traversal and sheets wider than 256 columns. Formula cells use the cached value stored by Excel; formulas are not recalculated by the server.
+The XLSX reader is deliberately bounded: maximum 10 MiB upload, 2,000 ZIP entries, 12 MiB per uncompressed entry and 30 MiB total uncompressed content. The aggregate limit is checked against the actual decompressed byte count as well as ZIP metadata; local and central ZIP headers must agree. It rejects encrypted and ZIP64 workbooks, unsupported compression methods, path traversal and sheets wider than 256 columns. Formula cells use the cached value stored by Excel; formulas are not recalculated by the server.
 
-The parser is not yet certified against the customer's actual workbook exports. Excel number formats that encode identifiers (for example, leading-zero CNPJ/CPF) and unusual workbook layouts require fixture-based verification.
+The parser is not yet certified against the customer's actual workbook exports. Excel number formats that encode identifiers (for example, leading-zero CNPJ/CPF) and unusual workbook layouts require fixture-based verification. Custom date formats are distinguished from currency formats after removing Excel color, condition, locale, literal and escape metadata; identifiers stored as numeric cells can still lose leading zeroes before the parser receives them.
 
 ## Import safeguards
 
