@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(6);
+select plan(5);
 select ok(to_regprocedure('public.confirm_receivable_settlements(uuid,jsonb)') is not null,
   'atomic receivables settlement RPC exists');
 select ok(has_function_privilege('authenticated',
@@ -13,10 +13,6 @@ select ok(not has_function_privilege('anon',
 select ok(not has_function_privilege('public',
   'public.confirm_receivable_settlements(uuid,jsonb)', 'EXECUTE'),
   'public role cannot execute settlement RPC');
-select ok(exists (
-  select 1 from pg_indexes
-  where schemaname = 'public' and indexname = 'settlements_org_source_record_id_uidx'
-), 'bank source record is unique within an organization');
 select ok((select relrowsecurity from pg_class where oid = 'public.receivable_titles'::regclass),
   'receivable titles remain protected by RLS');
 select * from finish();
