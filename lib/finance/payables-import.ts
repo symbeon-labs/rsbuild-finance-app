@@ -18,7 +18,7 @@ export type PayableImportRow = {
 
 export type PayableImportIssue = {
   rowNumber: number;
-  code: "invalid_columns" | "missing_supplier" | "missing_document" | "invalid_due_date" | "invalid_amount" | "duplicate_in_file";
+  code: "invalid_columns" | "missing_supplier" | "missing_document" | "invalid_due_date" | "invalid_issue_date" | "invalid_amount" | "field_too_long" | "duplicate_in_file";
   message: string;
 };
 
@@ -141,13 +141,13 @@ export function previewPayablesGrid(sourceRows: ParsedGridRow[]): PayableCsvPrev
   for (const source of sourceRows.slice(1)) {
     const cell = (field: Field) => indexes[field] < 0 ? "" : (source.cells[indexes[field]] ?? "").trim();
     const supplierName = cell("supplier"), documentNumber = cell("document");
-    const dueDate = parseDate(cell("due_date")), amountMinor = parseAmountMinor(cell("amount"));
+    const dueDate = parseDate(cell("due_date")), amountMinor = parseAmountMinor(cell("amount"));\n    const issueDateRaw = cell("issue_date"), issueDate = issueDateRaw ? parseDate(issueDateRaw) : undefined;
     if (!supplierName) { errors.push({ rowNumber: source.rowNumber, code: "missing_supplier", message: "Fornecedor não informado." }); continue; }
     if (!documentNumber) { errors.push({ rowNumber: source.rowNumber, code: "missing_document", message: "Número do documento não informado." }); continue; }
     if (!dueDate) { errors.push({ rowNumber: source.rowNumber, code: "invalid_due_date", message: "Vencimento inválido; use DD/MM/AAAA ou AAAA-MM-DD." }); continue; }
     if (amountMinor === null) { errors.push({ rowNumber: source.rowNumber, code: "invalid_amount", message: "Valor inválido; informe um valor positivo com até duas casas decimais." }); continue; }
     const candidate: PayableImportRow = {
-      rowNumber: source.rowNumber, supplierName: supplierName.slice(0, 200),
+      rowNumber: source.rowNumber, supplierName,
       supplierDocument: cell("supplier_document") || undefined, documentNumber: documentNumber.slice(0, 100),
       issueDate: parseDate(cell("issue_date")) ?? undefined, dueDate, amountMinor,
       category: cell("category") || undefined, costCenter: cell("cost_center") || undefined,
