@@ -142,18 +142,30 @@ export function previewPayablesGrid(sourceRows: ParsedGridRow[]): PayableCsvPrev
     const cell = (field: Field) => indexes[field] < 0 ? "" : (source.cells[indexes[field]] ?? "").trim();
     const supplierName = cell("supplier"), documentNumber = cell("document");
     const dueDate = parseDate(cell("due_date")), amountMinor = parseAmountMinor(cell("amount"));
-    const issueDateRaw = cell("issue_date"), issueDate = issueDateRaw ? parseDate(issueDateRaw) : undefined;
+    const issueDateRaw = cell("issue_date");
+    const issueDate = issueDateRaw ? parseDate(issueDateRaw) : undefined;
     if (!supplierName) { errors.push({ rowNumber: source.rowNumber, code: "missing_supplier", message: "Fornecedor não informado." }); continue; }
     if (!documentNumber) { errors.push({ rowNumber: source.rowNumber, code: "missing_document", message: "Número do documento não informado." }); continue; }
     if (!dueDate) { errors.push({ rowNumber: source.rowNumber, code: "invalid_due_date", message: "Vencimento inválido; use DD/MM/AAAA ou AAAA-MM-DD." }); continue; }
+    if (issueDateRaw && !issueDate) { errors.push({ rowNumber: source.rowNumber, code: "invalid_issue_date", message: "Data de emissão inválida; use DD/MM/AAAA ou AAAA-MM-DD." }); continue; }
     if (amountMinor === null) { errors.push({ rowNumber: source.rowNumber, code: "invalid_amount", message: "Valor inválido; informe um valor positivo com até duas casas decimais." }); continue; }
+    const optional = {
+      supplierDocument: cell("supplier_document") || undefined,
+      category: cell("category") || undefined,
+      costCenter: cell("cost_center") || undefined,
+      bankAccount: cell("bank_account") || undefined,
+      paymentMethod: cell("payment_method") || undefined,
+      recurrenceReference: cell("recurrence") || undefined
+    };
+    const tooLong = supplierName.length > 200 || documentNumber.length > 100 ||
+      (optional.supplierDocument?.length ?? 0) > 30 || (optional.category?.length ?? 0) > 120 ||
+      (optional.costCenter?.length ?? 0) > 120 || (optional.bankAccount?.length ?? 0) > 120 ||
+      (optional.paymentMethod?.length ?? 0) > 80 || (optional.recurrenceReference?.length ?? 0) > 160;
+    if (tooLong) { errors.push({ rowNumber: source.rowNumber, code: "field_too_long", message: "Um ou mais campos excedem o limite permitido; nenhum valor será truncado." }); continue; }
     const candidate: PayableImportRow = {
       rowNumber: source.rowNumber, supplierName,
-      supplierDocument: cell("supplier_document") || undefined, documentNumber: documentNumber.slice(0, 100),
-      issueDate: parseDate(cell("issue_date")) ?? undefined, dueDate, amountMinor,
-      category: cell("category") || undefined, costCenter: cell("cost_center") || undefined,
-      bankAccount: cell("bank_account") || undefined, paymentMethod: cell("payment_method") || undefined,
-      recurrenceReference: cell("recurrence") || undefined, deduplicationKey: ""
+      ...optional, documentNumber,
+      issueDate, dueDate, amountMinor, deduplicationKey: ""
     };
     candidate.deduplicationKey = fingerprint(candidate);
     if (seen.has(candidate.deduplicationKey)) {
