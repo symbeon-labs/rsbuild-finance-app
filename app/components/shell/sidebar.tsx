@@ -114,6 +114,7 @@ export function Sidebar({
             background: currentOrgId === "rsbuild" ? undefined : "transparent",
             border: currentOrgId === "rsbuild" ? undefined : 0,
             borderRadius: currentOrgId === "rsbuild" ? undefined : 0,
+            boxShadow: currentOrgId === "rsbuild" ? undefined : "none",
             boxSizing: "border-box"
           }}
         >
@@ -128,7 +129,7 @@ export function Sidebar({
                 width: "100%",
                 height: currentOrgId === "rsbuild" ? "48px" : "auto",
                 maxWidth: currentOrgId === "rsbuild" ? "100%" : "none",
-                maxHeight: currentOrgId === "rsbuild" ? "48px" : "none",
+                maxHeight: currentOrgId === "rsbuild" ? "48px" : "112px",
                 objectFit: "contain",
                 padding: 0,
                 objectPosition: "center"

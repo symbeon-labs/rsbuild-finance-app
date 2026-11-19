@@ -349,6 +349,8 @@ export default function OperationalWorkspace({
       fetch(`/api/organization-branding?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
         .then((response) => response.ok ? response.json() : null)
         .then((branding) => {
+          // O banner oficial do tenant tem precedência sobre o logo local legado.
+          if (branding?.bannerUrl) setCompanyLogoUrl(branding.bannerUrl);
           if (!branding?.brandColor) return;
           setBrandColor(branding.brandColor);
           applyBrandColor(branding.brandColor);
