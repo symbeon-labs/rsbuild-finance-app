@@ -1,5 +1,5 @@
 import { inflateRawSync } from "node:zlib";
-import { previewPayablesGrid, type PayableCsvPreview } from "@/lib/finance/payables-import";
+import { previewPayablesGrid, type PayableCsvPreview } from "./payables-import";
 
 const MAX_ENTRIES = 2000;
 const MAX_ENTRY_BYTES = 12 * 1024 * 1024;
