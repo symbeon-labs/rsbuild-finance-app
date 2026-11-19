@@ -53,6 +53,7 @@ import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
 import { VisaoGeralView } from "@/app/components/finance/visao-geral-view";
 import { MovimentacoesView } from "@/app/components/finance/movimentacoes-view";
 import { ImportacoesView } from "@/app/components/finance/importacoes-view";
+import { PayablesImportPanel } from "@/app/components/finance/payables-import-panel";
 import { ConciliacaoView } from "@/app/components/finance/conciliacao-view";
 import { BaixasView } from "@/app/components/finance/baixas-view";
 import { RelatoriosDreView } from "@/app/components/finance/relatorios-dre-view";
@@ -848,6 +849,7 @@ export default function EnterpriseWorkspace({
               onExportOmieOfx={() => handleExportOmie(pendingImport)}
               onConfirmImport={confirmImport}
             />
+            <PayablesImportPanel organizationId={organizationId} />
           )}
           {section === "conciliacao" && (
             <ConciliacaoView
