@@ -13,7 +13,7 @@ function exportCsv(rows: string[][]) {
  const blob = new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"});
  const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="dre-gerencial-base-caixa.csv"; a.click(); URL.revokeObjectURL(url);
 }
-type SavedClassification = { financial_record_id: string; account_code: string; allocations: Array<{unit:DreUnit;amountMinor:number}>; reason: string; status: string };
+type SavedClassification = { financial_record_id: string; account_code: string; allocations: Array<{unit:DreUnit;amountMinor:number}>; reason: string; status: string; source: string };
 type ReviewDraft = { accountCode: string; unit: string; reason: string };
 export function RelatoriosDreView({records,organizationId,isLoading=false,periodLabel="Período selecionado"}:Props) {
  const [saved,setSaved]=useState<Record<string,SavedClassification>>({});
@@ -31,7 +31,7 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
  const overrides=useMemo(()=>{
   const result:Record<string,DreOverride>={};
   for(const [recordId,item] of Object.entries(saved)){
-   if(item.status!=="overridden")continue;
+   if(item.source!=="manual"||!["overridden","excluded"].includes(item.status))continue;
    result[recordId]={accountCode:item.account_code,unit:item.allocations?.length===1?item.allocations[0].unit:undefined,reason:item.reason};
   }
   return result;
@@ -71,7 +71,7 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
     <td><select className="filter-select" value={draft.accountCode} onChange={e=>setDrafts(v=>({...v,[item.recordId]:{...draft,accountCode:e.target.value}}))}><option value="">Selecione</option>{DRE_ACCOUNTS.map(account=><option key={account.code} value={account.code}>{account.label}</option>)}</select></td>
     <td><select className="filter-select" value={draft.unit} onChange={e=>setDrafts(v=>({...v,[item.recordId]:{...draft,unit:e.target.value}}))}><option value="">Rateio documentado</option><option value="ALS/CSN">ALS/CSN</option><option value="P&L">P&L</option><option value="RRT">RRT</option></select></td>
     <td><input className="filter-select" style={{minWidth:190}} value={draft.reason} maxLength={2000} onChange={e=>setDrafts(v=>({...v,[item.recordId]:{...draft,reason:e.target.value}}))} aria-label="Justificativa da classificação"/></td>
-    <td><button className="secondary-button" disabled={saving===item.recordId||!draft.accountCode||!draft.reason.trim()} onClick={async()=>{setSaving(item.recordId);setSaveError(null);try{const response=await fetch("/api/dre-classifications",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({organizationId,recordId:item.recordId,accountCode:draft.accountCode,unit:draft.unit||undefined,reason:draft.reason})});const payload=await response.json();if(!response.ok)throw new Error(payload.error??"Falha ao salvar.");setSaved(v=>({...v,[item.recordId]:{financial_record_id:item.recordId,account_code:payload.classification.accountCode,allocations:payload.classification.allocations,reason:draft.reason,status:"overridden"}}));}catch(error){setSaveError(error instanceof Error?error.message:"Falha ao salvar classificação.");}finally{setSaving(null);}}}>{saving===item.recordId?"Salvando…":"Aprovar classificação"}</button></td>
+    <td><button className="secondary-button" disabled={saving===item.recordId||!draft.accountCode||!draft.reason.trim()} onClick={async()=>{setSaving(item.recordId);setSaveError(null);try{const response=await fetch("/api/dre-classifications",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({organizationId,recordId:item.recordId,accountCode:draft.accountCode,unit:draft.unit||undefined,reason:draft.reason})});const payload=await response.json();if(!response.ok)throw new Error(payload.error??"Falha ao salvar.");setSaved(v=>({...v,[item.recordId]:{financial_record_id:item.recordId,account_code:payload.classification.accountCode,allocations:payload.classification.allocations,reason:draft.reason,status:payload.classification.status,source:"manual"}}));}catch(error){setSaveError(error instanceof Error?error.message:"Falha ao salvar classificação.");}finally{setSaving(null);}}}>{saving===item.recordId?"Salvando…":"Aprovar classificação"}</button></td>
    </tr>})}
   </tbody></table></div></>}
   {dreEngine.summary.review===0&&<div className="table-empty" style={{marginTop:18}}>Nenhuma classificação pendente de revisão neste período.</div>}
