@@ -306,18 +306,6 @@ export function WorkspaceModal({
             const form = e.currentTarget;
             const nameInput = form.elements.namedItem("companyName") as HTMLInputElement;
             const urlInput = form.elements.namedItem("companyLogoUrl") as HTMLInputElement;
-            const modFinanceInput = form.elements.namedItem("modFinance") as HTMLInputElement;
-            const modReconciliationInput = form.elements.namedItem("modReconciliation") as HTMLInputElement;
-            const modLogisticsInput = form.elements.namedItem("modLogistics") as HTMLInputElement;
-            const modAuditInput = form.elements.namedItem("modAudit") as HTMLInputElement;
-
-            const nextModules: EnabledModulesConfig = canManageModules ? {
-              finance: modFinanceInput ? modFinanceInput.checked : activeModulesState.finance,
-              reconciliation: modReconciliationInput ? modReconciliationInput.checked : activeModulesState.reconciliation,
-              logistics: modLogisticsInput ? modLogisticsInput.checked : activeModulesState.logistics,
-              audit: modAuditInput ? modAuditInput.checked : activeModulesState.audit
-            } : enabledModules;
-
             const targetName = nameInput ? nameInput.value : typedName;
             const targetLogo = urlInput ? (urlInput.value || companyLogoUrl) : companyLogoUrl;
 
