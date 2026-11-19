@@ -240,7 +240,7 @@ export default function OperationalWorkspace({
         };
         setEnabledModules(nextModules);
         setModulesResolved(true);
-        if (!canAccessWorkspaceSection(sectionRef.current, nextModules)) {
+        if (!canAccessWorkspaceSection(section, nextModules)) {
           setSection("workspace");
           setActiveModule(nextModules.finance ? "finance" : nextModules.reconciliation ? "reconciliation" : nextModules.logistics ? "logistics" : "audit");
           router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
@@ -254,7 +254,7 @@ export default function OperationalWorkspace({
         router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
       });
     return () => { active = false; };
-  }, [organizationId, organizationSlug, router]);
+  }, [organizationId, organizationSlug, router, section]);
 
   const [titles, setTitles] = useState<ReceivableTitle[]>([]);
   const [proofs, setProofs] = useState<DeliveryProof[]>([]);
