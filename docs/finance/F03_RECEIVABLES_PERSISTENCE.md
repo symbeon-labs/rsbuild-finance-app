@@ -20,6 +20,7 @@ Make the Accounts Receivable workspace read and write its operational titles thr
 - The settlement row uses the title's canonical document number and customer name from the database, not client-supplied labels.
 - A batch is transactional: an invalid, missing, already-settled, or unauthorized title causes the complete confirmation to roll back.
 - The confirmation records the RSBUILD OS settlement; it does not write to or claim synchronization with the source ERP.
+- The status PATCH endpoint can cancel a title, but cannot mark it paid or reopen/change an already-paid title; paid status is controlled by the atomic settlement RPC.
 
 ## Scope limits
 
