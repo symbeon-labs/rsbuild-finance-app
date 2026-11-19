@@ -141,7 +141,8 @@ export function previewPayablesGrid(sourceRows: ParsedGridRow[]): PayableCsvPrev
   for (const source of sourceRows.slice(1)) {
     const cell = (field: Field) => indexes[field] < 0 ? "" : (source.cells[indexes[field]] ?? "").trim();
     const supplierName = cell("supplier"), documentNumber = cell("document");
-    const dueDate = parseDate(cell("due_date")), amountMinor = parseAmountMinor(cell("amount"));\n    const issueDateRaw = cell("issue_date"), issueDate = issueDateRaw ? parseDate(issueDateRaw) : undefined;
+    const dueDate = parseDate(cell("due_date")), amountMinor = parseAmountMinor(cell("amount"));
+    const issueDateRaw = cell("issue_date"), issueDate = issueDateRaw ? parseDate(issueDateRaw) : undefined;
     if (!supplierName) { errors.push({ rowNumber: source.rowNumber, code: "missing_supplier", message: "Fornecedor não informado." }); continue; }
     if (!documentNumber) { errors.push({ rowNumber: source.rowNumber, code: "missing_document", message: "Número do documento não informado." }); continue; }
     if (!dueDate) { errors.push({ rowNumber: source.rowNumber, code: "invalid_due_date", message: "Vencimento inválido; use DD/MM/AAAA ou AAAA-MM-DD." }); continue; }
