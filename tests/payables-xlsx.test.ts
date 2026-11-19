@@ -36,8 +36,8 @@ function workbookFixture(date1904 = false): Buffer {
   const sharedXml = `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${shared.map((value) => `<si><t>${value}</t></si>`).join("")}</sst>`;
   const workbook = `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><workbookPr date1904="${date1904 ? 1 : 0}"/><sheets><sheet name="Abertos" sheetId="1" r:id="rId1"/><sheet name="Pagos" sheetId="2" r:id="rId2"/></sheets></workbook>`;
   const rels = '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Target="worksheets/sheet1.xml" Type="worksheet"/><Relationship Id="rId2" Target="worksheets/sheet2.xml" Type="worksheet"/></Relationships>';
-  const styles = '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cellXfs count="2"><xf numFmtId="0"/><xf numFmtId="14"/></cellXfs></styleSheet>';
-  const open = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c><c r="D1" t="s"><v>3</v></c></row><row r="3"><c r="A3" t="s"><v>4</v></c><c r="B3" t="s"><v>5</v></c><c r="C3" s="1"><v>46336</v></c><c r="D3"><f>1000+234.56</f><v>1234.56</v></c></row></sheetData></worksheet>';
+  const styles = '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="[Red]0.00"/><numFmt numFmtId="165" formatCode="[$-409]dd-mmm-yy"/></numFmts><cellXfs count="3"><xf numFmtId="0"/><xf numFmtId="164"/><xf numFmtId="165"/></cellXfs></styleSheet>';
+  const open = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c><c r="D1" t="s"><v>3</v></c></row><row r="3"><c r="A3" t="s"><v>4</v></c><c r="B3" t="s"><v>5</v></c><c r="C3" s="2"><v>46336</v></c><c r="D3" s="1"><f>1000+234.56</f><v>1234.56</v></c></row></sheetData></worksheet>';
   const dateAdjustedOpen = date1904 ? open.replace("<v>46336</v>", "<v>1</v>") : open;
   const paid = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Arquivo de pagos</t></is></c></row></sheetData></worksheet>';
   return zipStored({
@@ -75,4 +75,10 @@ test("XLSX permite selecionar planilha pelo nome e rejeita nome inexistente", ()
 
 test("XLSX rejeita arquivo que não é um contêiner ZIP", () => {
   assert.throws(() => previewPayablesXlsx(Buffer.from("not an xlsx")), /diretório ZIP não encontrado/);
+});
+
+test("XLSX não interpreta formato monetário com metadado de cor como data", () => {
+  const result = previewPayablesXlsx(workbookFixture());
+  assert.equal(result.rows[0].dueDate, "2026-11-10");
+  assert.equal(result.rows[0].amountMinor, 123456);
 });
