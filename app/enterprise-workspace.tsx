@@ -63,6 +63,7 @@ import { OrganizationAdminPanel } from "@/app/components/admin/organization-admi
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { getWorkspaceCapabilityAvailability } from "@/app/actions/capability-licenses";
+import { canAccessWorkspaceSection } from "@/lib/workspace-module-access";
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
@@ -106,7 +107,7 @@ export default function EnterpriseWorkspace({
   function getModuleForSection(s: NavSection): ModuleType {
     if (s === "baixas" || s === "conciliacao") return "reconciliation";
     if (s === "pedidos-ha" || s === "canhotos") return "logistics";
-    if (s === "torre-controle") return "audit";
+    if (s === "torre-controle" || s === "auditoria" || s === "agentes" || s === "acessos") return "audit";
     if (s === "projetos") return ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.defaultModule ?? "finance";
     return "finance";
   }
@@ -132,6 +133,7 @@ export default function EnterpriseWorkspace({
   sectionRef.current = section;
 
   function navigateTo(nextSection: NavSection) {
+    if (organizationSlug !== "rsbuild" && (!modulesResolved || !canAccessWorkspaceSection(nextSection, enabledModules))) return;
     const safeSection = nextSection === "projetos" && !canViewProjectPortfolio ? "visao-geral" : nextSection;
     setSection(safeSection);
     if (safeSection !== "visao-geral") {
@@ -222,8 +224,11 @@ export default function EnterpriseWorkspace({
   // Módulos iniciais respeitam a configuração declarada para cada organização.
   // Preferências locais podem personalizar apenas o workspace atual neste navegador.
   const organizationPreset = ORGANIZATION_PRESETS.find((preset) => preset.id === currentOrgId);
+  const [modulesResolved, setModulesResolved] = useState(organizationSlug === "rsbuild");
   const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>(
-    organizationPreset?.enabledModules ?? { finance: true, reconciliation: false, logistics: false, audit: false }
+    organizationSlug === "rsbuild"
+      ? organizationPreset?.enabledModules ?? { finance: false, reconciliation: false, logistics: false, audit: true }
+      : { finance: false, reconciliation: false, logistics: false, audit: false }
   );
 
   // isSuperAdmin calculado reativamente com base em effectiveRole
@@ -329,8 +334,12 @@ export default function EnterpriseWorkspace({
   // Entitlements são a fonte autoritativa da navegação nos workspaces de clientes.
   // Preferências locais/presets nunca podem reabilitar capacidades sem licença ativa.
   useEffect(() => {
-    if (organizationSlug === "rsbuild") return;
+    if (organizationSlug === "rsbuild") {
+      setModulesResolved(true);
+      return;
+    }
     let active = true;
+    setModulesResolved(false);
     const environment = organizationSlug.endsWith("_qa") ? "qa" : "production";
 
     getWorkspaceCapabilityAvailability(organizationId, environment)
@@ -344,6 +353,7 @@ export default function EnterpriseWorkspace({
           audit: capabilities.audit === "available"
         };
         setEnabledModules(nextModules);
+        setModulesResolved(true);
 
         const firstAvailable = (["finance", "reconciliation", "logistics", "audit"] as ModuleType[])
           .find((module) => nextModules[module]);
@@ -373,6 +383,7 @@ export default function EnterpriseWorkspace({
       .catch(() => {
         if (!active) return;
         setEnabledModules({ finance: false, reconciliation: false, logistics: false, audit: false });
+        setModulesResolved(true);
         setSection("visao-geral");
         router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
       });
@@ -748,9 +759,11 @@ export default function EnterpriseWorkspace({
         activeModule={activeModule}
         section={section}
         enabledModules={enabledModules}
+        modulesReady={modulesResolved}
         currentOrgId={currentOrgId}
         showProjectPortfolio={canViewProjectPortfolio}
         onSelectModule={(mod) => {
+          if (organizationSlug !== "rsbuild" && (!modulesResolved || !enabledModules[mod])) return;
           setActiveModule(mod);
           if (mod === "finance") navigateTo("visao-geral");
           else if (mod === "reconciliation") navigateTo("baixas");
@@ -791,6 +804,14 @@ export default function EnterpriseWorkspace({
           <div className="inline-note" role="note">
             Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
           </div>
+          {!modulesResolved && (
+            <div className="inline-note" role="status">Verificando os módulos autorizados para esta organização…</div>
+          )}
+          {modulesResolved && !canAccessWorkspaceSection(section, enabledModules) && (
+            <div className="inline-note" role="alert">
+              Este módulo não está habilitado para a organização neste ambiente. O acesso permanece bloqueado.
+            </div>
+          )}
           {isLoadingRecords && <div className="inline-note" role="status">Carregando movimentos financeiros da organização...</div>}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
             <button className="secondary-button" type="button" onClick={() => setIsAdminPanelOpen((open) => !open)}>{isAdminPanelOpen ? "Fechar administração" : "Equipe e identidade"}</button>
@@ -803,7 +824,7 @@ export default function EnterpriseWorkspace({
             </div>
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
-          {section === "visao-geral" && (
+          {modulesResolved && Object.values(enabledModules).some(Boolean) && section === "visao-geral" && (
             <VisaoGeralView
               records={filteredRecords}
               totals={totals}
@@ -811,7 +832,7 @@ export default function EnterpriseWorkspace({
               onOpenImport={() => inputRef.current?.click()}
             />
           )}
-          {section === "torre-controle" && (
+          {modulesResolved && enabledModules.audit && section === "torre-controle" && (
             <TorreControleView
               companyName={companyName}
               isDirector={isSuperAdmin}
@@ -829,14 +850,14 @@ export default function EnterpriseWorkspace({
               onNavigateToTab={navigateTo}
             />
           )}
-          {section === "movimentacoes" && (
+          {modulesResolved && enabledModules.finance && section === "movimentacoes" && (
             <MovimentacoesView
               records={filteredRecords}
               onOpenImport={() => inputRef.current?.click()}
               onExportOmie={handleExportOmie}
             />
           )}
-          {section === "importacoes" && (
+          {modulesResolved && enabledModules.finance && section === "importacoes" && (
             <ImportacoesView
               fileName={fileName}
               pendingImport={pendingImport}
@@ -849,7 +870,7 @@ export default function EnterpriseWorkspace({
               onConfirmImport={confirmImport}
             />
           )}
-          {section === "conciliacao" && (
+          {modulesResolved && enabledModules.reconciliation && section === "conciliacao" && (
             <ConciliacaoView
               bankRecords={filteredRecords}
               omieRecords={omieRecords}
@@ -859,7 +880,7 @@ export default function EnterpriseWorkspace({
               onImportOmieRecords={setOmieRecords}
             />
           )}
-          {section === "baixas" && (
+          {modulesResolved && enabledModules.reconciliation && section === "baixas" && (
             <BaixasView
               titles={titles}
               matches={matches}
@@ -870,7 +891,7 @@ export default function EnterpriseWorkspace({
               onExportBatchSettlement={handleExportBatchSettlement}
             />
           )}
-          {section === "canhotos" && (
+          {modulesResolved && enabledModules.logistics && section === "canhotos" && (
             <CanhotosView
               proofs={proofs}
               deliveryMetrics={deliveryMetrics}
@@ -880,7 +901,7 @@ export default function EnterpriseWorkspace({
               onConfirmReceipt={handleConfirmReceipt}
             />
           )}
-          {section === "pedidos-ha" && (
+          {modulesResolved && enabledModules.logistics && section === "pedidos-ha" && (
             <PedidosHaView
               orders={orders}
               hubAcaiMetrics={hubAcaiMetrics}
@@ -904,7 +925,7 @@ export default function EnterpriseWorkspace({
               }
             />
           )}
-          {section === "relatorios" && <RelatoriosDreView />}
+          {modulesResolved && enabledModules.finance && section === "relatorios" && <RelatoriosDreView />}
         </div>
       </section>
       <input

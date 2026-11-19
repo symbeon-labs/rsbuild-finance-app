@@ -7,6 +7,7 @@ import {
   ModuleType,
   NavItem
 } from "../app/types/workspace.js";
+import { canAccessWorkspaceSection, getRequiredModuleForSection } from "../lib/workspace-module-access.js";
 
 test("GOV-01: Os 4 produtos do portfólio estão definidos e tipados nos presets das organizações", () => {
   const rsbuild = ORGANIZATION_PRESETS.find((p) => p.id === "rsbuild");
@@ -168,3 +169,37 @@ test("GOV-07: Onboarding & Personalização: novos usuários sem onboarding_comp
   assert.equal(shouldShowOnboarding(false, true, true), true);
 });
 
+
+test("GOV-08: Mundo do Sabor QA com somente Finance ativo não acessa outros módulos", () => {
+  const financeOnly: EnabledModulesConfig = {
+    finance: true,
+    reconciliation: false,
+    logistics: false,
+    audit: false
+  };
+
+  assert.equal(canAccessWorkspaceSection("visao-geral", financeOnly), true);
+  assert.equal(canAccessWorkspaceSection("movimentacoes", financeOnly), true);
+  assert.equal(canAccessWorkspaceSection("importacoes", financeOnly), true);
+  assert.equal(canAccessWorkspaceSection("relatorios", financeOnly), true);
+  assert.equal(canAccessWorkspaceSection("baixas", financeOnly), false);
+  assert.equal(canAccessWorkspaceSection("conciliacao", financeOnly), false);
+  assert.equal(canAccessWorkspaceSection("pedidos-ha", financeOnly), false);
+  assert.equal(canAccessWorkspaceSection("canhotos", financeOnly), false);
+  assert.equal(canAccessWorkspaceSection("torre-controle", financeOnly), false);
+  assert.equal(canAccessWorkspaceSection("auditoria", financeOnly), false);
+  assert.equal(canAccessWorkspaceSection("agentes", financeOnly), false);
+  assert.equal(canAccessWorkspaceSection("acessos", financeOnly), false);
+});
+
+test("GOV-09: rotas institucionais compartilhadas não exigem licença comercial", () => {
+  const noCommercialModules: EnabledModulesConfig = {
+    finance: false, reconciliation: false, logistics: false, audit: false
+  };
+  assert.equal(canAccessWorkspaceSection("workspace", noCommercialModules), true);
+  assert.equal(canAccessWorkspaceSection("visao-geral", noCommercialModules), true);
+  assert.equal(canAccessWorkspaceSection("sandbox", noCommercialModules), true);
+  assert.equal(getRequiredModuleForSection("baixas"), "reconciliation");
+  assert.equal(getRequiredModuleForSection("pedidos-ha"), "logistics");
+  assert.equal(getRequiredModuleForSection("acessos"), "audit");
+});

@@ -18,6 +18,8 @@ interface SidebarProps {
   activeModule: ModuleType;
   section: NavSection;
   enabledModules: EnabledModulesConfig;
+  /** Prevents rendering tenant module navigation before server entitlements resolve. */
+  modulesReady?: boolean;
   currentOrgId?: OrganizationId;
   /** Portfólio de projetos/sprints é restrito ao workspace de gestão RSBUILD */
   showProjectPortfolio?: boolean;
@@ -82,6 +84,7 @@ export function Sidebar({
   activeModule,
   section,
   enabledModules,
+  modulesReady = true,
   currentOrgId = "rsbuild",
   showProjectPortfolio = false,
   canAccessSandbox = false,
@@ -93,7 +96,7 @@ export function Sidebar({
   onSignOut
 }: SidebarProps) {
   const [isPending, startTransition] = useTransition();
-  const availableModules = MODULE_CONFIGS.filter((m) => enabledModules[m.id]);
+  const availableModules = modulesReady ? MODULE_CONFIGS.filter((m) => enabledModules[m.id]) : [];
   const currentModuleConfig =
     MODULE_CONFIGS.find((m) => m.id === activeModule) || availableModules[0] || MODULE_CONFIGS[0];
 
@@ -205,6 +208,7 @@ export function Sidebar({
           // Sandbox só aparece para usuários com acesso confirmado pelo servidor
           if (item.id === "sandbox" && !canAccessSandbox) return false;
           if (item.module === "all") return true;
+          if (!modulesReady) return false;
           // Verifica se o módulo do item está contratado
           if (!enabledModules[item.module]) return false;
           return item.module === activeModule;
