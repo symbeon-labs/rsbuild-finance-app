@@ -358,16 +358,6 @@ export default function OperationalWorkspace({
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
       const savedLogo = localStorage.getItem(`rsbuild_workspace_logo_${organizationId}`);
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
-      if (savedModules) {
-        const parsed = JSON.parse(savedModules);
-        setEnabledModules({
-          finance: parsed.finance !== false,
-          reconciliation: parsed.reconciliation !== false,
-          logistics: parsed.logistics !== false,
-          audit: parsed.audit !== false
-        });
-      }
       const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "sand") {
         setTheme(savedTheme);
@@ -409,17 +399,6 @@ export default function OperationalWorkspace({
       try {
         localStorage.setItem(`rsbuild_workspace_brand_color_${organizationId}`, colorToApply);
       } catch {}
-    }
-    if (modules) {
-      setEnabledModules(modules);
-      try {
-        localStorage.setItem(`rsbuild_workspace_modules_${organizationId}`, JSON.stringify(modules));
-      } catch {}
-      if (!modules.finance && modules.logistics && activeModule === "finance") {
-        navigateTo("pedidos-ha");
-      } else if (!modules.logistics && modules.finance && activeModule === "logistics") {
-        navigateTo("visao-geral");
-      }
     }
     try {
       if (logo) {
@@ -960,6 +939,7 @@ export default function OperationalWorkspace({
           </button>
         </div>
         <div className="content">
+          {!modulesResolved ? <div className="inline-note" role="status">Validando as permissões dos módulos deste ambiente...</div> : <>
           {section !== "workspace" && <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />}
           {section === "workspace" ? (
             <section aria-labelledby="workspace-launcher-title" style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(24px, 5vw, 56px) 0" }}>
@@ -1144,6 +1124,7 @@ export default function OperationalWorkspace({
           {section === "relatorios" && <RelatoriosDreView />}
           </>
           )}
+          </>}
         </div>
       </section>
       <input
