@@ -13,10 +13,38 @@ export function OrganizationBrandBanner({ organizationId, organizationName }: { 
     return () => { active = false; };
   }, [organizationId]);
   if (!data?.bannerUrl) return null;
-  return <div aria-label={"Identidade visual de " + organizationName} style={{ height: "clamp(200px, 25vw, 280px)", overflow: "hidden", borderRadius: 12, marginBottom: 22, background: "#171717", position: "relative" }}>
-    {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={data.bannerUrl} alt={"Banner de " + organizationName} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: data.positionX + "% " + data.positionY + "%", transform: "scale(" + (data.zoom || 1.5) + ")" }} />
-    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(0,0,0,.48), transparent 75%)" }} />
-    <strong style={{ position: "absolute", left: 22, bottom: 18, color: "#fff", textShadow: "0 1px 8px rgba(0,0,0,.55)", fontSize: 17 }}>{organizationName}</strong>
-  </div>;
+
+  return (
+    <section
+      aria-label={"Identidade visual de " + organizationName}
+      style={{
+        width: "100%",
+        aspectRatio: "3 / 1",
+        maxHeight: 320,
+        minHeight: 120,
+        overflow: "hidden",
+        borderRadius: 14,
+        marginBottom: 22,
+        background: "#100817",
+        border: "1px solid rgba(124, 58, 237, .12)",
+        boxShadow: "0 10px 28px rgba(20, 12, 30, .08)",
+        position: "relative",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={data.bannerUrl}
+        alt={"Identidade visual de " + organizationName}
+        decoding="async"
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          objectPosition: data.positionX + "% " + data.positionY + "%",
+          transform: "scale(" + (data.zoom ?? 1) + ")",
+        }}
+      />
+    </section>
+  );
 }
