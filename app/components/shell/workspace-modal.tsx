@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
 import { RsbuildIcon, type RsbuildIconName } from "@/app/components/rsbuild-icons";
-import { getWorkspaceCapabilityAvailability } from "@/app/actions/capability-licenses";
+import { getWorkspaceCapabilityAvailability, getCapabilityLicensingData, setCapabilityLicense } from "@/app/actions/capability-licenses";
 
 function getPresetIdentity(preset: OrganizationPreset) {
   if (preset.id.endsWith("_qa")) return { label: "AMBIENTE QA", icon: "approval" as RsbuildIconName };
@@ -64,6 +64,11 @@ export function WorkspaceModal({
   const [capabilityStatuses, setCapabilityStatuses] = useState<Record<string, string>>({});
   const [capabilityStatusesLoading, setCapabilityStatusesLoading] = useState(false);
   const [capabilityStatusesError, setCapabilityStatusesError] = useState("");
+  const [licenseRecords, setLicenseRecords] = useState<Record<string, { license_status: string; operational_status: string; entitled_environments: string[] }>>({});
+  const [capabilityReason, setCapabilityReason] = useState("Autorização administrativa — QA Capability Baseline v1.0");
+  const [savingCapability, setSavingCapability] = useState<string | null>(null);
+  const [capabilityActionError, setCapabilityActionError] = useState("");
+  const [capabilityActionNotice, setCapabilityActionNotice] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -85,16 +90,34 @@ export function WorkspaceModal({
       setCapabilityStatuses({});
       setCapabilityStatusesLoading(false);
       setCapabilityStatusesError("");
+      setLicenseRecords({});
       return () => { active = false; };
     }
     if (isOpen && activeTab === "modulos" && selectedOrgRealId) {
       setCapabilityStatusesLoading(true);
       setCapabilityStatusesError("");
-      getWorkspaceCapabilityAvailability(selectedOrgRealId, selectedEnvironment)
-        .then((result) => {
+      Promise.all([
+        getWorkspaceCapabilityAvailability(selectedOrgRealId, selectedEnvironment),
+        canManageModules ? getCapabilityLicensingData() : Promise.resolve(null)
+      ])
+        .then(([availability, licensing]) => {
           if (!active) return;
-          if (result.ok) setCapabilityStatuses(result.capabilities as Record<string, string>);
-          else setCapabilityStatusesError(result.error);
+          if (availability.ok) setCapabilityStatuses(availability.capabilities as Record<string, string>);
+          else setCapabilityStatusesError(availability.error);
+          if (licensing?.ok) {
+            const records = Object.fromEntries(
+              licensing.licenses
+                .filter((license) => license.organization_id === selectedOrgRealId)
+                .map((license) => [license.capability_key, {
+                  license_status: license.license_status,
+                  operational_status: license.operational_status,
+                  entitled_environments: license.entitled_environments ?? []
+                }])
+            );
+            setLicenseRecords(records);
+          } else if (canManageModules && licensing && !licensing.ok) {
+            setCapabilityActionError(licensing.error);
+          }
         })
         .catch(() => {
           if (active) setCapabilityStatusesError("Não foi possível consultar a disponibilidade dos módulos.");
@@ -118,6 +141,55 @@ export function WorkspaceModal({
   }
 
   const currentPreset = ORGANIZATION_PRESETS.find((p) => p.id === selectedOrg);
+  const selectedEnvironment = selectedOrg.endsWith("_qa") ? "qa" : currentEnvironment;
+
+  async function handleCapabilityAccessChange(capabilityKey: string, shouldGrant: boolean) {
+    const selectedOrgRealId = ORG_ID_BY_SLUG[selectedOrg] ?? currentOrgRealId;
+    if (!canManageModules || !selectedOrgRealId || selectedOrg === "rsbuild") return;
+    setSavingCapability(capabilityKey);
+    setCapabilityActionError("");
+    setCapabilityActionNotice("");
+    const current = licenseRecords[capabilityKey];
+    const existingEnvironments = current?.entitled_environments ?? [];
+    const nextEnvironments = shouldGrant
+      ? Array.from(new Set([...existingEnvironments, selectedEnvironment]))
+      : existingEnvironments.filter((environment) => environment !== selectedEnvironment);
+    const nextLicenseStatus = nextEnvironments.length > 0 ? "granted" : "blocked";
+    const reason = capabilityReason.trim() || `Alteração administrativa de capacidade no ambiente ${selectedEnvironment.toUpperCase()}.`;
+    try {
+      const result = await setCapabilityLicense({
+        organizationId: selectedOrgRealId,
+        capabilityKey,
+        licenseStatus: nextLicenseStatus,
+        operationalStatus: shouldGrant ? "active" : (current?.operational_status ?? "active"),
+        reason,
+        entitledEnvironments: nextEnvironments
+      });
+      if (!result.ok) throw new Error(result.error);
+      const [availability, licensing] = await Promise.all([
+        getWorkspaceCapabilityAvailability(selectedOrgRealId, selectedEnvironment),
+        getCapabilityLicensingData()
+      ]);
+      if (availability.ok) setCapabilityStatuses(availability.capabilities as Record<string, string>);
+      if (licensing.ok) {
+        const records = Object.fromEntries(
+          licensing.licenses
+            .filter((license) => license.organization_id === selectedOrgRealId)
+            .map((license) => [license.capability_key, {
+              license_status: license.license_status,
+              operational_status: license.operational_status,
+              entitled_environments: license.entitled_environments ?? []
+            }])
+        );
+        setLicenseRecords(records);
+      }
+      setCapabilityActionNotice(`${capabilityKey} ${shouldGrant ? "liberado" : "bloqueado"} para ${selectedEnvironment.toUpperCase()}.`);
+    } catch (error) {
+      setCapabilityActionError(error instanceof Error ? error.message : "Não foi possível alterar a licença.");
+    } finally {
+      setSavingCapability(null);
+    }
+  }
 
   return (
     <div className="workspace-modal-backdrop" onClick={onClose} style={{ overflowY: "auto", padding: "16px" }}>
@@ -261,7 +333,7 @@ export function WorkspaceModal({
             }
 
             if (canManageModules) {
-              onSave(targetName, targetLogo, nextModules, selectedOrg, currentColor);
+              onSave(targetName, targetLogo, undefined, selectedOrg, currentColor);
             } else {
               onClose();
             }
@@ -521,6 +593,15 @@ export function WorkspaceModal({
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: "9px", lineHeight: 1.4 }}>
                     O Sandbox é um laboratório interno isolado, acessado pela Central RSBUILD. Ele não é um workspace QA nem utiliza este catálogo de licenças diretamente.
                   </p>
+                  {canManageModules && (
+                    <div style={{ display: "grid", gap: 7, padding: "10px 12px", border: "1px solid var(--rsbuild-terracotta)", borderRadius: 8, background: "var(--rsbuild-terracotta-soft)" }}>
+                      <strong style={{ color: "var(--ink)", fontSize: 10, letterSpacing: ".04em" }}>GOVERNANÇA DE LICENÇAS · {selectedEnvironment.toUpperCase()}</strong>
+                      <p style={{ margin: 0, color: "var(--muted)", fontSize: 10, lineHeight: 1.45 }}>Sua conta possui permissão de administrador da plataforma. As alterações são registradas no histórico de licenças e aplicadas somente ao ambiente selecionado.</p>
+                      <input value={capabilityReason} onChange={(event) => setCapabilityReason(event.target.value)} aria-label="Justificativa da alteração de licença" placeholder="Justificativa obrigatória para auditoria" style={{ width: "100%", minHeight: 34, border: "1px solid var(--line)", borderRadius: 6, padding: "6px 9px", background: "var(--bg)", color: "var(--ink)", fontSize: 10 }} />
+                      {capabilityActionError && <div role="alert" style={{ color: "var(--red, #B91C1C)", fontSize: 10 }}>{capabilityActionError}</div>}
+                      {capabilityActionNotice && <div role="status" style={{ color: "var(--green-text, #047857)", fontSize: 10 }}>{capabilityActionNotice}</div>}
+                    </div>
+                  )}
                   {capabilityStatusesLoading ? (
                     <div role="status" style={{ padding: 14, border: "1px solid var(--line)", borderRadius: 8, color: "var(--muted)", fontSize: 11 }}>
                       Consultando disponibilidade dos módulos…
@@ -572,6 +653,11 @@ export function WorkspaceModal({
                               {available && <span style={{ display: "inline-flex", marginTop: 7, padding: "3px 7px", borderRadius: 999, background: "rgba(5,150,105,.12)", color: "#047857", fontSize: 8, fontWeight: 800, letterSpacing: ".04em" }}>
                                 ✓ LIBERADO PARA {selectedOrg.endsWith("_qa") ? "QA" : "PRODUÇÃO"}
                               </span>}
+                              {canManageModules && (
+                                <button type="button" disabled={savingCapability === module.key} onClick={() => handleCapabilityAccessChange(module.key, !available)} style={{ display: "inline-flex", marginTop: 8, padding: "5px 9px", borderRadius: 6, border: "1px solid var(--line)", background: available ? "rgba(185,28,28,.07)" : "rgba(5,150,105,.1)", color: available ? "#B91C1C" : "#047857", fontSize: 9, fontWeight: 800, cursor: savingCapability === module.key ? "wait" : "pointer", opacity: savingCapability === module.key ? .6 : 1 }}>
+                                  {savingCapability === module.key ? "SALVANDO…" : available ? `BLOQUEAR ${selectedEnvironment.toUpperCase()}` : `LIBERAR ${selectedEnvironment.toUpperCase()}`}
+                                </button>
+                              )}
                             </div>
                           </article>
                         );
