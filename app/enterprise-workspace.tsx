@@ -686,7 +686,7 @@ export default function EnterpriseWorkspace({
       const response = await fetch(`/api/settlements?organizationId=${encodeURIComponent(organizationId)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settlements: settlements.map((item) => ({ receivableTitleId: item.titleId, documentNumber: item.documentNumber, customerName: item.customerName, amountMinor: Math.round(item.amountPaid * 100), settlementDate: item.settlementDate, sourceRecordId: item.sourceRecordId, observation: item.observation })) })
+        body: JSON.stringify({ settlements: settlements.map((item) => ({ receivableTitleId: item.titleId, documentNumber: item.documentNumber, customerName: item.customerName, amountMinor: Math.round(item.amountPaid * 100), settlementDate: item.settlementDate, sourceRecordId: item.sourceRecordId, observation: `${item.observation || ""} | Valor original: R$ ${item.amountOriginal.toFixed(2)}; juros: R$ ${item.interest.toFixed(2)}; desconto: R$ ${item.discount.toFixed(2)}` })) })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Falha ao confirmar baixas.");
