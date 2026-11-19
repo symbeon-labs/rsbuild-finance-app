@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     p_account_code: classification.account!.code,
     p_treatment: classification.account!.treatment,
     p_confidence: 1,
-    p_status: "overridden",
+    p_status: classification.status,
     p_reason: reason,
     p_source: "manual",
     p_rule_version: RULE_VERSION,
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     classification: {
       id: classificationId, financialRecordId: recordId,
       accountCode: classification.account!.code, treatment: classification.account!.treatment,
-      confidence: 1, status: "overridden", reason,
+      confidence: 1, status: classification.status, reason,
       allocations: classification.allocations, reviewedBy: userId
     }
   }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
