@@ -82,6 +82,8 @@ function formatOperationalNotice(message: string): string {
 
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 import { FinanceEvaluationGuide } from "@/app/components/finance/finance-evaluation-guide";
+import { getWorkspaceCapabilityAvailability } from "@/app/actions/capability-licenses";
+import { canAccessWorkspaceSection } from "@/lib/workspace-module-access";
 
 type OperationalWorkspaceProps = {
   organizationId: string;
@@ -151,6 +153,7 @@ export default function OperationalWorkspace({
   }, [urlTab, organizationSlug, organizationId, router]);
 
   function navigateTo(nextSection: NavSection) {
+    if (!modulesResolved || !canAccessWorkspaceSection(nextSection, enabledModules)) return;
     setSection(nextSection);
     if (nextSection !== "visao-geral") {
       setActiveModule(getOperationalModuleForSection(nextSection, organizationSlug));
@@ -218,9 +221,42 @@ export default function OperationalWorkspace({
   const [brandColor, setBrandColor] = useState<string>("#B5583C");
 
   const organizationPreset = ORGANIZATION_PRESETS.find((preset) => preset.id === currentOrgId);
-  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>(
-    organizationPreset?.enabledModules ?? { finance: true, reconciliation: false, logistics: false, audit: false }
-  );
+  const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>({ finance: false, reconciliation: false, logistics: false, audit: false });
+  const [modulesResolved, setModulesResolved] = useState(false);
+
+  // Licenças ativas concedidas no servidor são a fonte autoritativa de acesso.
+  // Presets e preferências locais nunca podem reabilitar um módulo.
+  useEffect(() => {
+    let active = true;
+    setModulesResolved(false);
+    const environment = organizationSlug.endsWith("_qa") ? "qa" : "production";
+    getWorkspaceCapabilityAvailability(organizationId, environment)
+      .then((result) => {
+        if (!active) return;
+        const capabilities = result.ok ? result.capabilities : {};
+        const nextModules: EnabledModulesConfig = {
+          finance: capabilities.finance === "available",
+          reconciliation: capabilities.reconciliation === "available",
+          logistics: capabilities.logistics === "available",
+          audit: capabilities.audit === "available"
+        };
+        setEnabledModules(nextModules);
+        setModulesResolved(true);
+        if (!canAccessWorkspaceSection(section, nextModules)) {
+          setSection("workspace");
+          setActiveModule(nextModules.finance ? "finance" : nextModules.reconciliation ? "reconciliation" : nextModules.logistics ? "logistics" : "audit");
+          router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setEnabledModules({ finance: false, reconciliation: false, logistics: false, audit: false });
+        setModulesResolved(true);
+        setSection("workspace");
+        router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=workspace`, { scroll: false });
+      });
+    return () => { active = false; };
+  }, [organizationId, organizationSlug, router, section]);
 
   const [titles, setTitles] = useState<ReceivableTitle[]>([]);
   const [proofs, setProofs] = useState<DeliveryProof[]>([]);
@@ -324,16 +360,6 @@ export default function OperationalWorkspace({
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
       const savedLogo = localStorage.getItem(`rsbuild_workspace_logo_${organizationId}`);
       if (savedLogo) setCompanyLogoUrl(savedLogo);
-      const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
-      if (savedModules) {
-        const parsed = JSON.parse(savedModules);
-        setEnabledModules({
-          finance: parsed.finance !== false,
-          reconciliation: parsed.reconciliation !== false,
-          logistics: parsed.logistics !== false,
-          audit: parsed.audit !== false
-        });
-      }
       const savedTheme = localStorage.getItem("rsbuild_theme") as "sand" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "sand") {
         setTheme(savedTheme);
@@ -391,17 +417,6 @@ export default function OperationalWorkspace({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organizationId, brandColor: main, brandColorHover: hover, brandColorSoft: soft })
       }).catch(() => {});
-    }
-    if (modules) {
-      setEnabledModules(modules);
-      try {
-        localStorage.setItem(`rsbuild_workspace_modules_${organizationId}`, JSON.stringify(modules));
-      } catch {}
-      if (!modules.finance && modules.logistics && activeModule === "finance") {
-        navigateTo("pedidos-ha");
-      } else if (!modules.logistics && modules.finance && activeModule === "logistics") {
-        navigateTo("visao-geral");
-      }
     }
     try {
       if (logo) {
@@ -856,6 +871,7 @@ export default function OperationalWorkspace({
         currentOrgId={currentOrgId}
         showProjectPortfolio={canViewProjectPortfolio}
         onSelectModule={(mod) => {
+          if (!modulesResolved || !enabledModules[mod]) return;
           setActiveModule(mod);
           if (mod === "finance") navigateTo("visao-geral");
           else if (mod === "reconciliation") navigateTo("baixas");
@@ -942,6 +958,7 @@ export default function OperationalWorkspace({
           </button>
         </div>
         <div className="content">
+          {!modulesResolved ? <div className="inline-note" role="status">Validando as permissões dos módulos deste ambiente...</div> : <>
           {section !== "workspace" && <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />}
           {section === "workspace" ? (
             <section aria-labelledby="workspace-launcher-title" style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(24px, 5vw, 56px) 0" }}>
@@ -1126,6 +1143,7 @@ export default function OperationalWorkspace({
           {section === "relatorios" && <RelatoriosDreView />}
           </>
           )}
+          </>}
         </div>
       </section>
       <input
