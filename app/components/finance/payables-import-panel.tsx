@@ -69,6 +69,7 @@ export function PayablesImportPanel({ organizationId }: PayablesImportPanelProps
     setPreview(null);
     setError("");
     setResult(null);
+    setFileInputKey((key) => key + 1);
   }
 
   async function runPreview(nextFile = file, nextSheet = sheetName) {
@@ -113,6 +114,7 @@ export function PayablesImportPanel({ organizationId }: PayablesImportPanelProps
       setPreview(null);
       setFile(null);
       setSheetName("");
+      setFileInputKey((key) => key + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Falha ao confirmar a importação.");
     } finally {
@@ -135,6 +137,7 @@ export function PayablesImportPanel({ organizationId }: PayablesImportPanelProps
         <h3>Arquivo de contas a pagar</h3>
         <p>CSV ou XLSX · até 10 MB · máximo de 5.000 linhas</p>
         <input
+          key={fileInputKey}
           type="file"
           accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={(event) => {
@@ -157,6 +160,7 @@ export function PayablesImportPanel({ organizationId }: PayablesImportPanelProps
 
       {preview && (
         <div style={{ marginTop: 20 }}>
+          {!previewMatchesSelection && <p className="inline-note">A planilha selecionada mudou. Atualize a prévia antes de confirmar.</p>}
           <div className="metric-grid">
             <div className="metric-card"><span>Linhas analisadas</span><strong>{preview.parsedCount}</strong></div>
             <div className="metric-card"><span>Válidas</span><strong>{preview.acceptedCount}</strong></div>
