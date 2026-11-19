@@ -19,7 +19,6 @@ import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { AccessDirectoryView } from "@/app/components/admin/access-directory-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
-import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { SandboxView } from "@/app/components/admin/sandbox-view";
 import { AgentsGovernanceView } from "@/app/components/admin/agents-governance-view";
 import { AgentsInstitutionalView } from "@/app/components/admin/agents-institutional-view";
@@ -315,7 +314,6 @@ export default function ControlTowerWorkspace({
           onOpenTour={() => setIsTourOpen(true)}
         />
         <div className="content">
-          <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
           {!isProjectCollaborator && <div className="inline-note" role="note">
             Central de Controle RSBUILD — visão governamental e observabilidade de empresas integradas.
           </div>}
