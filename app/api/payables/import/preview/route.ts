@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
 import { decodeImportText } from "@/lib/finance";
-import { previewPayablesCsv } from "@/lib/finance/payables-import";
+import { previewPayablesCsv, type PayableCsvPreview } from "@/lib/finance/payables-import";
 import { previewPayablesXlsx } from "@/lib/finance/payables-xlsx";
 
 export const runtime = "nodejs";
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const bytes = Buffer.from(await file.arrayBuffer());
   const fileHash = createHash("sha256").update(bytes).digest("hex");
   const requestedSheetName = String(form.get("sheetName") ?? "") || undefined;
-  let preview;
+  let preview: PayableCsvPreview;
   let sheetMetadata: { sheetName?: string; availableSheets?: string[] } = {};
 
   try {
