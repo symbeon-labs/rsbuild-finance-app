@@ -57,10 +57,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_settlements_payload" }, { status: 422 });
   }
 
-  const rpc = (supabase as unknown as {
+  const { data, error } = await (supabase as unknown as {
     rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string } | null }>
-  }).rpc;
-  const { data, error } = await rpc("confirm_receivable_settlements", {
+  }).rpc("confirm_receivable_settlements", {
     p_organization_id: organizationId,
     p_settlements: settlements.map(({ valid: _valid, ...item }) => item)
   });
