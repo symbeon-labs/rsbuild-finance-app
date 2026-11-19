@@ -89,6 +89,7 @@ type OperationalWorkspaceProps = {
   organizationName: string;
   availableOrganizationSlugs: string[];
   membershipRole: string;
+  isPlatformAdministrator?: boolean;
   userEmail: string;
   isDeveloperAuthorized?: boolean;
   userFullName?: string;
@@ -117,6 +118,7 @@ export default function OperationalWorkspace({
   organizationName,
   availableOrganizationSlugs,
   membershipRole,
+  isPlatformAdministrator = false,
   userEmail,
   isDeveloperAuthorized = false,
   userFullName,
@@ -1125,7 +1127,7 @@ export default function OperationalWorkspace({
         currentOrgRealId={organizationId}
         availableOrganizationSlugs={availableOrganizationSlugs}
         isSuperAdmin={isSuperAdmin}
-        canManageModules={false}
+        canManageModules={isPlatformAdministrator}
         enabledModules={enabledModules}
         brandColor={brandColor}
         onClose={() => setIsConfigOpen(false)}
