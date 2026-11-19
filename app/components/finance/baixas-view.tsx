@@ -110,12 +110,12 @@ export function BaixasView({
         <div className="panel-heading">
           <div>
             <h2>Painel de Conciliação e Baixa em Lote</h2>
-            <p>Cruzamento entre títulos importados e lançamentos bancários disponíveis nesta sessão.</p>
+            <p>Cruzamento entre títulos persistidos e lançamentos bancários importados.</p>
           </div>
           {matchStats.ready.length > 0 && (
             <div style={{ display: "flex", gap: "8px" }}>
-              <button className="secondary-button" onClick={onConfirmSettlementInSession} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Marcar títulos como baixados nesta sessão de demonstração."}>
-                {hasSettlementAuth ? "Marcar Baixados na Sessão" : "🔒 Baixa Restrita à Diretoria"}
+              <button className="secondary-button" onClick={onConfirmSettlementInSession} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Confirmar e persistir as baixas selecionadas no RSBUILD OS."}>
+                {hasSettlementAuth ? "Confirmar Baixas" : "🔒 Baixa Restrita à Diretoria"}
               </button>
               <button className={hasSettlementAuth ? "primary-button" : "secondary-button"} onClick={onExportBatchSettlement} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Gerar CSV para conferência e eventual importação manual no Omie; nenhuma baixa será executada aqui."}>
                 {hasSettlementAuth ? "Exportar CSV para Omie" : "🔒 Baixa Restrita à Diretoria"}
