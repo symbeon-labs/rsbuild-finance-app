@@ -73,3 +73,15 @@ test("preview rejeita emissão inválida e campos que excedem os limites do banc
   ].join("\n"));
   assert.deepEqual(result.errors.map((error) => error.code), ["invalid_issue_date", "field_too_long"]);
 });
+
+test("deduplicação usa documento fiscal normalizado para distinguir fornecedores homônimos", () => {
+  const result = previewPayablesCsv([
+    "Fornecedor;CNPJ;Documento;Vencimento;Valor",
+    "Fornecedor A;12.345.678/0001-90;NF-1;01/12/2026;100,00",
+    "Fornecedor A;98.765.432/0001-10;NF-1;01/12/2026;100,00",
+    "Fornecedor A;12345678000190;NF-1;01/12/2026;100,00"
+  ].join("\\n"));
+  assert.equal(result.rows.length, 2);
+  assert.equal(result.duplicateCount, 1);
+  assert.notEqual(result.rows[0].deduplicationKey, result.rows[1].deduplicationKey);
+});
