@@ -1,4 +1,4 @@
-import type { EnabledModulesConfig, ModuleType, NavSection } from "@/app/types/workspace";
+import type { EnabledModulesConfig, ModuleType, NavSection } from "../app/types/workspace.js";
 
 /** Returns the licensed capability required by a tenant route; null means shared workspace navigation. */
 export function getRequiredModuleForSection(section: NavSection): ModuleType | null {
