@@ -13,9 +13,9 @@ export function OrganizationBrandBanner({ organizationId, organizationName }: { 
     return () => { active = false; };
   }, [organizationId]);
   if (!data?.bannerUrl) return null;
-  return <div aria-label={"Identidade visual de " + organizationName} style={{ height: "clamp(200px, 25vw, 280px)", overflow: "hidden", borderRadius: 12, marginBottom: 22, background: "#171717", position: "relative" }}>
+  return <div aria-label={"Identidade visual de " + organizationName} style={{ height: "clamp(150px, 20vw, 240px)", overflow: "hidden", borderRadius: 12, marginBottom: 22, background: "#171717", position: "relative" }}>
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={data.bannerUrl} alt={"Banner de " + organizationName} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: data.positionX + "% " + data.positionY + "%", transform: "scale(" + (data.zoom || 1.5) + ")" }} />
+    <img src={data.bannerUrl} alt={"Banner de " + organizationName} style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: data.positionX + "% " + data.positionY + "%", transform: "scale(" + (data.zoom ?? 1) + ")" }} />
     <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(0,0,0,.48), transparent 75%)" }} />
     <strong style={{ position: "absolute", left: 22, bottom: 18, color: "#fff", textShadow: "0 1px 8px rgba(0,0,0,.55)", fontSize: 17 }}>{organizationName}</strong>
   </div>;
