@@ -116,8 +116,18 @@ function parseAmountMinor(value: string): number | null {
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
 }
 
-function fingerprint(row: Pick<PayableImportRow, "supplierName" | "documentNumber" | "dueDate" | "amountMinor">): string {
-  return createHash("sha256").update([normalize(row.supplierName), normalize(row.documentNumber), row.dueDate, row.amountMinor].join("|")).digest("hex");
+function normalizeSupplierDocument(value?: string): string {
+  if (!value) return "";
+  // CPF/CNPJ are compared without punctuation; preserve letters for foreign
+  // tax identifiers rather than silently collapsing them to an empty value.
+  return value.normalize("NFKC").replace(/[^a-zA-Z0-9]/g, "").toLocaleUpperCase("pt-BR");
+}
+
+function fingerprint(row: Pick<PayableImportRow, "supplierName" | "supplierDocument" | "documentNumber" | "dueDate" | "amountMinor">): string {
+  return createHash("sha256").update([
+    normalizeSupplierDocument(row.supplierDocument) || normalize(row.supplierName),
+    normalize(row.documentNumber), row.dueDate, row.amountMinor
+  ].join("|")).digest("hex");
 }
 
 /** Shared grid mapper for CSV and XLSX, preserving original source row numbers. */
