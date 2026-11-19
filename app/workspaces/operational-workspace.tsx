@@ -62,7 +62,6 @@ import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
-import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
  
 function formatOperationalNotice(message: string): string {
   if (message.includes("capability_entitlement_unavailable")) {
@@ -942,7 +941,6 @@ export default function OperationalWorkspace({
           </button>
         </div>
         <div className="content">
-          {section !== "workspace" && <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />}
           {section === "workspace" ? (
             <section aria-labelledby="workspace-launcher-title" style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(24px, 5vw, 56px) 0" }}>
               <div style={{ marginBottom: 30 }}>
