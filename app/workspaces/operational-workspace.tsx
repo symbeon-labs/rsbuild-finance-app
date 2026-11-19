@@ -1143,7 +1143,7 @@ export default function OperationalWorkspace({
               }
             />
           )}
-          {section === "relatorios" && <RelatoriosDreView records={filteredRecords} isLoading={isLoadingRecords} />}
+          {section === "relatorios" && <RelatoriosDreView records={filteredRecords} organizationId={organizationId} isLoading={isLoadingRecords} />}
           </>
           )}
           </>}
