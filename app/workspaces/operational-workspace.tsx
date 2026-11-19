@@ -342,7 +342,7 @@ export default function OperationalWorkspace({
 
       {
         const savedBrandColor = localStorage.getItem(`rsbuild_workspace_brand_color_${organizationId}`);
-        const colorToApply = organizationPreset?.brandColor || savedBrandColor || "#B5583C";
+        const colorToApply = savedBrandColor || organizationPreset?.brandColor || "#B5583C";
         setBrandColor(colorToApply);
         applyBrandColor(colorToApply);
       }
