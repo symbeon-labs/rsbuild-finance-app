@@ -97,8 +97,9 @@ function dateStyleIndexes(xml: string | undefined): Set<number> {
   return result;
 }
 
-function excelSerialToIso(value: number): string {
-  const date = new Date(Date.UTC(1899, 11, 30) + Math.floor(value) * 86400000);
+function excelSerialToIso(value: number, date1904 = false): string {
+  const epoch = date1904 ? Date.UTC(1904, 0, 1) : Date.UTC(1899, 11, 30);
+  const date = new Date(epoch + Math.floor(value) * 86400000);
   return `${date.getUTCFullYear().toString().padStart(4, "0")}-${(date.getUTCMonth() + 1).toString().padStart(2, "0")}-${date.getUTCDate().toString().padStart(2, "0")}`;
 }
 
