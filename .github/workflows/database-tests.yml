@@ -2,7 +2,7 @@ name: Database Tests
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/finance-payables-foundation]
     paths:
       - "supabase/**"
       - ".github/workflows/database-tests.yml"
