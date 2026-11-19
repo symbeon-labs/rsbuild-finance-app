@@ -382,11 +382,16 @@ export function parseOfx(text: string): ImportResult {
       errors.push("Movimento OFX " + (index + 1) + " (FITID: " + (fitid || "sem ID") + "): TRNTYPE CREDIT conflita com valor negativo.");
       return;
     }
+    const description = get(block, "NAME") || get(block, "MEMO") || "Movimento bancário";
+    // OFX de alguns bancos representa o saldo de abertura como STMTTRN.
+    // Esse valor é posição inicial, não fluxo financeiro, e nunca deve virar lançamento.
+    const normalizedDescription = description.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim().toLocaleUpperCase("pt-BR");
+    if (/^(SALDO ANTERIOR|SALDO INICIAL|SALDO DE ABERTURA)(?:\\b|\\s|$)/.test(normalizedDescription)) return;
     const direction: Direction = trnType === "DEBIT" ? "saída" : trnType === "CREDIT" ? "entrada" : signedAmount < 0 ? "saída" : "entrada";
     records.push({
       id: "ofx-" + importBatchId + "-" + (index + 1),
       date,
-      description: get(block, "NAME") || get(block, "MEMO") || "Movimento bancário",
+      description,
       amount: Math.abs(Math.round(signedAmount * 100) / 100),
       direction,
       category: "Não classificado",
