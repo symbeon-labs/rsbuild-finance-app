@@ -4,13 +4,21 @@ alter table public.organization_branding
   add column if not exists brand_color_hover text,
   add column if not exists brand_color_soft text;
 
-alter table public.organization_branding
-  add constraint organization_branding_brand_color_hex_check
-    check (brand_color is null or brand_color ~ '^#[0-9A-Fa-f]{6}$'),
-  add constraint organization_branding_brand_color_hover_hex_check
-    check (brand_color_hover is null or brand_color_hover ~ '^#[0-9A-Fa-f]{6}$'),
-  add constraint organization_branding_brand_color_soft_hex_check
-    check (brand_color_soft is null or brand_color_soft ~ '^#[0-9A-Fa-f]{6}$');
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'organization_branding_brand_color_hex_check') then
+    alter table public.organization_branding add constraint organization_branding_brand_color_hex_check
+      check (brand_color is null or brand_color ~ '^#[0-9A-Fa-f]{6}$');
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'organization_branding_brand_color_hover_hex_check') then
+    alter table public.organization_branding add constraint organization_branding_brand_color_hover_hex_check
+      check (brand_color_hover is null or brand_color_hover ~ '^#[0-9A-Fa-f]{6}$');
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'organization_branding_brand_color_soft_hex_check') then
+    alter table public.organization_branding add constraint organization_branding_brand_color_soft_hex_check
+      check (brand_color_soft is null or brand_color_soft ~ '^#[0-9A-Fa-f]{6}$');
+  end if;
+end $$;
 
 insert into public.organization_branding
   (organization_id, brand_color, brand_color_hover, brand_color_soft)
