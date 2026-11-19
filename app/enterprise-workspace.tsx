@@ -1,7 +1,7 @@
 "use client";
 
 import { todayIsoDateSaoPaulo } from "@/lib/date-format";
-import { ChangeEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import {
@@ -267,7 +267,7 @@ export default function EnterpriseWorkspace({
     return () => { active = false; };
   }, [organizationId]);
 
-  async function loadReceivableTitles() {
+  const loadReceivableTitles = useCallback(async () => {
     setIsLoadingTitles(true);
     try {
       const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
@@ -279,11 +279,11 @@ export default function EnterpriseWorkspace({
     } finally {
       setIsLoadingTitles(false);
     }
-  }
+  }, [organizationId]);
 
   useEffect(() => {
     void loadReceivableTitles();
-  }, [organizationId]);
+  }, [loadReceivableTitles]);
 
   // Hidratação inicial do localStorage (Configurações e Persistência de Sessão)
   useEffect(() => {
@@ -686,7 +686,7 @@ export default function EnterpriseWorkspace({
       const response = await fetch(`/api/settlements?organizationId=${encodeURIComponent(organizationId)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settlements: settlements.map((item) => ({ receivableTitleId: item.titleId, documentNumber: item.documentNumber, customerName: item.customerName, amount: item.amountPaid, settlementDate: item.settlementDate, sourceRecordId: item.sourceRecordId, observation: item.observation })) })
+        body: JSON.stringify({ settlements: settlements.map((item) => ({ receivableTitleId: item.titleId, documentNumber: item.documentNumber, customerName: item.customerName, amountMinor: Math.round(item.amountPaid * 100), settlementDate: item.settlementDate, sourceRecordId: item.sourceRecordId, observation: item.observation })) })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Falha ao confirmar baixas.");
@@ -908,6 +908,7 @@ export default function EnterpriseWorkspace({
               matches={matches}
               matchStats={matchStats}
               role={effectiveRole}
+              isLoading={isLoadingTitles}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}
               onExportBatchSettlement={handleExportBatchSettlement}
