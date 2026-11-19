@@ -103,7 +103,7 @@ function excelSerialToIso(value: number): string {
 }
 
 function resolveSheetPath(target: string): string {
-  const clean = target.replace(/\\\\/g, "/");
+  const clean = target.replace(/\\/g, "/");
   const parts = (clean.startsWith("/") ? clean.slice(1) : `xl/${clean}`).split("/");
   const normalized: string[] = [];
   for (const part of parts) {
