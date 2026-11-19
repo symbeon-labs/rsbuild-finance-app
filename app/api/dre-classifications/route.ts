@@ -7,6 +7,7 @@ import type { FinancialRecord } from "@/lib/finance";
 export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RULE_VERSION = "dre-rules-v1";
+const DRE_UNITS = new Set(["ALS/CSN","P&L","RRT"]);
 
 function responseError(error: string, status = 400) {
   return NextResponse.json({ error }, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
   const accountCode = typeof body.accountCode === "string" ? body.accountCode : "";
   const unit = typeof body.unit === "string" ? body.unit : undefined;
   const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 2000) : "";
-  if (!UUID.test(organizationId) || !UUID.test(recordId) || !accountCode || !reason) {
+  if (!UUID.test(organizationId) || !UUID.test(recordId) || !accountCode || !reason || (unit !== undefined && !DRE_UNITS.has(unit))) {
     return responseError("invalid_classification_payload");
   }
 
