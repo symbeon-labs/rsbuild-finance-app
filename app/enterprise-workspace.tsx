@@ -838,18 +838,20 @@ export default function EnterpriseWorkspace({
             />
           )}
           {section === "importacoes" && (
-            <ImportacoesView
-              fileName={fileName}
-              pendingImport={pendingImport}
-              pendingMetadata={pendingMetadata}
-              importErrors={importErrors}
-              isImporting={isImporting}
-              onSelectFile={() => inputRef.current?.click()}
-              onCancelImport={cancelImport}
-              onExportOmieOfx={() => handleExportOmie(pendingImport)}
-              onConfirmImport={confirmImport}
-            />
-            <PayablesImportPanel organizationId={organizationId} />
+            <>
+              <ImportacoesView
+                fileName={fileName}
+                pendingImport={pendingImport}
+                pendingMetadata={pendingMetadata}
+                importErrors={importErrors}
+                isImporting={isImporting}
+                onSelectFile={() => inputRef.current?.click()}
+                onCancelImport={cancelImport}
+                onExportOmieOfx={() => handleExportOmie(pendingImport)}
+                onConfirmImport={confirmImport}
+              />
+              <PayablesImportPanel organizationId={organizationId} />
+            </>
           )}
           {section === "conciliacao" && (
             <ConciliacaoView
