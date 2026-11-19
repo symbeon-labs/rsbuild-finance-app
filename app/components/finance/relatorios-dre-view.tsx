@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { FinancialRecord, formatCurrency } from "@/lib/finance";
+import { DreSourceStructure } from "@/app/components/finance/dre-source-structure";
 
 interface Props { records: FinancialRecord[]; isLoading?: boolean; periodLabel?: string }
 type Totals = { incoming: number; outgoing: number; result: number; count: number };
@@ -26,5 +27,6 @@ export function RelatoriosDreView({records,isLoading=false,periodLabel="Período
  <div className="metric-grid"><div className="metric-card"><span>Entradas financeiras</span><strong className="positive">{formatCurrency(totals.incoming)}</strong><small>{rows.filter(r=>r.direction==="entrada").length} registros</small></div><div className="metric-card"><span>Saídas financeiras</span><strong className="negative">{formatCurrency(totals.outgoing)}</strong><small>{rows.filter(r=>r.direction==="saída").length} registros</small></div><div className="metric-card"><span>Resultado líquido de caixa</span><strong>{formatCurrency(totals.result)}</strong><small>Entradas menos saídas</small></div><div className="metric-card"><span>Movimentações consideradas</span><strong>{totals.count}</strong><small>{rows.filter(r=>!r.category?.trim()).length} sem categoria</small></div></div>
  <section className="panel" style={{marginTop:18}}><div className="panel-heading"><div><h2>Composição por classificação</h2><p>Categoria recebida na origem; sem reclassificação automática</p></div></div><div className="table-wrap"><table className="data-table"><thead><tr><th>Natureza</th><th>Categoria</th><th>Registros</th><th style={{textAlign:"right"}}>Total</th></tr></thead><tbody>{categories.map(c=><tr key={c.direction+c.category}><td>{c.direction==="entrada"?"Entrada":"Saída"}</td><td>{c.category}</td><td>{c.count}</td><td style={{textAlign:"right"}}>{formatCurrency(c.amount)}</td></tr>)}</tbody></table></div></section>
  <section className="panel" style={{marginTop:18}}><div className="panel-heading"><div><h2>Evolução mensal</h2><p>Consolidação por mês de movimentação</p></div></div><div className="table-wrap"><table className="data-table"><thead><tr><th>Mês</th><th style={{textAlign:"right"}}>Entradas</th><th style={{textAlign:"right"}}>Saídas</th><th style={{textAlign:"right"}}>Resultado</th><th>Registros</th></tr></thead><tbody>{months.map(([m,v])=><tr key={m}><td style={{textTransform:"capitalize"}}>{monthName(m)}</td><td style={{textAlign:"right"}}>{formatCurrency(v.incoming)}</td><td style={{textAlign:"right"}}>{formatCurrency(v.outgoing)}</td><td style={{textAlign:"right"}}>{formatCurrency(v.incoming-v.outgoing)}</td><td>{v.count}</td></tr>)}</tbody></table></div></section></>}
+ <DreSourceStructure />
  </>;
 }
