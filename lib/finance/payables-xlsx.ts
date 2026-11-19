@@ -92,6 +92,7 @@ function isDateNumberFormat(formatCode: string): boolean {
     .replace(/_.|\*./g, "")
     .replace(/\[[^\]]*\]/g, "")
     .toLowerCase()
+    // Excel uses AM/PM as a token; remove it before detecting date letters.
     .replace(/am\/pm/g, "");
   // A year/day token is unambiguous. Month-only patterns are dates only when
   // paired with a date separator or another date/time token.
