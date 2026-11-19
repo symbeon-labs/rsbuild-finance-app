@@ -63,6 +63,7 @@ import { OrganizationAdminPanel } from "@/app/components/admin/organization-admi
 import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { getWorkspaceCapabilityAvailability } from "@/app/actions/capability-licenses";
+import { canAccessWorkspaceSection } from "@/lib/workspace-module-access";
 
 type EnterpriseWorkspaceProps = {
   organizationId: string;
@@ -132,6 +133,7 @@ export default function EnterpriseWorkspace({
   sectionRef.current = section;
 
   function navigateTo(nextSection: NavSection) {
+    if (organizationSlug !== "rsbuild" && (!modulesResolved || !canAccessWorkspaceSection(nextSection, enabledModules))) return;
     const safeSection = nextSection === "projetos" && !canViewProjectPortfolio ? "visao-geral" : nextSection;
     setSection(safeSection);
     if (safeSection !== "visao-geral") {
@@ -222,8 +224,11 @@ export default function EnterpriseWorkspace({
   // Módulos iniciais respeitam a configuração declarada para cada organização.
   // Preferências locais podem personalizar apenas o workspace atual neste navegador.
   const organizationPreset = ORGANIZATION_PRESETS.find((preset) => preset.id === currentOrgId);
+  const [modulesResolved, setModulesResolved] = useState(organizationSlug === "rsbuild");
   const [enabledModules, setEnabledModules] = useState<EnabledModulesConfig>(
-    organizationPreset?.enabledModules ?? { finance: true, reconciliation: false, logistics: false, audit: false }
+    organizationSlug === "rsbuild"
+      ? organizationPreset?.enabledModules ?? { finance: false, reconciliation: false, logistics: false, audit: true }
+      : { finance: false, reconciliation: false, logistics: false, audit: false }
   );
 
   // isSuperAdmin calculado reativamente com base em effectiveRole
@@ -329,8 +334,12 @@ export default function EnterpriseWorkspace({
   // Entitlements são a fonte autoritativa da navegação nos workspaces de clientes.
   // Preferências locais/presets nunca podem reabilitar capacidades sem licença ativa.
   useEffect(() => {
-    if (organizationSlug === "rsbuild") return;
+    if (organizationSlug === "rsbuild") {
+      setModulesResolved(true);
+      return;
+    }
     let active = true;
+    setModulesResolved(false);
     const environment = organizationSlug.endsWith("_qa") ? "qa" : "production";
 
     getWorkspaceCapabilityAvailability(organizationId, environment)
@@ -344,6 +353,7 @@ export default function EnterpriseWorkspace({
           audit: capabilities.audit === "available"
         };
         setEnabledModules(nextModules);
+        setModulesResolved(true);
 
         const firstAvailable = (["finance", "reconciliation", "logistics", "audit"] as ModuleType[])
           .find((module) => nextModules[module]);
@@ -373,6 +383,7 @@ export default function EnterpriseWorkspace({
       .catch(() => {
         if (!active) return;
         setEnabledModules({ finance: false, reconciliation: false, logistics: false, audit: false });
+        setModulesResolved(true);
         setSection("visao-geral");
         router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
       });
@@ -748,9 +759,11 @@ export default function EnterpriseWorkspace({
         activeModule={activeModule}
         section={section}
         enabledModules={enabledModules}
+        modulesReady={modulesResolved}
         currentOrgId={currentOrgId}
         showProjectPortfolio={canViewProjectPortfolio}
         onSelectModule={(mod) => {
+          if (organizationSlug !== "rsbuild" && (!modulesResolved || !enabledModules[mod])) return;
           setActiveModule(mod);
           if (mod === "finance") navigateTo("visao-geral");
           else if (mod === "reconciliation") navigateTo("baixas");
