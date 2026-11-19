@@ -19,7 +19,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ title
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "invalid_json" }, { status: 400 }); }
 
-  if (!["pendente", "cancelado"].includes(String(body?.status))) {
+  if (body?.status !== "cancelado") {
     return NextResponse.json({ error: "invalid_status" }, { status: 400 });
   }
 
@@ -28,6 +28,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ title
     .update({ status: body.status, updated_at: new Date().toISOString() })
     .eq("id", titleId)
     .eq("organization_id", organizationId)
+    .neq("status", "baixado")
     .select("id, status")
     .maybeSingle();
 
