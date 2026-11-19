@@ -39,3 +39,16 @@ test("uses only explicit cleaning allocation from the source workbook",()=>{
  assert.equal(r.classifications[0].status,"suggested");
  assert.deepEqual(a.map(x=>[x.unit,x.amountMinor]),[["ALS/CSN",5200],["P&L",1100],["RRT",3700]]);
 });
+
+test("manual non-P&L classification does not create operating allocations",()=>{
+ const r=runDreEngine([record("1","PIX transferência","entrada",250)],{"1":{accountCode:"LOAN",reason:"Contrato de mútuo conferido"}});
+ assert.equal(r.classifications[0].status,"overridden");
+ assert.equal(r.classifications[0].allocations.length,0);
+ assert.equal(r.pnl.length,0);
+});
+test("manual exclusion remains outside the operating result",()=>{
+ const r=runDreEngine([record("1","Transferência entre contas","entrada",250)],{"1":{accountCode:"TRANSFER",reason:"Movimentação entre contas próprias"}});
+ assert.equal(r.classifications[0].status,"excluded");
+ assert.equal(r.summary.excluded,1);
+ assert.equal(r.pnl.length,0);
+});
