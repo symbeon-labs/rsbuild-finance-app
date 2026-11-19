@@ -122,3 +122,14 @@ comment on table public.payable_titles is
   'Supplier obligations. Paid/open balance is derived from confirmed payment allocations; due status is derived from due_date.';
 comment on table public.payable_payment_allocations is
   'Immutable-in-intent payment allocations; supports partial payments and one bank movement allocated across multiple payable titles. Reversals retain history.';
+
+
+-- Operational governance aligned with receivable_titles and settlements.
+create trigger payable_titles_touch_updated_at before update on public.payable_titles for each row execute function private.touch_updated_at();
+create trigger payable_titles_actor_guard before insert or update of created_by on public.payable_titles for each row execute function private.enforce_actor_attribution('created_by');
+create trigger audit_payable_titles_insert after insert on public.payable_titles for each row execute function private.capture_operational_audit_event('payable_title');
+create trigger audit_payable_titles_update after update on public.payable_titles for each row execute function private.capture_operational_audit_event('payable_title');
+create trigger payable_allocations_actor_guard before insert or update of created_by on public.payable_payment_allocations for each row execute function private.enforce_actor_attribution('created_by');
+create trigger payable_allocations_reversed_by_guard before insert or update of reversed_by on public.payable_payment_allocations for each row execute function private.enforce_actor_attribution('reversed_by');
+create trigger audit_payable_allocations_insert after insert on public.payable_payment_allocations for each row execute function private.capture_operational_audit_event('payable_payment_allocation');
+create trigger audit_payable_allocations_update after update on public.payable_payment_allocations for each row execute function private.capture_operational_audit_event('payable_payment_allocation');
