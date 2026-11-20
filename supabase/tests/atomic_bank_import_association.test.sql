@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(7);
+select plan(8);
 
 select has_column('public','financial_accounts','bank_code','bank code is persisted');
 select has_column('public','financial_accounts','branch_id','branch identifier is persisted');
@@ -32,6 +32,16 @@ insert into public.organization_memberships (organization_id,user_id,role)
 values ('77777777-7777-4777-8777-777777777777','abababab-abab-4bab-8bab-abababababab','operator')
 on conflict do nothing;
 
+insert into public.organizations (id,legal_name,display_name,slug)
+values ('88888888-8888-4888-8888-888888888888','Foreign Bank Ltda','Foreign Bank','foreign_bank_test')
+on conflict (id) do nothing;
+insert into public.financial_accounts
+  (id,organization_id,name,institution,account_type,currency,external_reference,is_active)
+values
+  ('99999999-9999-4999-8999-999999999999','88888888-8888-4888-8888-888888888888',
+   'Foreign account','Foreign Bank','checking','BRL','FOREIGN-ACCOUNT',true)
+on conflict (id) do nothing;
+
 insert into storage.objects (bucket_id,name,metadata)
 values ('rsbuild-source-artifacts','77777777-7777-4777-8777-777777777777/imports/atomic-invalid.ofx','{"mimetype":"application/x-ofx"}');
 
@@ -40,7 +50,21 @@ select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claim.sub','abababab-abab-4bab-8bab-abababababab',true);
 
 select throws_ok(
- $$select * from public.commit_financial_import_trusted(
+ $select * from public.commit_financial_import_trusted(
+  'abababab-abab-4bab-8bab-abababababab',
+  '77777777-7777-4777-8777-777777777777',
+  'cross-tenant.csv',repeat('f',64),10,
+  '77777777-7777-4777-8777-777777777777/imports/cross-tenant.csv',
+  '[]'::jsonb, null,
+  '99999999-9999-4999-8999-999999999999'
+ )$,
+ '42501',
+ null,
+ 'assisted association rejects an account owned by another organization'
+);
+
+select throws_ok(
+ $select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'atomic-invalid.ofx',repeat('e',64),10,
