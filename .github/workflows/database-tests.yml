@@ -45,7 +45,7 @@ jobs:
           while shadow_port == db_port:
               shadow_port = free_port()
 
-          text, db_count = re.subn(r"(?m)^port = \\d+$", f"port = {db_port}", text, count=1)
+          text, db_count = re.subn(r"(?m)(\\[db\\]\\s*\\nport = )\\d+", rf"\\g<1>{db_port}", text, count=1)
           text, shadow_count = re.subn(r"(?m)^shadow_port = \\d+$", f"shadow_port = {shadow_port}", text, count=1)
           if db_count != 1 or shadow_count != 1:
               raise SystemExit("Could not safely update Supabase port settings")
