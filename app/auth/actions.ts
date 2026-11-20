@@ -155,13 +155,11 @@ export async function switchOrganization(formData: FormData) {
 
 
 /**
- * Resolve a URL pública da aplicação sem fixar localhost em links enviados
- * por e-mail. NEXT_PUBLIC_SITE_URL deve apontar para o domínio canônico.
+ * Resolve a origem do próprio request. Isso evita que um NEXT_PUBLIC_SITE_URL
+ * antigo ou compartilhado entre ambientes envie o link para outro deployment.
+ * Em Preview, usamos VERCEL_URL para preservar o cookie PKCE daquele deployment.
  */
 async function getPublicAppUrl() {
-  // Em Preview, o verifier PKCE fica no cookie do próprio deployment.
-  // Portanto, o link enviado por e-mail precisa voltar para esse mesmo host,
-  // nunca para o domínio de produção.
   if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL) {
     const previewUrl = process.env.VERCEL_URL.startsWith("http")
       ? process.env.VERCEL_URL
@@ -169,8 +167,15 @@ async function getPublicAppUrl() {
     return new URL(previewUrl).origin;
   }
 
-  const configured = process.env.NEXT_PUBLIC_SITE_URL;
-  if (configured) return new URL(configured).origin;
+  const requestHeaders = await headers();
+  const forwardedHost = requestHeaders.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = forwardedHost || requestHeaders.get("host");
+
+  if (host) {
+    const forwardedProto = requestHeaders.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    const protocol = forwardedProto === "http" ? "http" : "https";
+    return new URL(`${protocol}://${host}`).origin;
+  }
 
   const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
   if (vercelUrl) {
@@ -178,23 +183,43 @@ async function getPublicAppUrl() {
     return new URL(normalized).origin;
   }
 
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
-  if (!host) throw new Error("Não foi possível determinar a URL pública da aplicação.");
-  return new URL(`${protocol}://${host}`).origin;
+  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configured) return new URL(configured).origin;
+
+  throw new Error("Não foi possível determinar a URL pública da aplicação.");
 }
 
 export async function requestPasswordReset(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!email || email.length > 254) redirect("/forgot-password?error=invalid");
 
-  const supabase = await createClient();
-  const appUrl = await getPublicAppUrl();
-  const redirectTo = new URL("/auth/callback?next=/reset-password", appUrl).toString();
+  let redirectTo: string;
+  try {
+    const appUrl = await getPublicAppUrl();
+    redirectTo = new URL("/auth/callback?next=/reset-password", appUrl).toString();
+  } catch (cause) {
+    console.error("[auth.password-recovery] failed to resolve redirect URL", {
+      environment: process.env.VERCEL_ENV ?? "local",
+      error: cause instanceof Error ? cause.message : "unknown"
+    });
+    redirect("/forgot-password?error=request");
+  }
 
+  const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-  if (error) redirect("/forgot-password?error=request");
+
+  if (error) {
+    // Não registrar o e-mail, token, URL completa ou dados pessoais.
+    console.error("[auth.password-recovery] Supabase rejected reset request", {
+      code: error.code ?? null,
+      status: error.status ?? null,
+      message: error.message,
+      environment: process.env.VERCEL_ENV ?? "local",
+      redirectOrigin: new URL(redirectTo).origin
+    });
+    redirect("/forgot-password?error=request");
+  }
+
   // Resposta neutra para não revelar se o e-mail está cadastrado.
   redirect("/forgot-password?sent=1");
 }
