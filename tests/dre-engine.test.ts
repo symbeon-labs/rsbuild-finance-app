@@ -52,3 +52,27 @@ test("manual exclusion remains outside the operating result",()=>{
  assert.equal(r.summary.excluded,1);
  assert.equal(r.pnl.length,0);
 });
+test("Omie category dictionary classifies non-P&L treatments without rateio",()=>{
+ const withCat=(id:string,category:string,direction:"entrada"|"saída",amount:number):FinancialRecord=>({...record(id,"Lançamento importado",direction,amount),category});
+ const r=runDreEngine([
+  withCat("1","Retirada Sócio","saída",500),
+  withCat("2","Saída de Transferência","saída",300),
+  withCat("3","Devolução venda feita cliente","saída",120)
+ ]);
+ assert.equal(r.classifications[0].account?.code,"OWNER_DRAW");
+ assert.equal(r.classifications[0].status,"suggested");
+ assert.equal(r.classifications[1].status,"excluded");
+ assert.equal(r.classifications[2].account?.code,"REFUND");
+ assert.equal(r.summary.equity,1);
+});
+test("Omie category dictionary identifies P&L account but still requires documented rateio",()=>{
+ const r=runDreEngine([{...record("1","Pagamento fornecedor","saída",1000),category:"Salários"}]);
+ assert.equal(r.classifications[0].account?.code,"PAYROLL");
+ assert.equal(r.classifications[0].status,"review");
+ assert.equal(r.classifications[0].allocations.length,0);
+});
+test("unknown or empty category falls back to description rules",()=>{
+ const r=runDreEngine([{...record("1","Compra material limpeza","saída",100),category:"Não classificado"}]);
+ assert.equal(r.classifications[0].account?.code,"CLEANING");
+ assert.equal(r.classifications[0].status,"suggested");
+});

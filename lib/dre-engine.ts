@@ -40,6 +40,9 @@ const accounts: DreAccount[] = [
   {code:"DELIVERY",label:"Frete / entrega / mototáxi",group:"DESPESAS COMERCIAIS/MARKETING",treatment:"pnl",directions:["saída"]},
   {code:"TAXES",label:"Impostos e taxas",group:"IMPOSTOS/TAXAS",treatment:"pnl",directions:["saída"]},
   {code:"BANK_FEES",label:"Tarifas bancárias",group:"DESPESAS FINANCEIRAS",treatment:"pnl",directions:["saída"]},
+  {code:"PROF_SERVICES",label:"Prestação de serviços / honorários",group:"SERVIÇOS PROFISSIONAIS",treatment:"pnl",directions:["saída"]},
+  {code:"CARD_EXPENSES",label:"Cartões empresariais",group:"DESPESAS ADMINISTRATIVAS",treatment:"pnl",directions:["saída"]},
+  {code:"SECURITY",label:"Segurança e monitoramento",group:"DESPESAS ADMINISTRATIVAS",treatment:"pnl",directions:["saída"]},
   {code:"FINANCING",label:"Parcelas de financiamento",group:"FINANCIAMENTOS",treatment:"financing",directions:["saída"]},
   {code:"ASSET",label:"Imobilizado / aquisição de ativo",group:"IMOBILIZADO",treatment:"balance_sheet",directions:["saída"]},
   {code:"OWNER_DRAW",label:"Retirada de sócios",group:"SÓCIOS",treatment:"equity",directions:["saída"]},
@@ -77,6 +80,44 @@ const rules: Rule[] = [
   {code:"BANK_FEES",terms:["tarifa bancaria","tarifa bancária","tarifas rede","taxa maquininha","safrapay","taxa adquirencia"],confidence:.91,reason:"Tarifa financeira ou de adquirência identificada."}
 ];
 
+// Dicionário categoria Omie → rubrica DRE (D-08). Chave = categoria normalizada.
+// Fonte: D08_Mapeamento_Categorias_Omie_DRE.xlsx — validação do financeiro pendente.
+const OMIE_CATEGORY_MAP: Record<string, { code: string; confidence: number; reason: string }> = {
+  "compras de mercadorias para revenda": {code:"COGS_MERCH",confidence:.97,reason:"Categoria Omie oficial: compras de mercadorias para revenda."},
+  "compra de uso e consumo": {code:"COGS_MERCH",confidence:.85,reason:"Categoria Omie: uso e consumo/insumos; tratar como mercadoria até revisão."},
+  "frete sobre compras": {code:"COGS_FREIGHT",confidence:.97,reason:"Categoria Omie: frete sobre compras."},
+  "frete sobre vendas": {code:"DELIVERY",confidence:.96,reason:"Categoria Omie: frete sobre vendas."},
+  "icms regime normal": {code:"TAXES",confidence:.97,reason:"Categoria Omie: ICMS."},
+  "icms antecipacao parcial": {code:"TAXES",confidence:.97,reason:"Categoria Omie: ICMS antecipação parcial."},
+  "cartao empresarial": {code:"CARD_EXPENSES",confidence:.95,reason:"Categoria Omie: cartões empresariais."},
+  "retirada socio": {code:"OWNER_DRAW",confidence:.97,reason:"Categoria Omie: retirada de sócio."},
+  "prestacao de servico": {code:"PROF_SERVICES",confidence:.93,reason:"Categoria Omie: prestação de serviços."},
+  "contabilidade": {code:"PROF_SERVICES",confidence:.95,reason:"Categoria Omie: contabilidade/honorários."},
+  "devolucao venda feita cliente": {code:"REFUND",confidence:.95,reason:"Categoria Omie: devolução de venda; evento espelhado."},
+  "devolucoes de vendas de mercadoria": {code:"REFUND",confidence:.95,reason:"Categoria Omie: devolução de mercadoria."},
+  "manutencao de ti": {code:"SOFTWARE",confidence:.80,reason:"Categoria Omie: manutenção de TI; confirmar se hardware."},
+  "saida de transferencia": {code:"TRANSFER",confidence:.97,reason:"Categoria Omie: transferência entre contas."},
+  "internet": {code:"TELECOM",confidence:.96,reason:"Categoria Omie: internet."},
+  "telefonia": {code:"TELECOM",confidence:.96,reason:"Categoria Omie: telefonia."},
+  "salarios": {code:"PAYROLL",confidence:.97,reason:"Categoria Omie: salários."},
+  "adiantamentos": {code:"PAYROLL",confidence:.75,reason:"Categoria Omie: adiantamentos; presumido adiantamento salarial."},
+  "inss": {code:"PAYROLL",confidence:.96,reason:"Categoria Omie: INSS/encargos."},
+  "fgts": {code:"PAYROLL",confidence:.96,reason:"Categoria Omie: FGTS/encargos."},
+  "beneficio flash": {code:"BENEFITS",confidence:.95,reason:"Categoria Omie: benefício Flash."},
+  "assistencia medica": {code:"BENEFITS",confidence:.95,reason:"Categoria Omie: assistência médica."},
+  "outros beneficios": {code:"BENEFITS",confidence:.85,reason:"Categoria Omie: outros benefícios."},
+  "energia eletrica": {code:"UTILITIES",confidence:.96,reason:"Categoria Omie: energia elétrica."},
+  "agua e esgoto": {code:"UTILITIES",confidence:.95,reason:"Categoria Omie: água e esgoto."},
+  "material de escritorio": {code:"OFFICE",confidence:.95,reason:"Categoria Omie: material de escritório."},
+  "pedagio": {code:"VEHICLE",confidence:.95,reason:"Categoria Omie: pedágio."},
+  "seguranca": {code:"SECURITY",confidence:.85,reason:"Categoria Omie: segurança/monitoramento."},
+  "pis": {code:"TAXES",confidence:.96,reason:"Categoria Omie: PIS."},
+  "cofins": {code:"TAXES",confidence:.96,reason:"Categoria Omie: COFINS."},
+  "retencao": {code:"TAXES",confidence:.90,reason:"Categoria Omie: retenções."},
+  "sistema": {code:"SOFTWARE",confidence:.92,reason:"Categoria Omie: sistemas/software."},
+  "brindes eventos funcionarios": {code:"BENEFITS",confidence:.85,reason:"Categoria Omie: brindes e eventos de funcionários."}
+};
+
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
 const accountByCode = new Map(accounts.map(a=>[a.code,a]));
 function allocate(amountMinor:number, shares:Array<[DreUnit,number]>):Array<{unit:DreUnit;amountMinor:number}> {
@@ -103,6 +144,18 @@ const rateioFor = (code:string):Array<[DreUnit,number]> | null => {
     if(account.treatment==="pnl"&&!shares) throw new Error("Informe a unidade ou uma regra de rateio documentada.");
     return {recordId:record.id,account,confidence:1,status:account.treatment==="ignore"?"excluded":"overridden",reason:override.reason,source:"manual",allocations:shares?allocate(amountMinor,shares):[]};
   }
+  const categoryHit = OMIE_CATEGORY_MAP[normalize(record.category || "")];
+  if (categoryHit) {
+    const account = accountByCode.get(categoryHit.code);
+    if (account && account.directions.includes(record.direction)) {
+      if (account.treatment === "ignore") return {recordId:record.id,account,confidence:categoryHit.confidence,status:"excluded",reason:categoryHit.reason,source:"rule",allocations:[]};
+      if (account.treatment !== "pnl") return {recordId:record.id,account,confidence:categoryHit.confidence,status:"suggested",reason:categoryHit.reason,source:"rule",allocations:[]};
+      const shares = rateioFor(account.code);
+      const canSuggest = categoryHit.confidence >= .90 && shares !== null;
+      const reason = canSuggest ? categoryHit.reason : `${categoryHit.reason} Unidade/rateio não determinado; exige revisão humana.`;
+      return {recordId:record.id,account,confidence:categoryHit.confidence,status:canSuggest?"suggested":"review",reason,source:"rule",allocations:canSuggest?allocate(amountMinor,shares!):[]};
+    }
+  }
   const text=normalize(record.description||"");
   const candidates=rules.filter(r=>r.terms.some(term=>text.includes(normalize(term))) && accountByCode.get(r.code)?.directions.includes(record.direction));
   candidates.sort((a,b)=>b.confidence-a.confidence);
@@ -110,6 +163,7 @@ const rateioFor = (code:string):Array<[DreUnit,number]> | null => {
   if(!winner) return {recordId:record.id,account:null,confidence:0,status:"review",reason:"Sem regra determinística segura. Exige classificação humana.",source:"none",allocations:[]};
   const account=accountByCode.get(winner.code)!;
   if(account.treatment==="ignore") return {recordId:record.id,account,confidence:winner.confidence,status:"excluded",reason:winner.reason,source:"rule",allocations:[]};
+  if(account.treatment!=="pnl") return {recordId:record.id,account,confidence:winner.confidence,status:"suggested",reason:winner.reason,source:"rule",allocations:[]};
   const shares=rateioFor(account.code);
   const canSuggest=winner.confidence>=.90 && (shares!==null);
   const reason=canSuggest?winner.reason:`${winner.reason} Unidade/rateio não determinado; exige revisão humana.`;
