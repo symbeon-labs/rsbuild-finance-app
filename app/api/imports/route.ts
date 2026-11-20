@@ -168,14 +168,14 @@ export async function POST(request: Request) {
     const sourceName = bankIdentity.institutionName;
     const { data: sourceRow, error: sourceError } = await admin.from("data_sources")
       .select("id").eq("organization_id", organizationId)
-      .eq("source_type", "bank_statement").eq("provider", providerKey).maybeSingle();
+      .eq("source_type", "ofx").eq("provider", sourceName).maybeSingle();
     if (sourceError) {
       return NextResponse.json({ error: "bank_source_registration_failed", importCommitted: true, batchId: result.batch_id }, { status: 502 });
     }
     let sourceId = sourceRow?.id as string | undefined;
     if (!sourceId) {
       const { data: createdSource, error: createSourceError } = await admin.from("data_sources")
-        .insert({ organization_id: organizationId, source_type: "bank_statement", provider: providerKey,
+        .insert({ organization_id: organizationId, source_type: "ofx", provider: sourceName,
           display_name: sourceName, configuration: { institution_code: bankIdentity.institutionCode,
             institution_name: sourceName, identification_status: bankIdentity.identificationStatus }, status: "active" })
         .select("id").single();
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
         const { data: createdAccount, error: accountCreateError } = await admin.from("financial_accounts")
           .insert({ organization_id: organizationId, name: bankIdentity.displayAccountName,
             institution: sourceName, bank_code: bankIdentity.institutionCode, branch_id: bankIdentity.branchId,
-            account_type: bankIdentity.accountType || "unknown",
+            account_type: bankIdentity.accountType?.toLowerCase() || "checking",
             currency: bankIdentity.currency || "BRL", external_reference: bankIdentity.accountNumber, is_active: true })
           .select("id").single();
         if (accountCreateError || !createdAccount) {
