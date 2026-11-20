@@ -63,12 +63,13 @@ begin
     nullif(trim(p_bank_identity->>'institutionName'), ''),
     case when v_bank_code is not null
       then 'Instituição não catalogada (código ' || v_bank_code || ')'
+      when p_account_id is not null then 'Importação CSV'
       else 'Instituição não identificada' end
   );
 
   -- Serialize resolution per tenant + source identity. This prevents duplicate
   -- account/source creation without imposing uniqueness on legacy records.
-  if p_bank_identity is not null then
+  if p_bank_identity is not null or p_account_id is not null then
     perform pg_advisory_xact_lock(hashtextextended(
       p_organization_id::text || ':' || v_source_type || ':' ||
       coalesce(v_bank_code,'?') || ':' || coalesce(v_branch_id,'?') || ':' ||
@@ -77,7 +78,7 @@ begin
   end if;
 
   -- Resolve or create the source inside the same transaction as the import.
-  if p_bank_identity is not null then
+  if p_bank_identity is not null or p_account_id is not null then
     select ds.id into v_source_id
     from public.data_sources ds
     where ds.organization_id = p_organization_id
@@ -157,18 +158,6 @@ begin
         account_id = v_account_id
     where organization_id = p_organization_id
       and import_batch_id = v_result.batch_id;
-  elsif p_account_id is not null then
-    -- CSV/manual association: account and source may be explicitly selected
-    -- later; at this stage only the account is known.
-    update public.financial_records
-    set account_id = p_account_id
-    where organization_id = p_organization_id
-      and import_batch_id = v_result.batch_id;
-    update public.import_batches
-    set metadata = metadata || jsonb_build_object(
-      'account_id', p_account_id, 'association_mode', 'assisted'
-    )
-    where id = v_result.batch_id and organization_id = p_organization_id;
   end if;
 
   return query select v_result.batch_id, v_result.inserted_count,
