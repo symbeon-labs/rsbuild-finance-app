@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { recordSessionEvent } from "@/lib/api/audit";
 
@@ -152,3 +152,54 @@ export async function switchOrganization(formData: FormData) {
   redirect(`/?organizationId=${encodeURIComponent(organizationId)}`);
 }
 
+
+
+/**
+ * Resolve a URL pública da aplicação sem fixar localhost em links enviados
+ * por e-mail. NEXT_PUBLIC_SITE_URL deve apontar para o domínio canônico.
+ */
+async function getPublicAppUrl() {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configured) return configured.replace(/\\/$/, "");
+
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\\/\\//, "").replace(/\\/$/, "")}`;
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
+  if (!host) throw new Error("Não foi possível determinar a URL pública da aplicação.");
+  return `${protocol}://${host}`;
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email || email.length > 254) redirect("/forgot-password?error=invalid");
+
+  const supabase = await createClient();
+  const appUrl = await getPublicAppUrl();
+  const redirectTo = new URL("/auth/callback?next=/reset-password", appUrl).toString();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) redirect("/forgot-password?error=request");
+  // Resposta neutra para não revelar se o e-mail está cadastrado.
+  redirect("/forgot-password?sent=1");
+}
+
+export async function updatePassword(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+  if (password.length < 8 || password.length > 256) redirect("/reset-password?error=password");
+  if (password !== confirmation) redirect("/reset-password?error=mismatch");
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/forgot-password?error=session");
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) redirect("/reset-password?error=update");
+
+  // Revoga as demais sessões após a troca de credencial.
+  await supabase.auth.signOut({ scope: "global" });
+  redirect("/login?password_updated=1");
+}
