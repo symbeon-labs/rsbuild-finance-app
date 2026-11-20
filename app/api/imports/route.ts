@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decodeImportText, parseCsv, parseOfx } from "@/lib/finance";
+import { resolveBankIdentity } from "@/lib/bank-identification";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 import { recordAuditEvent } from "@/lib/api/audit";
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
   if (!capabilityGuard.ok) return capabilityGuard.response;
 
   const { data, error } = await userClient.from("financial_records")
-    .select("id, organization_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at")
+    .select("id, organization_id, account_id, data_source_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at, financial_accounts(institution,name,external_reference,bank_code,branch_id)")
     .eq("organization_id", organizationId)
     .order("transaction_date", { ascending: false })
     .order("created_at", { ascending: false }).limit(MAX_RECORDS);
@@ -44,6 +45,8 @@ export async function GET(request: Request) {
       category: row.category || "Não classificado", source: "Importação financeira",
       status: row.status === "conciliado" ? "conciliado" : "pendente", sourceRecordId: row.source_record_id ?? undefined,
       importBatchId: row.import_batch_id ?? undefined,
+      accountId: row.account_id ?? undefined, dataSourceId: row.data_source_id ?? undefined,
+      bank: row.financial_accounts ?? null,
       createdAt: row.created_at ?? undefined, createdBy: row.created_by ?? undefined
     };
   });
@@ -99,6 +102,7 @@ export async function POST(request: Request) {
     }, { status: 422 });
   }
 
+  const bankIdentity = parsed.metadata ? resolveBankIdentity(parsed.metadata) : null;
   const normalized = [];
   for (const [index, row] of parsed.records.entries()) {
     let amountMinor: number;
@@ -119,7 +123,7 @@ export async function POST(request: Request) {
       category: (row.category || "Não classificado").slice(0, 120),
       currency: "BRL",
       deduplication_key: deduplicationKey,
-      raw_payload: { source_record_id: row.sourceRecordId ?? null, source_row_index: index, parser_version: "main-finance-parser/1" }
+      raw_payload: { source_record_id: row.sourceRecordId ?? null, source_row_index: index, parser_version: "main-finance-parser/2", bank_identity: bankIdentity }
     });
   }
 
@@ -132,6 +136,12 @@ export async function POST(request: Request) {
   });
   if (uploadError) return NextResponse.json({ error: "artifact_upload_failed" }, { status: 502 });
 
+  const requestedAccountId = String(form.get("accountId") ?? "").trim() || null;
+  if (requestedAccountId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedAccountId)) {
+    await admin.storage.from(BUCKET).remove([storagePath]);
+    return NextResponse.json({ error: "invalid_account_id" }, { status: 400 });
+  }
+
   const { data, error } = await admin.rpc("commit_financial_import_trusted", {
     p_actor_id: user.id,
     p_organization_id: organizationId,
@@ -139,7 +149,9 @@ export async function POST(request: Request) {
     p_file_sha256: fileHash,
     p_file_size_bytes: file.size,
     p_storage_path: storagePath,
-    p_records: normalized
+    p_records: normalized,
+    p_bank_identity: bankIdentity,
+    p_account_id: requestedAccountId
   });
 
   if (error) {
@@ -156,6 +168,9 @@ export async function POST(request: Request) {
 
   const result = data?.[0] ?? null;
   const counts = normalizeImportCounts(result);
+
+
+
   await recordAuditEvent({
     organizationId,
     actorId: user.id,
@@ -167,7 +182,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     result,
     ...counts,
-    parserVersion: "main-finance-parser/1",
+    parserVersion: "main-finance-parser/2",
     parsedCount: normalized.length
   }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
 }

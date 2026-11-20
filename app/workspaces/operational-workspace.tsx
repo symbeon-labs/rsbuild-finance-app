@@ -537,7 +537,7 @@ export default function OperationalWorkspace({
     event.target.value = "";
   }
 
-  async function confirmImport() {
+  async function confirmImport(accountId: string | null = null) {
     if (isImporting || !pendingImport.length || importErrors.length) return;
     setIsImporting(true);
     setNotice("");
@@ -547,6 +547,7 @@ export default function OperationalWorkspace({
       if (!selectedFile) throw new Error("Selecione novamente o arquivo para confirmar a importação.");
       form.set("organizationId", organizationId);
       form.set("file", selectedFile);
+      if (accountId) form.set("accountId", accountId);
       const response = await fetch("/api/imports", { method: "POST", body: form });
       const payload = await response.json();
       if (!response.ok) {
@@ -1073,6 +1074,7 @@ export default function OperationalWorkspace({
           )}
           {section === "importacoes" && (
             <ImportacoesView
+              organizationId={organizationId}
               fileName={fileName}
               detectedColumns={detectedColumns}
               pendingImport={pendingImport}

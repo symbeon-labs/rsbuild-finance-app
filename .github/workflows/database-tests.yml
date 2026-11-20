@@ -28,12 +28,11 @@ jobs:
         shell: bash
         run: |
           python3 <<'PY'
-          import re
           import socket
           from pathlib import Path
 
           config = Path("supabase/config.toml")
-          text = config.read_text()
+          lines = config.read_text().splitlines()
 
           def free_port():
               with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -45,11 +44,15 @@ jobs:
           while shadow_port == db_port:
               shadow_port = free_port()
 
-          text, db_count = re.subn(r"(?m)^port = \\d+$", f"port = {db_port}", text, count=1)
-          text, shadow_count = re.subn(r"(?m)^shadow_port = \\d+$", f"shadow_port = {shadow_port}", text, count=1)
-          if db_count != 1 or shadow_count != 1:
-              raise SystemExit("Could not safely update Supabase port settings")
-          config.write_text(text)
+          db_section = lines.index("[db]")
+          if not lines[db_section + 1].startswith("port = "):
+              raise SystemExit("Could not safely locate Supabase [db] port")
+          lines[db_section + 1] = f"port = {db_port}"
+          shadow_line = next((i for i, line in enumerate(lines) if line.startswith("shadow_port = ")), None)
+          if shadow_line is None:
+              raise SystemExit("Could not safely locate Supabase shadow_port")
+          lines[shadow_line] = f"shadow_port = {shadow_port}"
+          config.write_text("\n".join(lines) + "\n")
           print(f"Using Supabase db_port={db_port}, shadow_port={shadow_port}")
           PY
       - run: supabase start -x studio,edge-runtime,logflare,vector,inbucket
