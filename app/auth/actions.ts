@@ -159,6 +159,16 @@ export async function switchOrganization(formData: FormData) {
  * por e-mail. NEXT_PUBLIC_SITE_URL deve apontar para o domínio canônico.
  */
 async function getPublicAppUrl() {
+  // Em Preview, o verifier PKCE fica no cookie do próprio deployment.
+  // Portanto, o link enviado por e-mail precisa voltar para esse mesmo host,
+  // nunca para o domínio de produção.
+  if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL) {
+    const previewUrl = process.env.VERCEL_URL.startsWith("http")
+      ? process.env.VERCEL_URL
+      : `https://${process.env.VERCEL_URL}`;
+    return new URL(previewUrl).origin;
+  }
+
   const configured = process.env.NEXT_PUBLIC_SITE_URL;
   if (configured) return new URL(configured).origin;
 
