@@ -6,7 +6,6 @@ import { RecordTable } from "./common";
 
 interface ImportacoesViewProps {
   organizationId: string;
-  organizationId: string;
   fileName: string;
   detectedColumns?: CsvColumnMatch[];
   pendingImport: FinancialRecord[];
@@ -20,7 +19,6 @@ interface ImportacoesViewProps {
 }
 
 export function ImportacoesView({
-  organizationId,
   organizationId,
   fileName,
   detectedColumns = [],
@@ -37,30 +35,11 @@ export function ImportacoesView({
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [accountsError, setAccountsError] = useState("");
-  const [accounts, setAccounts] = useState<Array<{ id: string; name: string; institution: string | null; external_reference: string | null }>>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState("");
-  const [accountsLoading, setAccountsLoading] = useState(false);
-  const [accountsError, setAccountsError] = useState("");
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState("all");
   const [category, setCategory] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  useMemo(() => {
-    if (!organizationId || !pendingImport.length) return null;
-    let active = true;
-    setAccountsLoading(true);
-    setAccountsError("");
-    fetch(`/api/financial-accounts?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Não foi possível carregar as contas.");
-        if (active) setAccounts(Array.isArray(payload.accounts) ? payload.accounts : []);
-      })
-      .catch((error) => { if (active) setAccountsError(error instanceof Error ? error.message : "Falha ao carregar contas."); })
-      .finally(() => { if (active) setAccountsLoading(false); });
-    return () => { active = false; };
-  }, [organizationId, pendingImport.length]);
   useEffect(() => {
     if (!organizationId || !pendingImport.length) return;
     let active = true;
@@ -153,16 +132,6 @@ export function ImportacoesView({
 
         {pendingImport.length > 0 && (
           <>
-            <div style={{ margin: "18px 0", padding: 14, border: "1px solid var(--border)", borderRadius: 10, display: "grid", gap: 8 }}>
-              <strong>Vincular a uma conta (opcional)</strong>
-              <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Se o arquivo não identificar a conta automaticamente, selecione a conta da organização. O vínculo será gravado junto com a importação.</span>
-              <select value={selectedAccountId} onChange={(event) => setSelectedAccountId(event.target.value)} disabled={accountsLoading}>
-                <option value="">Identificação automática / sem associação manual</option>
-                {accounts.map((account) => <option key={account.id} value={account.id}>{[account.institution, account.name, account.external_reference ? `•••• ${account.external_reference.slice(-4)}` : ""].filter(Boolean).join(" · ")}</option>)}
-              </select>
-              {accountsLoading && <span style={{ fontSize: 12 }}>Carregando contas...</span>}
-              {accountsError && <span role="alert" style={{ color: "var(--destructive)", fontSize: 12 }}>{accountsError}</span>}
-            </div>
             <div style={{ margin: "18px 0", padding: 14, border: "1px solid var(--border)", borderRadius: 10, display: "grid", gap: 8 }}>
               <strong>Vincular a uma conta (opcional)</strong>
               <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Se o arquivo não identificar a conta automaticamente, selecione a conta da organização. O vínculo será gravado junto com a importação.</span>
