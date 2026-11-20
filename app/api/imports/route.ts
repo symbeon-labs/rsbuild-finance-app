@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   if (!capabilityGuard.ok) return capabilityGuard.response;
 
   const { data, error } = await userClient.from("financial_records")
-    .select("id, organization_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at")
+    .select("id, organization_id, account_id, data_source_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at, financial_accounts(institution,name,external_reference,bank_code,branch_id)")
     .eq("organization_id", organizationId)
     .order("transaction_date", { ascending: false })
     .order("created_at", { ascending: false }).limit(MAX_RECORDS);
@@ -45,6 +45,8 @@ export async function GET(request: Request) {
       category: row.category || "Não classificado", source: "Importação financeira",
       status: row.status === "conciliado" ? "conciliado" : "pendente", sourceRecordId: row.source_record_id ?? undefined,
       importBatchId: row.import_batch_id ?? undefined,
+      accountId: row.account_id ?? undefined, dataSourceId: row.data_source_id ?? undefined,
+      bank: row.financial_accounts ?? null,
       createdAt: row.created_at ?? undefined, createdBy: row.created_by ?? undefined
     };
   });
@@ -195,7 +197,8 @@ export async function POST(request: Request) {
       if (!accountId) {
         const { data: createdAccount, error: accountCreateError } = await admin.from("financial_accounts")
           .insert({ organization_id: organizationId, name: bankIdentity.displayAccountName,
-            institution: sourceName, account_type: bankIdentity.accountType || "unknown",
+            institution: sourceName, bank_code: bankIdentity.institutionCode, branch_id: bankIdentity.branchId,
+            account_type: bankIdentity.accountType || "unknown",
             currency: bankIdentity.currency || "BRL", external_reference: bankIdentity.accountNumber, is_active: true })
           .select("id").single();
         if (accountCreateError || !createdAccount) {
