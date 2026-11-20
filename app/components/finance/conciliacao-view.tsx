@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { Fragment, useState, useMemo, useRef } from "react";
 import {
   FinancialRecord,
   OmieRecord,
@@ -12,6 +12,7 @@ import {
   MatchResult
 } from "@/lib/finance";
 import { detectInternalTransfers } from "@/lib/internal-transfers";
+import { suggestOmieCandidates, type OmieCandidate } from "@/lib/reconciliation-suggestions";
 import { formatDatePtBr } from "@/lib/date-format";
 import {
   canPerformManualMatch,
@@ -43,6 +44,7 @@ export function ConciliacaoView({
   const [selectedTab, setSelectedTab] = useState<"summary" | "matched" | "unmatched" | "transfers">("summary");
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
   const [selectedOmieId, setSelectedOmieId] = useState<string | null>(null);
+  const [expandedBankId, setExpandedBankId] = useState<string | null>(null);
   const [manualJustification, setManualJustification] = useState("");
   const [omieImportFeedback, setOmieImportFeedback] = useState("");
   const omieInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +57,15 @@ export function ConciliacaoView({
   }, [bankRecords, omieRecords, author]);
 
   const { matched, unmatchedBank, unmatchedOmie } = matchResults;
+
+  const suggestionsByBankId = useMemo(() => {
+    const map = new Map<string, OmieCandidate[]>();
+    for (const record of unmatchedBank) {
+      const candidates = suggestOmieCandidates(record, unmatchedOmie, { limit: 3 });
+      if (candidates.length) map.set(record.id, candidates);
+    }
+    return map;
+  }, [unmatchedBank, unmatchedOmie]);
 
   const internalTransfers = useMemo(
     () => detectInternalTransfers(bankRecords),
@@ -404,29 +415,102 @@ export function ConciliacaoView({
                     <th>Descrição</th>
                     <th>Valor</th>
                     <th>Banco</th>
+                    <th style={{ width: "90px" }}>Sugestões</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {unmatchedBank.map(record => (
-                    <tr
-                      key={record.id}
-                      onClick={() => setSelectedBankId(record.id === selectedBankId ? null : record.id)}
-                      style={{ cursor: "pointer", background: selectedBankId === record.id ? "rgba(181, 88, 60, 0.1)" : undefined }}
-                    >
-                      <td>
-                        <input
-                          type="radio"
-                          name="bankSelection"
-                          checked={selectedBankId === record.id}
-                          onChange={() => setSelectedBankId(record.id)}
-                        />
-                      </td>
-                      <td>{formatDatePtBr(record.date)}</td>
-                      <td style={{ fontSize: "11px" }}>{record.description}</td>
-                      <td><strong>{formatCurrency(record.amount)}</strong></td>
-                      <td>{record.bankName || "-"}</td>
-                    </tr>
-                  ))}
+                  {unmatchedBank.map(record => {
+                    const candidates = suggestionsByBankId.get(record.id) ?? [];
+                    const expanded = expandedBankId === record.id;
+                    return (
+                      <Fragment key={record.id}>
+                        <tr
+                          onClick={() => setSelectedBankId(record.id === selectedBankId ? null : record.id)}
+                          style={{ cursor: "pointer", background: selectedBankId === record.id ? "rgba(181, 88, 60, 0.1)" : undefined }}
+                        >
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="radio"
+                              name="bankSelection"
+                              checked={selectedBankId === record.id}
+                              onChange={() => setSelectedBankId(record.id)}
+                            />
+                          </td>
+                          <td>{formatDatePtBr(record.date)}</td>
+                          <td style={{ fontSize: "11px" }}>{record.description}</td>
+                          <td><strong>{formatCurrency(record.amount)}</strong></td>
+                          <td>{record.bankName || "-"}</td>
+                          <td onClick={(e) => e.stopPropagation()}>
+                            {candidates.length > 0 ? (
+                              <button
+                                type="button"
+                                className="text-button"
+                                onClick={() => setExpandedBankId(expanded ? null : record.id)}
+                                title="Ver lançamentos Omie candidatos com score e evidências"
+                              >
+                                {expanded ? "Ocultar" : `${candidates.length} cand.`}
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: "11px", color: "var(--muted)" }}>—</span>
+                            )}
+                          </td>
+                        </tr>
+                        {expanded && candidates.length > 0 && (
+                          <tr key={`${record.id}-candidates`}>
+                            <td colSpan={6} style={{ background: "var(--surface-raised, rgba(255,255,255,0.03))", padding: "10px 14px" }}>
+                              <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px" }}>
+                                Candidatos Omie sugeridos pelo motor (valor, data, documento e descrição). A seleção não confirma a conciliação — a confirmação exige justificativa auditada abaixo.
+                              </div>
+                              <div style={{ display: "grid", gap: "8px" }}>
+                                {candidates.map((candidate) => (
+                                  <div
+                                    key={candidate.omieRecord.id}
+                                    style={{
+                                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap",
+                                      padding: "8px 10px", border: "1px solid var(--line)", borderRadius: "6px", background: "var(--surface)"
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                        <strong style={{ fontSize: "12px" }}>{formatCurrency(candidate.omieRecord.amount)}</strong>
+                                        <span style={{ fontSize: "11px", color: "var(--muted)" }}>{formatDatePtBr(candidate.omieRecord.date)}</span>
+                                        {candidate.amountDifference !== 0 && (
+                                          <span className="badge badge-blue">dif. {formatCurrency(candidate.amountDifference)}</span>
+                                        )}
+                                        <span className="badge badge-green" title="Score de similaridade (0-130)">{candidate.score} pts</span>
+                                      </div>
+                                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                                        {candidate.omieRecord.description}
+                                        {candidate.omieRecord.documentNumber && (
+                                          <span style={{ color: "var(--muted)" }}> · doc {candidate.omieRecord.documentNumber}</span>
+                                        )}
+                                      </div>
+                                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                                        {candidate.evidence.map((item) => (
+                                          <span key={item} style={{ fontSize: "10px", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: "4px", padding: "1px 6px" }}>{item}</span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="secondary-button"
+                                      onClick={() => {
+                                        setSelectedBankId(record.id);
+                                        setSelectedOmieId(candidate.omieRecord.id);
+                                        setExpandedBankId(null);
+                                      }}
+                                    >
+                                      Selecionar par
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
