@@ -160,16 +160,19 @@ export async function switchOrganization(formData: FormData) {
  */
 async function getPublicAppUrl() {
   const configured = process.env.NEXT_PUBLIC_SITE_URL;
-  if (configured) return configured.replace(/\\/$/, "");
+  if (configured) return new URL(configured).origin;
 
   const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\\/\\//, "").replace(/\\/$/, "")}`;
+  if (vercelUrl) {
+    const normalized = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
+    return new URL(normalized).origin;
+  }
 
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
   if (!host) throw new Error("Não foi possível determinar a URL pública da aplicação.");
-  return `${protocol}://${host}`;
+  return new URL(`${protocol}://${host}`).origin;
 }
 
 export async function requestPasswordReset(formData: FormData) {
