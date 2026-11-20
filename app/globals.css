@@ -5935,3 +5935,31 @@ html:has(.inst-page) {
 @media (prefers-reduced-motion: reduce) {
   .capability-status-badge.is-processing { animation: none; }
 }
+
+
+/* Fluxo de recuperação de senha */
+.auth-feedback {
+  border: 1px solid #e6d4c8;
+  border-radius: 8px;
+  background: #fff8f3;
+  color: #704533;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0 0 18px;
+}
+.auth-feedback--success {
+  border-color: #c8e4d6;
+  background: #f1faf5;
+  color: #216348;
+}
+.auth-back-link {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 18px;
+  color: #7a6e65;
+  font-size: 12px;
+  text-decoration: none;
+}
+.auth-back-link:hover { color: var(--rsbuild-terracotta); text-decoration: underline; }

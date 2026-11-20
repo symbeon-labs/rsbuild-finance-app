@@ -188,8 +188,8 @@ export default function LoginPage() {
             </button>
 
             <div className="login-forgot-wrap">
-              <a href="mailto:suporte@rsbuild.com.br?subject=Recuperação%20de%20Acesso%20RSBUILD%20OS" className="login-forgot-link">
-                Esqueceu sua senha? Contate o administrador →
+              <a href="/forgot-password" className="login-forgot-link">
+                Esqueceu sua senha? Recuperar acesso →
               </a>
             </div>
           </form>
