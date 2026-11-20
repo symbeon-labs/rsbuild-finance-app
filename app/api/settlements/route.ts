@@ -4,57 +4,88 @@ import { recordAuditEvent } from "@/lib/api/audit";
 
 export const dynamic = "force-dynamic";
 
-const SETTLEMENT_STATUSES = ["confirmada", "exportada", "estornada"];
+const MAX_SETTLEMENTS = 500;
+
+type SettlementInput = {
+  receivableTitleId?: unknown;
+  amountMinor?: unknown;
+  settlementDate?: unknown;
+  sourceRecordId?: unknown;
+  observation?: unknown;
+};
 
 export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin"], "reconciliation");
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin"], "finance");
   if (!guard.ok) return guard.response;
   const { supabase, userId, userEmail } = guard.ctx;
 
-  let body: { settlements?: Array<{ receivableTitleId?: unknown; documentNumber?: unknown; customerName?: unknown; amount?: unknown; settlementDate?: unknown; sourceRecordId?: unknown; observation?: unknown }> };
+  let body: { settlements?: SettlementInput[] };
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "invalid_json" }, { status: 400 }); }
 
   const inputs = Array.isArray(body?.settlements) ? body.settlements : null;
-  if (!inputs || !inputs.length) {
+  if (!inputs || !inputs.length || inputs.length > MAX_SETTLEMENTS) {
     return NextResponse.json({ error: "invalid_settlements_payload" }, { status: 400 });
   }
 
-  const rows = inputs.map((s) => {
-    const amount = Number(s.amount);
+  const seenTitleIds = new Set<string>();
+  const settlements = inputs.map((item) => {
+    const titleId = typeof item.receivableTitleId === "string" ? item.receivableTitleId : "";
+    const amountMinor = Number(item.amountMinor);
+    const settlementDate = typeof item.settlementDate === "string" ? item.settlementDate : "";
+    const sourceRecordId = typeof item.sourceRecordId === "string" ? item.sourceRecordId.trim() : "";
+    const observation = typeof item.observation === "string" ? item.observation : "";
+    const validDate = /^\d{4}-\d{2}-\d{2}$/.test(settlementDate)
+      && !Number.isNaN(Date.parse(`${settlementDate}T00:00:00Z`));
+    const duplicateTitle = titleId ? seenTitleIds.has(titleId) : false;
+    if (titleId) seenTitleIds.add(titleId);
     return {
-      organization_id: organizationId,
-      receivable_title_id: typeof s.receivableTitleId === "string" ? s.receivableTitleId : null,
-      document_number: String(s.documentNumber ?? "").trim().slice(0, 80),
-      customer_name: String(s.customerName ?? "").trim().slice(0, 200),
-      amount_minor: Number.isFinite(amount) ? Math.round(Math.abs(amount) * 100) : 0,
-      settlement_date: typeof s.settlementDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s.settlementDate) ? s.settlementDate : null,
-      source_record_id: typeof s.sourceRecordId === "string" ? s.sourceRecordId.slice(0, 120) : null,
-      observation: typeof s.observation === "string" ? s.observation.slice(0, 2000) : null,
-      status: "confirmada",
-      created_by: userId
+      receivableTitleId: titleId,
+      amountMinor: Number.isSafeInteger(amountMinor) ? amountMinor : 0,
+      settlementDate,
+      sourceRecordId,
+      observation,
+      valid: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(titleId)
+        && Number.isSafeInteger(amountMinor) && amountMinor > 0
+        && validDate && !duplicateTitle
+        && sourceRecordId.length <= 120 && observation.length <= 2000
     };
   });
 
-  const invalid = rows.filter((r) => !r.document_number || !r.customer_name || r.amount_minor <= 0 || !r.settlement_date);
-  if (invalid.length) {
-    return NextResponse.json({ error: "invalid_settlements_payload", detail: `${invalid.length} baixa(s) com campos obrigatórios inválidos.` }, { status: 422 });
+  if (settlements.some((item) => !item.valid)) {
+    return NextResponse.json({ error: "invalid_settlements_payload" }, { status: 422 });
   }
 
-  const { error } = await supabase.from("settlements").insert(rows);
+  const { data, error } = await (supabase as unknown as {
+    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string } | null }>
+  }).rpc("confirm_receivable_settlements", {
+    p_organization_id: organizationId,
+    p_settlements: settlements.map(({ valid: _valid, ...item }) => item)
+  });
+
   if (error) {
-    console.error(JSON.stringify({ event: "rsbuild_settlements_import_failed", organizationId, code: error.code }));
-    return NextResponse.json({ error: "settlements_import_failed" }, { status: 502 });
+    const status = error.code === "42501" ? 403
+      : error.code === "P0002" ? 404
+      : error.code === "23505" ? 409
+      : error.code === "55000" ? 409
+      : error.code === "22023" ? 422 : 502;
+    console.error(JSON.stringify({ event: "rsbuild_settlements_confirm_failed", organizationId, code: error.code }));
+    return NextResponse.json({ error: "settlements_confirmation_failed" }, { status });
   }
 
+  const insertedCount = Number((data as { insertedCount?: unknown } | null)?.insertedCount ?? 0);
   await recordAuditEvent({
     organizationId, actorId: userId, actorEmail: userEmail,
     eventType: "settlements.created", entityType: "settlement",
-    metadata: { insertedCount: rows.length, totalAmountMinor: rows.reduce((sum, r) => sum + r.amount_minor, 0) }
+    metadata: {
+      insertedCount,
+      totalAmountMinor: settlements.reduce((sum, item) => sum + item.amountMinor, 0),
+      confirmationMode: "atomic_receivable_settlement"
+    }
   });
 
-  return NextResponse.json({ insertedCount: rows.length }, {
+  return NextResponse.json({ insertedCount }, {
     status: 201, headers: { "Cache-Control": "private, no-store" }
   });
 }

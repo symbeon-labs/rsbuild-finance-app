@@ -1,7 +1,7 @@
 "use client";
 
 import { todayIsoDateSaoPaulo } from "@/lib/date-format";
-import { ChangeEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import {
@@ -235,6 +235,7 @@ export default function EnterpriseWorkspace({
 
   // Contas a Receber e Baixas em Lote
   const [titles, setTitles] = useState<ReceivableTitle[]>([]);
+  const [isLoadingTitles, setIsLoadingTitles] = useState(false);
 
   // Canhotos de Entrega e Blindagem
   const [proofs, setProofs] = useState<DeliveryProof[]>([]);
@@ -270,6 +271,24 @@ export default function EnterpriseWorkspace({
       });
     return () => { active = false; };
   }, [organizationId]);
+
+  const loadReceivableTitles = useCallback(async () => {
+    setIsLoadingTitles(true);
+    try {
+      const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível carregar contas a receber.");
+      setTitles(Array.isArray(payload.titles) ? payload.titles : []);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao carregar contas a receber.");
+    } finally {
+      setIsLoadingTitles(false);
+    }
+  }, [organizationId]);
+
+  useEffect(() => {
+    void loadReceivableTitles();
+  }, [loadReceivableTitles]);
 
   // Hidratação inicial do localStorage (Configurações e Persistência de Sessão)
   useEffect(() => {
@@ -320,7 +339,6 @@ export default function EnterpriseWorkspace({
           return [];
         }
       };
-      setTitles(hydrateSession(`rsbuild_session_titles_${organizationId}`));
       setProofs(hydrateSession(`rsbuild_session_proofs_${organizationId}`));
       setOrders(hydrateSession(`rsbuild_session_orders_${organizationId}`));
       setOmieRecords(hydrateSession(`rsbuild_session_omie_${organizationId}`));
@@ -396,12 +414,11 @@ export default function EnterpriseWorkspace({
   useEffect(() => {
     if (sessionHydratedOrgId !== organizationId) return;
     try {
-      localStorage.setItem(`rsbuild_session_titles_${organizationId}`, JSON.stringify(titles));
       localStorage.setItem(`rsbuild_session_proofs_${organizationId}`, JSON.stringify(proofs));
       localStorage.setItem(`rsbuild_session_orders_${organizationId}`, JSON.stringify(orders));
       localStorage.setItem(`rsbuild_session_omie_${organizationId}`, JSON.stringify(omieRecords));
     } catch {}
-  }, [sessionHydratedOrgId, organizationId, titles, proofs, orders, omieRecords]);
+  }, [sessionHydratedOrgId, organizationId, proofs, orders, omieRecords]);
 
 
   function handleSaveCompanyConfig(
@@ -460,7 +477,6 @@ export default function EnterpriseWorkspace({
       return;
     }
     setOmieRecords([]);
-    setTitles([]);
     setProofs([]);
     setOrders([]);
     setPendingImport([]);
@@ -468,7 +484,6 @@ export default function EnterpriseWorkspace({
     setImportErrors([]);
     setFileName("");
     try {
-      localStorage.removeItem(`rsbuild_session_titles_${organizationId}`);
       localStorage.removeItem(`rsbuild_session_proofs_${organizationId}`);
       localStorage.removeItem(`rsbuild_session_orders_${organizationId}`);
       localStorage.removeItem(`rsbuild_session_omie_${organizationId}`);
@@ -622,9 +637,24 @@ export default function EnterpriseWorkspace({
     const result = parseReceivablesCsv(text);
     if (result.errors.length > 0) {
       setNotice(`Aviso: ${result.errors[0]}`);
-    } else {
-      setTitles((curr) => [...result.titles, ...curr]);
-      setNotice(`${result.titles.length} título(s) a receber carregado(s) com sucesso.`);
+      return;
+    }
+    if (!result.titles.length) {
+      setNotice("Nenhum título válido encontrado no arquivo.");
+      return;
+    }
+    try {
+      const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titles: result.titles.map(({ documentNumber, customerName, customerDoc, amount, dueDate, issueDate, bankAccount, category, ourNumber }) => ({ documentNumber, customerName, customerDoc, amount, dueDate, issueDate, bankAccount, category, ourNumber })) })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || payload.error || "Falha ao persistir títulos.");
+      await loadReceivableTitles();
+      setNotice(`${payload.insertedCount ?? 0} título(s) novo(s) persistido(s); ${Math.max(0, result.titles.length - (payload.insertedCount ?? 0))} duplicidade(s) ignorada(s).`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao importar títulos.");
     }
   }
 
@@ -653,16 +683,29 @@ export default function EnterpriseWorkspace({
     setNotice(`Arquivo CSV gerado para conferência e eventual importação manual no Omie (${settlements.length} itens). Nenhum título foi baixado pelo RSBUILD OS.`);
   }
 
-  function handleConfirmSettlementInSession() {
+  async function handleConfirmSettlementInSession() {
     if (!canApproveBatchSettlement(membershipRole)) {
       setNotice("Ação bloqueada: somente Owner ou Admin pode confirmar baixas.");
       return;
     }
-    const matchedTitleIds = new Set(matchStats.ready.map((m) => m.title.id));
-    setTitles((curr) =>
-      curr.map((t) => (matchedTitleIds.has(t.id) ? { ...t, status: "baixado" as const } : t))
-    );
-    setNotice(`${matchedTitleIds.size} título(s) marcados como baixados na sessão.`);
+    const settlements = buildSettlementItems(matchStats.ready);
+    if (!settlements.length) {
+      setNotice("Não há correspondências elegíveis para confirmar.");
+      return;
+    }
+    try {
+      const response = await fetch(`/api/settlements?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settlements: settlements.map((item) => ({ receivableTitleId: item.titleId, documentNumber: item.documentNumber, customerName: item.customerName, amountMinor: Math.round(item.amountPaid * 100), settlementDate: item.settlementDate, sourceRecordId: item.sourceRecordId, observation: `${item.observation || ""} | Valor original: R$ ${item.amountOriginal.toFixed(2)}; juros: R$ ${item.interest.toFixed(2)}; desconto: R$ ${item.discount.toFixed(2)}` })) })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || payload.error || "Falha ao confirmar baixas.");
+      await loadReceivableTitles();
+      setNotice(`${payload.insertedCount ?? settlements.length} baixa(s) confirmada(s) e persistida(s).`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao confirmar baixas.");
+    }
   }
 
   async function handleImportProofsFileData(file: File) {
@@ -802,7 +845,7 @@ export default function EnterpriseWorkspace({
         <div className="content">
           <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
           <div className="inline-note" role="note">
-            Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
+            Contas a receber e baixas são persistidas no servidor por organização. Canhotos e pedidos continuam temporários nesta etapa.
           </div>
           {!modulesResolved && (
             <div className="inline-note" role="status">Verificando os módulos autorizados para esta organização…</div>
@@ -886,6 +929,7 @@ export default function EnterpriseWorkspace({
               matches={matches}
               matchStats={matchStats}
               role={effectiveRole}
+              isLoading={isLoadingTitles}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}
               onExportBatchSettlement={handleExportBatchSettlement}

@@ -16,6 +16,7 @@ interface BaixasViewProps {
     totalReadyAmount: number;
   };
   role?: string;
+  isLoading?: boolean;
   onImportTitlesFile: (file: File) => void;
   onConfirmSettlementInSession: () => void;
   onExportBatchSettlement: () => void;
@@ -26,6 +27,7 @@ export function BaixasView({
   matches,
   matchStats,
   role,
+  isLoading = false,
   onImportTitlesFile,
   onConfirmSettlementInSession,
   onExportBatchSettlement
@@ -102,18 +104,18 @@ export function BaixasView({
         />
       </section>
 
-      <div className="inline-note" style={{ marginTop: "12px" }}>Títulos e decisões de baixa são temporários nesta sessão. O sistema não grava a baixa no ERP nem substitui a conferência no sistema de origem.</div>
+      <div className="inline-note" style={{ marginTop: "12px" }}>Títulos e baixas são carregados e persistidos no RSBUILD OS. A confirmação não envia alterações ao ERP de origem.</div>
 
       <section className="panel" style={{ marginTop: "24px" }}>
         <div className="panel-heading">
           <div>
             <h2>Painel de Conciliação e Baixa em Lote</h2>
-            <p>Cruzamento entre títulos importados e lançamentos bancários disponíveis nesta sessão.</p>
+            <p>Cruzamento entre títulos persistidos e lançamentos bancários importados.</p>
           </div>
           {matchStats.ready.length > 0 && (
             <div style={{ display: "flex", gap: "8px" }}>
-              <button className="secondary-button" onClick={onConfirmSettlementInSession} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Marcar títulos como baixados nesta sessão de demonstração."}>
-                {hasSettlementAuth ? "Marcar Baixados na Sessão" : "🔒 Baixa Restrita à Diretoria"}
+              <button className="secondary-button" onClick={onConfirmSettlementInSession} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Confirmar e persistir as baixas selecionadas no RSBUILD OS."}>
+                {hasSettlementAuth ? "Confirmar Baixas" : "🔒 Baixa Restrita à Diretoria"}
               </button>
               <button className={hasSettlementAuth ? "primary-button" : "secondary-button"} onClick={onExportBatchSettlement} disabled={!hasSettlementAuth} title={!hasSettlementAuth ? "Ação restrita à Diretoria (Owner ou Admin)." : "Gerar CSV para conferência e eventual importação manual no Omie; nenhuma baixa será executada aqui."}>
                 {hasSettlementAuth ? "Exportar CSV para Omie" : "🔒 Baixa Restrita à Diretoria"}
@@ -122,7 +124,9 @@ export function BaixasView({
           )}
         </div>
 
-        {titles.length ? (
+        {isLoading ? (
+          <div className="empty-state" role="status">Carregando títulos persistidos...</div>
+        ) : titles.length ? (
           <div className="table-wrap">
             <table className="sticky-actions">
               <thead>
@@ -224,8 +228,8 @@ export function BaixasView({
         ) : (
           <EmptyState
             icon="✓"
-            title="Nenhum título carregado"
-            text="Importe uma base de títulos autorizada. Nenhum dado de demonstração é exibido como dado operacional."
+            title="Nenhum título persistido"
+            text="Importe uma base de títulos autorizada para esta organização."
           />
         )}
       </section>
