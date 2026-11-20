@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decodeImportText, parseCsv, parseOfx } from "@/lib/finance";
+import { resolveBankIdentity } from "@/lib/bank-identification";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 import { recordAuditEvent } from "@/lib/api/audit";
@@ -99,6 +100,7 @@ export async function POST(request: Request) {
     }, { status: 422 });
   }
 
+  const bankIdentity = parsed.metadata ? resolveBankIdentity(parsed.metadata) : null;
   const normalized = [];
   for (const [index, row] of parsed.records.entries()) {
     let amountMinor: number;
@@ -119,7 +121,7 @@ export async function POST(request: Request) {
       category: (row.category || "Não classificado").slice(0, 120),
       currency: "BRL",
       deduplication_key: deduplicationKey,
-      raw_payload: { source_record_id: row.sourceRecordId ?? null, source_row_index: index, parser_version: "main-finance-parser/1" }
+      raw_payload: { source_record_id: row.sourceRecordId ?? null, source_row_index: index, parser_version: "main-finance-parser/2", bank_identity: bankIdentity }
     });
   }
 
@@ -156,6 +158,69 @@ export async function POST(request: Request) {
 
   const result = data?.[0] ?? null;
   const counts = normalizeImportCounts(result);
+
+  // Register bank/source identity only when the statement supplies account metadata.
+  // Unknown institutions are retained by their original bank code; no guessed bank name is used.
+  if (bankIdentity && result?.batch_id) {
+    const providerKey = bankIdentity.institutionCode || "unknown";
+    const sourceName = bankIdentity.institutionName;
+    const { data: sourceRow, error: sourceError } = await admin.from("data_sources")
+      .select("id").eq("organization_id", organizationId)
+      .eq("source_type", "bank_statement").eq("provider", providerKey).maybeSingle();
+    if (sourceError) {
+      return NextResponse.json({ error: "bank_source_registration_failed", importCommitted: true, batchId: result.batch_id }, { status: 502 });
+    }
+    let sourceId = sourceRow?.id as string | undefined;
+    if (!sourceId) {
+      const { data: createdSource, error: createSourceError } = await admin.from("data_sources")
+        .insert({ organization_id: organizationId, source_type: "bank_statement", provider: providerKey,
+          display_name: sourceName, configuration: { institution_code: bankIdentity.institutionCode,
+            institution_name: sourceName, identification_status: bankIdentity.identificationStatus }, status: "active" })
+        .select("id").single();
+      if (createSourceError || !createdSource) {
+        return NextResponse.json({ error: "bank_source_registration_failed", importCommitted: true, batchId: result.batch_id }, { status: 502 });
+      }
+      sourceId = createdSource.id;
+    }
+
+    let accountId: string | undefined;
+    if (bankIdentity.accountNumber) {
+      const { data: accountRow, error: accountLookupError } = await admin.from("financial_accounts")
+        .select("id").eq("organization_id", organizationId)
+        .eq("institution", sourceName).eq("external_reference", bankIdentity.accountNumber).maybeSingle();
+      if (accountLookupError) {
+        return NextResponse.json({ error: "bank_account_lookup_failed", importCommitted: true, batchId: result.batch_id }, { status: 502 });
+      }
+      accountId = accountRow?.id;
+      if (!accountId) {
+        const { data: createdAccount, error: accountCreateError } = await admin.from("financial_accounts")
+          .insert({ organization_id: organizationId, name: bankIdentity.displayAccountName,
+            institution: sourceName, account_type: bankIdentity.accountType || "unknown",
+            currency: bankIdentity.currency || "BRL", external_reference: bankIdentity.accountNumber, is_active: true })
+          .select("id").single();
+        if (accountCreateError || !createdAccount) {
+          return NextResponse.json({ error: "bank_account_registration_failed", importCommitted: true, batchId: result.batch_id }, { status: 502 });
+        }
+        accountId = createdAccount.id;
+      }
+    }
+
+    const { error: linkError } = await admin.from("financial_records").update({
+      data_source_id: sourceId, ...(accountId ? { account_id: accountId } : {})
+    }).eq("organization_id", organizationId).eq("import_batch_id", result.batch_id);
+    if (linkError) {
+      return NextResponse.json({ error: "bank_traceability_link_failed", importCommitted: true, batchId: result.batch_id }, { status: 502 });
+    }
+    const { error: batchLinkError } = await admin.from("import_batches").update({
+      data_source_id: sourceId,
+      metadata: { source: "rsbuild-finance-app", parser_version: "main-finance-parser/2",
+        bank_identity: bankIdentity, account_id: accountId ?? null }
+    }).eq("organization_id", organizationId).eq("id", result.batch_id);
+    if (batchLinkError) {
+      return NextResponse.json({ error: "bank_batch_link_failed", importCommitted: true, batchId: result.batch_id }, { status: 502 });
+    }
+  }
+
   await recordAuditEvent({
     organizationId,
     actorId: user.id,
