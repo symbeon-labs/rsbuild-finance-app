@@ -32,6 +32,9 @@ insert into public.organization_memberships (organization_id,user_id,role)
 values ('77777777-7777-4777-8777-777777777777','abababab-abab-4bab-8bab-abababababab','operator')
 on conflict do nothing;
 
+insert into storage.objects (bucket_id,name,metadata)
+values ('rsbuild-source-artifacts','77777777-7777-4777-8777-777777777777/imports/atomic-invalid.ofx','{"mimetype":"application/x-ofx"}');
+
 set local role service_role;
 select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claim.sub','abababab-abab-4bab-8bab-abababababab',true);
