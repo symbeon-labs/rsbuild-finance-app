@@ -216,3 +216,40 @@ export async function updatePassword(formData: FormData) {
   await supabase.auth.signOut({ scope: "global" });
   redirect("/login?password_updated=1");
 }
+
+
+/** Atualiza a senha a partir da sessão autenticada, após validar a senha atual. */
+export async function changePassword(formData: FormData) {
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+
+  if (!currentPassword || currentPassword.length > 256) redirect("/account/security?error=current");
+  if (password.length < 8 || password.length > 256) redirect("/account/security?error=password");
+  if (password !== confirmation) redirect("/account/security?error=mismatch");
+  if (currentPassword === password) redirect("/account/security?error=same");
+
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user?.email) redirect("/login");
+
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword
+  });
+  if (reauthError) redirect("/account/security?error=current");
+
+  const { error: updateError } = await supabase.auth.updateUser({ password });
+  if (updateError) redirect("/account/security?error=update");
+
+  await recordSessionEvent({
+    userId: user.id,
+    userEmail: user.email,
+    eventType: "account.password_changed",
+    metadata: { method: "authenticated_settings" }
+  });
+
+  // Mantém a sessão atual e encerra as demais sessões.
+  await supabase.auth.signOut({ scope: "others" });
+  redirect("/account/security?changed=1");
+}

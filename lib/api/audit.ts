@@ -57,7 +57,7 @@ export async function recordAuditEvent(input: AuditEventInput): Promise<void> {
 export async function recordSessionEvent(input: {
   userId: string;
   userEmail?: string | null;
-  eventType: "session.login" | "session.logout";
+  eventType: "session.login" | "session.logout" | "account.password_changed";
   metadata?: Record<string, unknown>;
 }): Promise<void> {
   try {
@@ -80,7 +80,7 @@ export async function recordSessionEvent(input: {
         actorId: input.userId,
         actorEmail: input.userEmail ?? null,
         eventType: input.eventType,
-        entityType: "session",
+        entityType: input.eventType === "account.password_changed" ? "account" : "session",
         metadata: input.metadata ?? {}
       });
     }
