@@ -66,6 +66,10 @@ values
    'Legacy account without bank identity','Banco Safra','checking','BRL','00085887641',true)
 on conflict (id) do nothing;
 
+set local role service_role;
+select set_config('request.jwt.claim.role','service_role',true);
+select set_config('request.jwt.claim.sub','abababab-abab-4bab-8bab-abababababab',true);
+
 select throws_ok(
  $select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
@@ -99,12 +103,8 @@ select throws_ok(
 insert into storage.objects (bucket_id,name,metadata)
 values ('rsbuild-source-artifacts','77777777-7777-4777-8777-777777777777/imports/atomic-invalid.ofx','{"mimetype":"application/x-ofx"}');
 
-set local role service_role;
-select set_config('request.jwt.claim.role','service_role',true);
-select set_config('request.jwt.claim.sub','abababab-abab-4bab-8bab-abababababab',true);
-
 select throws_ok(
- $$select * from public.commit_financial_import_trusted(
+ $select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'cross-tenant.csv',repeat('f',64),10,
