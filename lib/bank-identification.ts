@@ -35,7 +35,7 @@ const BANK_REGISTRY: Record<string, string> = {
 function normalizeInstitutionCode(value: string | null): string | null {
   if (!value) return null;
   // Normalize for lookup only; retain the original value in the returned identity.
-  return value.replace(/^0+(?=\d)/, "");
+  return value.replace(/^0+(?=\\d)/, "");
 }
 
 /** Resolve a bank without rejecting unknown identifiers or fabricating institution names. */

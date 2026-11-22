@@ -50,21 +50,21 @@ select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claim.sub','abababab-abab-4bab-8bab-abababababab',true);
 
 select throws_ok(
- $ * from public.commit_financial_import_trusted(
+ $$select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'cross-tenant.csv',repeat('f',64),10,
   '77777777-7777-4777-8777-777777777777/imports/cross-tenant.csv',
   '[]'::jsonb, null,
   '99999999-9999-4999-8999-999999999999'
- )$,
+ )$$,
  '42501',
  null,
  'assisted association rejects an account owned by another organization'
 );
 
 select throws_ok(
- $ * from public.commit_financial_import_trusted(
+ $$select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'atomic-invalid.ofx',repeat('e',64),10,
