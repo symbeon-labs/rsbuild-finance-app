@@ -124,7 +124,7 @@ begin
   if p_bank_identity is not null or p_account_id is not null then
     perform pg_advisory_xact_lock(hashtextextended(
       p_organization_id::text || ':' || v_source_type || ':' ||
-      coalesce(nullif(ltrim(v_bank_code, '0'), ''), '0') || ':' || coalesce(v_branch_id,'?') || ':'
+      coalesce(nullif(ltrim(v_bank_code, '0'), ''), '0') || ':' || coalesce(v_branch_id,'?') || ':' ||
       coalesce(v_account_number,'?'), 0
     ));
   end if;
