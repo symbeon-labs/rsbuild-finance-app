@@ -291,12 +291,12 @@ export function HoldingOverviewCockpit({
           </div>
           <button
             type="button"
-            onClick={() => alert("Solicite ao administrador a integração de uma nova empresa no ecossistema RSBUILD.")}
+            onClick={() => onNavigateToTab("torre-controle")}
             className="secondary-button"
             style={{ fontSize: "11px", display: "flex", alignItems: "center", gap: "5px" }}
           >
             <span>＋</span>
-            <span>Integrar Nova Empresa</span>
+            <span>Avaliar nova integração</span>
           </button>
         </div>
 
@@ -563,7 +563,7 @@ export function HoldingOverviewCockpit({
           </div>
         )}
 
-        {/* + Integrar Nova Empresa CTA */}
+        {/* + Avaliar nova integração CTA */}
         <div
           style={{
             border: "1.5px dashed rgba(181,88,60,0.3)",
@@ -580,123 +580,71 @@ export function HoldingOverviewCockpit({
         >
           <span style={{ fontSize: "28px" }}>＋</span>
           <div>
-            <strong style={{ display: "block", color: "var(--ink)", fontSize: "14px" }}>Integrar Nova Empresa ao Ecossistema</strong>
-            <span style={{ fontSize: "12px" }}>Expanda o portfólio RSBUILD com novos projetos operacionais</span>
+            <strong style={{ display: "block", color: "var(--ink)", fontSize: "14px" }}>Avaliar nova integração ao Ecossistema</strong>
+            <span style={{ fontSize: "12px" }}>Inicie a qualificação institucional, técnica e operacional de uma nova organização</span>
           </div>
           <button
             type="button"
-            onClick={() => alert("Solicite ao administrador a integração de uma nova empresa no ecossistema RSBUILD.")}
+            onClick={() => onNavigateToTab("torre-controle")}
             style={{ padding: "8px 20px", borderRadius: "6px", border: "1px solid rgba(181,88,60,0.3)", background: "rgba(181,88,60,0.06)", color: "var(--rsbuild-terracotta, #B5583C)", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
           >
-            Solicitar Integração
+            Iniciar avaliação
           </button>
         </div>
       </div>
 
-      {/* 4. ESTEIRA DE HOMOLOGAÇÃO HUMANA (HITL - FLÁVIO & VITOR) */}
-      <div
-        className="card cockpit-card"
-        style={{
-          padding: "24px"
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "14px" }}>🎯</span>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--ink)" }}>
-                Esteira de Homologação Executiva · Flávio &amp; Vitor
-              </h3>
+      {/* 4. GOVERNANÇA DE PRONTIDÃO E LIBERAÇÃO OPERACIONAL */}
+      <section className="card cockpit-card" style={{ padding: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap", marginBottom: 18 }}>
+          <div style={{ maxWidth: 760 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 14 }}>◈</span>
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.2px", color: "var(--rsbuild-terracotta)" }}>GOVERNANÇA DE PORTFÓLIO · RSBUILD OS</span>
             </div>
-            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "4px 0 0" }}>
-              Checkpoints obrigatórios de validação humana antes de liberar os módulos para as equipes operacionais
+            <h3 style={{ fontSize: 19, fontWeight: 750, margin: 0, color: "var(--ink)" }}>
+              Portões de Prontidão & Liberação Operacional
+            </h3>
+            <p style={{ fontSize: 12, lineHeight: 1.55, color: "var(--muted)", margin: "6px 0 0" }}>
+              Cada organização percorre etapas verificáveis antes de acessar capacidades em operação. A RSBUILD mantém a decisão de entrada, os critérios de aceite e a autorização final; os responsáveis do cliente participam da validação sem assumir a governança da plataforma.
             </p>
           </div>
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              padding: "4px 10px",
-              borderRadius: "4px",
-              background: "var(--rsbuild-terracotta-soft, rgba(181,88,60,0.1))",
-              color: "var(--rsbuild-terracotta)"
-            }}
-          >
-            Human-in-the-Loop Ativo
+          <span style={{ fontSize: 10, fontWeight: 800, padding: "6px 10px", borderRadius: 6, background: "var(--rsbuild-terracotta-soft, rgba(181,88,60,.1))", color: "var(--rsbuild-terracotta)" }}>
+            HUMAN-IN-THE-LOOP · CONTROLE HUMANO
           </span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px" }}>
-          <div
-            style={{
-              padding: "16px",
-              borderRadius: "8px",
-              border: "1px solid var(--line)",
-              background: "var(--surface-raised, rgba(0,0,0,0.01))"
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#3B82F6" }}>MUNDO DO SABOR · A1.3</span>
-              <span style={{ fontSize: "10px", fontWeight: 700, color: "#F59E0B" }}>EM ESPERA</span>
-            </div>
-            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px", color: "var(--ink)" }}>
-              Homologar Conciliação Conta Itaú
-            </strong>
-            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 10px" }}>
-              Importar arquivo OFX real e conferir que totais batem e nenhum lançamento se perde.
-            </p>
-            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
-              Responsáveis: <strong style={{ color: "var(--ink)" }}>Flávio &amp; Vitor</strong>
-            </div>
-          </div>
-
-          <div
-            style={{
-              padding: "16px",
-              borderRadius: "8px",
-              border: "1px solid var(--line)",
-              background: "var(--surface-raised, rgba(0,0,0,0.01))"
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "#8B5CF6" }}>HUB AÇAÍ · H1.1</span>
-              <span style={{ fontSize: "10px", fontWeight: 700, color: "#10B981" }}>PRONTO P/ TESTE</span>
-            </div>
-            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px", color: "var(--ink)" }}>
-              Aceite de Link Seguro de Compras
-            </strong>
-            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 10px" }}>
-              Testar contenção de acesso e validar expiração temporal do link compartilhado.
-            </p>
-            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
-              Responsáveis: <strong style={{ color: "var(--ink)" }}>Flávio &amp; João (Liderança Técnica)</strong>
-            </div>
-          </div>
-
-          <div
-            style={{
-              padding: "16px",
-              borderRadius: "8px",
-              border: "1px solid var(--line)",
-              background: "var(--surface-raised, rgba(0,0,0,0.01))"
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rsbuild-terracotta)" }}>GOVERNANÇA · RBAC</span>
-              <span style={{ fontSize: "10px", fontWeight: 700, color: "#10B981" }}>APLICADO</span>
-            </div>
-            <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px", color: "var(--ink)" }}>
-              Alçadas de Baixa ERP (Regra Raquel)
-            </strong>
-            <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 10px" }}>
-              Garantir que apenas a Diretoria aprove baixas em lote e divergências com deságio/juros.
-            </p>
-            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
-              Regra de Segurança: <strong style={{ color: "var(--ink)" }}>100% Ativa</strong>
-            </div>
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          {([
+            { n: "01", title: "Qualificação institucional", desc: "Identidade da organização, patrocinador, escopo, responsáveis e autorização para avaliação.", output: "Saída: ficha de qualificação", owner: "RSBUILD · Entrada controlada" },
+            { n: "02", title: "Enquadramento técnico", desc: "Processos envolvidos, sistemas de origem, integrações, dados, permissões e limites de atuação.", output: "Saída: escopo técnico delimitado", owner: "RSBUILD · Arquitetura & Segurança" },
+            { n: "03", title: "Homologação assistida", desc: "Cenários de teste, evidências, critérios de aceite, tratamento de exceções e validação pelos representantes designados.", output: "Saída: evidências e parecer", owner: "Cliente + RSBUILD · Validação conjunta" },
+            { n: "04", title: "Autorização operacional", desc: "Revisão dos resultados, riscos residuais, licenças, alçadas e decisão formal de entrada em produção.", output: "Saída: decisão registrada", owner: "RSBUILD · Aprovação final" }
+          ]).map((gate) => (
+            <article key={gate.n} style={{ padding: 15, border: "1px solid var(--line)", borderRadius: 9, background: "var(--surface)", minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: ".08em", color: "var(--rsbuild-terracotta)" }}>GATE {gate.n}</span>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--muted)", opacity: .65 }} />
+              </div>
+              <strong style={{ display: "block", fontSize: 13, lineHeight: 1.35, color: "var(--ink)" }}>{gate.title}</strong>
+              <p style={{ fontSize: 11, lineHeight: 1.55, color: "var(--muted)", minHeight: 68, margin: "7px 0 12px" }}>{gate.desc}</p>
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 9 }}>
+                <span style={{ display: "block", fontSize: 10, fontWeight: 750, color: "var(--ink)" }}>{gate.output}</span>
+                <span style={{ display: "block", fontSize: 9, lineHeight: 1.4, color: "var(--muted)", marginTop: 5 }}>{gate.owner}</span>
+              </div>
+            </article>
+          ))}
         </div>
-      </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 16, padding: "12px 14px", borderRadius: 8, background: "var(--surface-raised, rgba(0,0,0,.02))", border: "1px solid var(--line)" }}>
+          <div>
+            <strong style={{ display: "block", fontSize: 11, color: "var(--ink)" }}>Princípio de liberação</strong>
+            <span style={{ display: "block", fontSize: 10, lineHeight: 1.5, color: "var(--muted)", marginTop: 3 }}>Nenhuma capacidade é liberada apenas por conclusão de teste. A ativação depende de evidência suficiente, aceite delimitado e autorização formal da RSBUILD.</span>
+          </div>
+          <button type="button" className="secondary-button" onClick={() => onNavigateToTab("torre-controle")} style={{ flex: "0 0 auto", fontSize: 11 }}>
+            Abrir governança & controles →
+          </button>
+        </div>
+      </section>
 
       {/* 5. FOOTER DE GOVERNANÇA & SEGURANÇA */}
       <div
