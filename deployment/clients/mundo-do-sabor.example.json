@@ -1,6 +1,5 @@
 {
   "$schema": "../manifest.schema.json",
-  "_note": "REFERENCE ONLY. This manifest does not provision infrastructure or prove standalone runtime support. Replace environment-variable names only through an approved deployment change; never commit secret values.",
   "schemaVersion": "1.0.0",
   "deploymentId": "mundo-do-sabor",
   "mode": "standalone",
