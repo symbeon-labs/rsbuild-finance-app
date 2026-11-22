@@ -50,7 +50,7 @@ select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claim.sub','abababab-abab-4bab-8bab-abababababab',true);
 
 select throws_ok(
- $select * from public.commit_financial_import_trusted(
+ $ * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'cross-tenant.csv',repeat('f',64),10,
@@ -64,7 +64,7 @@ select throws_ok(
 );
 
 select throws_ok(
- $select * from public.commit_financial_import_trusted(
+ $ * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'atomic-invalid.ofx',repeat('e',64),10,
