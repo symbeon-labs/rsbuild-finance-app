@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(11);
+select plan(12);
 
 select has_column('public','financial_accounts','bank_code','bank code is persisted');
 select has_column('public','financial_accounts','branch_id','branch identifier is persisted');
@@ -57,6 +57,28 @@ select is(
   coalesce(nullif(ltrim('0422', '0'), ''), '0'),
   '422',
   'bank-code canonicalization removes leading zeroes for identity comparison'
+);
+
+insert into public.financial_accounts
+  (id,organization_id,name,institution,account_type,currency,external_reference,is_active)
+values
+  ('55555555-5555-4555-8555-555555555555','77777777-7777-4777-8777-777777777777',
+   'Legacy account without bank identity','Banco Safra','checking','BRL','00085887641',true)
+on conflict (id) do nothing;
+
+select throws_ok(
+ $select * from public.commit_financial_import_trusted(
+  'abababab-abab-4bab-8bab-abababababab',
+  '77777777-7777-4777-8777-777777777777',
+  'safra-legacy-account.ofx',repeat('b',64),10,
+  '77777777-7777-4777-8777-777777777777/imports/safra-legacy-account.ofx',
+  '[]'::jsonb,
+  '{"institutionCode":"0422","institutionName":"Banco Safra","branchId":null,"accountNumber":"00085887641","identificationStatus":"identified"}'::jsonb,
+  '55555555-5555-4555-8555-555555555555'
+ )$,
+ '22023',
+ null,
+ 'identified Safra OFX cannot be manually linked to a legacy account without bank_code'
 );
 
 select throws_ok(
