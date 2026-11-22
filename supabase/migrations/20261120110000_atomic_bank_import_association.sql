@@ -67,8 +67,7 @@ begin
       else 'Instituição não identificada' end
   );
 
-  -- Serialize resolution per tenant + source identity. This prevents duplicate
-  -- account/source creation without imposing uniqueness on legacy records.
+  -- Serialize resolution per tenant + source identity.
   if p_bank_identity is not null or p_account_id is not null then
     perform pg_advisory_xact_lock(hashtextextended(
       p_organization_id::text || ':' || v_source_type || ':' ||
@@ -77,13 +76,15 @@ begin
     ));
   end if;
 
-  -- Resolve or create the source inside the same transaction as the import.
+  -- Resolve source by tenant, format and institution code, not display name alone.
+  -- This prevents two institutions with similar/unknown labels from sharing a source.
   if p_bank_identity is not null or p_account_id is not null then
     select ds.id into v_source_id
     from public.data_sources ds
     where ds.organization_id = p_organization_id
       and ds.source_type = v_source_type
       and ds.provider = v_institution
+      and ds.configuration->>'institution_code' is not distinct from v_bank_code
     order by ds.created_at asc
     limit 1;
 
@@ -103,15 +104,15 @@ begin
   end if;
 
   -- An explicitly selected account is the assisted-association path.
-  -- Otherwise resolve by the strongest available bank/account identity.
+  -- Otherwise resolve by tenant + institution + branch + account number.
   v_account_id := p_account_id;
   if v_account_id is null and p_bank_identity is not null and v_account_number is not null then
     select a.id into v_account_id
     from public.financial_accounts a
     where a.organization_id = p_organization_id
       and a.external_reference = v_account_number
-      and (a.bank_code is not distinct from v_bank_code)
-      and (a.branch_id is not distinct from v_branch_id)
+      and a.bank_code is not distinct from v_bank_code
+      and a.branch_id is not distinct from v_branch_id
     order by a.created_at asc
     limit 1;
 
@@ -169,4 +170,4 @@ revoke all on function public.commit_financial_import_trusted(uuid,uuid,text,tex
 grant execute on function public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb,jsonb,uuid) to service_role;
 
 comment on function public.commit_financial_import_trusted(uuid,uuid,text,text,bigint,text,jsonb,jsonb,uuid) is
-  'Trusted import with tenant-scoped automatic bank identity resolution or explicit assisted account association; all writes are atomic.';
+  'Trusted import with tenant-scoped bank identity resolution and atomic account association.';
