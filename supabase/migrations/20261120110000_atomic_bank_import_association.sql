@@ -4,6 +4,13 @@ alter table public.financial_accounts
   add column if not exists bank_code text,
   add column if not exists branch_id text;
 
+-- Account numbers may repeat across institutions; retain tenant-scoped identity uniqueness.
+alter table public.financial_accounts
+  drop constraint if exists financial_accounts_organization_id_external_reference_key;
+create unique index if not exists financial_accounts_org_bank_branch_account_key
+  on public.financial_accounts (organization_id, coalesce(bank_code, ''), coalesce(branch_id, ''), external_reference)
+  where external_reference is not null;
+
 create or replace function public.commit_financial_import_trusted(
   p_actor_id uuid,
   p_organization_id uuid,
@@ -28,6 +35,9 @@ declare
   v_branch_id text;
   v_account_number text;
   v_institution text;
+  v_selected_bank_code text;
+  v_selected_branch_id text;
+  v_selected_account_number text;
   v_source_type text := case
     when lower(p_original_filename) like '%.ofx' then 'ofx'
     else 'csv'
@@ -66,6 +76,23 @@ begin
       when p_account_id is not null then 'Importação CSV'
       else 'Instituição não identificada' end
   );
+
+  -- Assisted selection must match the source identity; never silently cross-link banks.
+  if p_account_id is not null and p_bank_identity is not null then
+    select a.bank_code, a.branch_id, a.external_reference
+      into v_selected_bank_code, v_selected_branch_id, v_selected_account_number
+    from public.financial_accounts a
+    where a.id = p_account_id and a.organization_id = p_organization_id;
+    if v_bank_code is not null and v_selected_bank_code is distinct from v_bank_code then
+      raise exception 'selected account bank identity does not match source' using errcode = '22023';
+    end if;
+    if v_branch_id is not null and v_selected_branch_id is distinct from v_branch_id then
+      raise exception 'selected account branch does not match source' using errcode = '22023';
+    end if;
+    if v_account_number is not null and v_selected_account_number is distinct from v_account_number then
+      raise exception 'selected account number does not match source' using errcode = '22023';
+    end if;
+  end if;
 
   -- Serialize resolution per tenant + source identity.
   if p_bank_identity is not null or p_account_id is not null then

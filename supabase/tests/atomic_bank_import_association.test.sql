@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(8);
+select plan(10);
 
 select has_column('public','financial_accounts','bank_code','bank code is persisted');
 select has_column('public','financial_accounts','branch_id','branch identifier is persisted');
@@ -41,6 +41,33 @@ values
   ('99999999-9999-4999-8999-999999999999','88888888-8888-4888-8888-888888888888',
    'Foreign account','Foreign Bank','checking','BRL','FOREIGN-ACCOUNT',true)
 on conflict (id) do nothing;
+
+insert into public.financial_accounts
+  (id,organization_id,name,institution,bank_code,branch_id,account_type,currency,external_reference,is_active)
+values
+  ('66666666-6666-4666-8666-666666666666','77777777-7777-4777-8777-777777777777',
+   'Itaú account','Itaú Unibanco','341','7421','checking','BRL','7421996567',true)
+on conflict (id) do nothing;
+
+select ok(
+  exists (select 1 from pg_indexes where schemaname='public' and indexname='financial_accounts_org_bank_branch_account_key'),
+  'account identity uniqueness includes bank and branch'
+);
+
+select throws_ok(
+ $select * from public.commit_financial_import_trusted(
+  'abababab-abab-4bab-8bab-abababababab',
+  '77777777-7777-4777-8777-777777777777',
+  'safra-mismatch.ofx',repeat('a',64),10,
+  '77777777-7777-4777-8777-777777777777/imports/safra-mismatch.ofx',
+  '[]'::jsonb,
+  '{"institutionCode":"0422","institutionName":"Banco Safra","branchId":null,"accountNumber":"00085887641","identificationStatus":"identified"}'::jsonb,
+  '66666666-6666-4666-8666-666666666666'
+ )$,
+ '22023',
+ null,
+ 'assisted association rejects an Itaú account for a Safra statement'
+);
 
 insert into storage.objects (bucket_id,name,metadata)
 values ('rsbuild-source-artifacts','77777777-7777-4777-8777-777777777777/imports/atomic-invalid.ofx','{"mimetype":"application/x-ofx"}');
