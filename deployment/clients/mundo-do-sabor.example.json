@@ -1,0 +1,34 @@
+{
+  "$schema": "../manifest.schema.json",
+  "_note": "REFERENCE ONLY. This manifest does not provision infrastructure or prove standalone runtime support. Replace environment-variable names only through an approved deployment change; never commit secret values.",
+  "schemaVersion": "1.0.0",
+  "deploymentId": "mundo-do-sabor",
+  "mode": "standalone",
+  "identity": {
+    "organizationSlug": "mundo_sabor",
+    "displayName": "Mundo do Sabor"
+  },
+  "controlPlane": {
+    "mode": "disabled"
+  },
+  "capabilities": {
+    "finance": true,
+    "reconciliation": false,
+    "logistics": true,
+    "audit": true
+  },
+  "infrastructure": {
+    "supabase": {
+      "urlEnv": "NEXT_PUBLIC_SUPABASE_URL",
+      "publishableKeyEnv": "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "secretKeyEnv": "SUPABASE_SECRET_KEY"
+    },
+    "storage": {
+      "provider": "supabase_storage",
+      "bucketEnv": "SUPABASE_STORAGE_BUCKET"
+    }
+  },
+  "release": {
+    "channel": "stable"
+  }
+}
