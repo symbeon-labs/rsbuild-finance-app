@@ -124,7 +124,7 @@ export function validateDeploymentManifest(input: unknown): DeploymentManifest {
 }
 
 /** Resolve only server environment variables; never accept request- or browser-provided overrides. */
-export function resolveDeploymentContext(manifestInput: unknown, environment: NodeJS.ProcessEnv = process.env): DeploymentContext {
+export function resolveDeploymentContext(manifestInput: unknown, environment: Readonly<Record<string, string | undefined>> = process.env): DeploymentContext {
   const manifest = validateDeploymentManifest(manifestInput);
   const readRequired = (name: string): string => {
     const value = environment[name];
