@@ -1,0 +1,33 @@
+{
+  "$schema": "../manifest.schema.json",
+  "schemaVersion": "1.0.0",
+  "deploymentId": "mundo-do-sabor",
+  "mode": "standalone",
+  "identity": {
+    "organizationSlug": "mundo_sabor",
+    "displayName": "Mundo do Sabor"
+  },
+  "controlPlane": {
+    "mode": "disabled"
+  },
+  "capabilities": {
+    "finance": false,
+    "reconciliation": false,
+    "logistics": false,
+    "audit": false
+  },
+  "infrastructure": {
+    "supabase": {
+      "urlEnv": "NEXT_PUBLIC_SUPABASE_URL",
+      "publishableKeyEnv": "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "secretKeyEnv": "SUPABASE_SECRET_KEY"
+    },
+    "storage": {
+      "provider": "supabase_storage",
+      "bucketEnv": "SUPABASE_STORAGE_BUCKET"
+    }
+  },
+  "release": {
+    "channel": "stable"
+  }
+}

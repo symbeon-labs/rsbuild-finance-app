@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://symbeon-labs.github.io/rsbuild-finance-app/deployment/manifest.schema.json",
+  "title": "RSBUILD Deployment Manifest",
+  "description": "Declarative deployment identity. This document is configuration only and never grants authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "deploymentId",
+    "mode",
+    "identity",
+    "controlPlane",
+    "capabilities",
+    "infrastructure",
+    "release"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "deploymentId": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["standalone", "managed_shared"]
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["organizationSlug", "displayName"],
+      "properties": {
+        "organizationSlug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        }
+      }
+    },
+    "controlPlane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["disabled", "remote"]
+        },
+        "endpointEnv": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "remote" } },
+            "required": ["mode"]
+          },
+          "then": { "required": ["endpointEnv"] }
+        },
+        {
+          "if": {
+            "properties": { "mode": { "const": "disabled" } },
+            "required": ["mode"]
+          },
+          "then": { "not": { "required": ["endpointEnv"] } }
+        }
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finance", "reconciliation", "logistics", "audit"],
+      "properties": {
+        "finance": { "type": "boolean" },
+        "reconciliation": { "type": "boolean" },
+        "logistics": { "type": "boolean" },
+        "audit": { "type": "boolean" }
+      }
+    },
+    "infrastructure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supabase", "storage"],
+      "properties": {
+        "supabase": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["urlEnv", "publishableKeyEnv", "secretKeyEnv"],
+          "properties": {
+            "urlEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            },
+            "publishableKeyEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            },
+            "secretKeyEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider", "bucketEnv"],
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "supabase_storage"
+            },
+            "bucketEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            }
+          }
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["channel"],
+      "properties": {
+        "channel": {
+          "type": "string",
+          "enum": ["stable", "preview", "development"]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "standalone" } }, "required": ["mode"] },
+      "then": { "properties": { "controlPlane": { "properties": { "mode": { "const": "disabled" } } } } }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "managed_shared" } }, "required": ["mode"] },
+      "then": { "properties": { "controlPlane": { "properties": { "mode": { "const": "remote" } } } } }
+    }
+  ]
+}
