@@ -55,7 +55,7 @@ select ok(
 );
 
 select throws_ok(
- $select * from public.commit_financial_import_trusted(
+ $$select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'safra-mismatch.ofx',repeat('a',64),10,
@@ -63,7 +63,7 @@ select throws_ok(
   '[]'::jsonb,
   '{"institutionCode":"0422","institutionName":"Banco Safra","branchId":null,"accountNumber":"00085887641","identificationStatus":"identified"}'::jsonb,
   '66666666-6666-4666-8666-666666666666'
- )$,
+ )$$,
  '22023',
  null,
  'assisted association rejects an Itaú account for a Safra statement'
