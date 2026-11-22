@@ -11,10 +11,10 @@
     "mode": "disabled"
   },
   "capabilities": {
-    "finance": true,
+    "finance": false,
     "reconciliation": false,
-    "logistics": true,
-    "audit": true
+    "logistics": false,
+    "audit": false
   },
   "infrastructure": {
     "supabase": {
