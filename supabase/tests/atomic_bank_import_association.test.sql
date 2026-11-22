@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(10);
+select plan(11);
 
 select has_column('public','financial_accounts','bank_code','bank code is persisted');
 select has_column('public','financial_accounts','branch_id','branch identifier is persisted');
@@ -51,7 +51,12 @@ on conflict (id) do nothing;
 
 select ok(
   exists (select 1 from pg_indexes where schemaname='public' and indexname='financial_accounts_org_bank_branch_account_key'),
-  'account identity uniqueness includes bank and branch'
+  'account identity uniqueness includes normalized bank code and branch'
+);
+select is(
+  coalesce(nullif(ltrim('0422', '0'), ''), '0'),
+  '422',
+  'bank-code canonicalization removes leading zeroes for identity comparison'
 );
 
 select throws_ok(

@@ -7,8 +7,32 @@ alter table public.financial_accounts
 -- Account numbers may repeat across institutions; retain tenant-scoped identity uniqueness.
 alter table public.financial_accounts
   drop constraint if exists financial_accounts_organization_id_external_reference_key;
+-- Fail with an explicit diagnostic rather than silently choosing between accounts
+-- that become identical after canonicalizing bank-code leading zeroes.
+do $preflight$
+begin
+  if exists (
+    select 1
+    from public.financial_accounts
+    where external_reference is not null
+    group by organization_id,
+      coalesce(nullif(ltrim(bank_code, '0'), ''), '0'),
+      coalesce(branch_id, ''),
+      external_reference
+    having count(*) > 1
+  ) then
+    raise exception 'duplicate financial account identities after bank-code normalization';
+  end if;
+end;
+$preflight$;
+
 create unique index if not exists financial_accounts_org_bank_branch_account_key
-  on public.financial_accounts (organization_id, coalesce(bank_code, ''), coalesce(branch_id, ''), external_reference)
+  on public.financial_accounts (
+    organization_id,
+    coalesce(nullif(ltrim(bank_code, '0'), ''), '0'),
+    coalesce(branch_id, ''),
+    external_reference
+  )
   where external_reference is not null;
 
 create or replace function public.commit_financial_import_trusted(
@@ -83,7 +107,9 @@ begin
       into v_selected_bank_code, v_selected_branch_id, v_selected_account_number
     from public.financial_accounts a
     where a.id = p_account_id and a.organization_id = p_organization_id;
-    if v_bank_code is not null and v_selected_bank_code is distinct from v_bank_code then
+    if v_bank_code is not null
+       and coalesce(nullif(ltrim(v_selected_bank_code, '0'), ''), '0')
+           is distinct from coalesce(nullif(ltrim(v_bank_code, '0'), ''), '0') then
       raise exception 'selected account bank identity does not match source' using errcode = '22023';
     end if;
     if v_branch_id is not null and v_selected_branch_id is distinct from v_branch_id then
@@ -98,7 +124,7 @@ begin
   if p_bank_identity is not null or p_account_id is not null then
     perform pg_advisory_xact_lock(hashtextextended(
       p_organization_id::text || ':' || v_source_type || ':' ||
-      coalesce(v_bank_code,'?') || ':' || coalesce(v_branch_id,'?') || ':' ||
+      coalesce(nullif(ltrim(v_bank_code, '0'), ''), '0') || ':' || coalesce(v_branch_id,'?') || ':'
       coalesce(v_account_number,'?'), 0
     ));
   end if;
@@ -111,7 +137,8 @@ begin
     where ds.organization_id = p_organization_id
       and ds.source_type = v_source_type
       and ds.provider = v_institution
-      and ds.configuration->>'institution_code' is not distinct from v_bank_code
+      and coalesce(nullif(ltrim(ds.configuration->>'institution_code', '0'), ''), '0')
+          is not distinct from coalesce(nullif(ltrim(v_bank_code, '0'), ''), '0')
     order by ds.created_at asc
     limit 1;
 
@@ -138,7 +165,8 @@ begin
     from public.financial_accounts a
     where a.organization_id = p_organization_id
       and a.external_reference = v_account_number
-      and a.bank_code is not distinct from v_bank_code
+      and coalesce(nullif(ltrim(a.bank_code, '0'), ''), '0')
+          is not distinct from coalesce(nullif(ltrim(v_bank_code, '0'), ''), '0')
       and a.branch_id is not distinct from v_branch_id
     order by a.created_at asc
     limit 1;
