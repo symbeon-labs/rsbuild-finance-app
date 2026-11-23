@@ -123,14 +123,14 @@ export function MovimentacoesView({
                 {institutions.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Categoria
               <select value={category} onChange={(event) => setCategory(event.target.value)}>
                 <option value="all">Todas</option>
                 {categories.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Movimento
               <select value={direction} onChange={(event) => setDirection(event.target.value)}>
                 <option value="all">Entradas e saídas</option>
@@ -138,7 +138,7 @@ export function MovimentacoesView({
                 <option value="saída">Saídas</option>
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Status
               <select value={status} onChange={(event) => setStatus(event.target.value)}>
                 <option value="all">Todos</option>
@@ -146,17 +146,16 @@ export function MovimentacoesView({
                 <option value="conciliado">Conciliado</option>
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Data inicial
               <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Data final
               <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
             </label>
           </div>
         )}
-
 
         {filteredRecords.length ? (
           <RecordTable records={[...filteredRecords].sort((a, b) => b.date.localeCompare(a.date))} />
