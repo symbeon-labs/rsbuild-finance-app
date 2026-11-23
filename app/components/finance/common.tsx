@@ -103,6 +103,7 @@ export function RecordTable({ records }: { records: FinancialRecord[] }) {
                 <td>{formatDate(record.date)}</td>
                 <td className="description-cell">
                   <div>{record.description}</div>
+                  <div className="record-origin-mobile"><span>ORIGEM / INSTITUIÇÃO</span><strong>{record.bankName || record.source || "Origem não identificada"}</strong></div>
                   <div className="traceability-stack">
                     <CopyableReference label="RSBUILD" value={record.id} />
                     {record.sourceRecordId && <CopyableReference label="ORIGEM" value={record.sourceRecordId} />}
