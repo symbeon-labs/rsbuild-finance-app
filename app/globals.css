@@ -6113,3 +6113,30 @@ html:has(.inst-page) {
   .movement-filters-heading { flex-direction: column; }
   .movement-clear { padding-left: 0; }
 }
+
+
+/* Bank origin is repeated in the transaction description on narrow screens,
+   because the full data table intentionally scrolls horizontally. */
+.record-origin-mobile { display: none; }
+@media (max-width: 760px) {
+  .record-origin-mobile {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 5px 8px;
+    margin-top: 8px;
+    color: var(--muted);
+    white-space: normal;
+  }
+  .record-origin-mobile span {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .045em;
+  }
+  .record-origin-mobile strong {
+    color: var(--rsbuild-terracotta);
+    font-size: 11px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+}
