@@ -71,7 +71,7 @@ select set_config('request.jwt.claim.role','service_role',true);
 select set_config('request.jwt.claim.sub','abababab-abab-4bab-8bab-abababababab',true);
 
 select throws_ok(
- $select * from public.commit_financial_import_trusted(
+ $$select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'safra-legacy-account.ofx',repeat('b',64),10,
@@ -79,7 +79,7 @@ select throws_ok(
   '[]'::jsonb,
   '{"institutionCode":"0422","institutionName":"Banco Safra","branchId":null,"accountNumber":"00085887641","identificationStatus":"identified"}'::jsonb,
   '55555555-5555-4555-8555-555555555555'
- )$,
+ )$$,
  '22023',
  null,
  'identified Safra OFX cannot be manually linked to a legacy account without bank_code'
@@ -104,7 +104,7 @@ insert into storage.objects (bucket_id,name,metadata)
 values ('rsbuild-source-artifacts','77777777-7777-4777-8777-777777777777/imports/atomic-invalid.ofx','{"mimetype":"application/x-ofx"}');
 
 select throws_ok(
- $select * from public.commit_financial_import_trusted(
+ $$select * from public.commit_financial_import_trusted(
   'abababab-abab-4bab-8bab-abababababab',
   '77777777-7777-4777-8777-777777777777',
   'cross-tenant.csv',repeat('f',64),10,
