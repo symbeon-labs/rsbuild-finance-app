@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decodeImportText, parseCsv, parseOfx } from "@/lib/finance";
-import { resolveBankIdentity } from "@/lib/bank-identification";
+import { resolveImportSourceIdentity } from "@/lib/bank-identification";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
 import { recordAuditEvent } from "@/lib/api/audit";
@@ -116,24 +116,8 @@ export async function POST(request: Request) {
     }, { status: 422 });
   }
 
-  const bankIdentity = parsed.metadata ? resolveBankIdentity(parsed.metadata) : null;
-  // Every committed batch must have a traceable origin, even when the file
-  // contains no bank metadata. This fallback identifies the import format,
-  // never fabricates a bank, branch, or account number.
-  const sourceIdentity = bankIdentity ?? {
-    institutionCode: null,
-    institutionName: file.name.toLowerCase().endsWith(".ofx")
-      ? "OFX — instituição não identificada"
-      : "Importação CSV",
-    identificationStatus: "missing" as const,
-    accountNumber: null,
-    branchId: null,
-    accountType: null,
-    currency: "BRL",
-    displayAccountName: file.name.toLowerCase().endsWith(".ofx")
-      ? "OFX — instituição não identificada"
-      : "Importação CSV"
-  };
+  const sourceIdentity = resolveImportSourceIdentity(parsed.metadata, file.name);
+  const bankIdentity = parsed.metadata ? sourceIdentity : null;
   const normalized = [];
   for (const [index, row] of parsed.records.entries()) {
     let amountMinor: number;
