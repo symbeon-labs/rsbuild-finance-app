@@ -237,7 +237,7 @@ export async function changePassword(formData: FormData) {
   // Evita criar uma sessão paralela e sobrescrever os cookies do usuário.
   const { error: updateError } = await supabase.auth.updateUser({
     password,
-    currentPassword
+    current_password: currentPassword
   });
   if (updateError) {
     if (updateError.code === "current_password_mismatch" ||
