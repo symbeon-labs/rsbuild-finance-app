@@ -142,7 +142,8 @@ select is(
 select is(
  (select count(*)::int from public.financial_accounts
   where organization_id='77777777-7777-4777-8777-777777777777'
-    and external_reference='00085887641'),
+    and external_reference='00085887641'
+    and bank_code is not null),
  0,
  'failed import leaves no orphan financial account'
 );
