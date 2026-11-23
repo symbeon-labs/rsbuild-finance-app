@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   if (!capabilityGuard.ok) return capabilityGuard.response;
 
   const { data, error } = await userClient.from("financial_records")
-    .select("id, organization_id, account_id, data_source_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at, financial_accounts(institution,name,external_reference,bank_code,branch_id), data_sources(provider,display_name,configuration)")
+    .select("id, organization_id, account_id, data_source_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at, financial_accounts(institution,name,external_reference,bank_code,branch_id), data_sources(provider,display_name,configuration), import_batches(metadata)")
     .eq("organization_id", organizationId)
     .order("transaction_date", { ascending: false })
     .order("created_at", { ascending: false }).limit(MAX_RECORDS);
@@ -41,13 +41,29 @@ export async function GET(request: Request) {
     if (!Number.isSafeInteger(amountMinor) || amountMinor < 0) throw new Error("Invalid persisted financial amount.");
     const account = Array.isArray(row.financial_accounts) ? row.financial_accounts[0] : row.financial_accounts;
     const dataSource = Array.isArray(row.data_sources) ? row.data_sources[0] : row.data_sources;
+    const importBatch = Array.isArray(row.import_batches) ? row.import_batches[0] : row.import_batches;
     const sourceConfiguration = dataSource?.configuration && typeof dataSource.configuration === "object"
       ? dataSource.configuration as Record<string, unknown>
       : {};
+    const batchMetadata = importBatch?.metadata && typeof importBatch.metadata === "object"
+      ? importBatch.metadata as Record<string, unknown>
+      : {};
+    const batchBankIdentity = batchMetadata.bank_identity && typeof batchMetadata.bank_identity === "object"
+      ? batchMetadata.bank_identity as Record<string, unknown>
+      : {};
+    const batchInstitutionName = typeof batchBankIdentity.institutionName === "string"
+      ? batchBankIdentity.institutionName
+      : undefined;
+    const batchInstitutionCode = typeof batchBankIdentity.institutionCode === "string"
+      ? batchBankIdentity.institutionCode
+      : undefined;
+    // Import-batch identity is authoritative when older records have only a generic
+    // data-source label and no linked financial account.
     const bankName = account?.institution || account?.name ||
-      dataSource?.provider || dataSource?.display_name ||
-      (typeof sourceConfiguration.institution_name === "string" ? sourceConfiguration.institution_name : undefined);
-    const bankCode = account?.bank_code ||
+      batchInstitutionName ||
+      (typeof sourceConfiguration.institution_name === "string" ? sourceConfiguration.institution_name : undefined) ||
+      dataSource?.provider || dataSource?.display_name;
+    const bankCode = account?.bank_code || batchInstitutionCode ||
       (typeof sourceConfiguration.institution_code === "string" ? sourceConfiguration.institution_code : undefined);
     return {
       id: row.id, date: row.transaction_date, description: row.description,
