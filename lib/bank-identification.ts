@@ -58,3 +58,21 @@ export function resolveBankIdentity(metadata: BankMetadata): BankIdentity {
     displayAccountName: accountNumber ? `${institutionName} · Conta ${accountNumber}` : institutionName
   };
 }
+
+
+/** Always produce a persistable origin identity; never infer an unknown bank. */
+export function resolveImportSourceIdentity(metadata: BankMetadata | undefined, filename: string): BankIdentity {
+  if (metadata) return resolveBankIdentity(metadata);
+  const isOfx = filename.toLowerCase().endsWith(".ofx");
+  const institutionName = isOfx ? "OFX — instituição não identificada" : "Importação CSV";
+  return {
+    institutionCode: null,
+    institutionName,
+    identificationStatus: "missing",
+    accountNumber: null,
+    branchId: null,
+    accountType: null,
+    currency: "BRL",
+    displayAccountName: institutionName
+  };
+}
