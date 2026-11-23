@@ -5,7 +5,7 @@ import { changePassword } from "@/app/auth/actions";
 
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ error?: string; changed?: string }> };
+type Props = { searchParams: Promise<{ error?: string; changed?: string; sessions?: string }> };
 
 const errors: Record<string, string> = {
   current: "A senha atual não confere. Verifique e tente novamente.",
@@ -30,7 +30,7 @@ export default async function AccountSecurityPage({ searchParams }: Props) {
           <h1 style={{ marginTop: 12, marginBottom: 8 }}>Segurança da conta</h1>
           <p style={{ opacity: 0.76, lineHeight: 1.6, marginTop: 0 }}>Atualize sua senha sem sair do workspace. Por segurança, precisamos confirmar sua senha atual.</p>
 
-          {params.changed === "1" ? <div role="status" style={{ border: "1px solid rgba(73, 170, 123, .45)", background: "rgba(73, 170, 123, .10)", borderRadius: 8, padding: 14, margin: "22px 0" }}>Senha atualizada. As outras sessões da sua conta foram encerradas.</div> : null}
+          {params.changed === "1" && params.sessions === "revoked" ? <div role="status" style={{ border: "1px solid rgba(73, 170, 123, .45)", background: "rgba(73, 170, 123, .10)", borderRadius: 8, padding: 14, margin: "22px 0" }}>Senha atualizada. As outras sessões da sua conta foram encerradas.</div> : null}
           {params.changed === "1" && params.sessions === "warning" ? <div role="status" style={{ border: "1px solid rgba(210, 160, 70, .45)", background: "rgba(210, 160, 70, .10)", borderRadius: 8, padding: 14, margin: "22px 0" }}>Senha atualizada, mas não foi possível confirmar o encerramento das outras sessões. Recomendamos encerrar manualmente as sessões em outros dispositivos.</div> : null}
           {params.error && errors[params.error] ? <div role="alert" style={{ border: "1px solid rgba(210, 90, 80, .45)", background: "rgba(210, 90, 80, .10)", borderRadius: 8, padding: 14, margin: "22px 0" }}>{errors[params.error]}</div> : null}
 
