@@ -94,42 +94,43 @@ export function MovimentacoesView({
         </div>
       </div>
 
-      <section className="panel">
-        <div className="table-toolbar">
+      <section className="panel movements-panel">
+        <div className="table-toolbar movements-toolbar">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar descrição, origem, FITID ou lote..."
             aria-label="Buscar movimentações"
           />
-          <span>{filteredRecords.length} de {records.length} registro(s)</span>
+          <span className="movements-count">{filteredRecords.length} de {records.length} registro(s)</span>
         </div>
 
         {records.length > 0 && (
-          <div
-            aria-label="Filtros das movimentações"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-              gap: "10px",
-              margin: "12px 0 18px"
-            }}
-          >
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+          <div className="movement-filters" aria-label="Filtros das movimentações">
+            <div className="movement-filters-heading">
+              <div>
+                <strong>Refinar movimentações</strong>
+                <span>Combine os critérios para localizar lançamentos</span>
+              </div>
+              {hasActiveFilters && (
+                <button type="button" className="text-button movement-clear" onClick={clearFilters}>Limpar filtros</button>
+              )}
+            </div>
+            <label className="movement-filter-field">
               Instituição / origem
               <select value={institution} onChange={(event) => setInstitution(event.target.value)}>
                 <option value="all">Todas</option>
                 {institutions.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Categoria
               <select value={category} onChange={(event) => setCategory(event.target.value)}>
                 <option value="all">Todas</option>
                 {categories.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Movimento
               <select value={direction} onChange={(event) => setDirection(event.target.value)}>
                 <option value="all">Entradas e saídas</option>
@@ -137,7 +138,7 @@ export function MovimentacoesView({
                 <option value="saída">Saídas</option>
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Status
               <select value={status} onChange={(event) => setStatus(event.target.value)}>
                 <option value="all">Todos</option>
@@ -145,20 +146,14 @@ export function MovimentacoesView({
                 <option value="conciliado">Conciliado</option>
               </select>
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Data inicial
               <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
             </label>
-            <label style={{ display: "grid", gap: 4, fontSize: 12 }}>
+            <label className="movement-filter-field">
               Data final
               <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
             </label>
-          </div>
-        )}
-
-        {hasActiveFilters && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-            <button type="button" className="text-button" onClick={clearFilters}>Limpar filtros</button>
           </div>
         )}
 
