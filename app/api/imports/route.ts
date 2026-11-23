@@ -117,6 +117,23 @@ export async function POST(request: Request) {
   }
 
   const bankIdentity = parsed.metadata ? resolveBankIdentity(parsed.metadata) : null;
+  // Every committed batch must have a traceable origin, even when the file
+  // contains no bank metadata. This fallback identifies the import format,
+  // never fabricates a bank, branch, or account number.
+  const sourceIdentity = bankIdentity ?? {
+    institutionCode: null,
+    institutionName: file.name.toLowerCase().endsWith(".ofx")
+      ? "OFX — instituição não identificada"
+      : "Importação CSV",
+    identificationStatus: "missing" as const,
+    accountNumber: null,
+    branchId: null,
+    accountType: null,
+    currency: "BRL",
+    displayAccountName: file.name.toLowerCase().endsWith(".ofx")
+      ? "OFX — instituição não identificada"
+      : "Importação CSV"
+  };
   const normalized = [];
   for (const [index, row] of parsed.records.entries()) {
     let amountMinor: number;
@@ -137,7 +154,7 @@ export async function POST(request: Request) {
       category: (row.category || "Não classificado").slice(0, 120),
       currency: "BRL",
       deduplication_key: deduplicationKey,
-      raw_payload: { source_record_id: row.sourceRecordId ?? null, source_row_index: index, parser_version: "main-finance-parser/2", bank_identity: bankIdentity }
+      raw_payload: { source_record_id: row.sourceRecordId ?? null, source_row_index: index, parser_version: "main-finance-parser/2", bank_identity: bankIdentity, import_origin: { source_type: file.name.toLowerCase().endsWith(".ofx") ? "ofx" : "csv", provider: sourceIdentity.institutionName, identification_status: sourceIdentity.identificationStatus } }
     });
   }
 
@@ -164,7 +181,7 @@ export async function POST(request: Request) {
     p_file_size_bytes: file.size,
     p_storage_path: storagePath,
     p_records: normalized,
-    p_bank_identity: bankIdentity,
+    p_bank_identity: sourceIdentity,
     p_account_id: requestedAccountId
   });
 
