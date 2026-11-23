@@ -539,7 +539,7 @@ export default function EnterpriseWorkspace({
     event.target.value = "";
   }
 
-  async function confirmImport() {
+  async function confirmImport(accountId: string | null = null) {
     if (isImporting) return;
     if (!pendingImport.length) {
       setNotice("Nenhum registro válido está aguardando confirmação.");
@@ -557,6 +557,7 @@ export default function EnterpriseWorkspace({
       if (!selectedFile) throw new Error("O arquivo original não está mais disponível. Selecione-o novamente antes de confirmar.");
       form.set("organizationId", organizationId);
       form.set("file", selectedFile);
+      if (accountId) form.set("accountId", accountId);
       const response = await fetch("/api/imports", { method: "POST", body: form });
       const responseText = await response.text();
       let payload: Record<string, unknown> = {};
@@ -859,6 +860,7 @@ export default function EnterpriseWorkspace({
           )}
           {modulesResolved && enabledModules.finance && section === "importacoes" && (
             <ImportacoesView
+              organizationId={organizationId}
               fileName={fileName}
               pendingImport={pendingImport}
               pendingMetadata={pendingMetadata}

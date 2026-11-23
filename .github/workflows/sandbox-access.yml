@@ -27,7 +27,7 @@ jobs:
         with:
           version: 3.0.0
       - name: Start isolated Supabase
-        run: supabase start -x studio,edge-runtime,logflare,vector
+        run: supabase start -x studio,edge-runtime,logflare,vector,inbucket
       - name: Apply every migration from an empty database
         run: supabase db reset
       - name: Run pgTAP database tests
