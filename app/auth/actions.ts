@@ -233,14 +233,20 @@ export async function changePassword(formData: FormData) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user?.email) redirect("/login");
 
-  const { error: reauthError } = await supabase.auth.signInWithPassword({
-    email: user.email,
-    password: currentPassword
+  // Supabase Auth valida a senha atual na mesma sessão autenticada.
+  // Evita criar uma sessão paralela e sobrescrever os cookies do usuário.
+  const { error: updateError } = await supabase.auth.updateUser({
+    password,
+    currentPassword
   });
-  if (reauthError) redirect("/account/security?error=current");
-
-  const { error: updateError } = await supabase.auth.updateUser({ password });
-  if (updateError) redirect("/account/security?error=update");
+  if (updateError) {
+    if (updateError.code === "current_password_mismatch" ||
+        updateError.code === "current_password_required" ||
+        updateError.code === "invalid_credentials") {
+      redirect("/account/security?error=current");
+    }
+    redirect("/account/security?error=update");
+  }
 
   await recordSessionEvent({
     userId: user.id,
@@ -249,7 +255,25 @@ export async function changePassword(formData: FormData) {
     metadata: { method: "authenticated_settings" }
   });
 
-  // Mantém a sessão atual e encerra as demais sessões.
-  await supabase.auth.signOut({ scope: "others" });
-  redirect("/account/security?changed=1");
+  // A troca da senha já foi concluída. Só informar revogação se o Auth confirmar.
+  // Em falha, preservamos a sessão atual e mostramos o estado parcial com transparência.
+  try {
+    const { error: revokeError } = await supabase.auth.signOut({ scope: "others" });
+    if (revokeError) {
+      console.error(JSON.stringify({
+        event: "account_other_sessions_revocation_failed",
+        userId: user.id,
+        code: revokeError.code
+      }));
+      redirect("/account/security?changed=1&sessions=warning");
+    }
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "account_other_sessions_revocation_exception",
+      userId: user.id,
+      error: error instanceof Error ? error.message : "unknown"
+    }));
+    redirect("/account/security?changed=1&sessions=warning");
+  }
+  redirect("/account/security?changed=1&sessions=revoked");
 }
