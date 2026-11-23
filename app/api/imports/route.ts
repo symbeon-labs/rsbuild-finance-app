@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   if (!capabilityGuard.ok) return capabilityGuard.response;
 
   const { data, error } = await userClient.from("financial_records")
-    .select("id, organization_id, account_id, data_source_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at, financial_accounts(institution,name,external_reference,bank_code,branch_id)")
+    .select("id, organization_id, account_id, data_source_id, import_batch_id, source_record_id, transaction_date, description, amount_minor, direction, category, status, created_by, created_at, financial_accounts(institution,name,external_reference,bank_code,branch_id), data_sources(provider,display_name,configuration)")
     .eq("organization_id", organizationId)
     .order("transaction_date", { ascending: false })
     .order("created_at", { ascending: false }).limit(MAX_RECORDS);
@@ -39,14 +39,28 @@ export async function GET(request: Request) {
   const records = (data ?? []).map((row) => {
     const amountMinor = Number(row.amount_minor);
     if (!Number.isSafeInteger(amountMinor) || amountMinor < 0) throw new Error("Invalid persisted financial amount.");
+    const account = Array.isArray(row.financial_accounts) ? row.financial_accounts[0] : row.financial_accounts;
+    const dataSource = Array.isArray(row.data_sources) ? row.data_sources[0] : row.data_sources;
+    const sourceConfiguration = dataSource?.configuration && typeof dataSource.configuration === "object"
+      ? dataSource.configuration as Record<string, unknown>
+      : {};
+    const bankName = account?.institution || account?.name ||
+      dataSource?.provider || dataSource?.display_name ||
+      (typeof sourceConfiguration.institution_name === "string" ? sourceConfiguration.institution_name : undefined);
+    const bankCode = account?.bank_code ||
+      (typeof sourceConfiguration.institution_code === "string" ? sourceConfiguration.institution_code : undefined);
     return {
       id: row.id, date: row.transaction_date, description: row.description,
       amount: amountMinor / 100, direction: row.direction,
-      category: row.category || "Não classificado", source: "Importação financeira",
+      category: row.category || "Não classificado",
+      source: bankName || "Importação financeira",
+      bankName: bankName ?? undefined,
+      bankCode: bankCode ?? undefined,
+      branchId: account?.branch_id ??
+        (typeof sourceConfiguration.branch_id === "string" ? sourceConfiguration.branch_id : undefined),
       status: row.status === "conciliado" ? "conciliado" : "pendente", sourceRecordId: row.source_record_id ?? undefined,
       importBatchId: row.import_batch_id ?? undefined,
       accountId: row.account_id ?? undefined, dataSourceId: row.data_source_id ?? undefined,
-      bank: row.financial_accounts ?? null,
       createdAt: row.created_at ?? undefined, createdBy: row.created_by ?? undefined
     };
   });
