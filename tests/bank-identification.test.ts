@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolveBankIdentity } from "../lib/bank-identification";
+import { resolveBankIdentity, resolveImportSourceIdentity } from "../lib/bank-identification";
 import { parseOfx } from "../lib/finance";
 
 test("resolves known Brazilian bank codes without losing the original identifier", () => {
@@ -68,4 +68,34 @@ test("CSV sem metadados bancários não fabrica identidade nem agência", () => 
   assert.equal(identity.institutionCode, null);
   assert.equal(identity.accountNumber, null);
   assert.equal(identity.branchId, null);
+});
+
+
+test("import source identity always labels CSV without inventing bank details", () => {
+  const result = resolveImportSourceIdentity(undefined, "movimentos.csv");
+  assert.equal(result.institutionName, "Importação CSV");
+  assert.equal(result.identificationStatus, "missing");
+  assert.equal(result.institutionCode, null);
+  assert.equal(result.accountNumber, null);
+  assert.equal(result.branchId, null);
+});
+
+test("import source identity labels OFX without recognized bank metadata", () => {
+  const result = resolveImportSourceIdentity(undefined, "extrato.ofx");
+  assert.equal(result.institutionName, "OFX — instituição não identificada");
+  assert.equal(result.identificationStatus, "missing");
+  assert.equal(result.institutionCode, null);
+  assert.equal(result.accountNumber, null);
+  assert.equal(result.branchId, null);
+});
+
+test("import source identity preserves known bank metadata", () => {
+  const result = resolveImportSourceIdentity(
+    { bankId: "0422", accountId: "00085887641", accountType: "CHECKING" },
+    "safra.ofx"
+  );
+  assert.equal(result.institutionName, "Banco Safra");
+  assert.equal(result.institutionCode, "0422");
+  assert.equal(result.accountNumber, "00085887641");
+  assert.equal(result.identificationStatus, "identified");
 });
