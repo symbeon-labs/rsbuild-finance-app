@@ -9,28 +9,14 @@
  */
 import { NextResponse } from "next/server";
 import { requireOrgContext } from "@/lib/api/org-guard";
+import { resolveOrgOmieCredentials } from "@/lib/erp-credentials-store";
 import {
   listAllReceivableTitles,
   OmieClientError,
-  OmieCredentials,
   OmieListTitlesParams,
 } from "@/lib/omie-client";
 
 export const dynamic = "force-dynamic";
-
-/** Resolve as credenciais Omie da organização via variáveis de ambiente. */
-function resolveOmieCredentials(organizationId: string): OmieCredentials | null {
-  // Suporte a credencial global (single-tenant QA) ou por org (produção)
-  const appKey =
-    process.env[`OMIE_APP_KEY_${organizationId.toUpperCase().replace(/-/g, "_")}`] ??
-    process.env["OMIE_APP_KEY"];
-  const appSecret =
-    process.env[`OMIE_APP_SECRET_${organizationId.toUpperCase().replace(/-/g, "_")}`] ??
-    process.env["OMIE_APP_SECRET"];
-
-  if (!appKey || !appSecret) return null;
-  return { appKey, appSecret };
-}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -39,12 +25,12 @@ export async function GET(request: Request) {
   const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "finance");
   if (!guard.ok) return guard.response;
 
-  const credentials = resolveOmieCredentials(organizationId);
+  const credentials = await resolveOrgOmieCredentials(organizationId);
   if (!credentials) {
     return NextResponse.json(
       {
         error: "omie_credentials_not_configured",
-        detail: "As credenciais Omie (OMIE_APP_KEY / OMIE_APP_SECRET) não estão configuradas para esta organização.",
+        detail: "As credenciais Omie não estão configuradas para esta organização. Acesse Governança & Identidade > Integrações ERP para configurar.",
       },
       { status: 503 }
     );
