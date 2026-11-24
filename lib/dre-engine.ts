@@ -171,6 +171,40 @@ const rateioFor = (code:string):Array<[DreUnit,number]> | null => {
 }
 
 
+
+/**
+ * Keeps malformed persisted/imported rows from crashing the client-side DRE.
+ * Invalid rows are excluded from calculations and counted for visible review.
+ */
+export function partitionDreRecords(records: unknown): { valid: FinancialRecord[]; invalidCount: number } {
+  if (!Array.isArray(records)) return { valid: [], invalidCount: 0 };
+  const valid: FinancialRecord[] = [];
+  let invalidCount = 0;
+  for (const value of records) {
+    if (!value || typeof value !== "object") { invalidCount++; continue; }
+    const record = value as Partial<FinancialRecord>;
+    const date = typeof record.date === "string" ? record.date.slice(0, 10) : "";
+    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    const validDate = !!dateMatch && (() => {
+      const parsed = new Date(Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3])));
+      return parsed.getUTCFullYear() === Number(dateMatch[1]) && parsed.getUTCMonth() === Number(dateMatch[2]) - 1 && parsed.getUTCDate() === Number(dateMatch[3]);
+    })();
+    if (typeof record.id !== "string" || !record.id.trim() || !validDate ||
+        typeof record.amount !== "number" || !Number.isFinite(record.amount) ||
+        (record.direction !== "entrada" && record.direction !== "saída")) {
+      invalidCount++;
+      continue;
+    }
+    valid.push({
+      ...record,
+      date,
+      description: typeof record.description === "string" ? record.description : "",
+      category: typeof record.category === "string" ? record.category : ""
+    } as FinancialRecord);
+  }
+  return { valid, invalidCount };
+}
+
 export function runDreEngine(records:FinancialRecord[], overrides:Record<string,DreOverride>={}):DreEngineResult {
   const classifications=records.map(r=>classify(r,overrides[r.id]));
   const summary={total:records.length,classified:0,review:0,excluded:0,pnl:0,balanceSheet:0,financing:0,equity:0,receivable:0};
