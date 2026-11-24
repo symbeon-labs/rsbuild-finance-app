@@ -26,9 +26,25 @@ export async function GET(request: Request) {
   const access = await authorize(organizationId);
   if (access.error) return NextResponse.json({ error: access.error }, { status: access.error === "unauthenticated" ? 401 : 403 });
   const session = await createClient();
-  const { data, error } = await session.from("organization_branding").select("banner_path,banner_position_x,banner_position_y,banner_zoom,brand_color,brand_color_hover,brand_color_soft")
+  const { data: ownData, error } = await session.from("organization_branding").select("banner_path,banner_position_x,banner_position_y,banner_zoom,brand_color,brand_color_hover,brand_color_soft")
     .eq("organization_id", organizationId).maybeSingle();
   if (error) return NextResponse.json({ error: "branding_read_failed" }, { status: 502 });
+
+  // QA herda a identidade visual da empresa-mãe quando ainda não possui
+  // personalização própria. A leitura é somente de branding público e ocorre
+  // apenas após autenticação/membership no tenant QA.
+  const parentByQa: Record<string, string> = {
+    "550e8400-e29b-41d4-a716-446655440001": "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76",
+    "550e8400-e29b-41d4-a716-446655440002": "c5356414-adce-4fdc-941b-15cfe26b991e"
+  };
+  let data = ownData;
+  if (!data?.banner_path && parentByQa[organizationId]) {
+    const admin = createAdminClient();
+    const { data: parentData } = await admin.from("organization_branding")
+      .select("banner_path,banner_position_x,banner_position_y,banner_zoom,brand_color,brand_color_hover,brand_color_soft")
+      .eq("organization_id", parentByQa[organizationId]).maybeSingle();
+    if (parentData) data = parentData;
+  }
   let bannerUrl: string | null = null;
   if (data?.banner_path) {
     const admin = createAdminClient();
