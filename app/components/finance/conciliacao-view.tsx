@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useMemo, useRef } from "react";
+import { Fragment, useState, useMemo, useRef, useEffect } from "react";
 import {
   FinancialRecord,
   OmieRecord,
@@ -29,6 +29,7 @@ interface ConciliacaoViewProps {
   onImportOmieRecords?: (records: OmieRecord[]) => void;
   onImportOmieRecordsPersist?: (records: OmieRecord[]) => Promise<void>;
   onReconciliationDecision?: (recordId: string, decisionType: "manual_match" | "unmatch", counterpartLabel?: string, justification?: string) => void;
+  initialSelectedBankIds?: string[];
 }
 
 export function ConciliacaoView({
@@ -39,7 +40,8 @@ export function ConciliacaoView({
   onRecordsUpdated,
   onImportOmieRecords,
   onImportOmieRecordsPersist,
-  onReconciliationDecision
+  onReconciliationDecision,
+  initialSelectedBankIds = []
 }: ConciliacaoViewProps) {
   const [selectedTab, setSelectedTab] = useState<"summary" | "matched" | "unmatched" | "transfers">("summary");
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export function ConciliacaoView({
   const [expandedBankId, setExpandedBankId] = useState<string | null>(null);
   const [manualJustification, setManualJustification] = useState("");
   const [omieImportFeedback, setOmieImportFeedback] = useState("");
+  const [batchQueue, setBatchQueue] = useState<string[]>([]);
   const omieInputRef = useRef<HTMLInputElement>(null);
   const canMatch = canPerformManualMatch(role);
   const canApproveDiscrepancy = canApproveDiscrepantMatch(role);
@@ -57,6 +60,16 @@ export function ConciliacaoView({
   }, [bankRecords, omieRecords, author]);
 
   const { matched, unmatchedBank, unmatchedOmie } = matchResults;
+
+  useEffect(() => {
+    if (!initialSelectedBankIds.length) return;
+    const pendingIds = initialSelectedBankIds.filter((id) => unmatchedBank.some((record) => record.id === id));
+    setBatchQueue(pendingIds);
+    setSelectedBankId(pendingIds[0] ?? null);
+    setSelectedOmieId(null);
+    setManualJustification("");
+    setSelectedTab("unmatched");
+  }, [initialSelectedBankIds, unmatchedBank]);
 
   const suggestionsByBankId = useMemo(() => {
     const map = new Map<string, OmieCandidate[]>();
@@ -130,6 +143,9 @@ export function ConciliacaoView({
     setSelectedBankId(null);
     setSelectedOmieId(null);
     setManualJustification("");
+    const remainingBatch = batchQueue.filter((id) => id !== bankRecord.id);
+    setBatchQueue(remainingBatch);
+    setSelectedBankId(remainingBatch[0] ?? null);
   };
 
   const handleUnmatch = (bankId: string) => {
@@ -403,6 +419,11 @@ export function ConciliacaoView({
           <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "16px" }}>
             Selecione uma linha do extrato bancário e uma do Omie ERP para realizar a reconciliação manual com justificativa registrada.
           </p>
+          {batchQueue.length > 0 && (
+            <div className="inline-note" role="status" style={{ marginBottom: 16 }}>
+              Lote recebido do Centro de Operações: <strong>{batchQueue.length} movimentação(ões) pendente(s)</strong>. A conciliação continua individual: confira o par Omie, registre a justificativa e confirme cada decisão. O próximo item será selecionado após cada confirmação.
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
             <div className="unmatched-section">
