@@ -143,11 +143,9 @@ export function ConciliacaoView({
     setSelectedBankId(null);
     setSelectedOmieId(null);
     setManualJustification("");
-    setBatchQueue((current) => {
-      const remaining = current.filter((id) => id !== bankRecord.id);
-      setSelectedBankId(remaining[0] ?? null);
-      return remaining;
-    });
+    const remainingBatch = batchQueue.filter((id) => id !== bankRecord.id);
+    setBatchQueue(remainingBatch);
+    setSelectedBankId(remainingBatch[0] ?? null);
   };
 
   const handleUnmatch = (bankId: string) => {
