@@ -45,8 +45,16 @@ export async function GET(request: Request) {
       .eq("organization_id", parentByQa[organizationId]).maybeSingle();
     if (parentData) data = parentData;
   }
-  let bannerUrl: string | null = null;
-  if (data?.banner_path) {
+  // Assets institucionais originais, versionados junto ao app para evitar
+  // thumbnails antigos/corrompidos que estavam cadastrados no Storage.
+  const tenantBannerAssets: Record<string, string> = {
+    "550e8400-e29b-41d4-a716-446655440001": "/brand-assets/hub-acai-banner.webp",
+    "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76": "/brand-assets/hub-acai-banner.webp",
+    "550e8400-e29b-41d4-a716-446655440002": "/brand-assets/mundo-sabor-banner.webp",
+    "c5356414-adce-4fdc-941b-15cfe26b991e": "/brand-assets/mundo-sabor-banner.webp"
+  };
+  let bannerUrl: string | null = tenantBannerAssets[organizationId] ?? null;
+  if (!bannerUrl && data?.banner_path) {
     const admin = createAdminClient();
     const { data: publicUrl } = admin.storage.from(BUCKET).getPublicUrl(data.banner_path);
     bannerUrl = publicUrl.publicUrl;
