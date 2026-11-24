@@ -171,8 +171,59 @@ const rateioFor = (code:string):Array<[DreUnit,number]> | null => {
 }
 
 
+
+/**
+ * Keeps malformed persisted/imported rows from crashing the client-side DRE.
+ * Invalid rows are excluded from calculations and counted for visible review.
+ */
+export function partitionDreRecords(records: unknown): { valid: FinancialRecord[]; invalidCount: number } {
+  if (!Array.isArray(records)) return { valid: [], invalidCount: 0 };
+  const valid: FinancialRecord[] = [];
+  let invalidCount = 0;
+  for (const value of records) {
+    if (!value || typeof value !== "object") { invalidCount++; continue; }
+    const record = value as Partial<FinancialRecord>;
+    const rawDate = typeof record.date === "string" ? record.date : "";
+    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})(?:T.+)?$/.exec(rawDate);
+    const date = dateMatch ? rawDate.slice(0, 10) : "";
+    const calendarDateIsValid = !!dateMatch && (() => {
+      const parsed = new Date(Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3])));
+      return parsed.getUTCFullYear() === Number(dateMatch[1]) && parsed.getUTCMonth() === Number(dateMatch[2]) - 1 && parsed.getUTCDate() === Number(dateMatch[3]);
+    })();
+    const timestampIsValid = !rawDate.includes("T") || Number.isFinite(Date.parse(rawDate));
+    const validDate = calendarDateIsValid && timestampIsValid;
+    const amountIsSafe = typeof record.amount === "number" && Number.isFinite(record.amount) &&
+      Number.isSafeInteger(Math.round(Math.abs(record.amount) * 100));
+    if (typeof record.id !== "string" || !record.id.trim() || !validDate ||
+        !amountIsSafe ||
+        (record.direction !== "entrada" && record.direction !== "saída")) {
+      invalidCount++;
+      continue;
+    }
+    valid.push({
+      ...record,
+      date,
+      description: typeof record.description === "string" ? record.description : "",
+      category: typeof record.category === "string" ? record.category : ""
+    } as FinancialRecord);
+  }
+  return { valid, invalidCount };
+}
+
 export function runDreEngine(records:FinancialRecord[], overrides:Record<string,DreOverride>={}):DreEngineResult {
-  const classifications=records.map(r=>classify(r,overrides[r.id]));
+  const classifications=records.map(r=>{
+    try {
+      return classify(r,overrides[r.id]);
+    } catch (error) {
+      // Persisted manual classifications can outlive rule/schema changes.
+      // A stale override must never crash the entire client-side report.
+      return {
+        recordId:r.id, account:null, confidence:0, status:"review" as const,
+        reason:error instanceof Error ? `Classificação salva incompatível: ${error.message}` : "Classificação salva incompatível; exige revisão humana.",
+        source:"none" as const, allocations:[]
+      };
+    }
+  });
   const summary={total:records.length,classified:0,review:0,excluded:0,pnl:0,balanceSheet:0,financing:0,equity:0,receivable:0};
   const grouped=new Map<string,{account:DreAccount;unit:DreUnit;amountMinor:number;count:number}>();
   const months=new Map<string,{month:string;unit:DreUnit;incomeMinor:number;expenseMinor:number;resultMinor:number;count:number}>();

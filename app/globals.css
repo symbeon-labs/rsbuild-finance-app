@@ -6140,3 +6140,93 @@ html:has(.inst-page) {
     overflow-wrap: anywhere;
   }
 }
+
+
+/* DRE Gerencial — hierarquia executiva e leitura responsiva */
+.dre-page-heading { align-items: center; }
+.dre-page-heading h1 { font-size: clamp(28px, 3vw, 34px); letter-spacing: -1.15px; }
+.dre-criteria { margin-bottom: 20px; border-left: 3px solid var(--rsbuild-terracotta); }
+.dre-period-control { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; font-weight:600; }
+.dre-method-note { margin:0; max-width:1050px; color:#77716B; font-size:11px; line-height:1.7; }
+.dre-dot { display:inline-block; width:4px; height:4px; margin:0 7px 2px; border-radius:50%; background:#B5583C; }
+.dre-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:0 0 20px; }
+.dre-kpi { position:relative; display:flex; flex-direction:column; align-items:flex-start; min-width:0; min-height:142px; padding:20px 20px 17px; overflow:hidden; background:var(--surface); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow); }
+.dre-kpi::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background:#B9B1A6; }
+.dre-kpi--income::before { background:var(--green); }
+.dre-kpi--expense::before { background:var(--red); }
+.dre-kpi--result-positive::before { background:var(--green); }
+.dre-kpi--result-negative::before { background:var(--red); }
+.dre-kpi-label { display:block; color:var(--muted); font-size:11px; line-height:1.4; font-weight:600; }
+.dre-kpi strong { display:block; max-width:100%; margin-top:17px; color:var(--ink); font-family:var(--font-brand); font-size:clamp(19px,2vw,25px); line-height:1.15; letter-spacing:-.7px; font-weight:700; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.dre-kpi--income strong { color:var(--green); }
+.dre-kpi--expense strong,.dre-kpi--result-negative strong { color:var(--red); }
+.dre-kpi small { display:block; margin-top:8px; color:var(--muted); font-size:10px; line-height:1.45; }
+.dre-section-kicker { display:block; margin-bottom:7px; color:var(--rsbuild-terracotta); font-family:var(--font-brand); font-size:9px; font-weight:700; letter-spacing:1.15px; }
+.dre-panel { padding:22px; }
+.dre-legend { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:10px; white-space:nowrap; }
+.dre-legend i { width:8px; height:8px; display:inline-block; border-radius:2px; margin-left:8px; }
+.dre-legend-income { background:var(--green); }
+.dre-legend-expense { background:var(--red); }
+.dre-month-chart { display:grid; gap:13px; padding:8px 0 19px; }
+.dre-month-row { display:grid; grid-template-columns:minmax(100px,145px) minmax(100px,1fr) minmax(105px,145px); gap:14px; align-items:center; }
+.dre-month-label { color:var(--muted); font-size:10px; text-transform:capitalize; }
+.dre-month-bars { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.dre-bar { display:block; min-width:2px; height:7px; border-radius:10px; transition:width .25s ease; }
+.dre-bar--income { background:var(--green); }
+.dre-bar--expense { background:var(--red); }
+.dre-month-row > strong { text-align:right; font-size:10px; font-variant-numeric:tabular-nums; }
+.dre-month-table { border-top:1px solid var(--line); padding-top:8px; }
+.dre-panel .panel-heading { align-items:center; }
+.dre-panel .panel-heading h2 { font-size:15px; }
+.dre-panel .quality-footnote { max-width:1000px; }
+.dre-panel .metric-grid { margin-top:18px; }
+.dre-panel .metric-card { display:flex; flex-direction:column; align-items:flex-start; gap:7px; min-width:0; }
+.dre-panel .metric-card > span { display:block; color:var(--muted); font-size:11px; line-height:1.4; }
+.dre-panel .metric-card > strong { display:block; font-size:25px; line-height:1.2; font-variant-numeric:tabular-nums; }
+.dre-panel .metric-card > small { display:block; color:var(--muted); font-size:10px; line-height:1.45; }
+.dre-panel h3 { color:var(--ink); font-family:var(--font-brand); font-size:13px; }
+.dre-panel .status-badge { white-space:nowrap; }
+.dre-panel .table-wrap { border:1px solid var(--line); border-radius:8px; }
+.dre-panel .data-table th { background:#FAF8F5; }
+.dre-panel .data-table td { line-height:1.45; }
+.dre-panel .data-table td small { color:var(--muted); line-height:1.45; white-space:normal; max-width:280px; }
+.dre-criteria .panel-heading { margin-bottom:12px; }
+@media (max-width: 1050px) {
+ .dre-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 700px) {
+ .dre-page-heading { align-items:flex-start; flex-direction:column; }
+ .dre-page-heading .secondary-button { align-self:flex-start; }
+ .dre-kpi-grid { gap:10px; }
+ .dre-kpi { min-height:126px; padding:16px 14px 14px; }
+ .dre-kpi strong { margin-top:13px; font-size:clamp(17px,5vw,22px); }
+ .dre-criteria .panel-heading { flex-direction:column; }
+ .dre-period-control { width:100%; justify-content:space-between; }
+ .dre-panel { padding:16px; }
+ .dre-month-row { grid-template-columns:84px minmax(55px,1fr); gap:9px; }
+ .dre-month-row > strong { grid-column:2; text-align:left; }
+ .dre-legend { font-size:9px; }
+ .dre-month-table { margin-top:6px; }
+}
+
+
+/* DRE Studio — importação e normalização de conjuntos estruturados */
+.dre-import-panel { border-top:3px solid var(--rsbuild-terracotta); }
+.dre-upload-zone { display:flex; min-height:132px; padding:22px; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; border:1px dashed #C9B7A8; border-radius:10px; background:linear-gradient(135deg,#FBF8F4,#F5F0E9); cursor:pointer; transition:border-color .18s,background .18s; }
+.dre-upload-zone:hover { border-color:var(--rsbuild-terracotta); background:#FBF2EF; }
+.dre-upload-zone input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+.dre-upload-zone strong { color:var(--ink); font-size:13px; }
+.dre-upload-zone small { max-width:520px; color:var(--muted); font-size:10px; line-height:1.5; }
+.dre-upload-symbol { display:grid; width:32px; height:32px; place-items:center; border-radius:9px; background:#F2E2DA; color:var(--rsbuild-terracotta); font-size:21px; }
+.dre-mapping-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-top:18px; }
+.dre-mapping-grid label { display:grid; gap:6px; min-width:0; color:var(--muted); font-size:10px; font-weight:600; }
+.dre-mapping-grid select { width:100%; min-width:0; }
+.dre-import-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:16px; }
+.dre-import-summary > div { display:grid; gap:6px; min-width:0; padding:12px; border:1px solid var(--line); border-radius:8px; background:#FCFBF9; }
+.dre-import-summary small { color:var(--muted); font-size:10px; }
+.dre-import-summary strong { color:var(--ink); font-size:17px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.dre-import-error,.dre-import-notice { margin:12px 0 0; padding:10px 12px; border-radius:7px; font-size:11px; line-height:1.5; }
+.dre-import-error { color:#A33F3F; background:#FFF0EF; border:1px solid #F1D0CD; }
+.dre-import-notice { color:#356C55; background:#EFF8F2; border:1px solid #D4E9DC; }
+@media(max-width:900px) { .dre-mapping-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .dre-import-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .dre-upload-zone { padding:18px 12px; } }
