@@ -111,7 +111,7 @@ export function Sidebar({
             minHeight: 0,
             minWidth: 0,
             overflow: "hidden",
-            padding: currentOrgId === "rsbuild" ? undefined : "clamp(3px, 0.8vw, 6px) clamp(6px, 1.2vw, 10px)",
+            padding: currentOrgId === "rsbuild" ? undefined : 0,
             background: currentOrgId === "rsbuild" ? undefined : "rgba(255,255,255,0.04)",
             border: currentOrgId === "rsbuild" ? undefined : "1px solid var(--line)",
             borderRadius: currentOrgId === "rsbuild" ? undefined : "8px",
@@ -131,10 +131,10 @@ export function Sidebar({
                 height: currentOrgId === "rsbuild" ? "48px" : "100%",
                 maxWidth: "100%",
                 maxHeight: "100%",
-                objectFit: "contain",
+                objectFit: currentOrgId === "rsbuild" ? "contain" : "cover",
                 padding: 0,
                 objectPosition: "center",
-                transform: currentOrgId === "rsbuild" ? undefined : "scale(1.38)",
+                transform: currentOrgId === "rsbuild" ? undefined : "scale(1.75)",
                 flex: "0 1 auto"
               }}
             />
