@@ -310,7 +310,7 @@ export default function ControlTowerWorkspace({
           onPeriodChange={() => {}}
           onToggleTheme={toggleTheme}
           onResetSession={() => {}}
-          onOpenConfig={() => { if (!isProjectCollaborator) setIsConfigOpen(true); }}
+          onOpenConfig={() => setIsConfigOpen(true)}
           onOpenTour={() => setIsTourOpen(true)}
         />
         <div className="content">
@@ -366,7 +366,7 @@ export default function ControlTowerWorkspace({
         </div>
       </section>
       <WorkspaceModal
-        isOpen={isConfigOpen && !isProjectCollaborator}
+        isOpen={isConfigOpen}
         companyName={companyName}
         companyLogoUrl={companyLogoUrl}
         currentOrgId={currentOrgId}
