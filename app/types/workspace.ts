@@ -144,7 +144,7 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     id: "hub_acai_qa",
     name: "Hub Açaí QA",
     tagline: "Ambiente de Testes — Distribuição",
-    logoUrl: "",
+    logoUrl: "/branding/qa/hub_a%C3%A7ai.png",
     badge: "🧪 QA",
     defaultModule: "logistics",
     enabledModules: {
@@ -165,7 +165,7 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     id: "mundo_sabor_qa",
     name: "Mundo do Sabor QA",
     tagline: "Ambiente de Testes — Indústria",
-    logoUrl: "",
+    logoUrl: "/branding/qa/mundo_do_sabor.png",
     badge: "🧪 QA",
     defaultModule: "finance",
     enabledModules: {

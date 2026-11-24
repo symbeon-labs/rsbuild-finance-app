@@ -125,6 +125,16 @@ export function Sidebar({
               src={companyLogoUrl}
               alt={companyName}
               className="brand-logo-img"
+              onError={(event) => {
+                const fallback = currentOrgId === "hub_acai_qa"
+                  ? "/branding/qa/hub_a%C3%A7ai.png"
+                  : currentOrgId === "mundo_sabor_qa"
+                    ? "/branding/qa/mundo_do_sabor.png"
+                    : "/brand/rsbuild-logo-primary.svg";
+                const image = event.currentTarget;
+                if (!image.src.endsWith(fallback)) image.src = fallback;
+                else image.style.visibility = "hidden";
+              }}
               style={{
                 display: "block",
                 width: "100%",
