@@ -211,7 +211,19 @@ export function partitionDreRecords(records: unknown): { valid: FinancialRecord[
 }
 
 export function runDreEngine(records:FinancialRecord[], overrides:Record<string,DreOverride>={}):DreEngineResult {
-  const classifications=records.map(r=>classify(r,overrides[r.id]));
+  const classifications=records.map(r=>{
+    try {
+      return classify(r,overrides[r.id]);
+    } catch (error) {
+      // Persisted manual classifications can outlive rule/schema changes.
+      // A stale override must never crash the entire client-side report.
+      return {
+        recordId:r.id, account:null, confidence:0, status:"review" as const,
+        reason:error instanceof Error ? `Classificação salva incompatível: ${error.message}` : "Classificação salva incompatível; exige revisão humana.",
+        source:"none" as const, allocations:[]
+      };
+    }
+  });
   const summary={total:records.length,classified:0,review:0,excluded:0,pnl:0,balanceSheet:0,financing:0,equity:0,receivable:0};
   const grouped=new Map<string,{account:DreAccount;unit:DreUnit;amountMinor:number;count:number}>();
   const months=new Map<string,{month:string;unit:DreUnit;incomeMinor:number;expenseMinor:number;resultMinor:number;count:number}>();
