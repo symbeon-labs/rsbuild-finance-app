@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FinancialRecord, formatCurrency } from "@/lib/finance";
 import { DreSourceStructure } from "@/app/components/finance/dre-source-structure";
+import { DreDataStudioImport } from "@/app/components/finance/dre-data-studio-import";
 import { DRE_ACCOUNTS, partitionDreRecords, runDreEngine, type DreOverride, type DreUnit } from "@/lib/dre-engine";
 
 interface Props { records: FinancialRecord[]; organizationId: string; isLoading?: boolean; periodLabel?: string }
@@ -54,6 +55,7 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
  <div className="page-heading dre-page-heading"><div><div className="eyebrow">DESEMPENHO FINANCEIRO</div><h1>DRE Gerencial</h1><p>Visão executiva do resultado de caixa e da qualidade da classificação financeira.</p></div><button className="secondary-button" onClick={onExport} disabled={!rows.length}>Exportar CSV</button></div>
  {recordPartition.invalidCount>0&&<div className="quality-footnote" role="alert" style={{marginBottom:14}}>Atenção: {recordPartition.invalidCount} registro(s) com data, valor, natureza ou identificador inválido foram isolados e não entraram nos cálculos da DRE. Revise a origem desses lançamentos antes de utilizá-los no fechamento.</div>}
  <section className="panel dre-criteria"><div className="panel-heading"><div><span className="dre-section-kicker">ESCOPO DO RELATÓRIO</span><h2>Critérios do demonstrativo</h2><p>Base de caixa <span className="dre-dot"/> {periodLabel}</p></div><label className="dre-period-control">Exercício<select className="filter-select" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Todo o período</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label></div><p className="dre-method-note">Este demonstrativo consolida movimentações pela data bancária. Não substitui a DRE contábil por competência nem a apuração fiscal. Transferências, empréstimos, aportes e estornos exigem identificação e tratamento próprio antes de serem considerados receita ou despesa.</p></section>
+ <DreDataStudioImport />
  {isLoading?<section className="panel"><div className="table-empty">Carregando movimentações financeiras…</div></section>:!rows.length?<section className="panel"><div className="table-empty"><strong>Sem movimentações financeiras para consolidar.</strong><p>Importe e valide extratos neste ambiente QA. Nenhum valor será inventado ou preenchido por dados sintéticos.</p></div></section>:<>
  <section className="dre-kpi-grid" aria-label="Indicadores financeiros">
   <article className="dre-kpi dre-kpi--income"><span className="dre-kpi-label">Entradas financeiras</span><strong>{formatCurrency(totals.incoming)}</strong><small>{rows.filter(r=>r.direction==="entrada").length} lançamentos no período</small></article>
