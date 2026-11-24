@@ -131,10 +131,10 @@ export function Sidebar({
                 height: currentOrgId === "rsbuild" ? "48px" : "100%",
                 maxWidth: "100%",
                 maxHeight: "100%",
-                objectFit: currentOrgId === "rsbuild" ? "contain" : "cover",
+                objectFit: "contain",
                 padding: 0,
                 objectPosition: "center",
-                transform: currentOrgId === "rsbuild" ? undefined : "scale(1.75)",
+                transform: currentOrgId === "rsbuild" ? undefined : "scale(1.16)",
                 flex: "0 1 auto"
               }}
             />
