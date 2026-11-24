@@ -144,6 +144,7 @@ export default function EnterpriseWorkspace({
 
   // Estados Financeiros & Sessão
   const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [pendingReconciliationIds, setPendingReconciliationIds] = useState<string[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
@@ -853,7 +854,10 @@ export default function EnterpriseWorkspace({
           {modulesResolved && enabledModules.finance && section === "operacoes-lote" && (
             <OperacoesLoteView
               records={filteredRecords}
-              onOpenReconciliation={() => navigateTo("conciliacao")}
+              onOpenReconciliation={(recordIds) => {
+                setPendingReconciliationIds(recordIds);
+                navigateTo("conciliacao");
+              }}
               canOpenReconciliation={enabledModules.reconciliation}
             />
           )}
@@ -886,6 +890,7 @@ export default function EnterpriseWorkspace({
               role={effectiveRole}
               onRecordsUpdated={setRecords}
               onImportOmieRecords={setOmieRecords}
+              initialSelectedBankIds={pendingReconciliationIds}
             />
           )}
           {modulesResolved && enabledModules.reconciliation && section === "baixas" && (
