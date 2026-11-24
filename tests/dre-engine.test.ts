@@ -91,3 +91,14 @@ test("accepts ISO timestamps but normalizes them to the movement date",()=>{
  assert.equal(result.invalidCount,0);
  assert.equal(result.valid[0].date,"2026-11-15");
 });
+
+test("rejects malformed timestamp suffixes and amounts outside safe cent precision",()=>{
+ const base=record("base","Compra material limpeza","saída",100);
+ const result=partitionDreRecords([
+  {...base,id:"bad-suffix",date:"2026-11-15garbage"},
+  {...base,id:"bad-time",date:"2026-11-15Tnot-a-time"},
+  {...base,id:"unsafe-cents",amount:Number.MAX_SAFE_INTEGER}
+ ]);
+ assert.equal(result.valid.length,0);
+ assert.equal(result.invalidCount,3);
+});
