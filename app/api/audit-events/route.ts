@@ -46,6 +46,24 @@ export async function GET(request: Request) {
   if (!guard.ok) return guard.response;
   const { supabase } = guard.ctx;
 
+  // A trilha da holding contém eventos de sessão e identidades cross-tenant.
+  // Papel admin de tenant não concede acesso à auditoria institucional.
+  const { data: organization, error: organizationError } = await supabase
+    .from("organizations")
+    .select("slug")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (organizationError || !organization) {
+    return NextResponse.json({ error: "audit_scope_unavailable" }, { status: 503 });
+  }
+  if (organization.slug === "rsbuild") {
+    const { data: isPlatformAdministrator, error: platformAdminError } =
+      await supabase.rpc("is_platform_administrator");
+    if (platformAdminError || isPlatformAdministrator !== true) {
+      return NextResponse.json({ error: "institutional_audit_forbidden" }, { status: 403 });
+    }
+  }
+
   let query = supabase
     .from("audit_events")
     .select("id, actor_id, event_type, entity_type, entity_id, occurred_at, metadata")
