@@ -16,6 +16,7 @@ interface TorreControleViewProps {
   isDirector?: boolean;
   canManageIntegration?: boolean;
   currentUserEmail?: string;
+  isPlatformAdministrator?: boolean;
   records: FinancialRecord[];
   totals: { incoming: number; outgoing: number; balance: number };
   titles: ReceivableTitle[];
@@ -42,6 +43,7 @@ export function TorreControleView({
   isDirector = false,
   canManageIntegration = false,
   currentUserEmail,
+  isPlatformAdministrator = false,
   records,
   totals,
   titles,
@@ -1118,6 +1120,8 @@ export function TorreControleView({
                 organizationId={organizationId}
                 organizationName={companyName}
                 canAdmin={canAdminIntegration}
+                currentUserEmail={currentUserEmail}
+                isPlatformAdministrator={isPlatformAdministrator}
                 onStatusChange={setOmieStatus}
               />
             </div>

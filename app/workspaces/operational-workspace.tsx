@@ -1070,6 +1070,7 @@ export default function OperationalWorkspace({
               isDirector={isSuperAdmin}
               canManageIntegration={effectiveRole === "owner" || effectiveRole === "admin" || isSuperAdmin}
               currentUserEmail={currentUserEmail}
+              isPlatformAdministrator={isPlatformAdministrator}
               records={records}
               totals={totals}
               titles={titles}
