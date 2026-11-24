@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { runDreEngine } from "../lib/dre-engine";
+import { partitionDreRecords, runDreEngine } from "../lib/dre-engine";
 import type { FinancialRecord } from "../lib/finance";
 const record=(id:string,description:string,direction:"entrada"|"saída",amount:number):FinancialRecord=>({id,date:"2026-11-15",description,direction,amount,category:"Não classificado",source:"QA",status:"pendente"});
 test("does not infer revenue from generic PIX or bank transfer",()=>{
@@ -75,4 +75,19 @@ test("unknown or empty category falls back to description rules",()=>{
  const r=runDreEngine([{...record("1","Compra material limpeza","saída",100),category:"Não classificado"}]);
  assert.equal(r.classifications[0].account?.code,"CLEANING");
  assert.equal(r.classifications[0].status,"suggested");
+});
+
+test("isolates malformed imported rows instead of allowing the DRE client to crash",()=>{
+ const valid=record("ok","Compra material limpeza","saída",100);
+ const malformed={...valid,id:"bad-date",date:"not-a-date"};
+ const missingAmount={...valid,id:"bad-amount",amount:Number.NaN};
+ const result=partitionDreRecords([valid,malformed,missingAmount,null,{...valid,id:"bad-direction",direction:"unknown"}]);
+ assert.equal(result.valid.length,1);
+ assert.equal(result.invalidCount,4);
+ assert.equal(result.valid[0].id,"ok");
+});
+test("accepts ISO timestamps but normalizes them to the movement date",()=>{
+ const result=partitionDreRecords([{...record("iso","Compra material limpeza","saída",100),date:"2026-11-15T12:30:00.000Z"}]);
+ assert.equal(result.invalidCount,0);
+ assert.equal(result.valid[0].date,"2026-11-15");
 });
