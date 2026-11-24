@@ -183,14 +183,19 @@ export function partitionDreRecords(records: unknown): { valid: FinancialRecord[
   for (const value of records) {
     if (!value || typeof value !== "object") { invalidCount++; continue; }
     const record = value as Partial<FinancialRecord>;
-    const date = typeof record.date === "string" ? record.date.slice(0, 10) : "";
-    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-    const validDate = !!dateMatch && (() => {
+    const rawDate = typeof record.date === "string" ? record.date : "";
+    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})(?:T.+)?$/.exec(rawDate);
+    const date = dateMatch ? rawDate.slice(0, 10) : "";
+    const calendarDateIsValid = !!dateMatch && (() => {
       const parsed = new Date(Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3])));
       return parsed.getUTCFullYear() === Number(dateMatch[1]) && parsed.getUTCMonth() === Number(dateMatch[2]) - 1 && parsed.getUTCDate() === Number(dateMatch[3]);
     })();
+    const timestampIsValid = !rawDate.includes("T") || Number.isFinite(Date.parse(rawDate));
+    const validDate = calendarDateIsValid && timestampIsValid;
+    const amountIsSafe = typeof record.amount === "number" && Number.isFinite(record.amount) &&
+      Number.isSafeInteger(Math.round(Math.abs(record.amount) * 100));
     if (typeof record.id !== "string" || !record.id.trim() || !validDate ||
-        typeof record.amount !== "number" || !Number.isFinite(record.amount) ||
+        !amountIsSafe ||
         (record.direction !== "entrada" && record.direction !== "saída")) {
       invalidCount++;
       continue;
