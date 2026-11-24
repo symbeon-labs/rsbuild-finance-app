@@ -69,7 +69,7 @@ export function ConciliacaoView({
     setSelectedOmieId(null);
     setManualJustification("");
     setSelectedTab("unmatched");
-  }, [initialSelectedBankIds]);
+  }, [initialSelectedBankIds, unmatchedBank]);
 
   const suggestionsByBankId = useMemo(() => {
     const map = new Map<string, OmieCandidate[]>();
