@@ -183,7 +183,7 @@ export default function EnterpriseWorkspace({
   const currentOrgId = organizationSlug;
   const [companyName, setCompanyName] = useState(organizationName);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
-  const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string>(() => ORGANIZATION_PRESETS.find((preset) => preset.id === organizationSlug)?.logoUrl ?? "");
   const [currentUserEmail] = useState<string>(userEmail);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
@@ -276,7 +276,7 @@ export default function EnterpriseWorkspace({
       localStorage.setItem("rsbuild_selected_organization", organizationId);
       document.cookie = `rsbuild_last_org_id=${encodeURIComponent(organizationId)}; path=/; max-age=31536000; SameSite=Lax`;
       const savedLogo = localStorage.getItem(`rsbuild_workspace_logo_${organizationId}`);
-      if (savedLogo) setCompanyLogoUrl(savedLogo);
+      setCompanyLogoUrl(savedLogo || organizationPreset?.logoUrl || "");
       const savedModules = localStorage.getItem(`rsbuild_workspace_modules_${organizationId}`);
       if (savedModules) {
         const parsed = JSON.parse(savedModules);
