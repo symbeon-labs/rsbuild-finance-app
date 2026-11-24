@@ -107,13 +107,13 @@ export function Sidebar({
           className="brand-logo-card"
           style={{
             width: "100%",
-            height: currentOrgId === "rsbuild" ? "64px" : "auto",
+            height: currentOrgId === "rsbuild" ? "64px" : "54px",
             minWidth: 0,
             overflow: "hidden",
-            padding: currentOrgId === "rsbuild" ? undefined : 0,
-            background: currentOrgId === "rsbuild" ? undefined : "transparent",
-            border: currentOrgId === "rsbuild" ? undefined : 0,
-            borderRadius: currentOrgId === "rsbuild" ? undefined : 0,
+            padding: currentOrgId === "rsbuild" ? undefined : "4px 8px",
+            background: currentOrgId === "rsbuild" ? undefined : "rgba(255,255,255,0.04)",
+            border: currentOrgId === "rsbuild" ? undefined : "1px solid var(--line)",
+            borderRadius: currentOrgId === "rsbuild" ? undefined : "8px",
             boxShadow: currentOrgId === "rsbuild" ? undefined : "none",
             boxSizing: "border-box"
           }}
@@ -127,9 +127,9 @@ export function Sidebar({
               style={{
                 display: "block",
                 width: "100%",
-                height: currentOrgId === "rsbuild" ? "48px" : "auto",
-                maxWidth: currentOrgId === "rsbuild" ? "100%" : "none",
-                maxHeight: currentOrgId === "rsbuild" ? "48px" : "112px",
+                height: currentOrgId === "rsbuild" ? "48px" : "44px",
+                maxWidth: "100%",
+                maxHeight: currentOrgId === "rsbuild" ? "48px" : "44px",
                 objectFit: "contain",
                 padding: 0,
                 objectPosition: "center"
