@@ -70,11 +70,15 @@ export default function ControlTowerWorkspace({
 
 
   const urlTab = searchParams.get("tab") as NavSection | null;
+  const canAccessInstitutionalSecurity = isPlatformAdministrator;
+  const requestedInstitutionalTab = urlTab === "auditoria" || urlTab === "acessos";
   const initialSection: NavSection = isProjectCollaborator
     ? "projetos"
-    : urlTab && ["workspace", "visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
-      ? urlTab
-      : "visao-geral";
+    : requestedInstitutionalTab && !canAccessInstitutionalSecurity
+      ? "visao-geral"
+      : urlTab && ["workspace", "visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
+        ? urlTab
+        : "visao-geral";
 
   function getModuleForSection(_s: NavSection): ModuleType {
     return "audit";
@@ -87,6 +91,11 @@ export default function ControlTowerWorkspace({
     // Na RSBUILD a Torre de Controle operacional não existe — governança
     // de agentes e auditoria assumiram esse papel
     const target = isProjectCollaborator ? "projetos" : nextSection === "torre-controle" ? "agentes" : nextSection;
+    if ((target === "auditoria" || target === "acessos") && !canAccessInstitutionalSecurity) {
+      setSection("visao-geral");
+      router.replace(`/?organizationId=${encodeURIComponent(organizationId)}&tab=visao-geral`, { scroll: false });
+      return;
+    }
     setSection(target);
     if (target !== "visao-geral") {
       setActiveModule(getModuleForSection(target));
@@ -274,6 +283,7 @@ export default function ControlTowerWorkspace({
         projectCollaboratorOnly={isProjectCollaborator}
         canAccessSandbox={canAccessSandbox}
         canAccessLeadInbox={["owner", "admin", "operator"].includes(membershipRole)}
+        canAccessInstitutionalSecurity={canAccessInstitutionalSecurity}
         onSelectModule={(mod) => {
           setActiveModule(mod);
           if (mod === "audit") navigateTo("auditoria");
@@ -349,10 +359,10 @@ export default function ControlTowerWorkspace({
               userFullName={userFullName}
             />
           )}
-          {!isProjectCollaborator && section === "auditoria" && (
+          {!isProjectCollaborator && canAccessInstitutionalSecurity && section === "auditoria" && (
             <AuditTrailView organizationId={organizationId} organizationName={organizationName} />
           )}
-          {!isProjectCollaborator && section === "acessos" && (
+          {!isProjectCollaborator && canAccessInstitutionalSecurity && section === "acessos" && (
             <AccessDirectoryView />
           )}
           {!isProjectCollaborator && section === "agentes" && (
