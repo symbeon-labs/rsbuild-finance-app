@@ -60,7 +60,6 @@ import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
-import { OrganizationBrandBanner } from "@/app/components/admin/organization-brand-banner";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { getWorkspaceCapabilityAvailability } from "@/app/actions/capability-licenses";
 import { canAccessWorkspaceSection } from "@/lib/workspace-module-access";
@@ -801,7 +800,6 @@ export default function EnterpriseWorkspace({
           onOpenTour={() => setIsTourOpen(true)}
         />
         <div className="content">
-          <OrganizationBrandBanner organizationId={organizationId} organizationName={organizationName} />
           <div className="inline-note" role="note">
             Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
           </div>
