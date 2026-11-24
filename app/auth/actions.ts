@@ -216,3 +216,64 @@ export async function updatePassword(formData: FormData) {
   await supabase.auth.signOut({ scope: "global" });
   redirect("/login?password_updated=1");
 }
+
+
+/** Atualiza a senha a partir da sessão autenticada, após validar a senha atual. */
+export async function changePassword(formData: FormData) {
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+
+  if (!currentPassword || currentPassword.length > 256) redirect("/account/security?error=current");
+  if (password.length < 8 || password.length > 256) redirect("/account/security?error=password");
+  if (password !== confirmation) redirect("/account/security?error=mismatch");
+  if (currentPassword === password) redirect("/account/security?error=same");
+
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user?.email) redirect("/login");
+
+  // Supabase Auth valida a senha atual na mesma sessão autenticada.
+  // Evita criar uma sessão paralela e sobrescrever os cookies do usuário.
+  const { error: updateError } = await supabase.auth.updateUser({
+    password,
+    current_password: currentPassword
+  });
+  if (updateError) {
+    if (updateError.code === "current_password_mismatch" ||
+        updateError.code === "current_password_required" ||
+        updateError.code === "invalid_credentials") {
+      redirect("/account/security?error=current");
+    }
+    redirect("/account/security?error=update");
+  }
+
+  await recordSessionEvent({
+    userId: user.id,
+    userEmail: user.email,
+    eventType: "account.password_changed",
+    metadata: { method: "authenticated_settings" }
+  });
+
+  // A troca da senha já foi concluída. Só informar revogação se o Auth confirmar.
+  // Em falha, preservamos a sessão atual e mostramos o estado parcial com transparência.
+  try {
+    const { error: revokeError } = await supabase.auth.signOut({ scope: "others" });
+    if (revokeError) {
+      console.error(JSON.stringify({
+        event: "account_other_sessions_revocation_failed",
+        userId: user.id,
+        code: revokeError.code
+      }));
+      redirect("/account/security?changed=1&sessions=warning");
+    }
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "account_other_sessions_revocation_exception",
+      userId: user.id,
+      error: error instanceof Error ? error.message : "unknown"
+    }));
+    redirect("/account/security?changed=1&sessions=warning");
+  }
+  redirect("/account/security?changed=1&sessions=revoked");
+}

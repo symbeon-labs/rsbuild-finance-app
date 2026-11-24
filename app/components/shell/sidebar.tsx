@@ -302,6 +302,9 @@ export function Sidebar({
             </span>
           </div>
         </div>}
+        <a href="/account/security" className="sidebar-inst-link" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "12px", fontWeight: 600, color: "var(--rsbuild-warm-beige, #D9CCB5)", background: "rgba(255, 255, 255, 0.035)", border: "1px solid rgba(217, 204, 181, 0.12)", borderRadius: "6px", padding: "8px 12px", margin: "0 0 8px", textDecoration: "none" }}>
+          <span aria-hidden="true">⌑</span><span>Segurança da conta</span>
+        </a>
         <button
           className="signout-btn"
           onClick={() => {
