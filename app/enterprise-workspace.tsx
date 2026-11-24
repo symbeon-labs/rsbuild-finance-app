@@ -850,7 +850,14 @@ export default function EnterpriseWorkspace({
               onNavigateToTab={navigateTo}
             />
           )}
-          {modulesResolved && enabledModules.finance && section === "operacoes-lote" && (\n            <OperacoesLoteView records={filteredRecords} onOpenReconciliation={() => navigateTo("conciliacao")} canOpenReconciliation={enabledModules.reconciliation} />\n          )}\n          {modulesResolved && enabledModules.finance && section === "movimentacoes" && (
+          {modulesResolved && enabledModules.finance && section === "operacoes-lote" && (
+            <OperacoesLoteView
+              records={filteredRecords}
+              onOpenReconciliation={() => navigateTo("conciliacao")}
+              canOpenReconciliation={enabledModules.reconciliation}
+            />
+          )}
+          {modulesResolved && enabledModules.finance && section === "movimentacoes" && (
             <MovimentacoesView
               records={filteredRecords}
               onOpenImport={() => inputRef.current?.click()}
