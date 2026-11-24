@@ -53,6 +53,7 @@ import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
 import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
 import { VisaoGeralView } from "@/app/components/finance/visao-geral-view";
 import { MovimentacoesView } from "@/app/components/finance/movimentacoes-view";
+import { OperacoesLoteView } from "@/app/components/finance/operacoes-lote-view";
 import { ImportacoesView } from "@/app/components/finance/importacoes-view";
 import { ConciliacaoView } from "@/app/components/finance/conciliacao-view";
 import { BaixasView } from "@/app/components/finance/baixas-view";
@@ -100,7 +101,7 @@ type OperationalWorkspaceProps = {
 
 const OPERATIONAL_NAV_SECTIONS: NavSection[] = [
   "workspace", "visao-geral", "torre-controle", "auditoria", "movimentacoes",
-  "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"
+  "operacoes-lote", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios"
 ];
 
 function getOperationalModuleForSection(section: NavSection, organizationSlug: OrganizationId): ModuleType {
@@ -164,6 +165,7 @@ export default function OperationalWorkspace({
 
   // Estados Financeiros & Sessão
   const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [pendingReconciliationIds, setPendingReconciliationIds] = useState<string[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<FinancialRecord[]>([]);
@@ -1087,6 +1089,16 @@ export default function OperationalWorkspace({
           {section === "auditoria" && (
             <AuditTrailView organizationId={organizationId} organizationName={companyName} />
           )}
+          {section === "operacoes-lote" && enabledModules.finance && (
+            <OperacoesLoteView
+              records={filteredRecords}
+              onOpenReconciliation={(recordIds) => {
+                setPendingReconciliationIds(recordIds);
+                navigateTo("conciliacao");
+              }}
+              canOpenReconciliation={enabledModules.reconciliation}
+            />
+          )}
           {section === "movimentacoes" && (
             <MovimentacoesView
               records={filteredRecords}
@@ -1118,6 +1130,7 @@ export default function OperationalWorkspace({
               onRecordsUpdated={setRecords}
               onImportOmieRecordsPersist={handleOmieImportPersist}
               onReconciliationDecision={handleReconciliationDecision}
+              initialSelectedBankIds={pendingReconciliationIds}
             />
           )}
           {section === "baixas" && (
