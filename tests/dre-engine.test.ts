@@ -102,3 +102,22 @@ test("rejects malformed timestamp suffixes and amounts outside safe cent precisi
  assert.equal(result.valid.length,0);
  assert.equal(result.invalidCount,3);
 });
+
+
+test("stale manual override is isolated for review instead of crashing the DRE",()=>{
+ const r=runDreEngine([record("1","Pagamento salário equipe","saída",1000)],{
+  "1":{accountCode:"REMOVED_ACCOUNT",reason:"Classificação antiga"}
+ });
+ assert.equal(r.summary.review,1);
+ assert.equal(r.classifications[0].status,"review");
+ assert.match(r.classifications[0].reason,/incompatível/);
+});
+
+test("saved manual P&L override without a valid current allocation is isolated for review",()=>{
+ const r=runDreEngine([record("1","Pagamento salário equipe","saída",1000)],{
+  "1":{accountCode:"PAYROLL",reason:"Classificação antiga sem rateio"}
+ });
+ assert.equal(r.summary.review,1);
+ assert.equal(r.classifications[0].status,"review");
+ assert.equal(r.pnl.length,0);
+});
