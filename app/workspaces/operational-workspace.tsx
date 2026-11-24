@@ -421,23 +421,42 @@ export default function OperationalWorkspace({
       }).catch(() => {});
     }
     try {
-      if (logo) {
+      if (logo && !logo.startsWith("http")) {
         localStorage.setItem(`rsbuild_workspace_logo_${organizationId}`, logo);
       } else {
         localStorage.removeItem(`rsbuild_workspace_logo_${organizationId}`);
       }
     } catch {}
+    if (!logo) {
+      fetch("/api/organization-branding?organizationId=" + encodeURIComponent(organizationId), { method: "DELETE" })
+        .then((response) => {
+          if (!response.ok) throw new Error("Não foi possível remover a imagem salva no servidor.");
+          setCompanyLogoUrl("");
+        })
+        .catch((error) => setNotice(error instanceof Error ? error.message : "Falha ao remover a imagem."));
+    }
     setNotice(`Workspace configurado com sucesso para ${name}!`);
     setIsConfigOpen(false);
   }
 
-  function handleLogoUploadFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const res = event.target?.result as string;
-      if (res) handleSaveCompanyConfig(companyName, res);
-    };
-    reader.readAsDataURL(file);
+  async function handleLogoUploadFile(file: File) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setNotice("Use uma imagem JPG, PNG ou WebP de até 10 MB.");
+      return;
+    }
+    const form = new FormData();
+    form.append("organizationId", organizationId);
+    form.append("file", file);
+    try {
+      const response = await fetch("/api/organization-branding", { method: "POST", body: form });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.bannerUrl) throw new Error(payload.error || "Não foi possível salvar a imagem.");
+      setCompanyLogoUrl(payload.bannerUrl);
+      try { localStorage.removeItem("rsbuild_workspace_logo_" + organizationId); } catch {}
+      setNotice("Imagem da empresa salva no servidor e sincronizada com este workspace.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao salvar a imagem.");
+    }
   }
 
   function resetSession() {
