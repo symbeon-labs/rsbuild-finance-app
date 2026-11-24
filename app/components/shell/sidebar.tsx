@@ -27,6 +27,8 @@ interface SidebarProps {
   canAccessSandbox?: boolean;
   /** Caixa de mensagens restrita a owner/admin/operator da RSBUILD. */
   canAccessLeadInbox?: boolean;
+  /** Auditoria institucional e diretório cross-tenant: somente administrador da plataforma. */
+  canAccessInstitutionalSecurity?: boolean;
   /** Restricts project collaborators to explicitly granted project work. */
   projectCollaboratorOnly?: boolean;
   onSelectModule: (module: ModuleType) => void;
@@ -89,6 +91,7 @@ export function Sidebar({
   showProjectPortfolio = false,
   canAccessSandbox = false,
   canAccessLeadInbox = false,
+  canAccessInstitutionalSecurity = false,
   projectCollaboratorOnly = false,
   onSelectModule,
   onSelectSection,
@@ -218,6 +221,8 @@ export function Sidebar({
           if (item.id === "projetos" && !showProjectPortfolio) return false;
           // Caixa de entrada comercial: disponível somente no workspace institucional RSBUILD.
           if (item.id === "mensagens" && (currentOrgId !== "rsbuild" || !canAccessLeadInbox)) return false;
+          // A trilha institucional contém sessões e identidades cross-tenant.
+          if ((item.id === "auditoria" || item.id === "acessos") && currentOrgId === "rsbuild" && !canAccessInstitutionalSecurity) return false;
           // Diretório central de acessos é exclusivo do workspace RSBUILD
           if (item.id === "acessos" && currentOrgId !== "rsbuild") return false;
           // Governança de agentes de IA é exclusiva do plano de controle RSBUILD
