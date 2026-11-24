@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useMemo, useRef } from "react";
+import { Fragment, useState, useMemo, useRef, useEffect } from "react";
 import {
   FinancialRecord,
   OmieRecord,
