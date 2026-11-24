@@ -6208,3 +6208,25 @@ html:has(.inst-page) {
  .dre-legend { font-size:9px; }
  .dre-month-table { margin-top:6px; }
 }
+
+
+/* DRE Studio — importação e normalização de conjuntos estruturados */
+.dre-import-panel { border-top:3px solid var(--rsbuild-terracotta); }
+.dre-upload-zone { display:flex; min-height:132px; padding:22px; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; border:1px dashed #C9B7A8; border-radius:10px; background:linear-gradient(135deg,#FBF8F4,#F5F0E9); cursor:pointer; transition:border-color .18s,background .18s; }
+.dre-upload-zone:hover { border-color:var(--rsbuild-terracotta); background:#FBF2EF; }
+.dre-upload-zone input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+.dre-upload-zone strong { color:var(--ink); font-size:13px; }
+.dre-upload-zone small { max-width:520px; color:var(--muted); font-size:10px; line-height:1.5; }
+.dre-upload-symbol { display:grid; width:32px; height:32px; place-items:center; border-radius:9px; background:#F2E2DA; color:var(--rsbuild-terracotta); font-size:21px; }
+.dre-mapping-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-top:18px; }
+.dre-mapping-grid label { display:grid; gap:6px; min-width:0; color:var(--muted); font-size:10px; font-weight:600; }
+.dre-mapping-grid select { width:100%; min-width:0; }
+.dre-import-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:16px; }
+.dre-import-summary > div { display:grid; gap:6px; min-width:0; padding:12px; border:1px solid var(--line); border-radius:8px; background:#FCFBF9; }
+.dre-import-summary small { color:var(--muted); font-size:10px; }
+.dre-import-summary strong { color:var(--ink); font-size:17px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.dre-import-error,.dre-import-notice { margin:12px 0 0; padding:10px 12px; border-radius:7px; font-size:11px; line-height:1.5; }
+.dre-import-error { color:#A33F3F; background:#FFF0EF; border:1px solid #F1D0CD; }
+.dre-import-notice { color:#356C55; background:#EFF8F2; border:1px solid #D4E9DC; }
+@media(max-width:900px) { .dre-mapping-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .dre-import-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .dre-upload-zone { padding:18px 12px; } }
