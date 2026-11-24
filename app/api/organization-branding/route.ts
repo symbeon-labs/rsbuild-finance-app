@@ -15,10 +15,11 @@ async function authorize(organizationId: string, write = false) {
   if (error || !user) return { user: null, role: null, error: "unauthenticated" as const };
   const { data: membership } = await session.from("organization_memberships")
     .select("role").eq("organization_id", organizationId).eq("user_id", user.id).maybeSingle();
-  if (!membership || (write && !["owner", "admin"].includes(membership.role))) {
-    return { user: null, role: null, error: "forbidden" as const };
-  }
-  return { user, role: membership.role, error: null };
+  const { data: platformAdmin } = write ? await session.rpc("is_platform_administrator") : { data: false };
+  const canWrite = ["owner", "admin"].includes(membership?.role ?? "") || platformAdmin === true;
+  if (!membership && platformAdmin !== true) return { user: null, role: null, error: "forbidden" as const };
+  if (write && !canWrite) return { user: null, role: null, error: "forbidden" as const };
+  return { user, role: membership?.role ?? "platform_admin", error: null };
 }
 
 export async function GET(request: Request) {
@@ -45,19 +46,21 @@ export async function GET(request: Request) {
       .eq("organization_id", parentByQa[organizationId]).maybeSingle();
     if (parentData) data = parentData;
   }
-  // Assets institucionais originais, versionados junto ao app para evitar
-  // thumbnails antigos/corrompidos que estavam cadastrados no Storage.
-  const tenantBannerAssets: Record<string, string> = {
-    "550e8400-e29b-41d4-a716-446655440001": "/branding/qa/hub_a%C3%A7ai.png",
-    "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76": "/branding/qa/hub_a%C3%A7ai.png",
-    "550e8400-e29b-41d4-a716-446655440002": "/branding/qa/mundo_do_sabor.png",
-    "c5356414-adce-4fdc-941b-15cfe26b991e": "/branding/qa/mundo_do_sabor.png"
-  };
-  let bannerUrl: string | null = tenantBannerAssets[organizationId] ?? null;
-  if (!bannerUrl && data?.banner_path) {
+  // A imagem personalizada salva no tenant tem precedência sobre o padrão versionado.
+  let bannerUrl: string | null = null;
+  if (data?.banner_path) {
     const admin = createAdminClient();
     const { data: publicUrl } = admin.storage.from(BUCKET).getPublicUrl(data.banner_path);
     bannerUrl = publicUrl.publicUrl;
+  }
+  if (!bannerUrl) {
+    const defaults: Record<string, string> = {
+      "550e8400-e29b-41d4-a716-446655440001": "/branding/qa/hub_a%C3%A7ai.png",
+      "ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76": "/branding/qa/hub_a%C3%A7ai.png",
+      "550e8400-e29b-41d4-a716-446655440002": "/branding/qa/mundo_do_sabor.png",
+      "c5356414-adce-4fdc-941b-15cfe26b991e": "/branding/qa/mundo_do_sabor.png"
+    };
+    bannerUrl = defaults[organizationId] ?? null;
   }
   return NextResponse.json({ bannerUrl, positionX: data?.banner_position_x ?? 50, positionY: data?.banner_position_y ?? 50, zoom: data?.banner_zoom ?? 1, brandColor: data?.brand_color ?? null, brandColorHover: data?.brand_color_hover ?? null, brandColorSoft: data?.brand_color_soft ?? null },
     { headers: { "Cache-Control": "private, no-store" } });
@@ -124,4 +127,21 @@ export async function PATCH(request: Request) {
   }, { onConflict: "organization_id" });
   if (error) return NextResponse.json({ error: "branding_colors_save_failed" }, { status: 502 });
   return NextResponse.json({ ok: true, brandColor: body.brandColor, brandColorHover: body.brandColorHover, brandColorSoft: body.brandColorSoft }, { headers: { "Cache-Control": "private, no-store" } });
+}
+
+export async function DELETE(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: "origin_forbidden" }, { status: 403 });
+  const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
+  const access = await authorize(organizationId, true);
+  if (access.error || !access.user) return NextResponse.json({ error: access.error }, { status: access.error === "unauthenticated" ? 401 : 403 });
+  const admin = createAdminClient();
+  const { data: current } = await admin.from("organization_branding").select("banner_path")
+    .eq("organization_id", organizationId).maybeSingle();
+  const { error } = await admin.from("organization_branding").upsert({
+    organization_id: organizationId, banner_path: null, updated_by: access.user.id, updated_at: new Date().toISOString()
+  }, { onConflict: "organization_id" });
+  if (error) return NextResponse.json({ error: "branding_remove_failed" }, { status: 502 });
+  if (current?.banner_path) await admin.storage.from(BUCKET).remove([current.banner_path]);
+  return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "private, no-store" } });
 }
