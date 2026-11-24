@@ -1,15 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FinancialRecord, formatCurrency } from "@/lib/finance";
 import { ReceivableTitle, ReconciliationMatch } from "@/lib/reconciliation";
 import { DeliveryProof, DeliveryMetrics, ProtestoEvaluation } from "@/lib/delivery";
 import { ParsedWhatsAppOrder } from "@/lib/orders";
 import { Metric } from "@/app/components/finance/common";
+import { OmieIntegrationCard, OmieIntegrationStatus } from "@/app/components/admin/omie-integration-card";
 
 interface TorreControleViewProps {
+  organizationId?: string;
   companyName?: string;
   isDirector?: boolean;
+  canManageIntegration?: boolean;
   currentUserEmail?: string;
   records: FinancialRecord[];
   totals: { incoming: number; outgoing: number; balance: number };
@@ -32,7 +35,10 @@ interface TorreControleViewProps {
 type TorreSubTab = "estrategia" | "auditoria" | "sincronizacao";
 
 export function TorreControleView({
+  organizationId = "",
   companyName = "RSBUILD Inovação",
+  isDirector = false,
+  canManageIntegration = false,
   currentUserEmail,
   records,
   totals,
@@ -48,6 +54,25 @@ export function TorreControleView({
 }: TorreControleViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<TorreSubTab>("estrategia");
   const [copiedMemo, setCopiedMemo] = useState(false);
+  const [omieStatus, setOmieStatus] = useState<OmieIntegrationStatus | null>(null);
+
+  const canAdminIntegration = canManageIntegration || isDirector;
+
+  useEffect(() => {
+    if (!canAdminIntegration || !organizationId) return;
+    let active = true;
+    fetch(`/api/organization-integrations?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" })
+      .then(async (r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data?.integrations) return;
+        const omie = data.integrations.find((item: OmieIntegrationStatus) => item.provider === "omie");
+        if (omie) setOmieStatus(omie);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [organizationId, canAdminIntegration]);
 
   // Todos os registros exigem revisão humana; metadados completos não autenticam a evidência.
   const documentaryReviewCount = evaluations.length;
@@ -252,8 +277,21 @@ export function TorreControleView({
           <button className="secondary-button" onClick={handleCopyMemo}>
             {copiedMemo ? "✓ Memorando Copiado!" : "📋 Copiar Síntese Operacional"}
           </button>
-          <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
-            Integração Omie não conectada
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => setActiveSubTab("sincronizacao")}
+            style={
+              omieStatus?.status === "verified"
+                ? { borderColor: "rgba(16, 185, 129, 0.4)", color: "#059669" }
+                : undefined
+            }
+          >
+            {omieStatus?.status === "verified"
+              ? "● Omie Conectada"
+              : omieStatus?.configured
+              ? "● Omie Configurada"
+              : "🔌 Configurar Omie ERP"}
           </button>
         </div>
       </div>
@@ -714,15 +752,53 @@ export function TorreControleView({
       {/* ABA 3: ESTEIRA DE SINCRONIZAÇÃO ASSISTIDA ERP */}
       {activeSubTab === "sincronizacao" && (
         <section className="panel" style={{ marginBottom: "24px" }}>
-          <div className="panel-heading">
+          <div className="panel-heading" style={{ marginBottom: "18px" }}>
             <div>
-              <h2>Integrações e exportações</h2>
-              <p>A integração com o Omie ainda não está conectada. Nenhum lote foi enviado ou está aguardando envio.</p>
+              <h2>Integrações ERP &amp; Exportações</h2>
+              <p>
+                {omieStatus?.status === "verified"
+                  ? "Integração Omie ativa e verificada. Os lotes preparados abaixo exigem revisão humana antes da importação."
+                  : "Conecte a API do Omie abaixo para consultar títulos em aberto em tempo real e preparar lotes de baixa."}
+              </p>
             </div>
-            <button className="secondary-button" type="button" disabled title="A integração Omie ainda não está conectada neste ambiente">
-              Integração não disponível
-            </button>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                padding: "5px 12px",
+                borderRadius: "20px",
+                background:
+                  omieStatus?.status === "verified"
+                    ? "rgba(16, 185, 129, 0.14)"
+                    : omieStatus?.configured
+                    ? "rgba(37, 99, 235, 0.12)"
+                    : "rgba(100, 116, 139, 0.12)",
+                color:
+                  omieStatus?.status === "verified"
+                    ? "#059669"
+                    : omieStatus?.configured
+                    ? "#2563EB"
+                    : "#64748B"
+              }}
+            >
+              {omieStatus?.status === "verified"
+                ? "● Omie Verificada"
+                : omieStatus?.configured
+                ? "● Omie Configurada"
+                : "○ Omie Não Conectada"}
+            </span>
           </div>
+
+          {organizationId && (
+            <div style={{ marginBottom: "24px" }}>
+              <OmieIntegrationCard
+                organizationId={organizationId}
+                organizationName={companyName}
+                canAdmin={canAdminIntegration}
+                onStatusChange={setOmieStatus}
+              />
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", marginTop: "16px" }}>
             <div style={{ border: "1px solid var(--line)", borderRadius: "8px", padding: "16px", background: "var(--surface)" }}>

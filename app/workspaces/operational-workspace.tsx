@@ -1065,8 +1065,10 @@ export default function OperationalWorkspace({
           )}
           {section === "torre-controle" && (
             <TorreControleView
+              organizationId={organizationId}
               companyName={companyName}
               isDirector={isSuperAdmin}
+              canManageIntegration={effectiveRole === "owner" || effectiveRole === "admin" || isSuperAdmin}
               currentUserEmail={currentUserEmail}
               records={records}
               totals={totals}
