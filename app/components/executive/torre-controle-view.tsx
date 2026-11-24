@@ -7,6 +7,8 @@ import { DeliveryProof, DeliveryMetrics, ProtestoEvaluation } from "@/lib/delive
 import { ParsedWhatsAppOrder } from "@/lib/orders";
 import { Metric } from "@/app/components/finance/common";
 import { OmieIntegrationCard, OmieIntegrationStatus } from "@/app/components/admin/omie-integration-card";
+import { computeCashFlowProjection } from "@/lib/cash-flow";
+import { buildControllershipSummary, ControllershipAuditInput, CONTROLLERSHIP_CATEGORY_LABELS } from "@/lib/controllership";
 
 interface TorreControleViewProps {
   organizationId?: string;
@@ -55,6 +57,7 @@ export function TorreControleView({
   const [activeSubTab, setActiveSubTab] = useState<TorreSubTab>("estrategia");
   const [copiedMemo, setCopiedMemo] = useState(false);
   const [omieStatus, setOmieStatus] = useState<OmieIntegrationStatus | null>(null);
+  const [auditEvents, setAuditEvents] = useState<ControllershipAuditInput[]>([]);
 
   const canAdminIntegration = canManageIntegration || isDirector;
 
@@ -73,6 +76,23 @@ export function TorreControleView({
       active = false;
     };
   }, [organizationId, canAdminIntegration]);
+
+  // Busca eventos de auditoria para o Painel de Controladoria
+  useEffect(() => {
+    if (!organizationId) return;
+    let active = true;
+    fetch(`/api/audit-events?organizationId=${encodeURIComponent(organizationId)}&limit=100`, { cache: "no-store" })
+      .then(async (r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active) return;
+        const events: ControllershipAuditInput[] = Array.isArray(data?.events) ? data.events : [];
+        setAuditEvents(events);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [organizationId]);
 
   // Todos os registros exigem revisão humana; metadados completos não autenticam a evidência.
   const documentaryReviewCount = evaluations.length;
@@ -227,6 +247,23 @@ export function TorreControleView({
     totals,
     readySettlements
   ]);
+
+  // ── Fluxo de Caixa Projetado 7/15/30/60 dias ────────────────────────────────
+  const cashFlowProjection = useMemo(
+    () =>
+      computeCashFlowProjection({
+        currentBalance: totals.balance,
+        titles,
+        payables: [], // Contas a pagar via Omie serão integradas em sprint futura
+      }),
+    [totals.balance, titles]
+  );
+
+  // ── Painel de Controladoria e Auditoria ──────────────────────────────────────
+  const controllershipSummary = useMemo(
+    () => buildControllershipSummary({ auditEvents, matches }),
+    [auditEvents, matches]
+  );
 
   function handleCopyMemo() {
     const memoText = `*RELATÓRIO EXECUTIVO · RSBUILD OS*\n` +
@@ -532,6 +569,292 @@ export function TorreControleView({
                 </div>
               ))}
             </div>
+          </section>
+
+          {/* FAIXA 2: FLUXO DE CAIXA PROJETADO (7, 15, 30, 60 DIAS) */}
+          <section className="panel" style={{ marginBottom: "24px" }}>
+            <div className="panel-heading">
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "16px" }}>📈</span>
+                  <h2>Fluxo de Caixa Projetado (7 / 15 / 30 / 60 dias)</h2>
+                </div>
+                <p>
+                  Projeção de liquidez calculada a partir do saldo bancário atual ({formatCurrency(cashFlowProjection.currentBalance)}) somado aos recebíveis e contas a pagar em aberto.
+                </p>
+              </div>
+              {cashFlowProjection.hasNegativeBalanceRisk ? (
+                <span
+                  className="status-pill"
+                  style={{
+                    background: "var(--red-bg, rgba(239, 68, 68, 0.15))",
+                    color: "var(--red-text, #EF4444)",
+                    fontWeight: 700
+                  }}
+                >
+                  ⚠ ALERTA: RISCO DE SALDO NEGATIVO (D+{cashFlowProjection.firstNegativeHorizonDays})
+                </span>
+              ) : (
+                <span
+                  className="status-pill"
+                  style={{
+                    background: "var(--green-bg, rgba(16, 185, 129, 0.15))",
+                    color: "var(--green-text, #10B981)",
+                    fontWeight: 700
+                  }}
+                >
+                  ✓ COBERTURA DE LIQUIDEZ PRESERVADA
+                </span>
+              )}
+            </div>
+
+            {/* Alerta de Títulos Vencidos */}
+            {cashFlowProjection.overdueReceivablesCount > 0 && (
+              <div
+                style={{
+                  background: "var(--yellow-bg, rgba(245, 158, 11, 0.1))",
+                  border: "1px solid var(--yellow-border, rgba(245, 158, 11, 0.3))",
+                  borderRadius: "8px",
+                  padding: "12px 16px",
+                  fontSize: "12.5px",
+                  color: "var(--ink)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "16px"
+                }}
+              >
+                <span>
+                  <strong>Atenção operacional:</strong> Existem <strong>{cashFlowProjection.overdueReceivablesCount} título(s) vencido(s)</strong> a receber totalizando <strong>{formatCurrency(cashFlowProjection.overdueReceivables)}</strong> anteriores à data base.
+                </span>
+                <button
+                  className="secondary-button"
+                  style={{ padding: "4px 10px", fontSize: "11px" }}
+                  onClick={() => onNavigateToTab("reconcil")}
+                >
+                  Ver Títulos →
+                </button>
+              </div>
+            )}
+
+            {/* Grid dos 4 Horizontes */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
+              {cashFlowProjection.horizons.map((h) => (
+                <div
+                  key={h.days}
+                  style={{
+                    border: h.negativeAlert ? "2px solid var(--red-text, #EF4444)" : "1px solid var(--line)",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    background: h.negativeAlert ? "var(--red-bg, rgba(239, 68, 68, 0.04))" : "var(--surface)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--ink)" }}>D+{h.days} ({h.label})</span>
+                    <span
+                      style={{
+                        fontSize: "9.5px",
+                        fontWeight: 700,
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        background: h.negativeAlert ? "var(--red-bg, rgba(239, 68, 68, 0.2))" : "var(--green-bg, rgba(16, 185, 129, 0.15))",
+                        color: h.negativeAlert ? "var(--red-text, #EF4444)" : "var(--green-text, #10B981)"
+                      }}
+                    >
+                      {h.negativeAlert ? "DÉFICIT" : "SUPERÁVIT"}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: "11.5px", color: "var(--muted)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Entradas previstas:</span>
+                      <strong style={{ color: "var(--green-text, #10B981)" }}>+{formatCurrency(h.receivablesInWindow)}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Saídas previstas:</span>
+                      <strong style={{ color: h.payablesInWindow > 0 ? "var(--red-text, #EF4444)" : "var(--muted)" }}>
+                        -{formatCurrency(h.payablesInWindow)}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid var(--line)", paddingTop: "8px" }}>
+                    <div style={{ fontSize: "10.5px", color: "var(--muted)", marginBottom: "2px" }}>Saldo Projetado:</div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        color: h.projectedBalance < 0 ? "var(--red-text, #EF4444)" : "var(--ink)"
+                      }}
+                    >
+                      {formatCurrency(h.projectedBalance)}
+                    </div>
+                    {cashFlowProjection.overdueReceivables > 0 && (
+                      <div style={{ fontSize: "10px", color: "var(--muted)", marginTop: "4px" }}>
+                        c/ vencidos: <strong>{formatCurrency(h.projectedBalanceWithOverdue)}</strong>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {!cashFlowProjection.hasPayablesData && (
+              <div style={{ marginTop: "12px", fontSize: "11px", color: "var(--muted)" }}>
+                ℹ <em>Nota de governança:</em> O módulo de Contas a Pagar aguarda conexão com Omie ERP nesta organização para projeção de saídas. O cálculo atual considera apenas entradas de recebíveis.
+              </div>
+            )}
+          </section>
+
+          {/* FAIXA 3: PAINEL DE CONTROLADORIA E AUDITORIA */}
+          <section className="panel" style={{ marginBottom: "24px" }}>
+            <div className="panel-heading">
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "16px" }}>⚖</span>
+                  <h2>Painel de Controladoria & Integridade Operacional</h2>
+                </div>
+                <p>
+                  Monitoramento contínuo de exceções: descontos concedidos, alterações de valores, baixas manuais, estornos e tentativas fora de alçada.
+                </p>
+              </div>
+              <span
+                className="status-pill"
+                style={{
+                  background: controllershipSummary.totalAlerts > 0 ? "var(--yellow-bg, rgba(245, 158, 11, 0.15))" : "var(--surface-raised, rgba(255,255,255,0.06))",
+                  color: controllershipSummary.totalAlerts > 0 ? "var(--yellow-text, #F59E0B)" : "var(--ink)",
+                  fontWeight: 700
+                }}
+              >
+                {controllershipSummary.totalAlerts} OCORRÊNCIA(S) AUDITADA(S)
+              </span>
+            </div>
+
+            {/* Badges de Categorias de Controladoria */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+              <div style={{ padding: "10px 14px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.03))", border: "1px solid var(--line)" }}>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Descontos Concedidos</div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: controllershipSummary.totalDiscountsGranted > 0 ? "var(--yellow-text, #F59E0B)" : "var(--ink)", marginTop: "2px" }}>
+                  {formatCurrency(controllershipSummary.totalDiscountsGranted)}
+                </div>
+                <span style={{ fontSize: "10px", color: "var(--muted)" }}>{controllershipSummary.countsByCategory.desconto_abatimento} título(s)</span>
+              </div>
+
+              <div style={{ padding: "10px 14px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.03))", border: "1px solid var(--line)" }}>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Alterações Valor/Venc.</div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--ink)", marginTop: "2px" }}>
+                  {controllershipSummary.countsByCategory.alteracao_valor_vencimento}
+                </div>
+                <span style={{ fontSize: "10px", color: "var(--muted)" }}>ajustes registrados</span>
+              </div>
+
+              <div style={{ padding: "10px 14px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.03))", border: "1px solid var(--line)" }}>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Baixas & Estornos</div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--ink)", marginTop: "2px" }}>
+                  {controllershipSummary.countsByCategory.baixa_manual_estorno}
+                </div>
+                <span style={{ fontSize: "10px", color: "var(--muted)" }}>intervenções manuais</span>
+              </div>
+
+              <div style={{ padding: "10px 14px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.03))", border: "1px solid var(--line)" }}>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Fora de Alçada</div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: controllershipSummary.countsByCategory.fora_de_alcada > 0 ? "var(--red-text, #EF4444)" : "var(--ink)", marginTop: "2px" }}>
+                  {controllershipSummary.countsByCategory.fora_de_alcada}
+                </div>
+                <span style={{ fontSize: "10px", color: "var(--muted)" }}>bloqueios preventivos</span>
+              </div>
+
+              <div style={{ padding: "10px 14px", borderRadius: "6px", background: "var(--surface-raised, rgba(255,255,255,0.03))", border: "1px solid var(--line)" }}>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Divergências Banco/ERP</div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: controllershipSummary.countsByCategory.divergencia_conciliacao > 0 ? "var(--red-text, #EF4444)" : "var(--ink)", marginTop: "2px" }}>
+                  {controllershipSummary.countsByCategory.divergencia_conciliacao}
+                </div>
+                <span style={{ fontSize: "10px", color: "var(--muted)" }}>inconsistências</span>
+              </div>
+            </div>
+
+            {/* Lista de Itens Auditados */}
+            {controllershipSummary.items.length > 0 ? (
+              <div className="table-wrap">
+                <table className="sticky-actions" style={{ fontSize: "12px" }}>
+                  <thead>
+                    <tr>
+                      <th>Categoria</th>
+                      <th>Evento / Descrição</th>
+                      <th>Responsável</th>
+                      <th>Data</th>
+                      <th className="align-right">Impacto Financeiro</th>
+                      <th>Severidade</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {controllershipSummary.items.slice(0, 8).map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <span
+                            className="status-pill"
+                            style={{
+                              fontSize: "9.5px",
+                              fontWeight: 600,
+                              background: "var(--surface-raised, rgba(255,255,255,0.06))",
+                              color: "var(--ink)"
+                            }}
+                          >
+                            {item.categoryLabel}
+                          </span>
+                        </td>
+                        <td>
+                          <strong style={{ color: "var(--ink)" }}>{item.title}</strong>
+                          {item.justification && (
+                            <span style={{ display: "block", fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
+                              {item.justification}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ color: "var(--muted)" }}>{item.actorLabel}</td>
+                        <td style={{ color: "var(--muted)" }}>
+                          {item.occurredAt ? new Date(item.occurredAt).toLocaleDateString("pt-BR") : "—"}
+                        </td>
+                        <td className="align-right font-semibold">
+                          {item.financialImpact !== null ? formatCurrency(item.financialImpact) : "—"}
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              fontSize: "9px",
+                              fontWeight: 700,
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              background:
+                                item.severity === "high"
+                                  ? "var(--red-bg, rgba(239, 68, 68, 0.15))"
+                                  : item.severity === "medium"
+                                  ? "var(--yellow-bg, rgba(245, 158, 11, 0.15))"
+                                  : "var(--surface-raised, rgba(255, 255, 255, 0.08))",
+                              color:
+                                item.severity === "high"
+                                  ? "var(--red-text, #EF4444)"
+                                  : item.severity === "medium"
+                                  ? "var(--yellow-text, #F59E0B)"
+                                  : "var(--ink)"
+                            }}
+                          >
+                            {item.severity === "high" ? "ALTA" : item.severity === "medium" ? "MÉDIA" : "INFO"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ padding: "16px", textAlign: "center", color: "var(--muted)", fontSize: "12px", border: "1px dashed var(--line)", borderRadius: "6px" }}>
+                Nenhuma exceção ou inconformidade operacional detectada nos registros auditados desta organização.
+              </div>
+            )}
           </section>
 
           {/* Gráficos Estratégicos Cruzados */}
