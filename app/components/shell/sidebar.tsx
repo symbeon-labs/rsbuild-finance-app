@@ -134,6 +134,7 @@ export function Sidebar({
                 objectFit: "contain",
                 padding: 0,
                 objectPosition: "center",
+                transform: currentOrgId === "rsbuild" ? undefined : "scale(1.38)",
                 flex: "0 1 auto"
               }}
             />
