@@ -99,7 +99,7 @@ export default function EnterpriseWorkspace({
   const urlTab = searchParams.get("tab") as NavSection | null;
   const initialSection: NavSection =
     urlTab &&
-    ["workspace", "visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios", "auditoria", "acessos", "mensagens", "agentes", "sandbox"].includes(urlTab) &&
+    ["workspace", "visao-geral", "projetos", "torre-controle", "movimentacoes", "operacoes-lote", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios", "auditoria", "acessos", "mensagens", "agentes", "sandbox"].includes(urlTab) &&
     (urlTab !== "projetos" || canViewProjectPortfolio)
       ? urlTab
       : "visao-geral";
@@ -119,7 +119,7 @@ export default function EnterpriseWorkspace({
   // This is required for deep links such as Sandbox -> a selected lab.
   useEffect(() => {
     const validUrlSection = urlTab &&
-      ["workspace", "visao-geral", "projetos", "torre-controle", "movimentacoes", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios", "auditoria", "acessos", "mensagens", "agentes", "sandbox"].includes(urlTab) &&
+      ["workspace", "visao-geral", "projetos", "torre-controle", "movimentacoes", "operacoes-lote", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios", "auditoria", "acessos", "mensagens", "agentes", "sandbox"].includes(urlTab) &&
       (urlTab !== "projetos" || canViewProjectPortfolio)
         ? urlTab
         : null;
