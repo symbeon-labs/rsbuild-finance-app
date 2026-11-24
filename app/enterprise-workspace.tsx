@@ -52,6 +52,7 @@ import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
 import { VisaoGeralView } from "@/app/components/finance/visao-geral-view";
 import { MovimentacoesView } from "@/app/components/finance/movimentacoes-view";
+import { OperacoesLoteView } from "@/app/components/finance/operacoes-lote-view";
 import { ImportacoesView } from "@/app/components/finance/importacoes-view";
 import { ConciliacaoView } from "@/app/components/finance/conciliacao-view";
 import { BaixasView } from "@/app/components/finance/baixas-view";
@@ -847,6 +848,13 @@ export default function EnterpriseWorkspace({
               hubAcaiMetrics={hubAcaiMetrics}
               hasSprintZone={canAccessSprintZone(effectiveRole, organizationSlug) || isDeveloperAuthorized}
               onNavigateToTab={navigateTo}
+            />
+          )}
+          {modulesResolved && enabledModules.finance && section === "operacoes-lote" && (
+            <OperacoesLoteView
+              records={filteredRecords}
+              onOpenReconciliation={() => navigateTo("conciliacao")}
+              canOpenReconciliation={enabledModules.reconciliation}
             />
           )}
           {modulesResolved && enabledModules.finance && section === "movimentacoes" && (

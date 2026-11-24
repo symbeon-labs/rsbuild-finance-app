@@ -188,6 +188,7 @@ export type NavSection =
   | "visao-geral"
   | "torre-controle"
   | "movimentacoes"
+  | "operacoes-lote"
   | "importacoes"
   | "conciliacao"
   | "baixas"
@@ -218,6 +219,7 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 
   // 1. Módulo Financeiro
   { id: "movimentacoes", label: "Movimentações", icon: "finance", module: "finance" },
+  { id: "operacoes-lote", label: "Operações em Lote", icon: "matching", module: "finance" },
   { id: "importacoes", label: "Importações Extratos", icon: "import", module: "finance" },
   { id: "relatorios", label: "Relatórios DRE", icon: "analytics", module: "finance" },
 

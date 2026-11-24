@@ -6230,3 +6230,14 @@ html:has(.inst-page) {
 .dre-import-notice { color:#356C55; background:#EFF8F2; border:1px solid #D4E9DC; }
 @media(max-width:900px) { .dre-mapping-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) { .dre-import-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .dre-upload-zone { padding:18px 12px; } }
+
+/* DRE governance layout: responsive cards and horizontally scrollable breakdown. */
+.dre-classification-panel .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+.dre-classification-panel .metric-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:8px;min-width:0;padding:16px}
+.dre-classification-panel .metric-card>span{display:block;min-height:2.8em;font-size:13px;line-height:1.4}
+.dre-classification-panel .metric-card>strong{display:block;font-size:clamp(22px,2.2vw,30px);line-height:1.1;font-variant-numeric:tabular-nums}
+.dre-classification-panel .metric-card>small{display:block;font-size:11px;line-height:1.45;white-space:normal}
+.dre-breakdown-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.dre-breakdown-table{min-width:680px;width:100%}
+@media(max-width:1050px){.dre-classification-panel .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.dre-classification-panel .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dre-classification-panel .metric-card{min-height:140px;padding:14px}.dre-classification-panel .metric-card>span{min-height:0;font-size:12px}.dre-classification-panel .metric-card>strong{font-size:25px}.dre-classification-panel .metric-card>small{font-size:10px}.dre-breakdown-wrap{margin:0 -2px}}
