@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FinancialRecord, formatCurrency } from "@/lib/finance";
 import { DreSourceStructure } from "@/app/components/finance/dre-source-structure";
-import { DRE_ACCOUNTS, runDreEngine, type DreOverride, type DreUnit } from "@/lib/dre-engine";
+import { DRE_ACCOUNTS, partitionDreRecords, runDreEngine, type DreOverride, type DreUnit } from "@/lib/dre-engine";
 
 interface Props { records: FinancialRecord[]; organizationId: string; isLoading?: boolean; periodLabel?: string }
 type Totals = { incoming: number; outgoing: number; result: number; count: number };
@@ -38,10 +38,11 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
  },[saved]);
  const [year,setYear]=useState("all");
  // OFX saldo snapshots are informational balances, not financial movements.
- const movementRecords=useMemo(()=>records.filter(record=>{
-  const description=(record.description||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleUpperCase("pt-BR").replace(/\\s+/g," ").trim();
-  return !/\\bSALDO (?:TOTAL )?DISPONIVEL DIA\\b|\\bSALDO (?:ANTERIOR|INICIAL|DE ABERTURA)\\b/.test(description);
- }),[records]);
+ const recordPartition=useMemo(()=>partitionDreRecords(records),[records]);
+ const movementRecords=useMemo(()=>recordPartition.valid.filter(record=>{
+  const description=record.description.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleUpperCase("pt-BR").replace(/\s+/g," ").trim();
+  return !/\bSALDO (?:TOTAL )?DISPONIVEL DIA\b|\bSALDO (?:ANTERIOR|INICIAL|DE ABERTURA)\b/.test(description);
+ }),[recordPartition]);
  const years=useMemo(()=>[...new Set(movementRecords.map(r=>r.date.slice(0,4)))].sort().reverse(),[movementRecords]);
  const rows=useMemo(()=>movementRecords.filter(r=>year==="all"||r.date.startsWith(year)),[movementRecords,year]);
  const dreEngine=useMemo(()=>runDreEngine(rows,overrides),[rows,overrides]);
@@ -51,6 +52,7 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
  const onExport=()=>exportCsv([["Natureza","Categoria","Registros","Valor BRL"],...categories.map(c=>[c.direction==="entrada"?"Entrada":"Saída",c.category,String(c.count),money(c.amount)]),[],["Resumo","Valor BRL"],["Entradas",money(totals.incoming)],["Saídas",money(totals.outgoing)],["Resultado líquido de caixa",money(totals.result)],[],["Mês","Entradas","Saídas","Resultado","Registros"],...months.map(([m,v])=>[m,money(v.incoming),money(v.outgoing),money(v.incoming-v.outgoing),String(v.count)])]);
  return <>
  <div className="page-heading"><div><div className="eyebrow">DESEMPENHO FINANCEIRO</div><h1>DRE Gerencial</h1><p>Demonstrativo preliminar calculado a partir das movimentações financeiras importadas.</p></div><button className="secondary-button" onClick={onExport} disabled={!rows.length}>Exportar CSV</button></div>
+ {recordPartition.invalidCount>0&&<div className="quality-footnote" role="alert" style={{marginBottom:14}}>Atenção: {recordPartition.invalidCount} registro(s) com data, valor, natureza ou identificador inválido foram isolados e não entraram nos cálculos da DRE. Revise a origem desses lançamentos antes de utilizá-los no fechamento.</div>}
  <section className="panel" style={{marginBottom:18}}><div className="panel-heading"><div><h2>Critérios do demonstrativo</h2><p>Base de caixa · {periodLabel}</p></div><label style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>Exercício<select className="filter-select" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Todo o período</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label></div><div className="quality-footnote">Este relatório consolida entradas e saídas bancárias pela data do movimento. Não equivale à DRE contábil por competência nem à apuração fiscal. Transferências entre contas, empréstimos, aportes, estornos e outras naturezas devem ser identificados e classificados antes de serem tratados como receita ou despesa.</div></section>
  {isLoading?<section className="panel"><div className="table-empty">Carregando movimentações financeiras…</div></section>:!rows.length?<section className="panel"><div className="table-empty"><strong>Sem movimentações financeiras para consolidar.</strong><p>Importe e valide extratos neste ambiente QA. Nenhum valor será inventado ou preenchido por dados sintéticos.</p></div></section>:<>
  <div className="metric-grid"><div className="metric-card"><span>Entradas financeiras</span><strong className="positive">{formatCurrency(totals.incoming)}</strong><small>{rows.filter(r=>r.direction==="entrada").length} registros</small></div><div className="metric-card"><span>Saídas financeiras</span><strong className="negative">{formatCurrency(totals.outgoing)}</strong><small>{rows.filter(r=>r.direction==="saída").length} registros</small></div><div className="metric-card"><span>Resultado líquido de caixa</span><strong>{formatCurrency(totals.result)}</strong><small>Entradas menos saídas</small></div><div className="metric-card"><span>Movimentações consideradas</span><strong>{totals.count}</strong><small>{rows.filter(r=>!r.category?.trim()).length} sem categoria</small></div></div>
