@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditEvent } from "@/lib/api/audit";
 import { requireOrgContext } from "@/lib/api/org-guard";
