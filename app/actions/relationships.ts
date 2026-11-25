@@ -97,7 +97,7 @@ export async function listRelationships(organizationId: string, search = "", sta
     .limit(500);
 
   if (status !== "all" && STATUSES.includes(status as typeof STATUSES[number])) query = query.eq("status", status);
-  const term = search.trim().slice(0, 80);
+  const term = search.trim().replace(/[^0-9A-Za-zÀ-ÿ _-]/g, " ").slice(0, 80);
   if (term) query = query.or(`legal_name.ilike.%${term.replace(/[,()%]/g, " ")}%,trade_name.ilike.%${term.replace(/[,()%]/g, " ")}%,document.ilike.%${term.replace(/[,()%]/g, " ")}%,email.ilike.%${term.replace(/[,()%]/g, " ")}%`);
 
   const { data, error } = await query;
