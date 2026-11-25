@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataIntakeDocumentType } from "@/lib/data-intake-validation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type DocumentItem = {
   id: string;
@@ -71,22 +72,58 @@ export function DataIntakePanel({ organizationId, canWrite }: { organizationId: 
     setError("");
     setNotice("");
     try {
-      const form = new FormData();
-      form.set("organizationId", organizationId);
-      form.set("file", file);
-      form.set("documentType", documentType);
-      form.set("description", description);
-      const response = await fetch("/api/data-intake", { method: "POST", body: form });
-      const payload = await response.json();
-      if (!response.ok) {
+      const intentResponse = await fetch("/api/data-intake/upload-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId,
+          fileName: file.name,
+          fileSize: file.size,
+          documentType,
+          description
+        })
+      });
+      const intent = await intentResponse.json();
+      if (!intentResponse.ok) {
+        const message = intent.error === "file_too_large"
+          ? "O arquivo excede o limite de 20 MiB."
+          : intent.error === "unsupported_file_type"
+            ? "Formato não suportado."
+            : intent.message || "Não foi possível iniciar o envio.";
+        throw new Error(message);
+      }
+
+      // Binary payload travels directly from the browser to private Supabase Storage.
+      // This avoids Vercel Function request-body limits and keeps file bytes out of our API.
+      const supabase = createSupabaseBrowserClient();
+      const { error: uploadError } = await supabase.storage
+        .from("rsbuild-data-intake")
+        .uploadToSignedUrl(intent.path, intent.token, file, {
+          contentType: intent.mediaType,
+          upsert: false
+        });
+      if (uploadError) throw new Error("O armazenamento privado não conseguiu receber o arquivo.");
+
+      const completeResponse = await fetch("/api/data-intake/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId,
+          path: intent.path,
+          fileName: file.name,
+          documentType,
+          description
+        })
+      });
+      const payload = await completeResponse.json();
+      if (!completeResponse.ok) {
         const messages: Record<string, string> = {
           duplicate_document: "Este arquivo já foi recebido nesta organização.",
           unsupported_or_invalid_file: payload.message || "Formato ou conteúdo de arquivo inválido.",
-          file_too_large: "O arquivo excede o limite de 20 MB.",
-          document_upload_failed: "O armazenamento não conseguiu receber o arquivo.",
-          document_registration_failed: "O arquivo foi enviado, mas não foi possível registrar seus metadados."
+          document_registration_failed: "O arquivo foi enviado, mas não foi possível registrar seus metadados.",
+          document_audit_failed: "Não foi possível concluir o registro de auditoria do documento."
         };
-        throw new Error(messages[payload.error] || payload.message || "Não foi possível enviar o documento.");
+        throw new Error(messages[payload.error] || payload.message || "Não foi possível concluir o recebimento.");
       }
       setNotice("Documento recebido e armazenado com segurança.");
       setDescription("");
