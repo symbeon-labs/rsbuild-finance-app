@@ -14,7 +14,7 @@
   <img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white" />
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white" />
-  <img alt="Tests" src="https://img.shields.io/badge/Tests-71%20passing-brightgreen" />
+  <img alt="CI" src="https://img.shields.io/badge/CI-validated-brightgreen" />
   <img alt="License" src="https://img.shields.io/badge/License-Proprietary-red" />
 </p>
 
@@ -75,7 +75,7 @@ A plataforma opera consolidando a gestão financeira, conciliação e esteira op
 | **Autenticação** | JWT em cookies HttpOnly (imune a XSS) |
 | **Segurança** | Org Guard (origin + UUID + membership), Rate Limiter, Audit Trail |
 | **Deploy** | Vercel (auto-deploy `main` → produção) |
-| **Testes** | Node.js Native Test Runner — 71 testes, 100% nos motores críticos |
+| **Testes** | Node.js Native Test Runner + pgTAP; validação automatizada via GitHub Actions |
 
 ---
 
@@ -139,6 +139,18 @@ O **RSBUILD OS** é estruturado sobre **4 Módulos Operacionais Fundamentais**, 
 - **Detecção de Acesso Negado:** Tentativas de acesso sem membership ou com alçada insuficiente são registradas (`access.denied`) antes do retorno 403 — o cliente enxerga quem tentou o quê sem autorização.
 - **RS Guardião (Governança Cognitiva):** Motor de diagnóstico da saúde operacional e conformidade com Human-in-the-Loop (HITL), avaliando integridade fiscal e processos.
 - **Painel de Governança Pericial:** Visualização centralizada dos registros de auditoria para compliance e suporte contábil.
+
+### 🗂️ Camada Transversal: Cadastro de Relacionamentos
+*Status de Maturidade: Implementado na V1 · Homologação funcional pendente*
+- **Cadastro por organização:** registro de clientes, fornecedores, transportadoras, parceiros comerciais, prestadores de serviço, distribuidores e outras relações.
+- **Dados cadastrais:** CPF/CNPJ, razão social/nome, nome fantasia, inscrição estadual, e-mail, telefone e endereço.
+- **Classificações múltiplas:** uma relação pode assumir mais de um papel no mesmo tenant.
+- **Pesquisa e ciclo de vida:** pesquisa, filtros e estados ativo, inativo ou arquivado, sem exclusão destrutiva na interface.
+- **Validação documental:** CPF, CNPJ numérico e CNPJ alfanumérico com validação de dígitos verificadores.
+- **Histórico:** autoria, horário e campos alterados registrados em eventos de auditoria.
+- **Segurança multi-tenant:** leitura limitada aos membros da organização; escrita restrita a owner/admin/operator, com RLS e autorização server-side.
+
+> **Estado de implantação:** o código da V1 foi integrado à branch principal após CI, testes de banco, verificações de sandbox e Preview aprovados. A migration da V1 ainda requer aplicação controlada no Supabase e a interface requer homologação funcional autenticada, separadamente em Mundo do Sabor QA e Hub Açaí QA. A aprovação automatizada não equivale a liberação para produção.
 
 ### 🏢 Camada Transversal: Torre de Controle Executiva
 *Status de Maturidade: Produção / Homologado*
@@ -210,7 +222,7 @@ rsbuild-finance-app/
 │   │   ├── executive/          # Torre de Controle, Holding Overview
 │   │   ├── finance/            # Visão geral, movimentações, DRE, baixas
 │   │   ├── logistics/          # Canhotos, pedidos
-│   │   ├── projects/           # Portfólio de projetos
+│   │   ├── relationships/      # Cadastro e histórico de relacionamentos\n│   │   ├── projects/           # Portfólio de projetos
 │   │   └── shell/              # Sidebar, Topbar, Workspace Modal
 │   ├── types/                  # Tipos do workspace e organização
 │   ├── workspaces/
@@ -227,9 +239,9 @@ rsbuild-finance-app/
 │   ├── permissions.ts          # Matriz RBAC (4 níveis)
 │   └── finance-persistence.ts  # Persistência financeira (centavos)
 ├── supabase/
-│   ├── migrations/             # 17 migrations versionadas (RLS em tudo)
+│   ├── migrations/             # Migrations versionadas (RLS e evolução do schema)
 │   └── tests/                  # Suítes pgTAP de isolamento e grants
-├── tests/                      # 71 testes (8 suítes)
+├── tests/                      # Testes automatizados Node.js
 ├── docs/                       # 20 documentos de arquitetura e QA
 └── public/brand/               # Assets de marca (logo, favicon)
 ```
@@ -272,13 +284,13 @@ A aplicação estará disponível em `http://localhost:3000`.
 | `npm run build` | Build de produção otimizado |
 | `npm run start` | Serve o build de produção |
 | `npm run typecheck` | Verificação TypeScript (`tsc --noEmit`) |
-| `npm test` | Roda os 71 testes unitários e de integração |
+| `npm test` | Roda os testes unitários e de integração Node.js |
 
 ### Validação Completa
 
 ```bash
 npm run typecheck  # 0 erros TypeScript
-npm test           # 71/71 testes passando
+npm test           # testes unitários e de integração
 npm run build      # Build de produção — sucesso
 ```
 
@@ -332,7 +344,7 @@ Além das suítes unitárias, o repositório mantém **testes pgTAP** em `supaba
 | [Tenant Onboarding](docs/TENANT_ONBOARDING.md) | Provisionamento de novos clientes |
 | [Portfólio de Projetos](docs/PROJECT_PORTFOLIO_ARCHITECTURE.md) | Arquitetura da Sprint Zone |
 | [Brand Assets](docs/BRAND_ASSETS.md) | Identidade visual e paleta |
-| [QA — Homologação](docs/qa/FINAL_FINANCE_HOMOLOGATION.md) | Relatório de homologação financeira |
+| [QA — Homologação](docs/qa/FINAL_FINANCE_HOMOLOGATION.md) | Relatório de homologação financeira |\n| [Cadastro de Relacionamentos — V1](docs/cadastro-relacionamentos/v1-scope.md) | Escopo, regras de domínio e segurança multi-tenant |
 
 ---
 
