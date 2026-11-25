@@ -6,8 +6,8 @@ import { formatDocument } from "@/lib/brazilian-documents";
 
 type RecordItem = {
   id: string; document: string | null; legal_name: string; trade_name: string | null;
-  relationship_types: string[]; email: string | null; phone: string | null;
-  city: string | null; state: string | null; status: string; notes: string | null;
+  relationship_types: string[]; state_registration: string | null; email: string | null; phone: string | null;
+  street_address: string | null; city: string | null; state: string | null; status: string; notes: string | null;
 };
 const TYPES = [
   ["cliente","Cliente"],["fornecedor","Fornecedor"],["transportadora","Transportadora"],
@@ -74,7 +74,7 @@ export function RelationshipsRegistry({ organizationId, environment }: { organiz
         </div>
         <div style={{display:"flex",alignItems:"center",gap:7,flexShrink:0}}>
           <span style={{fontSize:8,fontWeight:700,color:record.status==="active"?"var(--green-text,#047857)":"var(--muted)"}}>{record.status==="active"?"ATIVO":record.status==="inactive"?"INATIVO":"ARQUIVADO"}</span>
-          <button type="button" className="secondary-button" onClick={()=>setEditing({...record,legalName:record.legal_name,tradeName:record.trade_name ?? "",document:record.document ?? "",email:record.email ?? "",phone:record.phone ?? "",city:record.city ?? "",state:record.state ?? "",notes:record.notes ?? "",status:record.status} as RelationshipInput & {id:string})} style={{fontSize:9,padding:"5px 8px"}}>Editar</button>
+          <button type="button" className="secondary-button" onClick={()=>setEditing({id:record.id,legalName:record.legal_name,tradeName:record.trade_name ?? "",document:record.document ?? "",relationshipTypes:record.relationship_types,stateRegistration:record.state_registration ?? "",email:record.email ?? "",phone:record.phone ?? "",streetAddress:record.street_address ?? "",city:record.city ?? "",state:record.state ?? "",notes:record.notes ?? "",status:record.status})} style={{fontSize:9,padding:"5px 8px"}}>Editar</button>
         </div>
       </article>)}
     </div>
