@@ -112,9 +112,9 @@ create policy "Organization members read relationship events"
 create or replace function public.record_organization_relationship_event()
 returns trigger
 language plpgsql
-security invoker
+security definer
 set search_path = ''
-as $$
+as $
 declare
   v_changed text[] := '{}'::text[];
   v_event text := 'created';
@@ -156,3 +156,5 @@ comment on table public.organization_relationships is
   'V1 relationship registry, strictly scoped to one organization. Cross-tenant sharing is not implemented.';
 comment on table public.organization_relationship_events is
   'Append-only field-level audit trail; values are intentionally not duplicated here.';
+
+revoke all on function public.record_organization_relationship_event() from public, anon, authenticated;
