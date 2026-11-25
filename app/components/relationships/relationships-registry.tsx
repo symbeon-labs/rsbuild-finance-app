@@ -32,7 +32,7 @@ export function RelationshipsRegistry({ organizationId, environment }: { organiz
     setLoading(true); setError("");
     const result = await listRelationships(organizationId, search, status);
     if (result.ok) setRecords(result.records as RecordItem[]);
-    else setError(result.error);
+    else setError(result.error ?? "Não foi possível carregar os relacionamentos.");
     setLoading(false);
   },[organizationId,search,status]);
   useEffect(() => { void refresh(); },[refresh]);
@@ -47,7 +47,7 @@ export function RelationshipsRegistry({ organizationId, environment }: { organiz
     setHistoryLoading(true); setHistory([]);
     const result = await getRelationshipHistory(organizationId, recordId);
     setHistoryLoading(false);
-    if (result.ok) setHistory(result.events); else setError(result.error);
+    if (result.ok) setHistory(result.events); else setError(result.error ?? "Não foi possível carregar os relacionamentos.");
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -56,7 +56,7 @@ export function RelationshipsRegistry({ organizationId, environment }: { organiz
     setSaving(true); setError(""); setNotice("");
     const result = await saveRelationship(organizationId, editing);
     setSaving(false);
-    if (!result.ok) { setError(result.error); return; }
+    if (!result.ok) { setError(result.error ?? "Não foi possível salvar o cadastro."); return; }
     setEditing(null); setNotice("Cadastro salvo com sucesso."); await refresh();
   }
 
