@@ -13,16 +13,16 @@ on conflict (id) do nothing;
 
 insert into public.organizations (id,legal_name,display_name,slug)
 values
- ('b1111111-1111-4111-8111-111111111111','RSBUILD Grant Ltda','RSBUILD Grant','rsbuild'),
- ('b2222222-2222-4222-8222-222222222222','Mundo Grant Ltda','Mundo Grant','mundo_sabor'),
- ('b3333333-3333-4333-8333-333333333333','NoAccess Grant Ltda','NoAccess Grant','no_access')
+ ('0269fe05-0990-41a8-a28c-2919691eaf0f','RSBUILD Grant Ltda','RSBUILD Grant','rsbuild'),
+ ('c5356414-adce-4fdc-941b-15cfe26b991e','Mundo Grant Ltda','Mundo Grant','mundo_sabor'),
+ ('44444444-4444-4444-8444-444444444444','NoAccess Grant Ltda','NoAccess Grant','no_access')
 on conflict (id) do nothing;
 
 insert into public.organization_memberships (organization_id,user_id,role)
 values
- ('b1111111-1111-4111-8111-111111111111','a1111111-1111-4111-8111-111111111111','owner'),
- ('b2222222-2222-4222-8222-222222222222','a2222222-2222-4222-8222-222222222222','viewer'),
- ('b3333333-3333-4333-8333-333333333333','a3333333-3333-4333-8333-333333333333','viewer')
+ ('0269fe05-0990-41a8-a28c-2919691eaf0f','a1111111-1111-4111-8111-111111111111','owner'),
+ ('c5356414-adce-4fdc-941b-15cfe26b991e','a2222222-2222-4222-8222-222222222222','viewer'),
+ ('44444444-4444-4444-8444-444444444444','a3333333-3333-4333-8333-333333333333','viewer')
 on conflict do nothing;
 
 -- Dois projetos geridos pela RSBUILD para a mesma org cliente (mundo_sabor).
@@ -53,13 +53,13 @@ select lives_ok($sql$insert into public.project_memberships (project_id,managing
   select id,managing_organization_id,'a3333333-3333-4333-8333-333333333333','viewer'
   from public.projects where project_key='grant-user-test'$sql$,'RSBUILD owner grants individual project access');
 select lives_ok($sql$insert into public.project_organization_access (project_id,managing_organization_id,client_organization_id,access_level)
-  select id,managing_organization_id,'b2222222-2222-4222-8222-222222222222','viewer'
+  select id,managing_organization_id,'c5356414-adce-4fdc-941b-15cfe26b991e','viewer'
   from public.projects where project_key='grant-org-test'$sql$,'RSBUILD owner grants client organization access');
 select throws_ok($sql$insert into public.project_memberships (project_id,managing_organization_id,user_id,access_level)
   select id,managing_organization_id,'a2222222-2222-4222-8222-222222222222','admin'
   from public.projects where project_key='grant-user-test'$sql$,'23514',null,'invalid project access level is rejected');
 select throws_ok($sql$insert into public.project_organization_access (project_id,managing_organization_id,client_organization_id,access_level)
-  select id,managing_organization_id,'b3333333-3333-4333-8333-333333333333','viewer'
+  select id,managing_organization_id,'44444444-4444-4444-8444-444444444444','viewer'
   from public.projects where project_key='grant-org-test'$sql$,'23503',null,'organization grant to non-client org violates composite FK');
 reset role;
 
@@ -80,7 +80,7 @@ select throws_ok($sql$insert into public.project_memberships (project_id,managin
   select id,managing_organization_id,'a2222222-2222-4222-8222-222222222222','viewer'
   from public.projects where project_key='grant-org-test'$sql$,'42501',null,'client member cannot grant project access');
 select throws_ok($sql$insert into public.project_organization_access (project_id,managing_organization_id,client_organization_id,access_level)
-  select id,managing_organization_id,'b2222222-2222-4222-8222-222222222222','viewer'
+  select id,managing_organization_id,'c5356414-adce-4fdc-941b-15cfe26b991e','viewer'
   from public.projects where project_key='grant-org-test'$sql$,'42501',null,'client member cannot grant organization access');
 select is((select count(*)::int from public.project_organization_access),1,'client member reads own org grant');
 reset role;
@@ -93,7 +93,7 @@ select lives_ok($sql$delete from public.project_memberships
     and user_id='a3333333-3333-4333-8333-333333333333'$sql$,'RSBUILD owner revokes individual grant');
 select lives_ok($sql$delete from public.project_organization_access
   where project_id=(select id from public.projects where project_key='grant-org-test')
-    and client_organization_id='b2222222-2222-4222-8222-222222222222'$sql$,'RSBUILD owner revokes organization grant');
+    and client_organization_id='c5356414-adce-4fdc-941b-15cfe26b991e'$sql$,'RSBUILD owner revokes organization grant');
 select is((select count(*)::int from public.project_memberships),0,'no user grants remain');
 select is((select count(*)::int from public.project_organization_access),0,'no organization grants remain');
 reset role;
