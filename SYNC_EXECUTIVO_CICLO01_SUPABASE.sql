@@ -15,12 +15,12 @@ begin
   -- 1. IDENTIFICAR O PROJETO MUNDO DO SABOR
   select id into v_ms_id
   from public.projects
-  where project_key in ('mundo-do-sabor', 'mundo_sabor')
+  where id = 'df440f97-3b47-4932-9f27-129b642762d9'::uuid
+     or project_key in ('mundo-do-sabor', 'mundo_sabor')
   order by created_at asc
   limit 1;
 
   if v_ms_id is null then
-    raise notice 'Projeto mundo-do-sabor não encontrado pela chave. Buscando por nome...';
     select id into v_ms_id from public.projects where name ilike '%Mundo do Sabor%' limit 1;
   end if;
 
@@ -34,17 +34,11 @@ begin
   select id into v_sprint_a3 from public.project_sprints where project_id = v_ms_id and sprint_number = 3;
   select id into v_sprint_a4 from public.project_sprints where project_id = v_ms_id and sprint_number = 4;
 
-  -- 3. RESOLVER DEPENDÊNCIAS DE INSUMOS E DECISÃO
-  -- Status válidos em project_dependencies: 'open', 'waiting', 'blocked', 'received', 'waived'
+  -- 3. RESOLVER TODAS AS DEPENDÊNCIAS DE INSUMOS E DECISÃO
+  -- Constraint: status in ('open', 'waiting', 'blocked', 'received', 'waived')
   update public.project_dependencies
   set status = 'received', updated_at = now()
-  where project_id = v_ms_id and (
-    title ilike '%Extrato bancário%' or
-    title ilike '%contas bancárias%' or
-    dependency_type in ('client_input', 'decision') or
-    title ilike '%aprovação%' or
-    title ilike '%diretoria%'
-  );
+  where project_id = v_ms_id;
 
   -- 4. SPRINT A1: CONCLUIR TODAS AS TAREFAS E ATUALIZAR STATUS
   if v_sprint_a1 is not null then
@@ -57,7 +51,7 @@ begin
     where id = v_sprint_a1;
   end if;
 
-  -- 5. SPRINT A2: INSERIR / CONCLUIR TAREFAS E ATUALIZAR STATUS
+  -- 5. SPRINT A2: CONCLUIR TAREFAS E ATUALIZAR STATUS
   if v_sprint_a2 is not null then
     update public.project_tasks
     set status = 'done', updated_at = now()
