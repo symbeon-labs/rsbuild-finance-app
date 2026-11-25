@@ -668,7 +668,7 @@ export function WorkspaceModal({
                 organizationId={ORG_ID_BY_SLUG[selectedOrg] ?? currentOrgRealId ?? ""}
                 environment={selectedEnvironment}
               />
-            )}}
+            )}
           </div>
 
           {/* Rodapé Fixo — Botões de Ação Sempre Visíveis */}
