@@ -1191,6 +1191,7 @@ export default function OperationalWorkspace({
           {section === "importacoes" && (
             <ImportacoesView
               organizationId={organizationId}
+              canWrite={["owner", "admin", "operator"].includes(membershipRole)}
               fileName={fileName}
               detectedColumns={detectedColumns}
               pendingImport={pendingImport}
