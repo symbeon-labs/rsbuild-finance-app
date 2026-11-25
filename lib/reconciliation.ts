@@ -416,40 +416,111 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
     if (rows.length < 2) return { titles: [], errors: ["Planilha sem registros."] };
 
     let headerIdx = -1;
-    // Varredura estendida até 25 linhas para suportar relatórios Omie com metadados e logos institucionais no topo
-    for (let i = 0; i < Math.min(25, rows.length); i++) {
-      const rowStr = (rows[i] || []).join(" ").toLowerCase();
-      const hasDocOrEntity = rowStr.includes("nota") || rowStr.includes("documento") || rowStr.includes("cliente") ||
-                             rowStr.includes("fornecedor") || rowStr.includes("beneficiario") || rowStr.includes("favorecido") ||
-                             rowStr.includes("sacado") || rowStr.includes("numero") || rowStr.includes("titulo") || rowStr.includes("parcela");
-      const hasValOrDate = rowStr.includes("vencimento") || rowStr.includes("valor") || rowStr.includes("saldo");
-      if (hasDocOrEntity && hasValOrDate) {
-        headerIdx = i;
-        break;
+    // Varredura estendida até 30 linhas para suportar relatórios Omie com metadados, logos e filtros no topo.
+    // Dois critérios alternativos para máxima compatibilidade com layouts de Contas a Receber e a Pagar.
+    for (let i = 0; i < Math.min(30, rows.length); i++) {
+      const cells = (rows[i] || []).map((c: unknown) => cleanString(String(c ?? "")));
+      const rowStr = cells.join(" ");
+
+      // Critério A: linha com coluna de entidade (cliente/fornecedor/razão/nome) E valor/vencimento
+      const hasEntity = cells.some((c) =>
+        c.includes("cliente") || c.includes("fornecedor") || c.includes("sacado") ||
+        c.includes("favorecido") || c.includes("beneficiario") || c.includes("razao") ||
+        c.includes("razao social") || c.includes("nome") || c.includes("credor") ||
+        c.includes("devedor") || c.includes("contraparte")
+      );
+      const hasDoc = cells.some((c) =>
+        c.includes("documento") || c.includes("nota") || c.includes("nf") ||
+        c.includes("titulo") || c.includes("parcela") || c.includes("duplicata") ||
+        c.includes("numero") || c.includes("cod") || c.includes("lancamento") ||
+        c.includes("pedido")
+      );
+      const hasValue = cells.some((c) => c.includes("valor") || c.includes("saldo") || c.includes("montante"));
+      const hasDate = cells.some((c) =>
+        c.includes("vencimento") || c.includes("venc") ||
+        c.includes("data") || c.includes("prazo")
+      );
+
+      // Aceita se tiver (entidade OU documento) E (valor OU data)
+      if ((hasEntity || hasDoc) && (hasValue || hasDate)) {
+        // Rejeita linhas de dados (células numéricas dominantes) e linhas com poucas colunas
+        const nonEmptyCells = cells.filter((c) => c.length > 0);
+        const textCells = cells.filter((c) => c.length > 0 && isNaN(Number(c.replace(/[,./\-]/g, ""))));
+        if (nonEmptyCells.length >= 3 && textCells.length >= 2) {
+          headerIdx = i;
+          break;
+        }
+      }
+      // Critério B: fallback — linha que contém ao menos 4 palavras-chave de cabeçalho típico do Omie
+      const omieKeywords = ["valor", "vencimento", "venc", "data", "razao", "nome", "fornecedor",
+        "cliente", "documento", "titulo", "parcela", "saldo", "pagar", "receber", "cod", "lancamento"];
+      const matchCount = omieKeywords.filter((kw) => rowStr.includes(kw)).length;
+      if (matchCount >= 3) {
+        const nonEmptyCells = cells.filter((c) => c.length > 0);
+        const textCells = cells.filter((c) => c.length > 0 && isNaN(Number(c.replace(/[,./\-]/g, ""))));
+        if (nonEmptyCells.length >= 3 && textCells.length >= 2) {
+          headerIdx = i;
+          break;
+        }
       }
     }
 
     if (headerIdx === -1) {
-      return { titles: [], errors: ["Não foi possível identificar o cabeçalho de Títulos na planilha. Certifique-se de que o arquivo contém colunas de Documento/Cliente/Fornecedor, Vencimento e Valor."] };
+      return { titles: [], errors: ["Não foi possível identificar o cabeçalho na planilha. Certifique-se de que o arquivo exportado pelo Omie contém colunas de Documento/Título/Código, Cliente/Fornecedor/Razão Social, Vencimento e Valor."] };
     }
 
     const header = (rows[headerIdx] || []).map((h) => cleanString(String(h || "")));
-    const docIdx = header.findIndex((h) => h.includes("documento") || h.includes("nf") || h.includes("nota fiscal") || h.includes("numero") || h.includes("titulo") || h.includes("parcela") || h.includes("duplicata"));
-    const clientIdx = header.findIndex((h) => (h.includes("cliente") || h.includes("sacado") || h.includes("fornecedor") || h.includes("favorecido") || h.includes("beneficiario")) && !h.includes("minha empresa"));
-    const fallbackClientIdx = clientIdx >= 0 ? clientIdx : header.findIndex((h) => (h.includes("razao") || h.includes("nome")) && !h.includes("minha empresa"));
+    // Mapeamento de índices com suporte a todos os layouts do Omie Contas a Receber e Contas a Pagar
+    const docIdx = header.findIndex((h) =>
+      h.includes("documento") || h.includes("nota fiscal") || h.includes("nf") ||
+      h.includes("titulo") || h.includes("parcela") || h.includes("duplicata") ||
+      h === "numero" || h.includes("num. titulo") || h.includes("nr titulo") ||
+      h.includes("nr. titulo") || h.includes("cod. lancamento") || h.includes("lancamento") ||
+      (h.includes("cod") && !h.includes("conta") && !h.includes("categoria"))
+    );
+    const clientIdx = header.findIndex((h) =>
+      (h.includes("cliente") || h.includes("sacado") || h.includes("fornecedor") ||
+      h.includes("favorecido") || h.includes("beneficiario") || h.includes("credor") ||
+      h.includes("devedor") || h.includes("contraparte")) && !h.includes("minha empresa")
+    );
+    const fallbackClientIdx = clientIdx >= 0 ? clientIdx : header.findIndex((h) =>
+      (h.includes("razao social") || h.includes("razao") || h === "nome" || h.includes("nome fantasia")) &&
+      !h.includes("minha empresa")
+    );
     const effectiveClientIdx = fallbackClientIdx >= 0 ? fallbackClientIdx : clientIdx;
-    const valueIdx = header.findIndex((h) => h.includes("valor da conta") || h.includes("valor total") || h.includes("valor liquido") || h.includes("valor"));
-    const dueDateIdx = header.findIndex((h) => h.includes("vencimento"));
-    const emissionDateIdx = header.findIndex((h) => h.includes("emissao") || h.includes("emiss"));
-    const settlementDateIdx = header.findIndex((h) => h.includes("pagto") || h.includes("recbto") || h.includes("liquidacao"));
-    const accountIdx = header.findIndex((h) => h.includes("conta corrente") || h.includes("conta") || h.includes("banco"));
-    const paidIdx = header.findIndex((h) => h.includes("pago ou recebido") || h.includes("pago") || h.includes("recebido"));
-    const balanceIdx = header.findIndex((h) => h.includes("a pagar ou receber") || h.includes("saldo"));
+    // Valor: prioridade a colunas específicas sobre genéricas para evitar pegar totais parciais
+    const valueIdx = header.findIndex((h) =>
+      h.includes("val. doc") || h.includes("val doc") || h === "valor doc" ||
+      h.includes("valor do documento") || h.includes("valor da conta") ||
+      h.includes("valor total") || h.includes("valor liquido") || h.includes("valor bruto") ||
+      h.includes("valor original") || (h === "valor" )
+    );
+    const valueFallbackIdx = valueIdx >= 0 ? valueIdx : header.findIndex((h) => h.includes("valor") || h.includes("montante"));
+    const effectiveValueIdx = valueFallbackIdx;
+    const dueDateIdx = header.findIndex((h) =>
+      h.includes("vencimento") || h.includes("dt venc") || h.includes("data venc") ||
+      h.includes("dt. venc") || h === "venc" || h.includes("prazo")
+    );
+    const emissionDateIdx = header.findIndex((h) => h.includes("emissao") || h.includes("emiss") || h.includes("lancamento") && h.includes("data"));
+    const settlementDateIdx = header.findIndex((h) =>
+      h.includes("pagto") || h.includes("recbto") || h.includes("liquidacao") ||
+      h.includes("pagamento") || h.includes("dt pag") || h.includes("data pag") ||
+      h.includes("data rec") || h.includes("baixa")
+    );
+    const accountIdx = header.findIndex((h) =>
+      h.includes("conta corrente") || (h.includes("conta") && !h.includes("categoria") && !h.includes("contabil")) ||
+      h.includes("banco") || h.includes("cc ")
+    );
+    const paidIdx = header.findIndex((h) => h.includes("pago ou recebido") || h.includes("val pago") || h === "pago" || h === "recebido" || h.includes("val. pago"));
+    const balanceIdx = header.findIndex((h) => h.includes("a pagar ou receber") || h.includes("saldo") || h.includes("val. saldo") || h.includes("valor saldo"));
     const discountIdx = header.findIndex((h) => h.includes("desconto"));
     const interestIdx = header.findIndex((h) => h.includes("juros"));
     const fineIdx = header.findIndex((h) => h.includes("multa"));
 
-    const isPayable = sheetName.toLowerCase().includes("pagar") || header.some((h) => h.includes("fornecedor") || h.includes("a pagar"));
+    // Detecta Contas a Pagar: nome da aba, header com "fornecedor", ou ausência de coluna "cliente" com presença de "razao social"/"credor"
+    const isPayable = sheetName.toLowerCase().includes("pagar") ||
+      header.some((h) => h.includes("fornecedor") || h.includes("a pagar") || h.includes("credor")) ||
+      (clientIdx === -1 && fallbackClientIdx >= 0 && !sheetName.toLowerCase().includes("receber"));
 
     const titles: ReceivableTitle[] = [];
     const errors: string[] = [];
@@ -464,7 +535,7 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
 
       if (customer.toLowerCase().includes("total") || (!customer && rawDoc.toLowerCase().includes("total"))) continue;
 
-      const amount = valueIdx >= 0 ? parseExcelNumber(r[valueIdx]) : 0;
+      const amount = effectiveValueIdx >= 0 ? parseExcelNumber(r[effectiveValueIdx]) : 0;
       const dueDate = dueDateIdx >= 0 ? parseExcelDate(r[dueDateIdx]) : null;
       const issueDate = emissionDateIdx >= 0 ? parseExcelDate(r[emissionDateIdx]) || undefined : undefined;
       const settlementDate = settlementDateIdx >= 0 ? parseExcelDate(r[settlementDateIdx]) || undefined : undefined;
