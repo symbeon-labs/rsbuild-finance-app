@@ -677,8 +677,9 @@ export default function OperationalWorkspace({
   async function handleImportTitlesFileData(file: File) {
     try {
       const result = await parseReceivablesFile(file);
-      if (result.errors.length > 0 && result.titles.length === 0) {
-        setNotice(`Aviso: ${result.errors[0]}`);
+      if (result.titles.length === 0) {
+        const msg = result.errors.length > 0 ? result.errors[0] : "Nenhum título válido encontrado na planilha. Verifique se o arquivo contém colunas de Documento, Cliente/Fornecedor, Vencimento e Valor.";
+        setNotice(`Aviso: ${msg}`);
         return;
       }
       const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, {
@@ -687,7 +688,14 @@ export default function OperationalWorkspace({
         body: JSON.stringify({ titles: result.titles })
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Falha ao importar títulos.");
+      if (!response.ok) {
+        const friendlyErrors: Record<string, string> = {
+          invalid_titles_payload: "Nenhum título válido para importar — verifique se a planilha contém Documento, Cliente/Fornecedor, Vencimento e Valor preenchidos.",
+          titles_import_failed: "Falha ao salvar os títulos no banco de dados. Tente novamente.",
+          capability_not_entitled: "Sua organização não possui licença ativa para importação de títulos.",
+        };
+        throw new Error(friendlyErrors[payload.error] || payload.detail || payload.error || "Falha ao importar títulos.");
+      }
       setNotice(`${payload.insertedCount ?? result.titles.length} título(s) importado(s) com sucesso.`);
       const refresh = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
       const refreshed = await refresh.json();

@@ -625,11 +625,12 @@ export default function EnterpriseWorkspace({
   async function handleImportTitlesFileData(file: File) {
     try {
       const result = await parseReceivablesFile(file);
-      if (result.errors.length > 0 && result.titles.length === 0) {
-        setNotice(`Aviso: ${result.errors[0]}`);
+      if (result.titles.length === 0) {
+        const msg = result.errors.length > 0 ? result.errors[0] : "Nenhum título válido encontrado na planilha. Verifique se o arquivo contém colunas de Documento, Cliente/Fornecedor, Vencimento e Valor.";
+        setNotice(`Aviso: ${msg}`);
       } else {
         setTitles((curr) => [...result.titles, ...curr]);
-        setNotice(`${result.titles.length} título(s) a receber carregado(s) com sucesso.`);
+        setNotice(`${result.titles.length} título(s) importado(s) com sucesso.`);
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha ao importar títulos.");
