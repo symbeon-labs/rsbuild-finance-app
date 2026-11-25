@@ -31,13 +31,13 @@ function deny(status: number, error: string): GuardResult {
  * - exige sessão autenticada
  * - valida UUID da organização
  * - exige membership e, opcionalmente, um dos papéis permitidos
- * - quando solicitado, valida entitlement de capacidade e ambiente no banco
+ * - quando solicitado, valida entitlement de capacidade (ou lista de capacidades alternativas) e ambiente no banco
  */
 export async function requireOrgContext(
   request: Request,
   organizationId: string,
   allowedRoles: OrgRole[] = ["owner", "admin", "operator", "viewer"],
-  requiredCapability?: CapabilityKey
+  requiredCapability?: CapabilityKey | CapabilityKey[]
 ): Promise<GuardResult> {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) {
@@ -94,12 +94,13 @@ export async function requireOrgContext(
   }
 
   if (requiredCapability) {
+    const requiredList = Array.isArray(requiredCapability) ? requiredCapability : [requiredCapability];
     // The institutional RSBUILD audit trail is a core governance surface,
     // not a customer-licensed capability. Keep it available to institutional
     // owners/admins while customer tenants remain subject to explicit audit
     // entitlements below.
     const isInternalAuditAdministrator =
-      requiredCapability === "audit" &&
+      requiredList.includes("audit") &&
       organizationSlug === "rsbuild" &&
       (role === "owner" || role === "admin");
 
@@ -112,32 +113,34 @@ export async function requireOrgContext(
     // Sandbox routes use a separate schema and dedicated entitlement RPC.
     const environment: CapabilityEnvironment = resolveOrganizationEnvironment(organizationSlug);
 
-    const { data: entitlement, error: entitlementError } = await supabase
+    const { data: entitlements, error: entitlementError } = await supabase
       .from("organization_capability_licenses")
-      .select("license_status, operational_status, entitled_environments, expires_at")
+      .select("capability_key, license_status, operational_status, entitled_environments, expires_at")
       .eq("organization_id", organizationId)
-      .eq("capability_key", requiredCapability)
-      .maybeSingle();
+      .in("capability_key", requiredList);
 
     if (entitlementError) {
       console.error(JSON.stringify({
         event: "capability_entitlement_lookup_failed",
         organizationId,
-        capability: requiredCapability,
+        capabilities: requiredList,
         code: entitlementError.code
       }));
       return deny(503, "capability_entitlement_unavailable");
     }
 
-    const expiry = entitlement?.expires_at ? Date.parse(entitlement.expires_at) : null;
-    const validUntil = expiry === null || (Number.isFinite(expiry) && expiry > Date.now());
-    const allowed = entitlement?.license_status === "granted"
-      && entitlement.operational_status === "active"
-      && Array.isArray(entitlement.entitled_environments)
-      && entitlement.entitled_environments.includes(environment)
-      && validUntil;
+    const now = Date.now();
+    const hasAnyValid = (entitlements ?? []).some((entitlement) => {
+      const expiry = entitlement?.expires_at ? Date.parse(entitlement.expires_at) : null;
+      const validUntil = expiry === null || (Number.isFinite(expiry) && expiry > now);
+      return entitlement?.license_status === "granted"
+        && entitlement.operational_status === "active"
+        && Array.isArray(entitlement.entitled_environments)
+        && entitlement.entitled_environments.includes(environment)
+        && validUntil;
+    });
 
-    if (!allowed) {
+    if (!hasAnyValid) {
       await recordAuditEvent({
         organizationId,
         actorId: user.id,
@@ -147,7 +150,7 @@ export async function requireOrgContext(
         entityId: null,
         metadata: {
           reason: "capability_not_entitled",
-          capability: requiredCapability,
+          capabilities: requiredList,
           environment,
           path: pathname,
           method: request.method

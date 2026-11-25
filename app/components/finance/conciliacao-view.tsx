@@ -28,6 +28,7 @@ interface ConciliacaoViewProps {
   onRecordsUpdated: (records: FinancialRecord[]) => void;
   onImportOmieRecords?: (records: OmieRecord[]) => void;
   onImportOmieRecordsPersist?: (records: OmieRecord[]) => Promise<void>;
+  onImportTitlesFile?: (file: File) => void;
   onReconciliationDecision?: (recordId: string, decisionType: "manual_match" | "unmatch", counterpartLabel?: string, justification?: string) => void;
   initialSelectedBankIds?: string[];
 }
@@ -40,6 +41,7 @@ export function ConciliacaoView({
   onRecordsUpdated,
   onImportOmieRecords,
   onImportOmieRecordsPersist,
+  onImportTitlesFile,
   onReconciliationDecision,
   initialSelectedBankIds = []
 }: ConciliacaoViewProps) {
@@ -51,6 +53,7 @@ export function ConciliacaoView({
   const [omieImportFeedback, setOmieImportFeedback] = useState("");
   const [batchQueue, setBatchQueue] = useState<string[]>([]);
   const omieInputRef = useRef<HTMLInputElement>(null);
+  const titlesInputRef = useRef<HTMLInputElement>(null);
   const canMatch = canPerformManualMatch(role);
   const canApproveDiscrepancy = canApproveDiscrepantMatch(role);
   const roleMeta = getRoleMetadata(role);
@@ -184,30 +187,57 @@ export function ConciliacaoView({
           <h1>Conciliação Bancária Multicontas</h1>
           <p>Motor autônomo de conferência de extratos bancários contra lançamentos e títulos do Omie ERP com trilha de auditoria imutável.</p>
         </div>
-        {(onImportOmieRecords || onImportOmieRecordsPersist) && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-            <input
-              ref={omieInputRef}
-              type="file"
-              accept=".csv,.txt,text/csv"
-              className="hidden-input"
-              onChange={handleOmieFile}
-            />
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => omieInputRef.current?.click()}
-              title="Importa exportação de movimentos do Omie (CSV) e persiste como novo snapshot no servidor."
-            >
-              Importar lançamentos Omie (CSV)
-            </button>
-            {omieImportFeedback && (
-              <span style={{ fontSize: "11px", color: "var(--muted)", maxWidth: "320px", textAlign: "right" }}>
-                {omieImportFeedback}
-              </span>
-            )}
-          </div>
-        )}
+        <div style={{ display: "flex", gap: "8px", alignItems: "flex-start", flexWrap: "wrap" }}>
+          {onImportTitlesFile && (
+            <div>
+              <input
+                ref={titlesInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onImportTitlesFile(file);
+                  if (e.target) e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => titlesInputRef.current?.click()}
+                title="Importa títulos a receber ou a pagar do Omie ou ERP (.xlsx ou .csv)"
+                style={{ fontWeight: 600 }}
+              >
+                ＋ Importar Títulos (Receber/Pagar)
+              </button>
+            </div>
+          )}
+
+          {(onImportOmieRecords || onImportOmieRecordsPersist) && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+              <input
+                ref={omieInputRef}
+                type="file"
+                accept=".csv,.txt,text/csv"
+                className="hidden-input"
+                onChange={handleOmieFile}
+              />
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => omieInputRef.current?.click()}
+                title="Importa exportação de movimentos do Omie (CSV) e persiste como novo snapshot no servidor."
+              >
+                Importar lançamentos Omie (CSV)
+              </button>
+              {omieImportFeedback && (
+                <span style={{ fontSize: "11px", color: "var(--muted)", maxWidth: "320px", textAlign: "right" }}>
+                  {omieImportFeedback}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="tabs">

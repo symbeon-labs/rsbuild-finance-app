@@ -142,3 +142,35 @@ UPDATE public.projects
 SET status = 'completed', updated_at = now()
 WHERE id = 'df440f97-3b47-4932-9f27-129b642762d9'::uuid 
    OR project_key IN ('mundo-do-sabor', 'mundo_sabor');
+
+-- 9. PROVISIONAMENTO UNIVERSAL DE CAPABILITIES (QA E PRODUÇÃO)
+-- Garante que Mundo do Sabor e Hub Açaí tenham permissões para subir títulos, reconciliar e operar
+INSERT INTO public.organization_capability_licenses (
+  organization_id, capability_key, license_status, operational_status, entitled_environments, notes, granted_at, updated_at
+)
+SELECT 
+  o.id,
+  c.capability_key,
+  'granted'::public.capability_license_status,
+  'active'::public.capability_operational_status,
+  CASE 
+    WHEN o.slug LIKE '%_qa' THEN ARRAY['qa', 'sandbox']::text[]
+    ELSE ARRAY['production', 'qa', 'sandbox']::text[]
+  END,
+  'Concessão homologada de capabilities RSBUILD OS',
+  now(),
+  now()
+FROM public.organizations o
+CROSS JOIN (
+  VALUES ('finance'), ('reconciliation'), ('logistics'), ('audit')
+) AS c(capability_key)
+WHERE o.slug IN ('mundo_sabor_qa', 'hub_acai_qa', 'mundo_sabor', 'mundo-do-sabor', 'hub_acai', 'hub-acai')
+ON CONFLICT (organization_id, capability_key) DO UPDATE
+SET license_status = 'granted'::public.capability_license_status,
+    operational_status = 'active'::public.capability_operational_status,
+    entitled_environments = CASE 
+      WHEN EXCLUDED.organization_id = organization_capability_licenses.organization_id AND (SELECT slug FROM public.organizations WHERE id = EXCLUDED.organization_id) LIKE '%_qa' 
+      THEN ARRAY['qa', 'sandbox']::text[]
+      ELSE ARRAY['production', 'qa', 'sandbox']::text[]
+    END,
+    updated_at = now();

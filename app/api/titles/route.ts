@@ -8,7 +8,7 @@ const MAX_TITLES = 5000;
 
 export async function GET(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], "finance");
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator", "viewer"], ["finance", "reconciliation"]);
   if (!guard.ok) return guard.response;
   const { supabase } = guard.ctx;
 
@@ -51,7 +51,7 @@ type TitleInput = {
 
 export async function POST(request: Request) {
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
-  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], "finance");
+  const guard = await requireOrgContext(request, organizationId, ["owner", "admin", "operator"], ["finance", "reconciliation"]);
   if (!guard.ok) return guard.response;
   const { supabase, userId, userEmail } = guard.ctx;
 

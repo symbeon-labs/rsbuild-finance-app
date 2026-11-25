@@ -26,7 +26,7 @@ interface BaixasViewProps {
   isSyncingOmie?: boolean;
 }
 
-type FilterTab = "todos" | "prontos" | "divergentes" | "atraso" | "a_vencer" | "baixados";
+type FilterTab = "todos" | "prontos" | "divergentes" | "atraso" | "a_vencer" | "baixados" | "a_receber" | "a_pagar";
 
 export function BaixasView({
   titles,
@@ -121,6 +121,8 @@ export function BaixasView({
       if (filterTab === "atraso" && !isOverdue) return false;
       if (filterTab === "a_vencer" && !isFuture) return false;
       if (filterTab === "baixados" && !isSettled) return false;
+      if (filterTab === "a_receber" && t.category === "payable") return false;
+      if (filterTab === "a_pagar" && t.category !== "payable") return false;
 
       // Filtro da busca
       if (searchQuery.trim()) {
@@ -187,9 +189,10 @@ export function BaixasView({
           <button
             className="secondary-button"
             onClick={() => titlesInputRef.current?.click()}
-            title="Importa planilha do Omie (.xlsx ou .csv)"
+            title="Importa planilha de títulos do Omie ou ERP (.xlsx ou .csv) — suporta contas a receber e contas a pagar"
+            style={{ fontWeight: 600 }}
           >
-            ＋ Importar Títulos (.xlsx / .csv)
+            ＋ Importar Títulos (Receber/Pagar)
           </button>
 
           {matchStats.ready.length > 0 && (
@@ -288,6 +291,18 @@ export function BaixasView({
               onClick={() => setFilterTab("todos")}
             >
               Todos ({titles.length})
+            </button>
+            <button
+              className={filterTab === "a_receber" ? "tab-button active" : "tab-button"}
+              onClick={() => setFilterTab("a_receber")}
+            >
+              📥 A Receber ({titles.filter((t) => t.category !== "payable").length})
+            </button>
+            <button
+              className={filterTab === "a_pagar" ? "tab-button active" : "tab-button"}
+              onClick={() => setFilterTab("a_pagar")}
+            >
+              📤 A Pagar ({titles.filter((t) => t.category === "payable").length})
             </button>
             <button
               className={filterTab === "prontos" ? "tab-button active" : "tab-button"}

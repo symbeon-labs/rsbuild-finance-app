@@ -304,20 +304,21 @@ export function buildOmieReceiptPayload(item: BatchSettlementItem, codCcNumeric?
 }
 
 /**
- * Parser de Títulos a Receber (CSV exportado do Omie ou planilha de controle).
+ * Parser de Títulos a Receber e a Pagar (CSV exportado do Omie ou planilha de controle).
  */
 export function parseReceivablesCsv(text: string): { titles: ReceivableTitle[]; errors: string[] } {
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (!lines.length) return { titles: [], errors: ["O arquivo de títulos a receber está vazio."] };
+  if (!lines.length) return { titles: [], errors: ["O arquivo de títulos está vazio."] };
 
   const delimiter = lines[0].includes(";") ? ";" : ",";
   const header = lines[0].split(delimiter).map((h) => cleanString(h));
 
-  const docIdx = header.findIndex((h) => h.includes("documento") || h.includes("nf") || h.includes("numero") || h.includes("titulo"));
-  const clientIdx = header.findIndex((h) => h.includes("cliente") || h.includes("razao") || h.includes("sacado"));
+  const docIdx = header.findIndex((h) => h.includes("documento") || h.includes("nf") || h.includes("nota fiscal") || h.includes("numero") || h.includes("titulo") || h.includes("parcela") || h.includes("duplicata"));
+  const clientIdx = header.findIndex((h) => (h.includes("cliente") || h.includes("razao") || h.includes("sacado") || h.includes("fornecedor") || h.includes("favorecido") || h.includes("beneficiario")) && !h.includes("minha empresa"));
   const valueIdx = header.findIndex((h) => h.includes("valor") || h.includes("total") || h.includes("saldo"));
   const dateIdx = header.findIndex((h) => h.includes("vencimento") || h.includes("data"));
   const accountIdx = header.findIndex((h) => h.includes("conta") || h.includes("banco"));
+  const isPayable = header.some((h) => h.includes("fornecedor") || h.includes("a pagar") || h.includes("pagar"));
 
   if (valueIdx === -1 || dateIdx === -1) {
     return {
@@ -334,7 +335,7 @@ export function parseReceivablesCsv(text: string): { titles: ReceivableTitle[]; 
     if (cols.length < 2) continue;
 
     const rawDoc = docIdx >= 0 ? cols[docIdx] : `TIT-${i}`;
-    const customer = clientIdx >= 0 && cols[clientIdx] ? cols[clientIdx] : "Cliente Não Identificado";
+    const customer = clientIdx >= 0 && cols[clientIdx] ? cols[clientIdx] : (isPayable ? "Fornecedor Não Identificado" : "Cliente Não Identificado");
     const rawVal = cols[valueIdx].replace(/\./g, "").replace(",", ".");
     const amount = Number(rawVal);
 
@@ -359,6 +360,7 @@ export function parseReceivablesCsv(text: string): { titles: ReceivableTitle[]; 
       amount: Math.abs(Math.round(amount * 100) / 100),
       dueDate,
       bankAccount: accountIdx >= 0 ? cols[accountIdx] : undefined,
+      category: isPayable ? "payable" : "receivable",
       status: "pendente"
     });
   }
@@ -401,12 +403,12 @@ function parseExcelNumber(val: unknown): number {
 }
 
 /**
- * Parser inteligente de Títulos a Receber a partir de planilhas Excel (.xlsx, .xls) exportadas do Omie.
+ * Parser inteligente de Títulos a Receber e a Pagar a partir de planilhas Excel (.xlsx, .xls) exportadas do Omie.
  */
 export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { titles: ReceivableTitle[]; errors: string[] } {
   try {
     const wb = XLSX.read(buffer, { type: "array" });
-    const sheetName = wb.SheetNames[0];
+    const sheetName = wb.SheetNames[0] || "";
     const sheet = wb.Sheets[sheetName];
     if (!sheet) return { titles: [], errors: ["Planilha Excel vazia ou ilegível."] };
 
@@ -414,25 +416,29 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
     if (rows.length < 2) return { titles: [], errors: ["Planilha sem registros."] };
 
     let headerIdx = -1;
-    for (let i = 0; i < Math.min(5, rows.length); i++) {
+    // Varredura estendida até 25 linhas para suportar relatórios Omie com metadados e logos institucionais no topo
+    for (let i = 0; i < Math.min(25, rows.length); i++) {
       const rowStr = (rows[i] || []).join(" ").toLowerCase();
-      if ((rowStr.includes("nota") || rowStr.includes("documento") || rowStr.includes("cliente")) && 
-          (rowStr.includes("vencimento") || rowStr.includes("valor"))) {
+      const hasDocOrEntity = rowStr.includes("nota") || rowStr.includes("documento") || rowStr.includes("cliente") ||
+                             rowStr.includes("fornecedor") || rowStr.includes("beneficiario") || rowStr.includes("favorecido") ||
+                             rowStr.includes("sacado") || rowStr.includes("numero") || rowStr.includes("titulo") || rowStr.includes("parcela");
+      const hasValOrDate = rowStr.includes("vencimento") || rowStr.includes("valor") || rowStr.includes("saldo");
+      if (hasDocOrEntity && hasValOrDate) {
         headerIdx = i;
         break;
       }
     }
 
     if (headerIdx === -1) {
-      return { titles: [], errors: ["Não foi possível identificar o cabeçalho de Títulos na planilha."] };
+      return { titles: [], errors: ["Não foi possível identificar o cabeçalho de Títulos na planilha. Certifique-se de que o arquivo contém colunas de Documento/Cliente/Fornecedor, Vencimento e Valor."] };
     }
 
     const header = (rows[headerIdx] || []).map((h) => cleanString(String(h || "")));
-    const docIdx = header.findIndex((h) => h.includes("documento") || h.includes("nf") || h.includes("nota fiscal") || h.includes("numero") || h.includes("titulo"));
-    const clientIdx = header.findIndex((h) => (h.includes("cliente") || h.includes("sacado") || h.includes("fornecedor")) && !h.includes("minha empresa"));
-    const fallbackClientIdx = clientIdx >= 0 ? clientIdx : header.findIndex((h) => h.includes("razao") && !h.includes("minha empresa"));
+    const docIdx = header.findIndex((h) => h.includes("documento") || h.includes("nf") || h.includes("nota fiscal") || h.includes("numero") || h.includes("titulo") || h.includes("parcela") || h.includes("duplicata"));
+    const clientIdx = header.findIndex((h) => (h.includes("cliente") || h.includes("sacado") || h.includes("fornecedor") || h.includes("favorecido") || h.includes("beneficiario")) && !h.includes("minha empresa"));
+    const fallbackClientIdx = clientIdx >= 0 ? clientIdx : header.findIndex((h) => (h.includes("razao") || h.includes("nome")) && !h.includes("minha empresa"));
     const effectiveClientIdx = fallbackClientIdx >= 0 ? fallbackClientIdx : clientIdx;
-    const valueIdx = header.findIndex((h) => h.includes("valor da conta") || h.includes("valor total") || h.includes("valor"));
+    const valueIdx = header.findIndex((h) => h.includes("valor da conta") || h.includes("valor total") || h.includes("valor liquido") || h.includes("valor"));
     const dueDateIdx = header.findIndex((h) => h.includes("vencimento"));
     const emissionDateIdx = header.findIndex((h) => h.includes("emissao") || h.includes("emiss"));
     const settlementDateIdx = header.findIndex((h) => h.includes("pagto") || h.includes("recbto") || h.includes("liquidacao"));
@@ -442,6 +448,8 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
     const discountIdx = header.findIndex((h) => h.includes("desconto"));
     const interestIdx = header.findIndex((h) => h.includes("juros"));
     const fineIdx = header.findIndex((h) => h.includes("multa"));
+
+    const isPayable = sheetName.toLowerCase().includes("pagar") || header.some((h) => h.includes("fornecedor") || h.includes("a pagar"));
 
     const titles: ReceivableTitle[] = [];
     const errors: string[] = [];
@@ -474,7 +482,7 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
       titles.push({
         id: `tit-imp-${i}-${Date.now().toString(36)}`,
         documentNumber: rawDoc,
-        customerName: customer || "Cliente Não Identificado",
+        customerName: customer || (isPayable ? "Fornecedor Não Identificado" : "Cliente Não Identificado"),
         amount: Math.round(amount * 100) / 100,
         dueDate,
         issueDate,
@@ -485,6 +493,7 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
         discount,
         interest,
         fine,
+        category: isPayable ? "payable" : "receivable",
         status: isSettled ? "baixado" : "pendente"
       });
     }
