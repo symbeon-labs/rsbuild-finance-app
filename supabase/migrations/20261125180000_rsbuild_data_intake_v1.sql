@@ -39,6 +39,8 @@ alter table public.organization_document_events enable row level security;
 
 revoke all on public.organization_documents, public.organization_document_events from public, anon, authenticated;
 grant select on public.organization_documents, public.organization_document_events to authenticated;
+grant all on public.organization_documents, public.organization_document_events to service_role;
+grant usage, select on sequence public.organization_document_events_id_seq to service_role;
 
 drop policy if exists "Organization members read documents" on public.organization_documents;
 create policy "Organization members read documents"
