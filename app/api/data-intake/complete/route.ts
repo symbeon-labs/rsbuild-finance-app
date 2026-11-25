@@ -85,6 +85,7 @@ export async function POST(request: Request) {
     .from("organization_documents")
     .insert({
       organization_id: organizationId,
+      origin_module: "finance",
       document_type: documentType,
       original_filename: fileName,
       storage_bucket: BUCKET,
