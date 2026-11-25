@@ -44,6 +44,7 @@ import {
   type EnabledModulesConfig,
   type OrganizationId,
   ORGANIZATION_PRESETS,
+  INITIAL_SAMPLE_PROOFS,
   orgHasExecutiveTower
 } from "@/app/types/workspace";
 import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
@@ -835,6 +836,29 @@ export default function OperationalWorkspace({
     setNotice(`Relatório CSV exportado (${evaluations.length} registros analisados). O arquivo não constitui parecer jurídico nem comprova autenticidade documental.`);
   }
 
+  async function handleLoadSampleProofs() {
+    try {
+      const response = await fetch(`/api/proofs?organizationId=${encodeURIComponent(organizationId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proofs: INITIAL_SAMPLE_PROOFS })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao carregar insumos de canhotos.");
+      setNotice(`${payload.insertedCount ?? INITIAL_SAMPLE_PROOFS.length} comprovante(s) de homologação carregado(s).`);
+      const refresh = await fetch(`/api/proofs?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const refreshed = await refresh.json();
+      if (refresh.ok && Array.isArray(refreshed.proofs) && refreshed.proofs.length > 0) {
+        setProofs(refreshed.proofs);
+      } else {
+        setProofs(INITIAL_SAMPLE_PROOFS);
+      }
+    } catch {
+      setProofs(INITIAL_SAMPLE_PROOFS);
+      setNotice("Insumos de homologação de canhotos carregados para a sessão atual.");
+    }
+  }
+
   async function handleConfirmReceipt(proofId: string) {
     const proof = proofs.find((item) => item.id === proofId);
     if (!proof) {
@@ -1192,6 +1216,7 @@ export default function OperationalWorkspace({
               onImportProofsFile={handleImportProofsFileData}
               onExportBlindage={handleExportBlindageReport}
               onConfirmReceipt={handleConfirmReceipt}
+              onLoadSampleProofs={handleLoadSampleProofs}
             />
           )}
           {section === "pedidos-ha" && (

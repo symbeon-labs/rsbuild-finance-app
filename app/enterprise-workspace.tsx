@@ -43,6 +43,7 @@ import {
   type EnabledModulesConfig,
   type OrganizationId,
   ORGANIZATION_PRESETS,
+  INITIAL_SAMPLE_PROOFS,
   orgHasExecutiveTower
 } from "@/app/types/workspace";
 import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
@@ -713,6 +714,11 @@ export default function EnterpriseWorkspace({
     setNotice(`Relatório CSV exportado (${evaluations.length} registros analisados). O arquivo não constitui parecer jurídico nem comprova autenticidade documental.`);
   }
 
+  function handleLoadSampleProofs() {
+    setProofs(INITIAL_SAMPLE_PROOFS);
+    setNotice(`${INITIAL_SAMPLE_PROOFS.length} comprovante(s) de homologação carregado(s) para a sessão.`);
+  }
+
   function handleConfirmReceipt(proofId: string) {
     const proof = proofs.find((item) => item.id === proofId);
     if (!proof) {
@@ -929,6 +935,7 @@ export default function EnterpriseWorkspace({
               onImportProofsFile={handleImportProofsFileData}
               onExportBlindage={handleExportBlindageReport}
               onConfirmReceipt={handleConfirmReceipt}
+              onLoadSampleProofs={handleLoadSampleProofs}
             />
           )}
           {modulesResolved && enabledModules.logistics && section === "pedidos-ha" && (
