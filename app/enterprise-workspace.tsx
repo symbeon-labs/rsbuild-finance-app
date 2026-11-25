@@ -538,7 +538,7 @@ export default function EnterpriseWorkspace({
     setFileName(file.name);
     setNotice("");
     const text = await file.text();
-    const result = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(text) : parseCsv(text);
+    const result = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(text, file.name) : parseCsv(text);
     setPendingImport(result.records);
     setImportErrors(result.errors);
     setPendingMetadata(result.metadata || null);

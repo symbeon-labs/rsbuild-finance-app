@@ -550,7 +550,7 @@ export default function OperationalWorkspace({
     try {
       const text = decodeImportText(new Uint8Array(await file.arrayBuffer()));
       if (extension === "csv") setDetectedColumns(discoverCsvColumns(text.split(/\r?\n/, 1)[0] ?? ""));
-      const result = extension === "ofx" ? parseOfx(text) : parseCsv(text);
+      const result = extension === "ofx" ? parseOfx(text, file.name) : parseCsv(text);
       pendingFileRef.current = file;
       setFileName(file.name);
       setPendingImport(result.records);
