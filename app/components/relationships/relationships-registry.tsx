@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { listRelationships, saveRelationship, type RelationshipInput } from "@/app/actions/relationships";
+import { getRelationshipHistory, listRelationships, saveRelationship, type RelationshipInput } from "@/app/actions/relationships";
 import { formatDocument } from "@/lib/brazilian-documents";
 
 type RecordItem = {
@@ -24,7 +24,7 @@ export function RelationshipsRegistry({ organizationId, environment }: { organiz
   const [error,setError] = useState("");
   const [notice,setNotice] = useState("");
   const [editing,setEditing] = useState<RelationshipInput & {id?:string} | null>(null);
-  const [saving,setSaving] = useState(false);
+  const [saving,setSaving] = useState(false);\n  const [history,setHistory] = useState<{id:string; event_type:string; changed_fields:string[]; occurred_at:string; actor_id:string|null}[] | null>(null);\n  const [historyLoading,setHistoryLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true); setError("");
@@ -41,7 +41,7 @@ export function RelationshipsRegistry({ organizationId, environment }: { organiz
     setEditing(current => current ? { ...current, [key]: value } : current);
   }
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function showHistory(recordId: string) {\n    setHistoryLoading(true); setHistory([]);\n    const result = await getRelationshipHistory(organizationId, recordId);\n    setHistoryLoading(false);\n    if (result.ok) setHistory(result.events); else setError(result.error);\n  }\n\n  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editing) return;
     setSaving(true); setError(""); setNotice("");
@@ -74,12 +74,12 @@ export function RelationshipsRegistry({ organizationId, environment }: { organiz
         </div>
         <div style={{display:"flex",alignItems:"center",gap:7,flexShrink:0}}>
           <span style={{fontSize:8,fontWeight:700,color:record.status==="active"?"var(--green-text,#047857)":"var(--muted)"}}>{record.status==="active"?"ATIVO":record.status==="inactive"?"INATIVO":"ARQUIVADO"}</span>
-          <button type="button" className="secondary-button" onClick={()=>setEditing({id:record.id,legalName:record.legal_name,tradeName:record.trade_name ?? "",document:record.document ?? "",relationshipTypes:record.relationship_types,stateRegistration:record.state_registration ?? "",email:record.email ?? "",phone:record.phone ?? "",streetAddress:record.street_address ?? "",city:record.city ?? "",state:record.state ?? "",notes:record.notes ?? "",status:record.status})} style={{fontSize:9,padding:"5px 8px"}}>Editar</button>
+          <button type="button" className="secondary-button" onClick={()=>void showHistory(record.id)} style={{fontSize:9,padding:"5px 8px"}}>Histórico</button><button type="button" className="secondary-button" onClick={()=>setEditing({id:record.id,legalName:record.legal_name,tradeName:record.trade_name ?? "",document:record.document ?? "",relationshipTypes:record.relationship_types,stateRegistration:record.state_registration ?? "",email:record.email ?? "",phone:record.phone ?? "",streetAddress:record.street_address ?? "",city:record.city ?? "",state:record.state ?? "",notes:record.notes ?? "",status:record.status})} style={{fontSize:9,padding:"5px 8px"}}>Editar</button>
         </div>
       </article>)}
     </div>
 
-    {editing && <div role="dialog" aria-modal="true" aria-label="Cadastro de relacionamento" style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,15,15,.55)",display:"grid",placeItems:"center",padding:14}} onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null);}}>
+    {history !== null && <div role="dialog" aria-modal="true" aria-label="Histórico do relacionamento" style={{position:"fixed",inset:0,zIndex:1001,background:"rgba(15,15,15,.55)",display:"grid",placeItems:"center",padding:14}} onMouseDown={e=>{if(e.target===e.currentTarget)setHistory(null);}}><section style={{width:"min(100%,480px)",maxHeight:"80vh",overflowY:"auto",background:"var(--surface)",border:"1px solid var(--line)",borderRadius:12,padding:18,display:"grid",gap:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><strong style={{fontSize:12}}>HISTÓRICO DE ALTERAÇÕES</strong><button type="button" className="secondary-button" onClick={()=>setHistory(null)}>Fechar</button></div>{historyLoading ? <p style={{fontSize:11,color:"var(--muted)"}}>Carregando histórico…</p> : history.length===0 ? <p style={{fontSize:11,color:"var(--muted)"}}>Nenhum evento registrado.</p> : history.map(event=><article key={event.id} style={{padding:"9px 0",borderBottom:"1px solid var(--line)"}}><strong style={{fontSize:10}}>{event.event_type==="created"?"Cadastro criado":event.event_type==="status_changed"?"Status alterado":"Cadastro atualizado"}</strong><span style={{display:"block",fontSize:9,color:"var(--muted)",marginTop:3}}>{new Date(event.occurred_at).toLocaleString("pt-BR")} · {event.actor_id ? `Usuário ${event.actor_id.slice(0,8)}` : "Sistema"}</span><span style={{display:"block",fontSize:9,color:"var(--muted)",marginTop:3}}>{event.changed_fields.join(" · ")}</span></article>)}</section></div>}\n\n    {editing && <div role="dialog" aria-modal="true" aria-label="Cadastro de relacionamento" style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,15,15,.55)",display:"grid",placeItems:"center",padding:14}} onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null);}}>
       <form onSubmit={submit} style={{width:"min(100%,620px)",maxHeight:"92vh",overflowY:"auto",background:"var(--surface)",border:"1px solid var(--line)",borderRadius:12,padding:18,display:"grid",gap:10,boxShadow:"0 18px 60px rgba(0,0,0,.22)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:9,color:"var(--rsbuild-terracotta)",fontWeight:800,letterSpacing:".08em"}}>RELACIONAMENTO · V1</span><h3 style={{margin:"4px 0 0",fontSize:16}}>{editing.id?"Editar cadastro":"Novo cadastro"}</h3></div><button type="button" className="secondary-button" onClick={()=>setEditing(null)}>Fechar</button></div>
         <label style={labelStyle}>CPF/CNPJ<input value={editing.document ?? ""} onChange={e=>update("document",e.target.value)} placeholder="Documento (opcional)" style={fieldStyle}/></label>
