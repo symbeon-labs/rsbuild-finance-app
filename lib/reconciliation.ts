@@ -94,12 +94,14 @@ export function matchTitlesWithRecords(
   const maxDays = options.maxDaysTolerance ?? 5; // Janela bancária de compensação
   const tolerance = options.interestDiscountTolerance ?? 0.05; // 5% de tolerância para juros/desconto automático
 
-  // Apenas entradas bancárias interessam para liquidação de contas a receber
+  // Entradas para contas a receber; saídas para contas a pagar
   const incomingRecords = statementRecords.filter((r) => r.direction === "entrada");
+  const outgoingRecords = statementRecords.filter((r) => r.direction === "saída");
   const matchedRecordIds = new Set<string>();
   const results: ReconciliationMatch[] = [];
 
   for (const title of titles) {
+    const candidatePool = title.category === "payable" ? outgoingRecords : incomingRecords;
     if (title.status === "baixado") {
       results.push({
         title,
@@ -123,7 +125,7 @@ export function matchTitlesWithRecords(
       .split(/[^a-z0-9]+/)
       .filter((w) => w.length >= 4 && !["ltda", "eireli", "alimentos", "comercio", "atacado", "varejo", "varejista", "distribuidora"].includes(w));
 
-    for (const record of incomingRecords) {
+    for (const record of candidatePool) {
       if (matchedRecordIds.has(record.id)) continue;
 
       const descClean = cleanString(record.description);
@@ -141,14 +143,14 @@ export function matchTitlesWithRecords(
       if (isCustomerMatch && Math.abs(record.amount - title.amount) < 0.01) {
         bestMatch = record;
         bestConfidence = "exato";
-        notes.push("Correspondência exata de valor e nome/razão social do cliente");
+        notes.push("Correspondência exata de valor e nome/razão social");
         break;
       }
     }
 
     // 2. Prioridade 2: Match por Valor Exato + Proximidade de Data
     if (!bestMatch) {
-      for (const record of incomingRecords) {
+      for (const record of candidatePool) {
         if (matchedRecordIds.has(record.id)) continue;
 
         const valDiff = Math.abs(record.amount - title.amount);
@@ -165,7 +167,7 @@ export function matchTitlesWithRecords(
 
     // 3. Prioridade 3: Match Aproximado com Juros de Mora ou Desconto Comercial
     if (!bestMatch) {
-      for (const record of incomingRecords) {
+      for (const record of candidatePool) {
         if (matchedRecordIds.has(record.id)) continue;
 
         const dDiff = daysDiff(record.date, title.dueDate);
@@ -317,8 +319,10 @@ export function parseReceivablesCsv(text: string): { titles: ReceivableTitle[]; 
   const clientIdx = header.findIndex((h) => (h.includes("cliente") || h.includes("razao") || h.includes("sacado") || h.includes("fornecedor") || h.includes("favorecido") || h.includes("beneficiario")) && !h.includes("minha empresa"));
   const valueIdx = header.findIndex((h) => h.includes("valor") || h.includes("total") || h.includes("saldo"));
   const dateIdx = header.findIndex((h) => h.includes("vencimento") || h.includes("data"));
-  const accountIdx = header.findIndex((h) => h.includes("conta") || h.includes("banco"));
-  const isPayable = header.some((h) => h.includes("fornecedor") || h.includes("a pagar") || h.includes("pagar"));
+  const accountIdx = header.findIndex((h) => h === "conta corrente" || h.includes("conta corrente")) >= 0
+    ? header.findIndex((h) => h === "conta corrente" || h.includes("conta corrente"))
+    : header.findIndex((h) => (h.includes("conta") && !h.includes("valor")) || h.includes("banco"));
+  const isPayableHeader = header.some((h) => (h.includes("fornecedor") && !h.includes("cliente")) || h === "a pagar" || h.includes("credor"));
 
   if (valueIdx === -1 || dateIdx === -1) {
     return {
@@ -335,9 +339,11 @@ export function parseReceivablesCsv(text: string): { titles: ReceivableTitle[]; 
     if (cols.length < 2) continue;
 
     const rawDoc = docIdx >= 0 ? cols[docIdx] : `TIT-${i}`;
-    const customer = clientIdx >= 0 && cols[clientIdx] ? cols[clientIdx] : (isPayable ? "Fornecedor Não Identificado" : "Cliente Não Identificado");
     const rawVal = cols[valueIdx].replace(/\./g, "").replace(",", ".");
-    const amount = Number(rawVal);
+    const rawAmount = Number(rawVal);
+    const amount = Math.abs(rawAmount);
+    const isPayable = rawAmount < 0 || isPayableHeader;
+    const customer = clientIdx >= 0 && cols[clientIdx] ? cols[clientIdx] : (isPayable ? "Fornecedor Não Identificado" : "Cliente Não Identificado");
 
     let rawDate = cols[dateIdx];
     let dueDate: string | null = null;
@@ -357,7 +363,7 @@ export function parseReceivablesCsv(text: string): { titles: ReceivableTitle[]; 
       id: `omie-tit-${i}`,
       documentNumber: rawDoc,
       customerName: customer,
-      amount: Math.abs(Math.round(amount * 100) / 100),
+      amount: Math.round(amount * 100) / 100,
       dueDate,
       bankAccount: accountIdx >= 0 ? cols[accountIdx] : undefined,
       category: isPayable ? "payable" : "receivable",
@@ -507,8 +513,10 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
       h.includes("pagamento") || h.includes("dt pag") || h.includes("data pag") ||
       h.includes("data rec") || h.includes("baixa")
     );
-    const accountIdx = header.findIndex((h) =>
-      h.includes("conta corrente") || (h.includes("conta") && !h.includes("categoria") && !h.includes("contabil")) ||
+    // Prioriza "conta corrente" explicitamente para não capturar "Valor da Conta"
+    const exactAccountIdx = header.findIndex((h) => h === "conta corrente" || h.includes("conta corrente"));
+    const accountIdx = exactAccountIdx >= 0 ? exactAccountIdx : header.findIndex((h) =>
+      (h.includes("conta") && !h.includes("valor") && !h.includes("categoria") && !h.includes("contabil")) ||
       h.includes("banco") || h.includes("cc ")
     );
     const paidIdx = header.findIndex((h) => h.includes("pago ou recebido") || h.includes("val pago") || h === "pago" || h === "recebido" || h.includes("val. pago"));
@@ -516,11 +524,13 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
     const discountIdx = header.findIndex((h) => h.includes("desconto"));
     const interestIdx = header.findIndex((h) => h.includes("juros"));
     const fineIdx = header.findIndex((h) => h.includes("multa"));
+    const cnpjIdx = header.findIndex((h) => h.includes("cnpj") || h.includes("cpf"));
+    const originIdx = header.findIndex((h) => h === "origem" || h.includes("origem"));
 
-    // Detecta Contas a Pagar: nome da aba, header com "fornecedor", ou ausência de coluna "cliente" com presença de "razao social"/"credor"
-    const isPayable = sheetName.toLowerCase().includes("pagar") ||
-      header.some((h) => h.includes("fornecedor") || h.includes("a pagar") || h.includes("credor")) ||
-      (clientIdx === -1 && fallbackClientIdx >= 0 && !sheetName.toLowerCase().includes("receber"));
+    const sheetLower = cleanString(sheetName);
+    const isPayableSheet = sheetLower.includes("pagar") ||
+      sheetLower.includes("pagamento") ||
+      header.some((h) => (h === "fornecedor" || (h.includes("fornecedor") && !h.includes("cliente"))) || h.includes("credor"));
 
     const titles: ReceivableTitle[] = [];
     const errors: string[] = [];
@@ -535,25 +545,36 @@ export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { title
 
       if (customer.toLowerCase().includes("total") || (!customer && rawDoc.toLowerCase().includes("total"))) continue;
 
-      const amount = effectiveValueIdx >= 0 ? parseExcelNumber(r[effectiveValueIdx]) : 0;
+      const rawAmount = effectiveValueIdx >= 0 ? parseExcelNumber(r[effectiveValueIdx]) : 0;
+      const amount = Math.abs(rawAmount);
       const dueDate = dueDateIdx >= 0 ? parseExcelDate(r[dueDateIdx]) : null;
       const issueDate = emissionDateIdx >= 0 ? parseExcelDate(r[emissionDateIdx]) || undefined : undefined;
       const settlementDate = settlementDateIdx >= 0 ? parseExcelDate(r[settlementDateIdx]) || undefined : undefined;
       const bankAccount = accountIdx >= 0 && r[accountIdx] ? String(r[accountIdx]).trim() : undefined;
-      const paidAmount = paidIdx >= 0 ? parseExcelNumber(r[paidIdx]) : 0;
-      const balance = balanceIdx >= 0 ? parseExcelNumber(r[balanceIdx]) : undefined;
-      const discount = discountIdx >= 0 ? parseExcelNumber(r[discountIdx]) : undefined;
-      const interest = interestIdx >= 0 ? parseExcelNumber(r[interestIdx]) : undefined;
-      const fine = fineIdx >= 0 ? parseExcelNumber(r[fineIdx]) : undefined;
+      const paidAmount = paidIdx >= 0 ? Math.abs(parseExcelNumber(r[paidIdx])) : 0;
+      const balance = balanceIdx >= 0 ? Math.abs(parseExcelNumber(r[balanceIdx])) : undefined;
+      const discount = discountIdx >= 0 ? Math.abs(parseExcelNumber(r[discountIdx])) : undefined;
+      const interest = interestIdx >= 0 ? Math.abs(parseExcelNumber(r[interestIdx])) : undefined;
+      const fine = fineIdx >= 0 ? Math.abs(parseExcelNumber(r[fineIdx])) : undefined;
+      const rawDocId = cnpjIdx >= 0 && r[cnpjIdx] ? String(r[cnpjIdx]).trim() : "";
+      const customerDoc = rawDocId && rawDocId.toUpperCase() !== "N/D" ? rawDocId : undefined;
+      const originStr = originIdx >= 0 && r[originIdx] ? cleanString(String(r[originIdx])) : "";
 
       if (!dueDate || amount <= 0) continue;
+
+      // Determinação precisa por linha: valor negativo (padrão Omie Contas a Pagar) ou coluna Origem ou cabeçalho da aba
+      const isPayable = rawAmount < 0 ||
+        originStr.includes("pagar") ||
+        originStr.includes("pagamento") ||
+        (!originStr.includes("receber") && !originStr.includes("recebimento") && isPayableSheet);
 
       const isSettled = (settlementDate !== undefined && settlementDate !== "") || (paidAmount >= amount && amount > 0);
 
       titles.push({
         id: `tit-imp-${i}-${Date.now().toString(36)}`,
-        documentNumber: rawDoc,
+        documentNumber: rawDoc || `TIT-${i}`,
         customerName: customer || (isPayable ? "Fornecedor Não Identificado" : "Cliente Não Identificado"),
+        customerDoc,
         amount: Math.round(amount * 100) / 100,
         dueDate,
         issueDate,
