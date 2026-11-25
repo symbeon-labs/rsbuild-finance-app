@@ -80,9 +80,10 @@ begin
   );
 
   -- 3. RESOLVER TODAS AS DEPENDÊNCIAS DE APROVAÇÃO E DECISÃO
+  -- Status válidos em project_dependencies: 'open', 'waiting', 'blocked', 'received', 'waived'
   update public.project_dependencies
-  set status = 'accepted', updated_at = now()
-  where project_id = v_ms_id and (dependency_type = 'decision' or title ilike '%aprovação%' or title ilike '%diretoria%');
+  set status = 'received', updated_at = now()
+  where project_id = v_ms_id and (dependency_type in ('decision', 'client_input') or title ilike '%aprovação%' or title ilike '%diretoria%');
 
   -- 4. CONCLUIR SPRINT A4 (100%)
   update public.project_sprints
