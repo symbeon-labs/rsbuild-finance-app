@@ -3,6 +3,7 @@
 create table if not exists public.organization_documents (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
+  origin_module text not null default 'finance' check (origin_module in ('finance','fiscal','logistics','contracts','general')),
   document_type text not null check (document_type in ('financial_support','invoice','boleto','receipt','contract','spreadsheet','other')),
   status text not null default 'received' check (status in ('received','under_review','accepted','rejected')),
   original_filename text not null check (length(original_filename) between 1 and 255),
