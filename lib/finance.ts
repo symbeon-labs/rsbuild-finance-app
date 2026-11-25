@@ -70,26 +70,69 @@ export function decodeImportText(bytes: Uint8Array): string {
 }
 
 export const KNOWN_BANKS: Record<string, string> = {
+  // Tradicionais
   "0341": "Itaú Unibanco",
   "341": "Itaú Unibanco",
-  "0077": "Banco Inter",
-  "77": "Banco Inter",
-  "0004": "Banco do Nordeste (BNB)",
-  "4": "Banco do Nordeste (BNB)",
-  "0102": "XP Investimentos",
-  "102": "XP Investimentos",
+  "0422": "Banco Safra",
+  "422": "Banco Safra",
   "0001": "Banco do Brasil",
   "1": "Banco do Brasil",
+  "0237": "Bradesco",
+  "237": "Bradesco",
   "0033": "Santander",
   "33": "Santander",
   "0104": "Caixa Econômica Federal",
   "104": "Caixa Econômica Federal",
-  "0237": "Bradesco",
-  "237": "Bradesco",
+  "0004": "Banco do Nordeste (BNB)",
+  "4": "Banco do Nordeste (BNB)",
+  "0041": "Banrisul",
+  "41": "Banrisul",
+  "0070": "Banco de Brasília (BRB)",
+  "70": "Banco de Brasília (BRB)",
+  "0655": "Banco Votorantim (BV)",
+  "655": "Banco Votorantim (BV)",
+
+  // Digitais e Fintechs PJ
   "0260": "Nubank",
   "260": "Nubank",
+  "0077": "Banco Inter",
+  "77": "Banco Inter",
   "0336": "C6 Bank",
   "336": "C6 Bank",
+  "0102": "XP Investimentos",
+  "102": "XP Investimentos",
+  "0208": "BTG Pactual",
+  "208": "BTG Pactual",
+  "0403": "Cora SCD",
+  "403": "Cora SCD",
+  "0461": "Asaas Gestão Financeira",
+  "461": "Asaas Gestão Financeira",
+  "0197": "Stone Pagamentos",
+  "197": "Stone Pagamentos",
+  "0290": "PagBank / PagSeguro",
+  "290": "PagBank / PagSeguro",
+  "0323": "Mercado Pago",
+  "323": "Mercado Pago",
+  "0380": "PicPay",
+  "380": "PicPay",
+  "0218": "Banco BS2",
+  "218": "Banco BS2",
+  "0335": "Banco Digio",
+  "335": "Banco Digio",
+  "0707": "Banco Daycoval",
+  "707": "Banco Daycoval",
+
+  // Cooperativas de Crédito
+  "0756": "Sicoob (Bancoob)",
+  "756": "Sicoob (Bancoob)",
+  "0748": "Sicredi",
+  "748": "Sicredi",
+  "0136": "Unicred do Brasil",
+  "136": "Unicred do Brasil",
+  "0133": "Cresol Confederação",
+  "133": "Cresol Confederação",
+  "0085": "Viacredi (Ailos)",
+  "85": "Viacredi (Ailos)"
 };
 
 export function identifyBank(bankId?: string, orgName?: string): { code: string; name: string } {
@@ -104,12 +147,26 @@ export function identifyBank(bankId?: string, orgName?: string): { code: string;
   if (orgName) {
     const orgUpper = orgName.toUpperCase();
     if (orgUpper.includes("ITAU") || orgUpper.includes("ITAÚ")) return { code: "0341", name: "Itaú Unibanco" };
+    if (orgUpper.includes("SAFRA")) return { code: "0422", name: "Banco Safra" };
+    if (orgUpper.includes("NUBANK") || orgUpper.includes("NU PAGAMENTOS")) return { code: "0260", name: "Nubank" };
     if (orgUpper.includes("INTER")) return { code: "0077", name: "Banco Inter" };
+    if (orgUpper.includes("SICOOB") || orgUpper.includes("BANCOOB")) return { code: "0756", name: "Sicoob (Bancoob)" };
+    if (orgUpper.includes("SICREDI")) return { code: "0748", name: "Sicredi" };
+    if (orgUpper.includes("CORA")) return { code: "0403", name: "Cora SCD" };
     if (orgUpper.includes("NORDESTE") || orgUpper.includes("BNB")) return { code: "0004", name: "Banco do Nordeste (BNB)" };
     if (orgUpper.includes("XP")) return { code: "0102", name: "XP Investimentos" };
     if (orgUpper.includes("BRASIL") || orgUpper.includes("BB")) return { code: "0001", name: "Banco do Brasil" };
     if (orgUpper.includes("SANTANDER")) return { code: "0033", name: "Santander" };
     if (orgUpper.includes("BRADESCO")) return { code: "0237", name: "Bradesco" };
+    if (orgUpper.includes("CAIXA") || orgUpper.includes("CEF")) return { code: "0104", name: "Caixa Econômica Federal" };
+    if (orgUpper.includes("C6")) return { code: "0336", name: "C6 Bank" };
+    if (orgUpper.includes("BTG")) return { code: "0208", name: "BTG Pactual" };
+    if (orgUpper.includes("PAGSEGURO") || orgUpper.includes("PAGBANK")) return { code: "0290", name: "PagBank / PagSeguro" };
+    if (orgUpper.includes("MERCADO PAGO")) return { code: "0323", name: "Mercado Pago" };
+    if (orgUpper.includes("ASAAS")) return { code: "0461", name: "Asaas Gestão Financeira" };
+    if (orgUpper.includes("STONE")) return { code: "0197", name: "Stone Pagamentos" };
+    if (orgUpper.includes("BANRISUL")) return { code: "0041", name: "Banrisul" };
+    if (orgUpper.includes("BRB")) return { code: "0070", name: "Banco de Brasília (BRB)" };
   }
   return { code: bankId?.trim() || "0000", name: orgName?.trim() || "Instituição Bancária" };
 }

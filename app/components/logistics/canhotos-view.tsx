@@ -16,6 +16,7 @@ interface CanhotosViewProps {
   onImportProofsFile: (file: File) => void;
   onExportBlindage: () => void;
   onConfirmReceipt: (proofId: string) => void;
+  onLoadSampleProofs?: () => void;
 }
 
 export function CanhotosView({
@@ -24,7 +25,8 @@ export function CanhotosView({
   evaluations,
   onImportProofsFile,
   onExportBlindage,
-  onConfirmReceipt
+  onConfirmReceipt,
+  onLoadSampleProofs
 }: CanhotosViewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,6 +49,11 @@ export function CanhotosView({
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {onLoadSampleProofs && (
+            <button className="secondary-button" style={{ borderColor: "var(--brand, #B5583C)", color: "var(--brand, #B5583C)" }} onClick={onLoadSampleProofs}>
+              <span>⚡</span> Insumos de Homologação (QA)
+            </button>
+          )}
           <button className="secondary-button" onClick={() => fileInputRef.current?.click()}>
             <span>⇧</span> Importar Canhotos (CSV)
           </button>
