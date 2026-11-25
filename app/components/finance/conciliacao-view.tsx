@@ -8,6 +8,7 @@ import {
   manualMatch,
   unmatchRecord,
   formatCurrency,
+  identifyBank,
   parseOmieMovementsCsv,
   MatchResult
 } from "@/lib/finance";
@@ -98,11 +99,14 @@ export function ConciliacaoView({
     > = {};
 
     for (const record of bankRecords) {
+      const resolved = identifyBank(record.bankCode, record.bankName || record.source);
       const bankLabel =
-        record.bankName?.trim() ||
-        (record.bankCode ? `Banco ${record.bankCode}` : record.source?.replace(/^OFX\s+/i, "").trim() || "Banco não identificado");
+        resolved.name !== "Instituição Bancária"
+          ? resolved.name
+          : (record.bankName?.trim() ||
+            (record.bankCode ? `Banco ${record.bankCode}` : record.source?.replace(/^OFX\s+/i, "").trim() || "Instituição não identificada"));
       const accountLabel = record.accountId?.trim() || "sem-conta";
-      const key = `${record.bankCode || bankLabel}::${accountLabel}`;
+      const key = `${resolved.code !== "0000" ? resolved.code : bankLabel}::${accountLabel}`;
       if (!totals[key]) {
         totals[key] = { bankName: bankLabel, accountId: accountLabel, total: 0, matched: 0, unmatched: 0 };
       }

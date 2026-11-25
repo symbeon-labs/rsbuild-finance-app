@@ -1,3 +1,5 @@
+import { BANK_REGISTRY, KNOWN_ORG_KEYWORDS } from "./bank-identification";
+
 export type Direction = "entrada" | "saída";
 
 export type FinancialRecord = {
@@ -137,36 +139,17 @@ export const KNOWN_BANKS: Record<string, string> = {
 
 export function identifyBank(bankId?: string, orgName?: string): { code: string; name: string } {
   if (bankId) {
-    const cleanId = bankId.trim().replace(/^0+/, "");
-    for (const [code, name] of Object.entries(KNOWN_BANKS)) {
-      if (code.replace(/^0+/, "") === cleanId) {
-        return { code: bankId.trim(), name };
-      }
+    const cleanId = bankId.trim().replace(/^0+(?=\d)/, "");
+    const registered = BANK_REGISTRY[cleanId] ?? KNOWN_BANKS[bankId.trim()] ?? KNOWN_BANKS[cleanId];
+    if (registered) {
+      return { code: bankId.trim(), name: registered };
     }
   }
   if (orgName) {
-    const orgUpper = orgName.toUpperCase();
-    if (orgUpper.includes("ITAU") || orgUpper.includes("ITAÚ")) return { code: "0341", name: "Itaú Unibanco" };
-    if (orgUpper.includes("SAFRA")) return { code: "0422", name: "Banco Safra" };
-    if (orgUpper.includes("NUBANK") || orgUpper.includes("NU PAGAMENTOS")) return { code: "0260", name: "Nubank" };
-    if (orgUpper.includes("INTER")) return { code: "0077", name: "Banco Inter" };
-    if (orgUpper.includes("SICOOB") || orgUpper.includes("BANCOOB")) return { code: "0756", name: "Sicoob (Bancoob)" };
-    if (orgUpper.includes("SICREDI")) return { code: "0748", name: "Sicredi" };
-    if (orgUpper.includes("CORA")) return { code: "0403", name: "Cora SCD" };
-    if (orgUpper.includes("NORDESTE") || orgUpper.includes("BNB")) return { code: "0004", name: "Banco do Nordeste (BNB)" };
-    if (orgUpper.includes("XP")) return { code: "0102", name: "XP Investimentos" };
-    if (orgUpper.includes("BRASIL") || orgUpper.includes("BB")) return { code: "0001", name: "Banco do Brasil" };
-    if (orgUpper.includes("SANTANDER")) return { code: "0033", name: "Santander" };
-    if (orgUpper.includes("BRADESCO")) return { code: "0237", name: "Bradesco" };
-    if (orgUpper.includes("CAIXA") || orgUpper.includes("CEF")) return { code: "0104", name: "Caixa Econômica Federal" };
-    if (orgUpper.includes("C6")) return { code: "0336", name: "C6 Bank" };
-    if (orgUpper.includes("BTG")) return { code: "0208", name: "BTG Pactual" };
-    if (orgUpper.includes("PAGSEGURO") || orgUpper.includes("PAGBANK")) return { code: "0290", name: "PagBank / PagSeguro" };
-    if (orgUpper.includes("MERCADO PAGO")) return { code: "0323", name: "Mercado Pago" };
-    if (orgUpper.includes("ASAAS")) return { code: "0461", name: "Asaas Gestão Financeira" };
-    if (orgUpper.includes("STONE")) return { code: "0197", name: "Stone Pagamentos" };
-    if (orgUpper.includes("BANRISUL")) return { code: "0041", name: "Banrisul" };
-    if (orgUpper.includes("BRB")) return { code: "0070", name: "Banco de Brasília (BRB)" };
+    const matched = KNOWN_ORG_KEYWORDS.find((k) => k.pattern.test(orgName));
+    if (matched) {
+      return { code: matched.code, name: matched.name };
+    }
   }
   return { code: bankId?.trim() || "0000", name: orgName?.trim() || "Instituição Bancária" };
 }
@@ -377,7 +360,7 @@ export function parseOmieMovementsCsv(text: string): { records: OmieRecord[]; er
   return { records, errors: parsed.errors };
 }
 
-export function parseOfx(text: string): ImportResult {
+export function parseOfx(text: string, filenameHint?: string): ImportResult {
   if (!/<OFX[>\s]/i.test(text)) return { records: [], errors: ["O arquivo não possui uma estrutura OFX reconhecida."] };
 
   // Fix encoding header for Brazilian banks (Inter, Itaú, etc.)
@@ -397,7 +380,17 @@ export function parseOfx(text: string): ImportResult {
   const dtStart = get(fixedText, "DTSTART") || undefined;
   const dtEnd = get(fixedText, "DTEND") || undefined;
 
-  const bankInfo = identifyBank(rawBankId, org);
+  let bankInfo = identifyBank(rawBankId, org);
+  // Fallback por nome do arquivo quando BANKID e ORG não vierem preenchidos no OFX
+  if (bankInfo.name === "Instituição Bancária" && filenameHint) {
+    const fileMatch = KNOWN_ORG_KEYWORDS.find((k) => k.pattern.test(filenameHint));
+    if (fileMatch) {
+      bankInfo = {
+        code: rawBankId || (fileMatch.code !== "0000" ? fileMatch.code : "0000"),
+        name: fileMatch.name
+      };
+    }
+  }
   const metadata: BankMetadata = {
     bankId: bankInfo.code !== "0000" ? bankInfo.code : (rawBankId || undefined),
     bankName: bankInfo.name,

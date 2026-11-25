@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolveBankIdentity, resolveImportSourceIdentity } from "../lib/bank-identification";
-import { parseOfx } from "../lib/finance";
+import { identifyBank, parseOfx } from "../lib/finance";
 
 test("resolves known Brazilian bank codes without losing the original identifier", () => {
   const result = resolveBankIdentity({ bankId: "0341", accountId: "123", accountType: "CHECKING" });
@@ -130,4 +130,35 @@ test("Fallback Textual: resolve banco por nome textual quando código numérico 
   const sicoobText = resolveBankIdentity({ bankName: "COOPERATIVA SICOOB REGIONAL", accountId: "3344" });
   assert.equal(sicoobText.institutionName, "Sicoob (Bancoob)");
   assert.equal(sicoobText.identificationStatus, "identified");
+
+  // Nome explícito não catalogado deve ser preservado
+  const customBank = resolveBankIdentity({ bankName: "Banco Regional Sul S.A.", accountId: "5566" });
+  assert.equal(customBank.institutionName, "Banco Regional Sul S.A.");
+  assert.equal(customBank.identificationStatus, "identified");
+
+  // Não deve confundir "INTERNACIONAL" com "Banco Inter"
+  const internacional = identifyBank(undefined, "AMIL ASSISTENCIA MEDICA INTERNACIONAL S.A.");
+  assert.notEqual(internacional.name, "Banco Inter");
+
+  // Omie.CASH e Efí
+  assert.equal(identifyBank(undefined, "Omie.CASH Conta Digital").name, "Omie.CASH");
+  assert.equal(identifyBank("364", undefined).name, "Efí (Gerencianet)");
+  assert.equal(identifyBank("536", undefined).name, "Neon Pagamentos");
+});
+
+test("parseOfx identifica banco pelo nome do arquivo quando BANKID e ORG estão ausentes", () => {
+  const ofxSemBanco = [
+    "<OFX>",
+    "<BANKMSGSRSV1><STMTTRNRS><STMTRS><CURDEF>BRL",
+    "<BANKACCTFROM><ACCTID>996567</ACCTID><ACCTTYPE>CHECKING</ACCTTYPE></BANKACCTFROM>",
+    "<BANKTRANLIST>",
+    "<STMTTRN><TRNTYPE>CREDIT</TRNTYPE><DTPOSTED>20261117</DTPOSTED><TRNAMT>150.00</TRNAMT><FITID>ITAU1</FITID><MEMO>PIX RECEBIDO</MEMO></STMTTRN>",
+    "</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>"
+  ].join("\n");
+
+  const parsed = parseOfx(ofxSemBanco, "ITAU Extrato_7421_996567.ofx");
+  assert.equal(parsed.errors.length, 0);
+  assert.equal(parsed.records.length, 1);
+  assert.equal(parsed.records[0].bankName, "Itaú Unibanco");
+  assert.equal(parsed.records[0].bankCode, "0341");
 });
