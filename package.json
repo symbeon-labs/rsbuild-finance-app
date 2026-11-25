@@ -13,10 +13,10 @@
   "dependencies": {
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
-    "next": "15.5.28",
+    "next": "15.5.29",
     "react": "19.1.7",
     "react-dom": "19.1.7",
-    "xlsx": "^0.18.5"
+    "xlsx": "npm:@e965/xlsx@0.20.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
