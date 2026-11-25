@@ -6,9 +6,9 @@ Receber e preservar documentos de uma organização com metadados, integridade, 
 ## Fluxo
 1. Usuário autenticado seleciona a organização ativa.
 2. A API valida membership, papel e entitlement Finance no servidor.
-3. O servidor valida extensão, limite de tamanho, codificação textual e assinaturas binárias básicas.
-4. Calcula SHA-256 e verifica duplicidade dentro da organização.
-5. Armazena o original no bucket privado `rsbuild-data-intake`.
+3. O servidor valida membership, papel, entitlement, extensão e limite; emite um token de upload de uso único para um caminho aleatório.
+4. O navegador envia os bytes diretamente ao bucket privado Supabase Storage, sem atravessar o limite de payload das Vercel Functions.
+5. A rota de finalização baixa o objeto no servidor, valida codificação/assinaturas, calcula SHA-256 e verifica duplicidade por organização.
 6. Registra metadados e evento `uploaded`.
 7. Membros autorizados consultam a lista; download é feito por URL assinada de 60 segundos.
 
