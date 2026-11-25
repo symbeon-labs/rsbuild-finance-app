@@ -14,9 +14,48 @@
   <img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white" />
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white" />
-  <img alt="CI" src="https://img.shields.io/badge/CI-validated-brightgreen" />
+  <img alt="CI" src="https://img.shields.io/badge/CI-passing-brightgreen" />\n  <img alt="Automated checks" src="https://img.shields.io/badge/Automated%20tests-361%20passed-brightgreen" />
   <img alt="License" src="https://img.shields.io/badge/License-Proprietary-red" />
 </p>
+
+---
+
+## Produto e Visão
+
+**RSBUILD OS — Governança para operações empresariais.**
+
+Uma nova camada de inteligência, controle e rastreabilidade para conectar sistemas, organizar processos e ampliar a visibilidade sobre as operações da sua empresa.
+
+O RSBUILD OS é concebido como uma **camada complementar de coordenação, governança e verificação**. Não pretende substituir o ERP nem exigir que a empresa abandone seus sistemas atuais. Seu papel é conectar informações e evidências que hoje ficam distribuídas, estruturar fluxos de trabalho e oferecer uma visão operacional mais integrada, rastreável e orientada por dados.
+
+- **RSBUILD — site institucional:** [rsbuild.com.br](https://rsbuild.com.br)
+- **RSBUILD OS — apresentação institucional do produto:** [rsbuild-os.vercel.app/institucional](https://rsbuild-os.vercel.app/institucional)
+
+### Quatro frentes estratégicas de atuação
+
+As frentes abaixo representam a visão de produto e sua evolução. Não significam que todas as capacidades estejam disponíveis ou homologadas em todos os ambientes.
+
+1. **Finanças e integridade operacional** — organizar dados financeiros, importações, movimentações e indicadores para ampliar a confiabilidade da operação.
+2. **Reconciliação e conectividade** — relacionar registros entre bancos, ERPs e processos, preservando decisões e evidências.
+3. **Logística e execução** — conectar pedidos, entregas e comprovantes à cadeia operacional.
+4. **Governança, auditoria e inteligência** — estruturar permissões, rastreabilidade, controles e apoio à decisão.
+
+### Princípios de produto
+
+- **Complementar, não substitutivo:** integra-se ao ecossistema existente em vez de se posicionar como substituto universal do ERP.
+- **Evidência antes de intervenção:** decisões e mudanças relevantes devem ser rastreáveis.
+- **Governança por organização:** acesso e capacidades respeitam o tenant, as permissões e o contexto operacional.
+- **Evolução por etapas:** capacidades são liberadas conforme integração, validação e maturidade comprovadas.
+
+### Direção de evolução
+
+| Etapa | Direção |
+|:------|:--------|
+| **Fundação** | Estruturar dados, identidade organizacional, permissões e processos essenciais. |
+| **Integração** | Conectar fontes, ERPs e sistemas operacionais existentes. |
+| **Governança** | Ampliar auditoria, controles, evidências e gestão de acesso. |
+| **Inteligência** | Transformar dados operacionais em análises, alertas e apoio à decisão. |
+| **Expansão** | Evoluir para novas operações, organizações e contextos de negócio. |
 
 ---
 
@@ -75,7 +114,7 @@ A plataforma opera consolidando a gestão financeira, conciliação e esteira op
 | **Autenticação** | JWT em cookies HttpOnly (imune a XSS) |
 | **Segurança** | Org Guard (origin + UUID + membership), Rate Limiter, Audit Trail |
 | **Deploy** | Vercel (auto-deploy `main` → produção) |
-| **Testes** | Node.js Native Test Runner + pgTAP; validação automatizada via GitHub Actions |
+| **Testes** | 361 verificações aprovadas na execução CI: 162 Node.js + 199 pgTAP |
 
 ---
 
@@ -312,7 +351,7 @@ npm run build      # Build de produção — sucesso
 
 ## Testes
 
-8 suítes de testes cobrindo 100% dos motores críticos:
+A última execução CI aprovada registrou **162 testes Node.js** e **199 verificações pgTAP** (13 arquivos SQL), totalizando **361 verificações automatizadas aprovadas**. Esses números representam a execução validada em 25/11/2026 e devem ser atualizados quando a suíte mudar.\n\nAs suítes Node.js cobrem:
 
 | Suíte | Escopo |
 |:------|:-------|
@@ -325,7 +364,7 @@ npm run build      # Build de produção — sucesso
 | `internal-transfers.test.ts` | Transferências entre contas |
 | `workspace.test.ts` | Multi-tenant, roteamento, módulos |
 
-Além das suítes unitárias, o repositório mantém **testes pgTAP** em `supabase/tests/` cobrindo isolamento RLS, persistência operacional F01 e grants de projeto (executados no CI via `supabase test db`).
+Além dos testes Node.js, o repositório mantém **testes pgTAP** em `supabase/tests/` cobrindo isolamento RLS, persistência operacional F01, grants de projeto e políticas de acesso (executados no CI via `supabase test db`).
 
 ---
 
