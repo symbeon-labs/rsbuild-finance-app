@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { EnabledModulesConfig, OrganizationPreset, ORGANIZATION_PRESETS, OrganizationId } from "@/app/types/workspace";
 import { RsbuildIcon, type RsbuildIconName } from "@/app/components/rsbuild-icons";
 import { getWorkspaceCapabilityAvailability, getCapabilityLicensingData, setCapabilityLicense } from "@/app/actions/capability-licenses";
+import { RelationshipsRegistry } from "@/app/components/relationships/relationships-registry";
 
 function getPresetIdentity(preset: OrganizationPreset) {
   if (preset.id.endsWith("_qa")) return { label: "AMBIENTE QA", icon: "approval" as RsbuildIconName };
@@ -266,7 +267,7 @@ export function WorkspaceModal({
           >
             <RsbuildIcon name="control-tower" size={15} tone={activeTab === "modulos" ? "accent" : "secondary"} /> Módulos & Núcleos
           </button>
-          {currentPreset?.contacts && currentPreset.contacts.length > 0 && (
+          {selectedOrg !== "rsbuild" && (
             <button
               type="button"
               onClick={() => setActiveTab("dados")}
@@ -282,7 +283,7 @@ export function WorkspaceModal({
                 cursor: "pointer"
               }}
             >
-              <RsbuildIcon name="document" size={15} tone={activeTab === "dados" ? "accent" : "secondary"} /> Diretório Base ({currentPreset.contacts.length})
+              <RsbuildIcon name="document" size={15} tone={activeTab === "dados" ? "accent" : "secondary"} /> Relacionamentos
             </button>
           )}
         </div>
@@ -662,56 +663,12 @@ export function WorkspaceModal({
               </>
             )}
 
-            {activeTab === "dados" && currentPreset?.contacts && (
-              <div style={{ padding: "8px 10px", borderRadius: "8px", background: "var(--bg)", border: "1px dashed var(--line)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--ink)", fontFamily: "var(--font-brand)" }}>
-                    <RsbuildIcon name="users" size={14} tone="secondary" /> CLIENTES E FORNECEDORES HOMOLOGADOS ({currentPreset.contacts.length})
-                  </span>
-                  <span style={{ fontSize: "9px", color: "var(--green-text, #10B981)", fontWeight: 700 }}>
-                    ● Integrado
-                  </span>
-                </div>
-                <div style={{ maxHeight: "240px", overflowY: "auto", fontSize: "11px", display: "grid", gap: "6px" }}>
-                  {currentPreset.contacts.map((contact) => (
-                    <div
-                      key={contact.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "6px 10px",
-                        borderRadius: "5px",
-                        background: "var(--surface)",
-                        border: "1px solid var(--line)"
-                      }}
-                    >
-                      <div>
-                        <span
-                          style={{
-                            fontSize: "8.5px",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            padding: "2px 5px",
-                            borderRadius: "3px",
-                            marginRight: "6px",
-                            background: contact.type === "cliente" ? "rgba(16, 185, 129, 0.12)" : "rgba(59, 130, 246, 0.12)",
-                            color: contact.type === "cliente" ? "var(--green-text, #10B981)" : "#2563EB"
-                          }}
-                        >
-                          {contact.type}
-                        </span>
-                        <strong style={{ color: "var(--ink)", fontSize: "11px" }}>{contact.name}</strong>
-                        {contact.city && <span style={{ color: "var(--muted)", marginLeft: "4px", fontSize: "10px" }}>· {contact.city}</span>}
-                      </div>
-                      <span style={{ fontFamily: "monospace", color: "var(--muted)", fontSize: "9.5px" }}>
-                        {contact.document}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {activeTab === "dados" && selectedOrg !== "rsbuild" && (
+              <RelationshipsRegistry
+                organizationId={ORG_ID_BY_SLUG[selectedOrg] ?? currentOrgRealId ?? ""}
+                environment={selectedEnvironment}
+              />
+            )}}
           </div>
 
           {/* Rodapé Fixo — Botões de Ação Sempre Visíveis */}
