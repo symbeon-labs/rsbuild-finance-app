@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await guard.ctx.supabase
     .from("organization_documents")
-    .select("id, document_type, status, original_filename, media_type, file_size_bytes, file_sha256, description, uploaded_by, uploaded_at")
+    .select("id, origin_module, document_type, status, original_filename, media_type, file_size_bytes, file_sha256, description, uploaded_by, uploaded_at")
     .eq("organization_id", organizationId)
     .order("uploaded_at", { ascending: false })
     .limit(100);
