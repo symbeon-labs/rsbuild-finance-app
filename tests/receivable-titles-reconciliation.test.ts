@@ -223,3 +223,23 @@ test("Reconciliação de Títulos: matchTitlesWithRecords casa títulos a pagar 
   assert.equal(matches[0].suggestedStatus, "pronto_para_baixa");
   assert.equal(matches[0].statementRecord?.id, "out-1");
 });
+
+test("Reconciliação de Títulos: parseReceivablesCsv processa CSV Omie Contas a Pagar Recorrentes com cabeçalho na linha 2", () => {
+  const csv = [
+    "Contas a Pagar,,,,,,,,,,,",
+    "Minha Empresa (Razão Social),Cliente ou Fornecedor (Nome Fantasia),Emissão,Nota Fiscal,CNPJ/CPF,Valor da Conta,Vencimento,Pago ou Recebido,A Pagar ou Receber,Conta Corrente,Categoria,Origem",
+    ",,,,,-19318.67,,0,-19318.67,,,",
+    "ALS COMERCIO ATACADISTA,AMIL ASSISTENCIA MEDICA INTERNACIONAL S.A.,2026-10-28,N/D,29.309.127/0001-79,-4423.89,2026-11-23,0,-4423.89,Itaú Unibanco,Retirada Sócio,Contas a Pagar (repetição)",
+    "ALS COMERCIO ATACADISTA,BOND FESTA LTDA,2026-12-01,NF 202626,44.146.172/0001-43,-875,2026-11-20,0,-875,Safra,Brindes/Eventos Funcionários,Contas a Pagar (repetição)"
+  ].join("\n");
+
+  const res = parseReceivablesCsv(csv);
+  assert.equal(res.errors.length, 0);
+  assert.equal(res.titles.length, 2);
+  assert.equal(res.titles[0].category, "payable");
+  assert.equal(res.titles[0].amount, 4423.89);
+  assert.equal(res.titles[0].bankAccount, "Itaú Unibanco");
+  assert.equal(res.titles[0].customerDoc, "29.309.127/0001-79");
+  assert.equal(res.titles[1].documentNumber, "NF 202626");
+  assert.equal(res.titles[1].amount, 875);
+});
