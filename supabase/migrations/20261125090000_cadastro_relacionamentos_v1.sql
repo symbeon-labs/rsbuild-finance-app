@@ -114,7 +114,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_changed text[] := '{}'::text[];
   v_event text := 'created';
