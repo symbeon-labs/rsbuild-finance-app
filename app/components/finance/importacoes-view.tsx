@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BankMetadata, CsvColumnMatch, FinancialRecord, formatCurrency } from "@/lib/finance";
 import { RecordTable } from "./common";
+import { DataIntakePanel } from "./data-intake-panel";
 
 interface ImportacoesViewProps {
   organizationId: string;
@@ -16,6 +17,7 @@ interface ImportacoesViewProps {
   onCancelImport: () => void;
   onExportOmieOfx: () => void;
   onConfirmImport: (accountId: string | null) => void;
+  canWrite?: boolean;
 }
 
 export function ImportacoesView({
@@ -29,7 +31,8 @@ export function ImportacoesView({
   onSelectFile,
   onCancelImport,
   onExportOmieOfx,
-  onConfirmImport
+  onConfirmImport,
+  canWrite = false
 }: ImportacoesViewProps) {
   const [accounts, setAccounts] = useState<Array<{ id: string; name: string; institution: string | null; external_reference: string | null }>>([]);
   const [selectedAccountId, setSelectedAccountId] = useState("");
@@ -200,6 +203,8 @@ export function ImportacoesView({
           </>
         )}
       </section>
+
+      <DataIntakePanel organizationId={organizationId} canWrite={canWrite} />
 
       <div className="inline-note">
         Os movimentos confirmados são gravados no banco da organização ativa. A prévia só é persistida após a confirmação.
