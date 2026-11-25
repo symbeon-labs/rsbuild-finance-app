@@ -146,15 +146,15 @@ export const ORGANIZATION_PRESETS: OrganizationPreset[] = [
     tagline: "Ambiente de Testes — Distribuição",
     logoUrl: "/branding/qa/hub_a%C3%A7ai.png",
     badge: "🧪 QA",
-    defaultModule: "logistics",
+    defaultModule: "finance",
     enabledModules: {
-      finance: false,
+      finance: true,
       reconciliation: true,
       logistics: true,
       audit: true
     },
     hasExecutiveTower: true,
-    description: "Ambiente de teste isolado para validação de funcionalidades do Hub Açaí. Dados sintéticos para testes de pedidos, logística e reconciliação.",
+    description: "Ambiente de teste isolado para validação de funcionalidades do Hub Açaí. Dados sintéticos e operacionais para testes financeiros, pedidos, logística e reconciliação.",
     // Ambiente QA mantém a identidade roxa do Hub Açaí.
     brandColor: "#7C3AED",
     brandColorHover: "#6D28D9",
