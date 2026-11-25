@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decodeImportText, parseCsv, parseOfx } from "@/lib/finance";
+import { decodeImportText, identifyBank, parseCsv, parseOfx } from "@/lib/finance";
 import { resolveImportSourceIdentity } from "@/lib/bank-identification";
 import { majorToMinor, normalizeImportCounts } from "@/lib/finance-persistence";
 import { MAX_IMPORT_FILE_BYTES, validateImportFile } from "@/lib/import-validation";
@@ -59,12 +59,15 @@ export async function GET(request: Request) {
       : undefined;
     // Import-batch identity is authoritative when older records have only a generic
     // data-source label and no linked financial account.
-    const bankName = account?.institution || account?.name ||
+    const rawBankName = account?.institution || account?.name ||
       batchInstitutionName ||
       (typeof sourceConfiguration.institution_name === "string" ? sourceConfiguration.institution_name : undefined) ||
       dataSource?.provider || dataSource?.display_name;
-    const bankCode = account?.bank_code || batchInstitutionCode ||
+    const rawBankCode = account?.bank_code || batchInstitutionCode ||
       (typeof sourceConfiguration.institution_code === "string" ? sourceConfiguration.institution_code : undefined);
+    const resolvedBank = identifyBank(rawBankCode, rawBankName);
+    const bankName = resolvedBank.name !== "Instituição Bancária" ? resolvedBank.name : rawBankName;
+    const bankCode = rawBankCode || (resolvedBank.code !== "0000" ? resolvedBank.code : undefined);
     return {
       id: row.id, date: row.transaction_date, description: row.description,
       amount: amountMinor / 100, direction: row.direction,
@@ -123,7 +126,7 @@ export async function POST(request: Request) {
     }, { status: 422 });
   }
 
-  const parsed = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(sourceText) : parseCsv(sourceText);
+  const parsed = file.name.toLowerCase().endsWith(".ofx") ? parseOfx(sourceText, file.name) : parseCsv(sourceText);
   if (parsed.errors.length || !parsed.records.length || parsed.records.length > MAX_RECORDS) {
     return NextResponse.json({
       error: "source_parse_failed",
