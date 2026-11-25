@@ -6241,3 +6241,249 @@ html:has(.inst-page) {
 .dre-breakdown-table{min-width:680px;width:100%}
 @media(max-width:1050px){.dre-classification-panel .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.dre-classification-panel .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dre-classification-panel .metric-card{min-height:140px;padding:14px}.dre-classification-panel .metric-card>span{min-height:0;font-size:12px}.dre-classification-panel .metric-card>strong{font-size:25px}.dre-classification-panel .metric-card>small{font-size:10px}.dre-breakdown-wrap{margin:0 -2px}}
+
+
+/* Finance — Centro de Operações em Lote: layout responsivo isolado */
+.bulk-operations-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+.bulk-operations-page > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.bulk-operations-page .page-heading {
+  min-width: 0;
+  margin-bottom: 2px;
+}
+.bulk-operations-page .page-heading > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.bulk-operations-page .page-heading h1 {
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.bulk-operations-page .page-heading p {
+  max-width: 760px;
+  line-height: 1.55;
+}
+.bulk-operations-page .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+.bulk-operations-page .stat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.bulk-operations-page .stat-card span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.bulk-operations-page .stat-card strong {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font-family: var(--font-brand);
+  font-size: 21px;
+  font-variant-numeric: tabular-nums;
+}
+.bulk-operations-page .panel {
+  width: 100%;
+  min-width: 0;
+}
+.bulk-operations-page .panel-heading {
+  align-items: center;
+  min-width: 0;
+}
+.bulk-operations-page .panel-heading > div {
+  min-width: 0;
+}
+.bulk-operations-page .panel-heading p {
+  line-height: 1.5;
+}
+.bulk-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) repeat(2, minmax(150px, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+.bulk-filters label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.bulk-filters input,
+.bulk-filters select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+.bulk-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.bulk-selection-bar > span,
+.bulk-selection-bar > small {
+  min-width: 0;
+  line-height: 1.5;
+}
+.bulk-selection-bar > small {
+  flex: 1 1 260px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.bulk-selection-bar button {
+  flex: 0 0 auto;
+  white-space: normal;
+}
+.bulk-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+}
+.bulk-table-wrap .data-table {
+  width: 100%;
+  min-width: 760px;
+  margin: 0;
+}
+.bulk-table-wrap th,
+.bulk-table-wrap td {
+  white-space: nowrap;
+}
+.bulk-table-wrap td:nth-child(3) {
+  white-space: normal;
+  min-width: 240px;
+  max-width: 420px;
+  overflow-wrap: anywhere;
+}
+.bulk-operations-page button:focus-visible,
+.bulk-operations-page input:focus-visible,
+.bulk-operations-page select:focus-visible {
+  outline: 3px solid rgba(181, 88, 60, .28);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .bulk-operations-page {
+    gap: 13px;
+    overflow-x: clip;
+  }
+  .bulk-operations-page .page-heading {
+    gap: 8px;
+  }
+  .bulk-operations-page .page-heading h1 {
+    font-size: clamp(23px, 6vw, 28px);
+    letter-spacing: -.7px;
+  }
+  .bulk-operations-page .page-heading p {
+    font-size: 12px;
+  }
+  .bulk-operations-page .stats-grid {
+    gap: 8px;
+  }
+  .bulk-operations-page .stat-card {
+    display: grid;
+    align-content: space-between;
+    gap: 7px;
+    padding: 11px 9px;
+  }
+  .bulk-operations-page .stat-card span {
+    font-size: 10px;
+  }
+  .bulk-operations-page .stat-card strong {
+    font-size: 19px;
+  }
+  .bulk-operations-page .panel {
+    padding: 14px !important;
+  }
+  .bulk-operations-page .panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .bulk-operations-page .panel-heading .secondary-button {
+    align-self: flex-start;
+  }
+  .bulk-filters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .bulk-filters label {
+    font-size: 11px;
+  }
+  .bulk-filters input,
+  .bulk-filters select {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .bulk-selection-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .bulk-selection-bar > span {
+    font-size: 12px;
+  }
+  .bulk-selection-bar button {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+  }
+  .bulk-table-wrap {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  .bulk-table-wrap .data-table {
+    min-width: 720px;
+  }
+  .bulk-operations-page .stats-grid .stat-card strong {
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 380px) {
+  .bulk-operations-page .stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bulk-operations-page .stat-card {
+    display: flex;
+    align-items: center;
+  }
+}
