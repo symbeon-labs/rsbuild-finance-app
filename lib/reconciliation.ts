@@ -1,3 +1,4 @@
+import * as XLSX from "xlsx";
 import { FinancialRecord, formatCurrency, formatDate } from "./finance";
 
 export type ReceivableTitle = {
@@ -8,10 +9,17 @@ export type ReceivableTitle = {
   amount: number;         // Valor original do título em R$
   dueDate: string;        // Data de Vencimento YYYY-MM-DD
   issueDate?: string;     // Data de Emissão YYYY-MM-DD
-  bankAccount?: string;   // Conta bancária de previsão (ex: "Itaú", "Caixinha Prata")
-  category?: string;      // Categoria no Omie (ex: "Venda de Mercadorias", "Adiantamento Prata")
+  settlementDate?: string;// Data de liquidação/pagamento
+  bankAccount?: string;   // Conta bancária de previsão (ex: "Itaú", "Safra")
+  category?: string;      // Categoria no Omie (ex: "Venda de Mercadorias")
   ourNumber?: string;     // Nosso Número do Boleto
-  status: "pendente" | "baixado" | "cancelado";
+  balance?: number;       // Saldo remanescente em aberto
+  paidAmount?: number;    // Valor liquidado
+  discount?: number;      // Desconto concedido
+  interest?: number;      // Juros
+  fine?: number;          // Multa
+  status: "pendente" | "baixado" | "parcial" | "cancelado";
+  hasProof?: boolean;     // Comprovante/canhoto de entrega vinculado
 };
 
 export type MatchConfidence = "exato" | "documental" | "aproximado" | "sem_correspondencia";
@@ -92,7 +100,16 @@ export function matchTitlesWithRecords(
   const results: ReconciliationMatch[] = [];
 
   for (const title of titles) {
-    if (title.status !== "pendente") continue;
+    if (title.status === "baixado") {
+      results.push({
+        title,
+        confidence: "documental",
+        amountDifference: 0,
+        suggestedStatus: "pronto_para_baixa",
+        notes: [title.settlementDate ? `Liquidado no ERP em ${formatDate(title.settlementDate)}` : "Título já liquidado no ERP"]
+      });
+      continue;
+    }
 
     let bestMatch: FinancialRecord | null = null;
     let bestConfidence: MatchConfidence = "sem_correspondencia";
@@ -102,6 +119,9 @@ export function matchTitlesWithRecords(
     const cleanDoc = cleanString(title.documentNumber).replace(/^0+/, "");
     const cleanOurNumber = title.ourNumber ? cleanString(title.ourNumber).replace(/^0+/, "") : null;
     const cleanCustomer = cleanString(title.customerName);
+    const customerTokens = cleanCustomer
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length >= 4 && !["ltda", "eireli", "alimentos", "comercio", "atacado", "varejo", "varejista", "distribuidora"].includes(w));
 
     for (const record of incomingRecords) {
       if (matchedRecordIds.has(record.id)) continue;
@@ -109,7 +129,7 @@ export function matchTitlesWithRecords(
       const descClean = cleanString(record.description);
       const isDocMatch = cleanDoc.length >= 3 && descClean.includes(cleanDoc);
       const isOurNumberMatch = cleanOurNumber && cleanOurNumber.length >= 4 && descClean.includes(cleanOurNumber);
-      const isCustomerMatch = cleanCustomer.length >= 4 && descClean.includes(cleanCustomer.slice(0, 10));
+      const isCustomerMatch = customerTokens.length > 0 && customerTokens.some((t) => descClean.includes(t));
 
       if (isOurNumberMatch || isDocMatch) {
         bestMatch = record;
@@ -121,7 +141,7 @@ export function matchTitlesWithRecords(
       if (isCustomerMatch && Math.abs(record.amount - title.amount) < 0.01) {
         bestMatch = record;
         bestConfidence = "exato";
-        notes.push("Correspondência exata de valor e nome do cliente");
+        notes.push("Correspondência exata de valor e nome/razão social do cliente");
         break;
       }
     }
@@ -345,4 +365,147 @@ export function parseReceivablesCsv(text: string): { titles: ReceivableTitle[]; 
 
   return { titles, errors };
 }
+
+function parseExcelDate(val: unknown): string | null {
+  if (!val) return null;
+  if (typeof val === "number") {
+    const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(str)) {
+    const parts = str.split("/");
+    const d = parts[0].padStart(2, "0");
+    const m = parts[1].padStart(2, "0");
+    let y = parts[2];
+    if (y.length === 2) y = `20${y}`;
+    return `${y}-${m}-${d}`;
+  }
+  return null;
+}
+
+function parseExcelNumber(val: unknown): number {
+  if (typeof val === "number") return val;
+  if (!val) return 0;
+  let s = String(val).replace(/R\$\s*/g, "").trim();
+  if (s.includes(".") && s.includes(",")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (s.includes(",")) {
+    s = s.replace(",", ".");
+  }
+  const num = parseFloat(s);
+  return isNaN(num) ? 0 : num;
+}
+
+/**
+ * Parser inteligente de Títulos a Receber a partir de planilhas Excel (.xlsx, .xls) exportadas do Omie.
+ */
+export function parseReceivablesExcel(buffer: ArrayBuffer | Uint8Array): { titles: ReceivableTitle[]; errors: string[] } {
+  try {
+    const wb = XLSX.read(buffer, { type: "array" });
+    const sheetName = wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
+    if (!sheet) return { titles: [], errors: ["Planilha Excel vazia ou ilegível."] };
+
+    const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+    if (rows.length < 2) return { titles: [], errors: ["Planilha sem registros."] };
+
+    let headerIdx = -1;
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const rowStr = (rows[i] || []).join(" ").toLowerCase();
+      if ((rowStr.includes("nota") || rowStr.includes("documento") || rowStr.includes("cliente")) && 
+          (rowStr.includes("vencimento") || rowStr.includes("valor"))) {
+        headerIdx = i;
+        break;
+      }
+    }
+
+    if (headerIdx === -1) {
+      return { titles: [], errors: ["Não foi possível identificar o cabeçalho de Títulos na planilha."] };
+    }
+
+    const header = (rows[headerIdx] || []).map((h) => cleanString(String(h || "")));
+    const docIdx = header.findIndex((h) => h.includes("documento") || h.includes("nf") || h.includes("nota fiscal") || h.includes("numero") || h.includes("titulo"));
+    const clientIdx = header.findIndex((h) => (h.includes("cliente") || h.includes("sacado") || h.includes("fornecedor")) && !h.includes("minha empresa"));
+    const fallbackClientIdx = clientIdx >= 0 ? clientIdx : header.findIndex((h) => h.includes("razao") && !h.includes("minha empresa"));
+    const effectiveClientIdx = fallbackClientIdx >= 0 ? fallbackClientIdx : clientIdx;
+    const valueIdx = header.findIndex((h) => h.includes("valor da conta") || h.includes("valor total") || h.includes("valor"));
+    const dueDateIdx = header.findIndex((h) => h.includes("vencimento"));
+    const emissionDateIdx = header.findIndex((h) => h.includes("emissao") || h.includes("emiss"));
+    const settlementDateIdx = header.findIndex((h) => h.includes("pagto") || h.includes("recbto") || h.includes("liquidacao"));
+    const accountIdx = header.findIndex((h) => h.includes("conta corrente") || h.includes("conta") || h.includes("banco"));
+    const paidIdx = header.findIndex((h) => h.includes("pago ou recebido") || h.includes("pago") || h.includes("recebido"));
+    const balanceIdx = header.findIndex((h) => h.includes("a pagar ou receber") || h.includes("saldo"));
+    const discountIdx = header.findIndex((h) => h.includes("desconto"));
+    const interestIdx = header.findIndex((h) => h.includes("juros"));
+    const fineIdx = header.findIndex((h) => h.includes("multa"));
+
+    const titles: ReceivableTitle[] = [];
+    const errors: string[] = [];
+
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length < 2) continue;
+
+      const rawDoc = docIdx >= 0 && r[docIdx] !== undefined ? String(r[docIdx]).trim() : `TIT-${i}`;
+      const customer = effectiveClientIdx >= 0 && r[effectiveClientIdx] ? String(r[effectiveClientIdx]).trim() : "";
+      if (!customer && !rawDoc) continue;
+
+      if (customer.toLowerCase().includes("total") || (!customer && rawDoc.toLowerCase().includes("total"))) continue;
+
+      const amount = valueIdx >= 0 ? parseExcelNumber(r[valueIdx]) : 0;
+      const dueDate = dueDateIdx >= 0 ? parseExcelDate(r[dueDateIdx]) : null;
+      const issueDate = emissionDateIdx >= 0 ? parseExcelDate(r[emissionDateIdx]) || undefined : undefined;
+      const settlementDate = settlementDateIdx >= 0 ? parseExcelDate(r[settlementDateIdx]) || undefined : undefined;
+      const bankAccount = accountIdx >= 0 && r[accountIdx] ? String(r[accountIdx]).trim() : undefined;
+      const paidAmount = paidIdx >= 0 ? parseExcelNumber(r[paidIdx]) : 0;
+      const balance = balanceIdx >= 0 ? parseExcelNumber(r[balanceIdx]) : undefined;
+      const discount = discountIdx >= 0 ? parseExcelNumber(r[discountIdx]) : undefined;
+      const interest = interestIdx >= 0 ? parseExcelNumber(r[interestIdx]) : undefined;
+      const fine = fineIdx >= 0 ? parseExcelNumber(r[fineIdx]) : undefined;
+
+      if (!dueDate || amount <= 0) continue;
+
+      const isSettled = (settlementDate !== undefined && settlementDate !== "") || (paidAmount >= amount && amount > 0);
+
+      titles.push({
+        id: `tit-imp-${i}-${Date.now().toString(36)}`,
+        documentNumber: rawDoc,
+        customerName: customer || "Cliente Não Identificado",
+        amount: Math.round(amount * 100) / 100,
+        dueDate,
+        issueDate,
+        settlementDate,
+        bankAccount,
+        paidAmount,
+        balance,
+        discount,
+        interest,
+        fine,
+        status: isSettled ? "baixado" : "pendente"
+      });
+    }
+
+    return { titles, errors };
+  } catch (err) {
+    return { titles: [], errors: [`Falha ao processar arquivo Excel: ${err instanceof Error ? err.message : String(err)}`] };
+  }
+}
+
+/**
+ * Identifica a extensão do arquivo e executa o parser correspondente (.xlsx, .xls ou .csv).
+ */
+export async function parseReceivablesFile(file: File): Promise<{ titles: ReceivableTitle[]; errors: string[] }> {
+  const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("sheet") || file.type.includes("excel");
+  if (isExcel) {
+    const buffer = await file.arrayBuffer();
+    return parseReceivablesExcel(buffer);
+  }
+  const text = await file.text();
+  return parseReceivablesCsv(text);
+}
+
 

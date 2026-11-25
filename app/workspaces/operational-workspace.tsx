@@ -22,8 +22,10 @@ import {
   matchTitlesWithRecords,
   buildSettlementItems,
   generateOmieBatchSettlementCsv,
-  parseReceivablesCsv
+  parseReceivablesCsv,
+  parseReceivablesFile
 } from "@/lib/reconciliation";
+import { MUNDO_DO_SABOR_TITLES, MUNDO_DO_SABOR_BANK_RECORDS } from "@/lib/operational-dataset";
 import {
   DeliveryProof,
   computeDeliveryMetrics,
@@ -266,6 +268,7 @@ export default function OperationalWorkspace({
   const [orders, setOrders] = useState<ParsedWhatsAppOrder[]>([]);
   const [whatsAppText, setWhatsAppText] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedWhatsAppOrder | null>(null);
+  const [isSyncingOmie, setIsSyncingOmie] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -671,13 +674,12 @@ export default function OperationalWorkspace({
   }
 
   async function handleImportTitlesFileData(file: File) {
-    const text = await file.text();
-    const result = parseReceivablesCsv(text);
-    if (result.errors.length > 0) {
-      setNotice(`Aviso: ${result.errors[0]}`);
-      return;
-    }
     try {
+      const result = await parseReceivablesFile(file);
+      if (result.errors.length > 0 && result.titles.length === 0) {
+        setNotice(`Aviso: ${result.errors[0]}`);
+        return;
+      }
       const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -685,12 +687,46 @@ export default function OperationalWorkspace({
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Falha ao importar títulos.");
-      setNotice(`${payload.insertedCount ?? 0} título(s) persistido(s) com sucesso.`);
+      setNotice(`${payload.insertedCount ?? result.titles.length} título(s) importado(s) com sucesso.`);
       const refresh = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
       const refreshed = await refresh.json();
-      if (refresh.ok) setTitles(Array.isArray(refreshed.titles) ? refreshed.titles : []);
+      if (refresh.ok && Array.isArray(refreshed.titles) && refreshed.titles.length > 0) {
+        setTitles(refreshed.titles);
+      } else {
+        setTitles(result.titles);
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha ao importar títulos.");
+    }
+  }
+
+  function handleLoadOperationalMdsData() {
+    setTitles(MUNDO_DO_SABOR_TITLES);
+    setRecords((curr) => {
+      const existingIds = new Set(curr.map((r) => r.sourceRecordId || r.id));
+      const toAdd = MUNDO_DO_SABOR_BANK_RECORDS.filter((r) => !existingIds.has(r.sourceRecordId || r.id));
+      return [...curr, ...toAdd];
+    });
+    setNotice(`Insumos operacionais carregados: ${MUNDO_DO_SABOR_TITLES.length} títulos Omie e ${MUNDO_DO_SABOR_BANK_RECORDS.length} extratos Itaú/Safra.`);
+  }
+
+  async function handleSyncOmieTitles() {
+    setIsSyncingOmie(true);
+    try {
+      const response = await fetch(`/api/omie/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível sincronizar títulos do Omie.");
+      const fetchedTitles = Array.isArray(payload.titles) ? payload.titles : [];
+      if (!fetchedTitles.length) {
+        setNotice("Consulta concluída: nenhum título em aberto retornado pela API do Omie.");
+      } else {
+        setTitles(fetchedTitles);
+        setNotice(`${fetchedTitles.length} títulos sincronizados com sucesso da API do Omie.`);
+      }
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Falha na sincronização com API Omie.");
+    } finally {
+      setIsSyncingOmie(false);
     }
   }
 
@@ -1138,10 +1174,14 @@ export default function OperationalWorkspace({
               titles={titles}
               matches={matches}
               matchStats={matchStats}
+              proofs={proofs}
               role={effectiveRole}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}
               onExportBatchSettlement={handleExportBatchSettlement}
+              onLoadOperationalData={handleLoadOperationalMdsData}
+              onSyncOmieTitles={handleSyncOmieTitles}
+              isSyncingOmie={isSyncingOmie}
             />
           )}
           {section === "canhotos" && (

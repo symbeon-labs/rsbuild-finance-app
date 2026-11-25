@@ -21,8 +21,10 @@ import {
   matchTitlesWithRecords,
   buildSettlementItems,
   generateOmieBatchSettlementCsv,
-  parseReceivablesCsv
+  parseReceivablesCsv,
+  parseReceivablesFile
 } from "@/lib/reconciliation";
+import { MUNDO_DO_SABOR_TITLES, MUNDO_DO_SABOR_BANK_RECORDS } from "@/lib/operational-dataset";
 import {
   DeliveryProof,
   computeDeliveryMetrics,
@@ -620,14 +622,27 @@ export default function EnterpriseWorkspace({
   }
 
   async function handleImportTitlesFileData(file: File) {
-    const text = await file.text();
-    const result = parseReceivablesCsv(text);
-    if (result.errors.length > 0) {
-      setNotice(`Aviso: ${result.errors[0]}`);
-    } else {
-      setTitles((curr) => [...result.titles, ...curr]);
-      setNotice(`${result.titles.length} título(s) a receber carregado(s) com sucesso.`);
+    try {
+      const result = await parseReceivablesFile(file);
+      if (result.errors.length > 0 && result.titles.length === 0) {
+        setNotice(`Aviso: ${result.errors[0]}`);
+      } else {
+        setTitles((curr) => [...result.titles, ...curr]);
+        setNotice(`${result.titles.length} título(s) a receber carregado(s) com sucesso.`);
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao importar títulos.");
     }
+  }
+
+  function handleLoadOperationalMdsData() {
+    setTitles(MUNDO_DO_SABOR_TITLES);
+    setRecords((curr) => {
+      const existingIds = new Set(curr.map((r) => r.sourceRecordId || r.id));
+      const toAdd = MUNDO_DO_SABOR_BANK_RECORDS.filter((r) => !existingIds.has(r.sourceRecordId || r.id));
+      return [...curr, ...toAdd];
+    });
+    setNotice(`Insumos operacionais carregados: ${MUNDO_DO_SABOR_TITLES.length} títulos Omie e ${MUNDO_DO_SABOR_BANK_RECORDS.length} extratos Itaú/Safra.`);
   }
 
   function handleExportBatchSettlement(customMatches?: ReconciliationMatch[]) {
@@ -898,10 +913,12 @@ export default function EnterpriseWorkspace({
               titles={titles}
               matches={matches}
               matchStats={matchStats}
+              proofs={proofs}
               role={effectiveRole}
               onImportTitlesFile={handleImportTitlesFileData}
               onConfirmSettlementInSession={handleConfirmSettlementInSession}
               onExportBatchSettlement={handleExportBatchSettlement}
+              onLoadOperationalData={handleLoadOperationalMdsData}
             />
           )}
           {modulesResolved && enabledModules.logistics && section === "canhotos" && (
