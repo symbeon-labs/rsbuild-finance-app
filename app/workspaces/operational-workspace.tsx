@@ -23,7 +23,9 @@ import {
   buildSettlementItems,
   generateOmieBatchSettlementCsv,
   parseReceivablesCsv,
-  parseReceivablesFile
+  parseReceivablesFile,
+  extractSpreadsheetPreview,
+  type SpreadsheetSheetPreview
 } from "@/lib/reconciliation";
 import { MUNDO_DO_SABOR_TITLES, MUNDO_DO_SABOR_BANK_RECORDS } from "@/lib/operational-dataset";
 import {
@@ -60,6 +62,7 @@ import { OperacoesLoteView } from "@/app/components/finance/operacoes-lote-view"
 import { ImportacoesView } from "@/app/components/finance/importacoes-view";
 import { ConciliacaoView } from "@/app/components/finance/conciliacao-view";
 import { BaixasView } from "@/app/components/finance/baixas-view";
+import { TitlesColumnMapperModal } from "@/app/components/finance/titles-column-mapper-modal";
 import { RelatoriosDreView } from "@/app/components/finance/relatorios-dre-view";
 import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
@@ -674,36 +677,47 @@ export default function OperationalWorkspace({
     setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
   }
 
+  const [pendingMapperFile, setPendingMapperFile] = useState<{ fileName: string; sheets: SpreadsheetSheetPreview[] } | null>(null);
+
+  async function persistImportedTitles(importedTitles: ReceivableTitle[]) {
+    const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ titles: importedTitles })
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      const friendlyErrors: Record<string, string> = {
+        invalid_titles_payload: "Nenhum título válido para importar — verifique se a planilha contém Documento, Cliente/Fornecedor, Vencimento e Valor preenchidos.",
+        titles_import_failed: "Falha ao salvar os títulos no banco de dados. Tente novamente.",
+        capability_not_entitled: "Sua organização não possui licença ativa para importação de títulos.",
+      };
+      throw new Error(friendlyErrors[payload.error] || payload.detail || payload.error || "Falha ao importar títulos.");
+    }
+    setNotice(`${payload.insertedCount ?? importedTitles.length} título(s) importado(s) com sucesso.`);
+    const refresh = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+    const refreshed = await refresh.json();
+    if (refresh.ok && Array.isArray(refreshed.titles) && refreshed.titles.length > 0) {
+      setTitles(refreshed.titles);
+    } else {
+      setTitles(importedTitles);
+    }
+  }
+
   async function handleImportTitlesFileData(file: File) {
     try {
       const result = await parseReceivablesFile(file);
       if (result.titles.length === 0) {
-        const msg = result.errors.length > 0 ? result.errors[0] : "Nenhum título válido encontrado na planilha. Verifique se o arquivo contém colunas de Documento, Cliente/Fornecedor, Vencimento e Valor.";
+        const sheets = await extractSpreadsheetPreview(file);
+        if (sheets.some((s) => s.rows.length > 0)) {
+          setPendingMapperFile({ fileName: file.name, sheets });
+          return;
+        }
+        const msg = result.errors.length > 0 ? result.errors[0] : "Nenhum título válido encontrado na planilha.";
         setNotice(`Aviso: ${msg}`);
         return;
       }
-      const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titles: result.titles })
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        const friendlyErrors: Record<string, string> = {
-          invalid_titles_payload: "Nenhum título válido para importar — verifique se a planilha contém Documento, Cliente/Fornecedor, Vencimento e Valor preenchidos.",
-          titles_import_failed: "Falha ao salvar os títulos no banco de dados. Tente novamente.",
-          capability_not_entitled: "Sua organização não possui licença ativa para importação de títulos.",
-        };
-        throw new Error(friendlyErrors[payload.error] || payload.detail || payload.error || "Falha ao importar títulos.");
-      }
-      setNotice(`${payload.insertedCount ?? result.titles.length} título(s) importado(s) com sucesso.`);
-      const refresh = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
-      const refreshed = await refresh.json();
-      if (refresh.ok && Array.isArray(refreshed.titles) && refreshed.titles.length > 0) {
-        setTitles(refreshed.titles);
-      } else {
-        setTitles(result.titles);
-      }
+      await persistImportedTitles(result.titles);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha ao importar títulos.");
     }
@@ -1298,6 +1312,22 @@ export default function OperationalWorkspace({
         onInjectOrders={(newOrders) => setOrders(newOrders)}
         onResetAllData={resetSession}
       />
+      {pendingMapperFile && (
+        <TitlesColumnMapperModal
+          fileName={pendingMapperFile.fileName}
+          sheets={pendingMapperFile.sheets}
+          onClose={() => setPendingMapperFile(null)}
+          onConfirm={async (mappedTitles) => {
+            try {
+              await persistImportedTitles(mappedTitles);
+              setPendingMapperFile(null);
+            } catch (error) {
+              setNotice(error instanceof Error ? error.message : "Falha ao importar títulos.");
+              setPendingMapperFile(null);
+            }
+          }}
+        />
+      )}
       <ProductTourModal
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
