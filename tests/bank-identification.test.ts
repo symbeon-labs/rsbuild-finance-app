@@ -99,3 +99,35 @@ test("import source identity preserves known bank metadata", () => {
   assert.equal(result.accountNumber, "00085887641");
   assert.equal(result.identificationStatus, "identified");
 });
+
+test("Catálogo Universal Bacen: resolve Sicoob, Sicredi, Cora, Asaas e cooperativas", () => {
+  // Sicoob
+  const sicoob = resolveBankIdentity({ bankId: "0756", accountId: "12345", accountType: "CHECKING" });
+  assert.equal(sicoob.institutionName, "Sicoob (Bancoob)");
+  assert.equal(sicoob.identificationStatus, "identified");
+
+  // Sicredi
+  const sicredi = resolveBankIdentity({ bankId: "748", accountId: "67890", accountType: "CHECKING" });
+  assert.equal(sicredi.institutionName, "Sicredi");
+  assert.equal(sicredi.identificationStatus, "identified");
+
+  // Cora PJ
+  const cora = resolveBankIdentity({ bankId: "403", accountId: "11223", accountType: "CHECKING" });
+  assert.equal(cora.institutionName, "Cora SCD");
+  assert.equal(cora.identificationStatus, "identified");
+
+  // Asaas
+  const asaas = resolveBankIdentity({ bankId: "461", accountId: "44556", accountType: "CHECKING" });
+  assert.equal(asaas.institutionName, "Asaas Gestão Financeira");
+  assert.equal(asaas.identificationStatus, "identified");
+});
+
+test("Fallback Textual: resolve banco por nome textual quando código numérico está ausente", () => {
+  const nubankText = resolveBankIdentity({ bankName: "NU PAGAMENTOS S.A.", accountId: "998877" });
+  assert.equal(nubankText.institutionName, "Nubank");
+  assert.equal(nubankText.identificationStatus, "identified");
+
+  const sicoobText = resolveBankIdentity({ bankName: "COOPERATIVA SICOOB REGIONAL", accountId: "3344" });
+  assert.equal(sicoobText.institutionName, "Sicoob (Bancoob)");
+  assert.equal(sicoobText.identificationStatus, "identified");
+});
