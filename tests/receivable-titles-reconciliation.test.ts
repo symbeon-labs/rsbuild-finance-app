@@ -5,7 +5,9 @@ import {
   ReceivableTitle,
   matchTitlesWithRecords,
   parseReceivablesExcel,
-  parseReceivablesCsv
+  parseReceivablesCsv,
+  suggestTitleColumnMapping,
+  parseTitlesWithMapping
 } from "../lib/reconciliation";
 import { FinancialRecord } from "../lib/finance";
 import {
@@ -242,4 +244,52 @@ test("Reconciliação de Títulos: parseReceivablesCsv processa CSV Omie Contas 
   assert.equal(res.titles[0].customerDoc, "29.309.127/0001-79");
   assert.equal(res.titles[1].documentNumber, "NF 202626");
   assert.equal(res.titles[1].amount, 875);
+});
+
+test("Reconciliação de Títulos: parser multi-aba e agnóstico a ERP (Bling/ContaAzul/planilha própria)", () => {
+  const wb = XLSX.utils.book_new();
+  // Aba 1 é capa/resumo sem títulos
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Resumo Executivo"], ["Competência", "Nov/2026"]]), "Resumo");
+  // Aba 2 é layout genérico de outro ERP com coluna Tipo (Receita/Despesa) e Descrição
+  const genericRows = [
+    ["Data", "Descrição", "Tipo", "Vlr", "Fatura", "Banco"],
+    ["25/11/2026", "DISTRIBUIDORA NORTE LTDA", "Despesa", "1.450,00", "FAT-901", "Banco Inter"],
+    ["26/11/2026", "SUPERMERCADO CENTRAL", "Receita", "3.200,50", "FAT-902", "Itaú"]
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(genericRows), "Lançamentos");
+
+  const res = parseReceivablesExcel(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
+  assert.equal(res.errors.length, 0);
+  assert.equal(res.titles.length, 2);
+  assert.equal(res.titles[0].category, "payable");
+  assert.equal(res.titles[0].amount, 1450);
+  assert.equal(res.titles[0].bankAccount, "Banco Inter");
+  assert.equal(res.titles[1].category, "receivable");
+  assert.equal(res.titles[1].amount, 3200.5);
+});
+
+test("Reconciliação de Títulos: suggestTitleColumnMapping e parseTitlesWithMapping importam planilha sem cabeçalho padrão", () => {
+  const sheet = {
+    name: "Planilha Custom",
+    rows: [
+      ["ColA", "ColB", "ColC", "ColD"],
+      ["Fornecedor Alpha", "10/12/2026", "R$ 890,40", "DOC-77"],
+      ["Fornecedor Beta", "15/12/2026", "R$ 410,00", "DOC-78"]
+    ]
+  };
+  const suggestion = suggestTitleColumnMapping(sheet);
+  assert.equal(suggestion.dueDateCol, 1);
+  assert.equal(suggestion.valueCol, 2);
+  assert.equal(suggestion.customerCol, 0);
+
+  const parsed = parseTitlesWithMapping([sheet], {
+    ...suggestion,
+    documentCol: 3,
+    directionMode: "payable"
+  });
+  assert.equal(parsed.titles.length, 2);
+  assert.equal(parsed.titles[0].category, "payable");
+  assert.equal(parsed.titles[0].customerName, "Fornecedor Alpha");
+  assert.equal(parsed.titles[0].documentNumber, "DOC-77");
+  assert.equal(parsed.titles[0].amount, 890.4);
 });

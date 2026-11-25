@@ -22,7 +22,9 @@ import {
   buildSettlementItems,
   generateOmieBatchSettlementCsv,
   parseReceivablesCsv,
-  parseReceivablesFile
+  parseReceivablesFile,
+  extractSpreadsheetPreview,
+  type SpreadsheetSheetPreview
 } from "@/lib/reconciliation";
 import { MUNDO_DO_SABOR_TITLES, MUNDO_DO_SABOR_BANK_RECORDS } from "@/lib/operational-dataset";
 import {
@@ -59,6 +61,7 @@ import { OperacoesLoteView } from "@/app/components/finance/operacoes-lote-view"
 import { ImportacoesView } from "@/app/components/finance/importacoes-view";
 import { ConciliacaoView } from "@/app/components/finance/conciliacao-view";
 import { BaixasView } from "@/app/components/finance/baixas-view";
+import { TitlesColumnMapperModal } from "@/app/components/finance/titles-column-mapper-modal";
 import { RelatoriosDreView } from "@/app/components/finance/relatorios-dre-view";
 import { CanhotosView } from "@/app/components/logistics/canhotos-view";
 import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
@@ -622,11 +625,18 @@ export default function EnterpriseWorkspace({
     setNotice(`Arquivo OFX normalizado para o Omie exportado com sucesso (${list.length} registros).`);
   }
 
+  const [pendingMapperFile, setPendingMapperFile] = useState<{ fileName: string; sheets: SpreadsheetSheetPreview[] } | null>(null);
+
   async function handleImportTitlesFileData(file: File) {
     try {
       const result = await parseReceivablesFile(file);
       if (result.titles.length === 0) {
-        const msg = result.errors.length > 0 ? result.errors[0] : "Nenhum título válido encontrado na planilha. Verifique se o arquivo contém colunas de Documento, Cliente/Fornecedor, Vencimento e Valor.";
+        const sheets = await extractSpreadsheetPreview(file);
+        if (sheets.some((s) => s.rows.length > 0)) {
+          setPendingMapperFile({ fileName: file.name, sheets });
+          return;
+        }
+        const msg = result.errors.length > 0 ? result.errors[0] : "Nenhum título válido encontrado na planilha.";
         setNotice(`Aviso: ${msg}`);
       } else {
         setTitles((curr) => [...result.titles, ...curr]);
@@ -1011,6 +1021,18 @@ export default function EnterpriseWorkspace({
         onInjectOrders={(newOrders) => setOrders(newOrders)}
         onResetAllData={resetSession}
       />
+      {pendingMapperFile && (
+        <TitlesColumnMapperModal
+          fileName={pendingMapperFile.fileName}
+          sheets={pendingMapperFile.sheets}
+          onClose={() => setPendingMapperFile(null)}
+          onConfirm={(mappedTitles) => {
+            setTitles((curr) => [...mappedTitles, ...curr]);
+            setNotice(`${mappedTitles.length} título(s) importado(s) com sucesso.`);
+            setPendingMapperFile(null);
+          }}
+        />
+      )}
     </main>
   );
 }
