@@ -92,12 +92,19 @@ export function ConciliacaoView({
 
   // Totais por conta
   const accountTotals = useMemo(() => {
-    const totals: Record<string, { total: number; matched: number; unmatched: number }> = {};
+    const totals: Record<
+      string,
+      { bankName: string; accountId: string; total: number; matched: number; unmatched: number }
+    > = {};
 
     for (const record of bankRecords) {
-      const key = `${record.bankCode || "banco"}-${record.accountId || "sem-conta"}`;
+      const bankLabel =
+        record.bankName?.trim() ||
+        (record.bankCode ? `Banco ${record.bankCode}` : record.source?.replace(/^OFX\s+/i, "").trim() || "Banco não identificado");
+      const accountLabel = record.accountId?.trim() || "sem-conta";
+      const key = `${record.bankCode || bankLabel}::${accountLabel}`;
       if (!totals[key]) {
-        totals[key] = { total: 0, matched: 0, unmatched: 0 };
+        totals[key] = { bankName: bankLabel, accountId: accountLabel, total: 0, matched: 0, unmatched: 0 };
       }
       totals[key].total += record.amount;
       if (record.status === "conciliado") {
@@ -290,14 +297,12 @@ export function ConciliacaoView({
                 </tr>
               ) : (
                 Object.entries(accountTotals).map(([key, totals]) => {
-                  const [bankCode, accountId] = key.split("-");
-                  const bankName = bankRecords.find(r => r.bankCode === bankCode)?.bankName || bankCode;
                   const percentage = totals.total > 0 ? ((totals.matched / totals.total) * 100).toFixed(1) : "0";
 
                   return (
                     <tr key={key}>
-                      <td><strong>{bankName}</strong></td>
-                      <td>{accountId}</td>
+                      <td><strong>{totals.bankName}</strong></td>
+                      <td>{totals.accountId}</td>
                       <td>{formatCurrency(totals.total)}</td>
                       <td style={{ color: "var(--rsbuild-green, #10B981)", fontWeight: 600 }}>{formatCurrency(totals.matched)}</td>
                       <td style={{ color: "var(--rsbuild-terracotta)", fontWeight: 600 }}>{formatCurrency(totals.unmatched)}</td>
