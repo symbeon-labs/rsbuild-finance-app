@@ -62,6 +62,8 @@ export function BaixasView({
   // Cálculos executivos da carteira
   const summary = useMemo(() => {
     let totalValue = 0;
+    let receivableValue = 0;
+    let payableValue = 0;
     let overdueValue = 0;
     let overdueCount = 0;
     let futureValue = 0;
@@ -71,6 +73,11 @@ export function BaixasView({
 
     for (const t of titles) {
       totalValue += t.amount;
+      if (t.category === "payable") {
+        payableValue += t.amount;
+      } else {
+        receivableValue += t.amount;
+      }
       if (t.status === "baixado") {
         settledCount += 1;
         settledValue += t.paidAmount || t.amount;
@@ -86,6 +93,8 @@ export function BaixasView({
     return {
       totalTitles: titles.length,
       totalValue,
+      receivableValue,
+      payableValue,
       overdueValue,
       overdueCount,
       futureValue,
@@ -158,9 +167,9 @@ export function BaixasView({
       <div className="page-heading">
         <div>
           <div className="eyebrow">INTEGRAÇÃO ERP · RECONCILIAÇÃO DE TÍTULOS</div>
-          <h1>Reconciliação de Títulos & Contas a Receber</h1>
+          <h1>Reconciliação de Títulos (Receber &amp; Pagar)</h1>
           <p>
-            Cruzamento automatizado entre títulos de cobrança, extratos bancários (Itaú / Safra) e comprovantes de entrega (Canhotos).
+            Cruzamento automatizado entre títulos a receber e a pagar do ERP, extratos bancários (Itaú / Safra) e comprovantes de entrega (Canhotos).
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
@@ -217,10 +226,14 @@ export function BaixasView({
       {/* Grid de KPIs Executivos */}
       <section className="dashboard-grid">
         <Metric
-          label="Carteira Total a Receber"
+          label="Carteira Total (Receber & Pagar)"
           value={formatCurrency(summary.totalValue)}
           tone="neutral"
-          detail={`${summary.totalTitles} títulos importados do ERP`}
+          detail={
+            summary.payableValue > 0
+              ? `${summary.totalTitles} títulos · 📥 ${formatCurrency(summary.receivableValue)} · 📤 ${formatCurrency(summary.payableValue)}`
+              : `${summary.totalTitles} títulos importados do ERP`
+          }
           icon="💼"
         />
         <Metric
@@ -362,11 +375,11 @@ export function BaixasView({
               <thead>
                 <tr>
                   <th>Nº Documento / NF</th>
-                  <th>Cliente / Sacado</th>
+                  <th>Cliente / Fornecedor</th>
                   <th>Vencimento</th>
                   <th className="align-right">Valor Original</th>
                   <th>Blindagem (Canhoto)</th>
-                  <th>Entrada Extrato Bancário</th>
+                  <th>Movimento Extrato Bancário</th>
                   <th>Confiança</th>
                   <th>Diferença</th>
                   <th>Status & Ação</th>
@@ -400,7 +413,23 @@ export function BaixasView({
                         )}
                       </td>
                       <td>
-                        <div className="description-cell" style={{ fontWeight: 500 }}>{t.customerName}</div>
+                        <div className="description-cell" style={{ fontWeight: 500 }}>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              padding: "1px 6px",
+                              borderRadius: "4px",
+                              marginRight: "6px",
+                              background: t.category === "payable" ? "rgba(220, 38, 38, 0.12)" : "rgba(22, 163, 74, 0.12)",
+                              color: t.category === "payable" ? "var(--red, #DC2626)" : "var(--green, #16A34A)"
+                            }}
+                          >
+                            {t.category === "payable" ? "📤 A Pagar" : "📥 A Receber"}
+                          </span>
+                          {t.customerName}
+                        </div>
                         <span style={{ fontSize: "11px", color: "var(--muted)" }}>
                           Previsão: {t.bankAccount || "Conta Geral"}
                         </span>

@@ -51,6 +51,8 @@ test("Reconciliação de Títulos: parseReceivablesExcel processa planilha padr�
   assert.equal(t1.customerName, "SUPERMERCADO REAL BAHIA");
   assert.equal(t1.amount, 2500.50);
   assert.equal(t1.dueDate, "2026-11-20");
+  assert.equal(t1.bankAccount, "Itaú Unibanco");
+  assert.equal(t1.category, "receivable");
   assert.equal(t1.status, "pendente");
 
   assert.equal(t2.documentNumber, "00055121");
@@ -134,4 +136,90 @@ test("Reconciliação de Títulos: matchTitlesWithRecords casa títulos reais de
   assert.ok(m3);
   assert.equal(m3.suggestedStatus, "nao_identificado");
   assert.equal(m3.statementRecord, undefined);
+});
+
+test("Reconciliação de Títulos: parseReceivablesExcel processa Contas a Pagar Omie com valores negativos e Pagamentos", () => {
+  const openPayablesRows = [
+    ["Contas a Pagar"],
+    ["Minha Empresa (Razão Social)", "Cliente ou Fornecedor (Nome Fantasia)", "Emissão", "Nota Fiscal", "CNPJ/CPF", "Valor da Conta", "Vencimento", "Pago ou Recebido", "A Pagar ou Receber", "Conta Corrente", "Categoria", "Origem"],
+    [null, null, null, null, null, -57041.6, null, 0, -57041.6],
+    ["ALS COMERCIO ATACADISTA", "ALIBRA", 46294, "000171166", "03.645.657/0002-85", -16285.6, 46359, 0, -16285.6, "Itaú Unibanco", "Compras de Mercadorias para Revenda", "Conta a Pagar (de uma Compra)"],
+    ["ALS COMERCIO ATACADISTA", "ADIANTAMENTO SALARIAL", 46379, "N/D", "N/D", -731, 46371, 0, -731, "Safra", "Adiantamentos", "Contas a Pagar (repetição)"]
+  ];
+
+  const ws1 = XLSX.utils.aoa_to_sheet(openPayablesRows);
+  const wb1 = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb1, ws1, "Contas a Pagar");
+  const res1 = parseReceivablesExcel(XLSX.write(wb1, { type: "array", bookType: "xlsx" }));
+
+  assert.equal(res1.errors.length, 0);
+  assert.equal(res1.titles.length, 2);
+  assert.equal(res1.titles[0].category, "payable");
+  assert.equal(res1.titles[0].amount, 16285.6);
+  assert.equal(res1.titles[0].bankAccount, "Itaú Unibanco");
+  assert.equal(res1.titles[0].customerDoc, "03.645.657/0002-85");
+  assert.equal(res1.titles[0].status, "pendente");
+  assert.equal(res1.titles[1].customerDoc, undefined);
+  assert.equal(res1.titles[1].bankAccount, "Safra");
+
+  const paidPayablesRows = [
+    ["Pagamentos"],
+    ["Minha Empresa (Razão Social)", "Fornecedor", "Categoria", "Nota Fiscal", "Emissão", "Vencimento", "Data de Pagto ou Recbto (completa)", "Valor da Conta", "Juros", "Multa", "Desconto", "Pago ou Recebido", "Conta Corrente", "Origem"],
+    [null, null, null, null, null, null, null, -587, 0, 0, 0, -587],
+    ["ALS COMERCIO ATACADISTA", "JOSIANE SILVA PIRES", "Prestação de Serviço", "N/D", 46282, 46269, 46269, -587, 0, 0, 0, -587, "Itaú Unibanco", "Pagamento de Conta a Pagar"]
+  ];
+
+  const ws2 = XLSX.utils.aoa_to_sheet(paidPayablesRows);
+  const wb2 = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb2, ws2, "Pagamentos");
+  const res2 = parseReceivablesExcel(XLSX.write(wb2, { type: "array", bookType: "xlsx" }));
+
+  assert.equal(res2.errors.length, 0);
+  assert.equal(res2.titles.length, 1);
+  assert.equal(res2.titles[0].category, "payable");
+  assert.equal(res2.titles[0].amount, 587);
+  assert.equal(res2.titles[0].paidAmount, 587);
+  assert.equal(res2.titles[0].status, "baixado");
+});
+
+test("Reconciliação de Títulos: matchTitlesWithRecords casa títulos a pagar apenas com saídas bancárias", () => {
+  const payableTitle: ReceivableTitle = {
+    id: "pag-1",
+    documentNumber: "000171166",
+    customerName: "ALIBRA",
+    amount: 16285.6,
+    dueDate: "2026-12-03",
+    category: "payable",
+    status: "pendente"
+  };
+
+  const bankRecords: FinancialRecord[] = [
+    {
+      id: "in-1",
+      date: "2026-12-03",
+      amount: 16285.6,
+      direction: "entrada",
+      category: "Recebimento",
+      status: "pendente",
+      description: "PIX RECEBIDO ALIBRA 000171166",
+      bankName: "Itaú Unibanco",
+      source: "OFX Itaú"
+    },
+    {
+      id: "out-1",
+      date: "2026-12-03",
+      amount: 16285.6,
+      direction: "saída",
+      category: "Pagamento",
+      status: "pendente",
+      description: "TED PAGO ALIBRA NF 000171166",
+      bankName: "Itaú Unibanco",
+      source: "OFX Itaú"
+    }
+  ];
+
+  const matches = matchTitlesWithRecords([payableTitle], bankRecords);
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].suggestedStatus, "pronto_para_baixa");
+  assert.equal(matches[0].statementRecord?.id, "out-1");
 });
