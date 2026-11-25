@@ -47,6 +47,15 @@ export async function POST(request: Request) {
   if (!guard.ok) return guard.response;
 
   const admin = createAdminClient();
+  const { data: alreadyRegistered, error: pathCheckError } = await admin
+    .from("organization_documents")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("storage_path", storagePath)
+    .maybeSingle();
+  if (pathCheckError) return NextResponse.json({ error: "document_check_failed" }, { status: 502 });
+  if (alreadyRegistered) return NextResponse.json({ error: "document_already_finalized" }, { status: 409 });
+
   const { data: storedFile, error: downloadError } = await admin.storage.from(BUCKET).download(storagePath);
   if (downloadError || !storedFile) {
     return NextResponse.json({ error: "uploaded_object_not_found" }, { status: 404 });
@@ -100,8 +109,14 @@ export async function POST(request: Request) {
     .single();
 
   if (insertError || !document) {
+    if (insertError?.code === "23505") {
+      const { data: pathOwner } = await admin.from("organization_documents")
+        .select("id").eq("organization_id", organizationId).eq("storage_path", storagePath).maybeSingle();
+      if (pathOwner) return NextResponse.json({ error: "document_already_finalized" }, { status: 409 });
+      await admin.storage.from(BUCKET).remove([storagePath]);
+      return NextResponse.json({ error: "duplicate_document" }, { status: 409 });
+    }
     await admin.storage.from(BUCKET).remove([storagePath]);
-    if (insertError?.code === "23505") return NextResponse.json({ error: "duplicate_document" }, { status: 409 });
     console.error(JSON.stringify({ event: "data_intake_metadata_insert_failed", organizationId, code: insertError?.code }));
     return NextResponse.json({ error: "document_registration_failed" }, { status: 502 });
   }
