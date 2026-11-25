@@ -14,17 +14,17 @@ on conflict (id) do nothing;
 
 insert into public.organizations (id,legal_name,display_name,slug)
 values
- ('11111111-1111-4111-8111-111111111111','RSBUILD Inovação Ltda','RSBUILD Inovação','rsbuild'),
- ('22222222-2222-4222-8222-222222222222','Mundo do Sabor Ltda','Mundo do Sabor','mundo_sabor'),
- ('33333333-3333-4333-8333-333333333333','Hub Açaí Ltda','Hub Açaí','hub_acai'),
+ ('0269fe05-0990-41a8-a28c-2919691eaf0f','RSBUILD Inovação Ltda','RSBUILD Inovação','rsbuild'),
+ ('c5356414-adce-4fdc-941b-15cfe26b991e','Mundo do Sabor Ltda','Mundo do Sabor','mundo_sabor'),
+ ('ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76','Hub Açaí Ltda','Hub Açaí','hub_acai'),
  ('44444444-4444-4444-8444-444444444444','No Access Ltda','No Access','no_access')
 on conflict (id) do nothing;
 
 insert into public.organization_memberships (organization_id,user_id,role)
 values
- ('11111111-1111-4111-8111-111111111111','dddddddd-dddd-4ddd-8ddd-dddddddddddd','owner'),
- ('22222222-2222-4222-8222-222222222222','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','viewer'),
- ('33333333-3333-4333-8333-333333333333','ffffffff-ffff-4fff-8fff-ffffffffffff','viewer'),
+ ('0269fe05-0990-41a8-a28c-2919691eaf0f','dddddddd-dddd-4ddd-8ddd-dddddddddddd','owner'),
+ ('c5356414-adce-4fdc-941b-15cfe26b991e','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','viewer'),
+ ('ff3cdab7-3b25-4ea7-aabf-5ae4f9cd9a76','ffffffff-ffff-4fff-8fff-ffffffffffff','viewer'),
  ('44444444-4444-4444-8444-444444444444','99999999-9999-4999-8999-999999999999','viewer')
 on conflict do nothing;
 
