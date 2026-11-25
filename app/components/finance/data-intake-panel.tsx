@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type DocumentItem = {
   id: string;
+  origin_module: string;
   document_type: DataIntakeDocumentType;
   status: "received" | "under_review" | "accepted" | "rejected";
   original_filename: string;
@@ -194,7 +195,7 @@ export function DataIntakePanel({ organizationId, canWrite }: { organizationId: 
               <div style={{ minWidth: 0 }}>
                 <strong style={{ display: "block", fontSize: 12, overflowWrap: "anywhere" }}>{document.original_filename}</strong>
                 <span style={{ display: "block", marginTop: 4, color: "var(--muted)", fontSize: 10 }}>
-                  {TYPES.find(([value]) => value === document.document_type)?.[1] ?? "Documento"} · {formatBytes(Number(document.file_size_bytes))} · {new Date(document.uploaded_at).toLocaleString("pt-BR")}
+                  {TYPES.find(([value]) => value === document.document_type)?.[1] ?? "Documento"} · {document.origin_module.toUpperCase()} · {formatBytes(Number(document.file_size_bytes))} · {new Date(document.uploaded_at).toLocaleString("pt-BR")}
                 </span>
                 {document.description && <span style={{ display: "block", marginTop: 3, color: "var(--muted)", fontSize: 10 }}>{document.description}</span>}
                 <span style={{ display: "block", marginTop: 3, color: "var(--muted)", fontSize: 9 }}>SHA-256: {document.file_sha256.slice(0, 16)}… · {STATUS[document.status]}</span>
