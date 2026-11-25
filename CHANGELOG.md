@@ -5,6 +5,60 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [1.1.0] - 2026-11-24
+
+### 🏛️ Homologação Executiva Ciclo 01 — Reconciliação de Títulos Reais, Multibanco & Blindagem de Canhotos
+
+Marco executivo oficial de conclusão do **Ciclo 01 (Mundo do Sabor)**, homologado presencialmente pela liderança operacional (**Flávio** e **Vitor**) e chancelado pela Diretoria (**Raquel**), com validação ponta a ponta sobre a carteira real de 423 títulos a receber do Omie e 395 lançamentos bancários Itaú e Safra.
+
+---
+
+### 💳 Módulo de Reconciliação ERP & Baixas
+- **Parser Inteligente de Planilhas Omie (`.xlsx` e `.csv`):**
+  - Leitor com suporte automático aos relatórios de *A Vencer*, *Em Atraso* e *Recebidos* do Omie.
+  - Identificação de saldo em aberto, acréscimos, juros moratórios, multas e liquidações parciais.
+  - Heurística avançada de cabeçalhos (`headerMap`) agnóstica de formato, permitindo ingestão de outros ERPs (Bling, TOTVS, Conta Azul, Sankhya).
+- **Triangulação de 3 Pontas (Extrato ↔ Título ↔ Canhoto):**
+  - Motor de matching assistido com razão social tokenizada e tolerância paramétrica de datas (±3 a 5 dias).
+  - Casamento documental com extratos bancários reais **Itaú Unibanco (0341)** e **Banco Safra (0422)**.
+- **Governança de Alçadas Executivas (Regra Raquel):**
+  - Segregação de funções estrita por perfil RBAC: operadores executam conferência e conciliação; exclusividade de autorização de baixa no Omie e emissão de lotes oficiais restrita à Diretoria (`owner` e `admin`).
+
+---
+
+### 🏦 Identificação Bancária Universal
+- **Catálogo Abrangente BACEN / Febraban:**
+  - Inclusão de mais de 40 instituições financeiras autorizadas pelo Banco Central, cobrindo bancos tradicionais (Itaú, BB, Bradesco, Santander, Caixa, Safra, Banrisul, BNB, BRB, BV), bancos digitais/fintechs PJ (Nubank, Inter, C6, Cora, Asaas, Stone, PagBank, Mercado Pago, PicPay, XP, BTG) e cooperativas de crédito (Sicoob, Sicredi, Unicred, Cresol, Viacredi).
+  - Normalização automática de zeros à esquerda em códigos bancários e contas correntes.
+  - Mecanismo de fallback textual por análise de tags `<ORG>` e `<FID>` do OFX.
+
+---
+
+### 🚚 Protocolo Digital de Comprovantes & Canhotos (Lei 5.474/68)
+- **Validação SEFAZ Módulo 11:**
+  - Checagem algorítmica de integridade de chaves de acesso de NF-e (44 dígitos).
+- **Matriz de Risco de Protesto Cambial:**
+  - Classificação documental em *Comprovado*, *Pendente de Entrega (Em Rota)*, *Recusa/Devolução* e *Extraviado*.
+  - Bloqueio preventivo e absoluto de protesto cambial em casos de mercadoria devolvida ou recusada na doca, mitigando riscos de litígio judicial e dano moral (Súmula 227 STJ).
+- **Botão de Insumos de Homologação (QA):**
+  - Carga em 1 clique de carteira de testes de canhotos com todos os cenários jurídicos na tela de Comprovantes.
+
+---
+
+### 🎛️ Torre de Controle & Observabilidade de Sprints
+- **Fluxo de Caixa Projetado (7 / 15 / 30 / 60 dias):**
+  - Projeção reativa de obrigações e recebíveis futuros com indicador de Cobertura de Liquidez Preservada.
+- **Painel de Controladoria & Integridade Operacional:**
+  - Auditoria em tempo real de descontos concedidos, juros pagos por atraso e tentativas de baixa manual fora de alçada.
+- **Sincronização Oficial de Portfólio de Sprints:**
+  - Atualização do banco relacional de sprints: Sprints A1, A2, A3 e A4 de Mundo do Sabor consolidadas em 100% concluídas com termo de homologação executiva indexado.
+- **Promoção Operacional:**
+  - Provisionamento oficial do tenant `mundo_sabor` operacional com contas bancárias ativas e trilha de auditoria `governance.qa_promotion_to_production`.
+- **Habilitação Hub Açaí QA:**
+  - Módulo financeiro liberado no tenant `hub_acai_qa` com inteligência adaptada de ocupação da frota HR (350 caixas) e catálogo de sabores de açaí.
+
+---
+
 ## [1.0.0] - 2026-11-07
 
 ### 🚀 Primeiro Release Oficial — Central Integrada de Operações (RSBUILD OS)
