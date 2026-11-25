@@ -1,0 +1,179 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { DataIntakeDocumentType } from "@/lib/data-intake-validation";
+
+type DocumentItem = {
+  id: string;
+  document_type: DataIntakeDocumentType;
+  status: "received" | "under_review" | "accepted" | "rejected";
+  original_filename: string;
+  media_type: string;
+  file_size_bytes: number;
+  file_sha256: string;
+  description: string | null;
+  uploaded_at: string;
+};
+
+const TYPES: Array<[DataIntakeDocumentType, string]> = [
+  ["financial_support", "Documento de apoio financeiro"],
+  ["invoice", "Nota fiscal"],
+  ["boleto", "Boleto"],
+  ["receipt", "Comprovante"],
+  ["contract", "Contrato"],
+  ["spreadsheet", "Planilha"],
+  ["other", "Outro documento"]
+];
+
+const STATUS: Record<DocumentItem["status"], string> = {
+  received: "RECEBIDO",
+  under_review: "EM ANÁLISE",
+  accepted: "ACEITO",
+  rejected: "REJEITADO"
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function DataIntakePanel({ organizationId, canWrite }: { organizationId: string; canWrite: boolean }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [documentType, setDocumentType] = useState<DataIntakeDocumentType>("financial_support");
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/data-intake?organizationId=${encodeURIComponent(organizationId)}`, { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || payload.error || "Não foi possível carregar os documentos.");
+      setDocuments(Array.isArray(payload.documents) ? payload.documents : []);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao carregar documentos.");
+    } finally {
+      setLoading(false);
+    }
+  }, [organizationId]);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  async function upload(file?: File) {
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.set("organizationId", organizationId);
+      form.set("file", file);
+      form.set("documentType", documentType);
+      form.set("description", description);
+      const response = await fetch("/api/data-intake", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) {
+        const messages: Record<string, string> = {
+          duplicate_document: "Este arquivo já foi recebido nesta organização.",
+          unsupported_or_invalid_file: payload.message || "Formato ou conteúdo de arquivo inválido.",
+          file_too_large: "O arquivo excede o limite de 20 MB.",
+          document_upload_failed: "O armazenamento não conseguiu receber o arquivo.",
+          document_registration_failed: "O arquivo foi enviado, mas não foi possível registrar seus metadados."
+        };
+        throw new Error(messages[payload.error] || payload.message || "Não foi possível enviar o documento.");
+      }
+      setNotice("Documento recebido e armazenado com segurança.");
+      setDescription("");
+      if (inputRef.current) inputRef.current.value = "";
+      await refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha no envio do documento.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <section className="panel" style={{ marginTop: 18, padding: 18, display: "grid", gap: 14 }}>
+      <div className="panel-heading">
+        <div>
+          <span className="dre-section-kicker">RSBUILD DATA INTAKE · V1</span>
+          <h2>Central de documentos</h2>
+          <p>Receba e organize documentos da organização em um repositório privado, com registro de origem e integridade.</p>
+        </div>
+        <span className="subtle-tag">Armazenamento privado</span>
+      </div>
+
+      {canWrite && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10, alignItems: "end", padding: 14, border: "1px solid var(--border)", borderRadius: 10 }}>
+          <label style={{ display: "grid", gap: 5, fontSize: 12 }}>
+            Tipo de documento
+            <select value={documentType} onChange={event => setDocumentType(event.target.value as DataIntakeDocumentType)}>
+              {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <label style={{ display: "grid", gap: 5, fontSize: 12, gridColumn: "span 2" }}>
+            Observação (opcional)
+            <input value={description} onChange={event => setDescription(event.target.value)} maxLength={1000} placeholder="Ex.: NF referente ao pedido 1042" />
+          </label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".pdf,.xlsx,.xls,.docx,.csv,.json,.xml,.txt,.png,.jpg,.jpeg,.webp,application/pdf"
+              style={{ display: "none" }}
+              onChange={event => void upload(event.target.files?.[0])}
+            />
+            <button type="button" className="primary-button" disabled={uploading} onClick={() => inputRef.current?.click()}>
+              {uploading ? "Enviando…" : "＋ Enviar documento"}
+            </button>
+            <span style={{ fontSize: 10, color: "var(--muted)" }}>PDF, Office, CSV, JSON, XML, TXT e imagens · até 20 MB</span>
+          </div>
+        </div>
+      )}
+
+      {notice && <p role="status" style={{ margin: 0, color: "var(--green-text,#047857)", fontSize: 12 }}>{notice}</p>}
+      {error && <p role="alert" style={{ margin: 0, color: "var(--red,#B91C1C)", fontSize: 12 }}>{error}</p>}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <strong style={{ fontSize: 12 }}>Documentos recebidos ({documents.length})</strong>
+        <button type="button" className="secondary-button" onClick={() => void refresh()} disabled={loading}>{loading ? "Atualizando…" : "Atualizar"}</button>
+      </div>
+
+      {loading ? <p style={{ color: "var(--muted)", fontSize: 12 }}>Carregando documentos…</p> : documents.length === 0 ? (
+        <div style={{ padding: 24, textAlign: "center", border: "1px dashed var(--border)", borderRadius: 9, color: "var(--muted)", fontSize: 12 }}>
+          Nenhum documento recebido nesta organização.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 7 }}>
+          {documents.map(document => (
+            <article key={document.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: 11, border: "1px solid var(--border)", borderRadius: 8 }}>
+              <div style={{ minWidth: 0 }}>
+                <strong style={{ display: "block", fontSize: 12, overflowWrap: "anywhere" }}>{document.original_filename}</strong>
+                <span style={{ display: "block", marginTop: 4, color: "var(--muted)", fontSize: 10 }}>
+                  {TYPES.find(([value]) => value === document.document_type)?.[1] ?? "Documento"} · {formatBytes(Number(document.file_size_bytes))} · {new Date(document.uploaded_at).toLocaleString("pt-BR")}
+                </span>
+                {document.description && <span style={{ display: "block", marginTop: 3, color: "var(--muted)", fontSize: 10 }}>{document.description}</span>}
+                <span style={{ display: "block", marginTop: 3, color: "var(--muted)", fontSize: 9 }}>SHA-256: {document.file_sha256.slice(0, 16)}… · {STATUS[document.status]}</span>
+              </div>
+              <a
+                className="secondary-button"
+                href={`/api/data-intake/${encodeURIComponent(document.id)}/download?organizationId=${encodeURIComponent(organizationId)}`}
+                style={{ flexShrink: 0, textDecoration: "none", fontSize: 10, padding: "7px 10px" }}
+              >Baixar</a>
+            </article>
+          ))}
+        </div>
+      )}
+      <p style={{ margin: 0, color: "var(--muted)", fontSize: 10 }}>
+        V1 preserva o arquivo original e registra integridade, autoria e histórico de recebimento. Extração automática e lançamento financeiro só ocorrerão em etapas posteriores, após revisão.
+      </p>
+    </section>
+  );
+}
