@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(12);
+select plan(16);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -65,6 +65,32 @@ select ok(
    where conrelid='public.intelligence_registry'::regclass
      and conname in ('intelligence_registry_name_nonempty','intelligence_registry_source_https')),
   'intelligence registry validates names and HTTPS source references'
+);
+
+select ok(
+  not has_table_privilege('authenticated','public.intelligence_assignments','SELECT')
+  and not has_table_privilege('authenticated','public.intelligence_assignments','INSERT')
+  and not has_table_privilege('authenticated','public.intelligence_assignments','UPDATE')
+  and not has_table_privilege('authenticated','public.intelligence_assignments','DELETE')
+  and not has_table_privilege('anon','public.intelligence_assignments','SELECT'),
+  'intelligence assignments have no direct client-role privileges'
+);
+select ok(
+  (select relrowsecurity from pg_class where oid='public.intelligence_assignments'::regclass),
+  'intelligence assignments enforce row-level security'
+);
+select ok(
+  (select count(*) = 3 from pg_constraint
+   where conrelid='public.intelligence_assignments'::regclass
+     and conname in ('intelligence_assignments_environments','intelligence_assignments_production_contractual','intelligence_assignments_approval_state')),
+  'assignments enforce environment, production and approval constraints'
+);
+select ok(
+  has_function_privilege('authenticated','public.create_intelligence_assignment(uuid,uuid,text,text[],timestamp with time zone)','EXECUTE')
+  and not has_function_privilege('anon','public.create_intelligence_assignment(uuid,uuid,text,text[],timestamp with time zone)','EXECUTE')
+  and has_function_privilege('authenticated','public.revoke_intelligence_assignment(uuid)','EXECUTE')
+  and not has_function_privilege('anon','public.revoke_intelligence_assignment(uuid)','EXECUTE'),
+  'assignment mutation RPCs are authenticated-only'
 );
 
 set local role authenticated;
