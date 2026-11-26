@@ -7,7 +7,7 @@ Padronizar a experiência de interação dos módulos financeiros do RSBUILD, re
 - **Importações:** hierarquia de ações, filtros e prévia.
 - **Movimentações:** barra de busca, filtros e estados vazios.
 - **Baixas / títulos:** organização da navegação por natureza e situação, preservando todos os filtros existentes.
-- **DRE:** fluxo de revisão, seleção e feedback das classificações.
+- **DRE:** indicadores de governança da classificação gerencial (aprováveis, revisão humana, fora da DRE e tratamentos especiais), hierarquia dos cards e responsividade; fluxo de revisão, seleção e feedback das classificações.
 - **Centro de Operações em Lote:** seleção, ações e comunicação de governança.
 - **Padrões compartilhados:** controles responsivos, acessibilidade e estados ativos.
 
@@ -30,4 +30,4 @@ A PR #156 já cobre uma trilha de elevação visual da Torre de Controle e compo
 4. Homologação visual em desktop e mobile nos ambientes QA, sem tocar workspaces operacionais.
 
 ## Status
-Implementação visual parcial registrada em Importações, Movimentações, Baixas/Títulos, DRE e Centro de Operações em Lote. Typecheck, testes, build, Preview e QA visual ainda pendentes.
+Implementação visual parcial registrada em Importações, Movimentações, Baixas/Títulos, DRE (fila de revisão e indicadores de governança da classificação gerencial) e Centro de Operações em Lote. Typecheck, testes, build, Preview e QA visual ainda pendentes.
