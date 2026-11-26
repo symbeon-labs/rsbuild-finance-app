@@ -43,9 +43,24 @@ export async function POST(request: Request) {
   const safeName = fileName.normalize("NFKC").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "document";
   const storagePath = `${organizationId}/documents/${randomUUID()}/${safeName}`;
   const admin = createAdminClient();
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const { error: intentError } = await admin.from("organization_document_upload_intents").insert({
+    organization_id: organizationId,
+    storage_path: storagePath,
+    created_by: guard.ctx.userId,
+    expected_file_size: fileSize,
+    expected_media_type: mediaType,
+    expires_at: expiresAt
+  });
+  if (intentError) {
+    console.error(JSON.stringify({ event: "data_intake_intent_record_failed", organizationId, code: intentError.code }));
+    return NextResponse.json({ error: "upload_intent_unavailable" }, { status: 502 });
+  }
+
   const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(storagePath, { upsert: false });
   if (error || !data?.token) {
-    console.error(JSON.stringify({ event: "data_intake_upload_intent_failed", organizationId, code: error?.name }));
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath).eq("organization_id", organizationId);
+    console.error(JSON.stringify({ event: "data_intake_signed_token_failed", organizationId, code: error?.name }));
     return NextResponse.json({ error: "upload_intent_unavailable" }, { status: 502 });
   }
 
@@ -54,7 +69,8 @@ export async function POST(request: Request) {
     token: data.token,
     mediaType,
     documentType,
-    description
+    description,
+    expiresAt
   }, {
     status: 201,
     headers: { "Cache-Control": "private, no-store" }
