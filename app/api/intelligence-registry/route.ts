@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { encryptSecret, maskKey } from "@/lib/erp-credentials";
 import { consumeRateLimit } from "@/lib/api/rate-limit";
 
 export const runtime = "nodejs";
@@ -52,14 +51,12 @@ export async function POST(request: Request) {
   const model = String(body.model ?? "").trim();
   const sourceUri = String(body.sourceUri ?? "").trim();
   const runtime = String(body.runtime ?? "").trim();
-  const credential = String(body.credential ?? "").trim();
   const config = body.config && typeof body.config === "object" && !Array.isArray(body.config) ? body.config : {};
 
   if (name.length < 2 || name.length > 120 || description.length > 1000 ||
       !TYPES.includes(type as typeof TYPES[number]) ||
       !PROVIDERS.includes(provider as typeof PROVIDERS[number]) ||
-      model.length > 160 || runtime.length > 120 || sourceUri.length > 2048 ||
-      credential.length > 8192) {
+      model.length > 160 || runtime.length > 120 || sourceUri.length > 2048 ) {
     return NextResponse.json({ error: "invalid_registry_payload" }, { status: 400 });
   }
   if (sourceUri) {
@@ -71,20 +68,14 @@ export async function POST(request: Request) {
     }
   }
 
-  let encrypted: string | null = null;
-  if (credential) {
-    if (credential.length < 8) return NextResponse.json({ error: "credential_too_short" }, { status: 400 });
-    try { encrypted = encryptSecret(credential); }
-    catch { return NextResponse.json({ error: "encryption_unavailable" }, { status: 500 }); }
-  }
+
 
   const admin = createAdminClient();
-  const now = new Date().toISOString();
   const { data: id, error } = await access.client!.rpc("register_intelligence", {
     p_name: name, p_description: description || null, p_type: type, p_provider: provider,
     p_model: model || null, p_source_uri: sourceUri || null, p_runtime: runtime || null,
-    p_config: config, p_credential_encrypted: encrypted,
-    p_credential_hint: credential ? maskKey(credential) : null
+    p_config: config, p_credential_encrypted: null,
+    p_credential_hint: null
   });
   if (error || !id) return NextResponse.json({ error: error?.message.includes("audit_organization_missing") ? "audit_unavailable" : "registry_save_failed" }, { status: error?.code === "42501" ? 403 : 502 });
   const { data: saved, error: readError } = await admin.from("intelligence_registry")
