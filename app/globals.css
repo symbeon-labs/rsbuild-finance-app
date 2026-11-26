@@ -7216,15 +7216,14 @@ html:has(.inst-page) {
   min-width: 0;
 }
 .reconciliation-account-card-metrics { flex-wrap: wrap; overflow-wrap: anywhere; }
-.tabs { min-width: 0; flex-wrap: wrap; }
+.reconciliation-page .tabs { min-width: 0; flex-wrap: wrap; }
 @media (max-width: 760px) {
-  .content { min-width: 0; width: 100%; padding-inline: 14px; }
-  .panel { min-width: 0; max-width: 100%; }
+  .reconciliation-page .panel { min-width: 0; max-width: 100%; }
   .reconciliation-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .reconciliation-account-grid { grid-template-columns: minmax(0, 1fr); }
   .reconciliation-account-card-metrics { align-items: flex-start; flex-direction: column; gap: 5px; }
-  .tabs { gap: 4px 8px; }
-  .tab, .tab-active { min-width: 0; padding-inline: 10px; text-align: left; }
+  .reconciliation-page .tabs { gap: 4px 8px; }
+  .reconciliation-page .tab, .reconciliation-page .tab-active { min-width: 0; padding-inline: 10px; text-align: left; }
 }
 @media (max-width: 420px) {
   .reconciliation-kpi-grid { grid-template-columns: minmax(0, 1fr); }
