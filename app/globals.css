@@ -7185,6 +7185,211 @@ html:has(.inst-page) {
   }
 }
 
+/* ─── Finance table: direction / status / value badges ──────────────────── */
+
+.fin-direction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.fin-direction-badge--entrada {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.fin-direction-badge--saida {
+  background: var(--rsbuild-terracotta-soft);
+  color: var(--rsbuild-terracotta);
+}
+
+.fin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.fin-status-badge::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fin-status-badge--pendente {
+  background: rgba(245, 158, 11, 0.14);
+  color: #D97706;
+}
+.fin-status-badge--pendente::before {
+  background: #D97706;
+}
+[data-theme="dark"] .fin-status-badge--pendente {
+  color: #F59E0B;
+}
+[data-theme="dark"] .fin-status-badge--pendente::before {
+  background: #F59E0B;
+}
+.fin-status-badge--conciliado {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.fin-status-badge--conciliado::before {
+  background: var(--green);
+}
+.fin-status-badge--reclassificado {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366F1;
+}
+.fin-status-badge--reclassificado::before {
+  background: #6366F1;
+}
+[data-theme="dark"] .fin-status-badge--reclassificado {
+  color: #A5B4FC;
+}
+[data-theme="dark"] .fin-status-badge--reclassificado::before {
+  background: #A5B4FC;
+}
+.fin-status-badge--erro,
+.fin-status-badge--cancelado {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.fin-status-badge--erro::before,
+.fin-status-badge--cancelado::before {
+  background: var(--red);
+}
+
+.fin-value--entrada {
+  color: var(--green);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fin-value--saida {
+  color: var(--rsbuild-terracotta);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-origin-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fin-origin-monogram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--rsbuild-terracotta-soft);
+  color: var(--rsbuild-terracotta);
+}
+
+/* ─── Page Help Banner ─────────────────────────────────────────────────── */
+
+.page-help-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rsbuild-terracotta);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  margin-bottom: 18px;
+}
+
+.page-help-banner-icon {
+  font-size: 1.1rem;
+  color: var(--rsbuild-terracotta);
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.page-help-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-help-banner-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--rsbuild-terracotta);
+  margin-bottom: 2px;
+}
+
+.page-help-banner-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.page-help-banner-tips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.page-help-banner-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.page-help-banner-tip-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--rsbuild-terracotta-soft);
+  color: var(--rsbuild-terracotta);
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.page-help-banner-close {
+  align-self: flex-start;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.page-help-banner-close:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
 
 /* Mesa de Conciliação — conter tabelas largas sem ampliar o viewport */
 .reconciliation-table-wrap {

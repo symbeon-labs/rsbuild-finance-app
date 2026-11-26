@@ -3,6 +3,51 @@
 import { useState } from "react";
 import { FinancialRecord, formatCurrency, formatDate } from "@/lib/finance";
 
+/** Returns badge CSS modifier for a financial direction value */
+function directionBadgeClass(direction: string): string {
+  if (direction === "entrada") return "fin-direction-badge--entrada";
+  if (direction === "saída" || direction === "saida") return "fin-direction-badge--saida";
+  return "";
+}
+
+/** Returns badge CSS modifier for a financial status value */
+function statusBadgeClass(status: string): string {
+  const s = status?.toLowerCase() ?? "";
+  if (s === "pendente") return "fin-status-badge--pendente";
+  if (s === "conciliado" || s === "reconciliado") return "fin-status-badge--conciliado";
+  if (s === "reclassificado") return "fin-status-badge--reclassificado";
+  if (s === "erro" || s === "cancelado") return "fin-status-badge--erro";
+  return "fin-status-badge--pendente";
+}
+
+/** Returns human label for direction */
+function directionLabel(direction: string): string {
+  if (direction === "entrada") return "↑ entrada";
+  if (direction === "saída" || direction === "saida") return "↓ saída";
+  return direction;
+}
+
+/** Returns human label for status */
+function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    pendente: "pendente",
+    conciliado: "conciliado",
+    reconciliado: "conciliado",
+    reclassificado: "reclassificado",
+    erro: "erro",
+    cancelado: "cancelado",
+  };
+  return map[status?.toLowerCase()] ?? status ?? "pendente";
+}
+
+/** Returns the first 1–2 uppercase letters for a bank monogram */
+function bankMonogram(name: string): string {
+  if (!name) return "?";
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
 export function Metric({
   label,
   value,
@@ -112,15 +157,20 @@ export function RecordTable({ records }: { records: FinancialRecord[] }) {
                 </td>
                 <td>{record.category}</td>
                 <td>
-                  <span className="status-pill" style={{ background: "var(--bg)", color: "var(--ink)", borderColor: "var(--line)" }}>
-                    {record.bankName || record.source}
+                  <span className="fin-origin-cell">
+                    <span className="fin-origin-monogram">{bankMonogram(record.bankName || record.source || "")}</span>
+                    <span>{record.bankName || record.source || "Não identificada"}</span>
                   </span>
                 </td>
                 <td>
-                  <span className="status-pill">{record.status}</span>
+                  <span className={`fin-status-badge ${statusBadgeClass(record.status ?? "")}`}>
+                    {statusLabel(record.status ?? "")}
+                  </span>
                 </td>
-                <td className={record.direction === "entrada" ? "align-right positive" : "align-right negative"}>
-                  {record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amount)}
+                <td className="align-right">
+                  <span className={record.direction === "entrada" ? "fin-value--entrada" : "fin-value--saida"}>
+                    {record.direction === "entrada" ? "+" : "−"} {formatCurrency(record.amount)}
+                  </span>
                 </td>
               </tr>
             ))}
