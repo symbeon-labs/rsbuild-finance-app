@@ -162,6 +162,7 @@ select lives_ok(
  )$q$,
  'platform administrator can register an intelligence'
 );
+reset role;
 select is(
  (select count(*)::int from public.audit_events
   where event_type='intelligence.registered'
@@ -169,6 +170,8 @@ select is(
  1,
  'registry creation and audit event are committed together'
 );
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
 select lives_ok(
  $q$select public.create_intelligence_assignment(
    'e6666666-6666-4666-8666-666666666666',
@@ -186,6 +189,7 @@ select lives_ok(
  )$q$,
  'active assignment permits a canonical intelligence connection'
 );
+reset role;
 select is(
  (select count(*)::int from public.audit_events
   where event_type='intelligence.connection.configured'
@@ -193,6 +197,8 @@ select is(
  1,
  'canonical connection and audit event are committed together'
 );
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
 select lives_ok(
  $q$select public.save_agent_integration(
    'e4444444-4444-4444-8444-444444444444',
@@ -202,6 +208,7 @@ select lives_ok(
  )$q$,
  'active assignment permits credential configuration'
 );
+reset role;
 select is(
  (select count(*)::int from public.audit_events
   where event_type='agent.integration.configured'
