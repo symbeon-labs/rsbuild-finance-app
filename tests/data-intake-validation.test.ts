@@ -73,7 +73,7 @@ function validXlsxFixture(): Uint8Array {
 
 function validDocxFixture(): Uint8Array {
   return makeStoredZip([
-    { name: "[Content_Types].xml", content: '<Types><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>' },
+    { name: "[Content_Types].xml", content: '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>' },
     { name: "_rels/.rels", content: '<Relationships/>' },
     { name: "word/document.xml", content: '<document/>' }
   ]);
