@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { FinancialRecord } from "@/lib/finance";
 import { EmptyState, RecordTable } from "./common";
+import { generateFinancialRecordsExcel, downloadExcelFile } from "@/lib/export";
 
 interface MovimentacoesViewProps {
   records: FinancialRecord[];
@@ -65,6 +66,12 @@ export function MovimentacoesView({
     setDateTo("");
   }
 
+  function onExportExcel() {
+    if (!filteredRecords.length) return;
+    const data = generateFinancialRecordsExcel(filteredRecords, "Movimentações Financeiras", "período selecionado");
+    downloadExcelFile(data, `movimentacoes-${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
   const hasActiveFilters = Boolean(
     query || direction !== "all" || category !== "all" || institution !== "all" ||
     status !== "all" || dateFrom || dateTo
@@ -79,6 +86,15 @@ export function MovimentacoesView({
           <p>Consulte e filtre os registros financeiros por coluna.</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
+          {filteredRecords.length > 0 && (
+            <button
+              className="secondary-button"
+              onClick={onExportExcel}
+              title="Exportar movimentações em Excel com abas por conta bancária"
+            >
+              📊 Exportar Excel
+            </button>
+          )}
           {records.length > 0 && (
             <button
               className="secondary-button"

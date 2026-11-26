@@ -4,6 +4,7 @@ import { FinancialRecord, formatCurrency } from "@/lib/finance";
 import { DreSourceStructure } from "@/app/components/finance/dre-source-structure";
 import { DreDataStudioImport } from "@/app/components/finance/dre-data-studio-import";
 import { DRE_ACCOUNTS, partitionDreRecords, runDreEngine, type DreOverride, type DreUnit } from "@/lib/dre-engine";
+import { generateDreExcel, downloadExcelFile } from "@/lib/export";
 
 interface Props { records: FinancialRecord[]; organizationId: string; isLoading?: boolean; periodLabel?: string }
 type Totals = { incoming: number; outgoing: number; result: number; count: number };
@@ -52,8 +53,13 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
  const categories=useMemo(()=>{const map=new Map<string,{direction:string;category:string;amount:number;count:number}>();rows.forEach(r=>{const category=r.category?.trim()||"Não classificado";const key=r.direction+"|"+category;const v=map.get(key)||{direction:r.direction,category,amount:0,count:0};v.amount+=Math.abs(r.amount);v.count++;map.set(key,v)});return [...map.values()].sort((a,b)=>b.amount-a.amount)},[rows]);
  const months=useMemo(()=>{const map=new Map<string,{incoming:number;outgoing:number;count:number}>();rows.forEach(r=>{const k=r.date.slice(0,7);const v=map.get(k)||{incoming:0,outgoing:0,count:0};if(r.direction==="entrada")v.incoming+=Math.abs(r.amount);else v.outgoing+=Math.abs(r.amount);v.count++;map.set(k,v)});return [...map.entries()].sort(([a],[b])=>a.localeCompare(b))},[rows]);
  const onExport=()=>exportCsv([["Natureza","Categoria","Registros","Valor BRL"],...categories.map(c=>[c.direction==="entrada"?"Entrada":"Saída",c.category,String(c.count),money(c.amount)]),[],["Resumo","Valor BRL"],["Entradas",money(totals.incoming)],["Saídas",money(totals.outgoing)],["Resultado líquido de caixa",money(totals.result)],[],["Mês","Entradas","Saídas","Resultado","Registros"],...months.map(([m,v])=>[m,money(v.incoming),money(v.outgoing),money(v.incoming-v.outgoing),String(v.count)])]);
+ const onExportExcel=()=>{
+  if(!dreEngine.classifications.length)return;
+  const data=generateDreExcel(dreEngine.classifications,"DRE Gerencial",periodLabel);
+  downloadExcelFile(data,`dre-gerencial-${periodLabel.replace(/\s+/g,'-')}.xlsx`);
+ };
  return <>
- <div className="page-heading dre-page-heading"><div><div className="eyebrow">DESEMPENHO FINANCEIRO</div><h1>DRE Gerencial</h1><p>Visão executiva do resultado de caixa e da qualidade da classificação financeira.</p></div><button className="secondary-button" onClick={onExport} disabled={!rows.length}>Exportar CSV</button></div>
+ <div className="page-heading dre-page-heading"><div><div className="eyebrow">DESEMPENHO FINANCEIRO</div><h1>DRE Gerencial</h1><p>Visão executiva do resultado de caixa e da qualidade da classificação financeira.</p></div><div style={{display:"flex",gap:8}}><button className="secondary-button" onClick={onExport} disabled={!rows.length}>Exportar CSV</button><button className="secondary-button" onClick={onExportExcel} disabled={!dreEngine.classifications.length}>Exportar Excel</button></div></div>
  {recordPartition.invalidCount>0&&<div className="quality-footnote" role="alert" style={{marginBottom:14}}>Atenção: {recordPartition.invalidCount} registro(s) com data, valor, natureza ou identificador inválido foram isolados e não entraram nos cálculos da DRE. Revise a origem desses lançamentos antes de utilizá-los no fechamento.</div>}
  <section className="panel dre-criteria"><div className="panel-heading"><div><span className="dre-section-kicker">ESCOPO DO RELATÓRIO</span><h2>Critérios do demonstrativo</h2><p>Base de caixa <span className="dre-dot"/> {periodLabel}</p></div><label className="dre-period-control">Exercício<select className="filter-select" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Todo o período</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label></div><p className="dre-method-note">Este demonstrativo consolida movimentações pela data bancária. Não substitui a DRE contábil por competência nem a apuração fiscal. Transferências, empréstimos, aportes e estornos exigem identificação e tratamento próprio antes de serem considerados receita ou despesa.</p></section>
  <DreDataStudioImport />
