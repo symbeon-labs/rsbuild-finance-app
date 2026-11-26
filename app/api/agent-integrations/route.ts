@@ -15,10 +15,10 @@ async function authorizePlatformAdmin(request: Request) {
   if (origin && origin !== new URL(request.url).origin) return { session: null, user: null, error: "origin_forbidden" as const };
   const session = await createClient();
   const { data: { user }, error } = await session.auth.getUser();
-  if (error || !user) return { user: null, error: "unauthenticated" as const };
-  if (!consumeRateLimit(`${user.id}:/api/agent-integrations`)) return { user: null, error: "rate_limited" as const };
+  if (error || !user) return { session: null, user: null, error: "unauthenticated" as const };
+  if (!consumeRateLimit(`${user.id}:/api/agent-integrations`)) return { session: null, user: null, error: "rate_limited" as const };
   const { data: allowed, error: rpcError } = await session.rpc("is_platform_administrator");
-  if (rpcError || allowed !== true) return { user: null, error: "forbidden" as const };
+  if (rpcError || allowed !== true) return { session: null, user: null, error: "forbidden" as const };
   return { session, user, error: null };
 }
 
