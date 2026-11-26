@@ -65,7 +65,7 @@ function makeStoredZip(files: Array<{ name: string; content: string }>): Uint8Ar
 
 function validXlsxFixture(): Uint8Array {
   return makeStoredZip([
-    { name: "[Content_Types].xml", content: '<Types><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>' },
+    { name: "[Content_Types].xml", content: '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>' },
     { name: "_rels/.rels", content: '<Relationships/>' },
     { name: "xl/workbook.xml", content: '<workbook/>' }
   ]);
