@@ -448,6 +448,12 @@ begin
   end if;
   if not exists (
     select 1 from public.intelligence_registry ir
+    where ir.id=p_intelligence_id and ir.status='registered' and ir.provider=p_provider
+  ) then
+    raise exception 'connection_provider_mismatch' using errcode='22023';
+  end if;
+  if not exists (
+    select 1 from public.intelligence_registry ir
     join public.intelligence_assignments ia on ia.intelligence_id=ir.id
     where ir.id=p_intelligence_id and ir.status='registered'
       and ia.organization_id=p_organization_id and ia.status='active'
