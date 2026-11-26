@@ -108,7 +108,7 @@ export function DevZonePanel({
   function handleSwitchTenant(presetId: OrganizationId) {
     const uuid = TENANT_UUIDS[presetId];
     if (!uuid) return;
-    router.push(`/?organizationId=${encodeURIComponent(uuid)}&tab=visao-geral`);
+    router.push(`/?organizationId=${encodeURIComponent(uuid)}&tab=workspace`);
     setIsOpen(false);
   }
 

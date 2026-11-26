@@ -317,7 +317,7 @@ export function WorkspaceModal({
               : selectedOrg !== currentOrgId;
             if (isOrgChange && selectedOrgRealId) {
               document.cookie = `rsbuild_selected_org=${encodeURIComponent(selectedOrgRealId)}; path=/; max-age=31536000; SameSite=Lax`;
-              window.location.href = `/?organizationId=${selectedOrgRealId}&tab=visao-geral`;
+              window.location.href = `/?organizationId=${selectedOrgRealId}&tab=workspace`;
               return;
             }
 

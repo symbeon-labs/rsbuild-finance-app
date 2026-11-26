@@ -1042,7 +1042,7 @@ export default function OperationalWorkspace({
             type="button"
             onClick={() => {
               document.cookie = `rsbuild_selected_org=${encodeURIComponent("0269fe05-0990-41a8-a28c-2919691eaf0f")}; path=/; max-age=31536000; SameSite=Lax`;
-              window.location.href = `/?organizationId=0269fe05-0990-41a8-a28c-2919691eaf0f&tab=visao-geral`;
+              window.location.href = `/?organizationId=0269fe05-0990-41a8-a28c-2919691eaf0f&tab=workspace`;
             }}
             style={{
               display: "flex",

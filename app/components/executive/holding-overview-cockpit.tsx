@@ -125,7 +125,7 @@ export function HoldingOverviewCockpit({
       try {
         localStorage.setItem("rsbuild_selected_organization", orgId);
       } catch {}
-      router.push(`/?organizationId=${encodeURIComponent(orgId)}&tab=visao-geral`);
+      router.push(`/?organizationId=${encodeURIComponent(orgId)}&tab=workspace`);
     });
   }
 
