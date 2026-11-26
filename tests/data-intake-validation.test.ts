@@ -1,7 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { deflateRawSync } from "node:zlib";
-
 import {
   DATA_INTAKE_TYPES,
   MAX_DATA_INTAKE_FILE_BYTES,
