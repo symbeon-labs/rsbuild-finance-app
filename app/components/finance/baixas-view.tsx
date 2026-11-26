@@ -26,7 +26,8 @@ interface BaixasViewProps {
   isSyncingOmie?: boolean;
 }
 
-type FilterTab = "todos" | "prontos" | "divergentes" | "atraso" | "a_vencer" | "baixados" | "a_receber" | "a_pagar";
+type NatureFilter = "todos" | "a_receber" | "a_pagar";
+type StatusFilter = "todos" | "prontos" | "divergentes" | "atraso" | "a_vencer" | "baixados";
 
 export function BaixasView({
   titles,
@@ -42,7 +43,8 @@ export function BaixasView({
   isSyncingOmie = false
 }: BaixasViewProps) {
   const titlesInputRef = useRef<HTMLInputElement>(null);
-  const [filterTab, setFilterTab] = useState<FilterTab>("todos");
+  const [natureFilter, setNatureFilter] = useState<NatureFilter>("todos");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [searchQuery, setSearchQuery] = useState("");
   const hasSettlementAuth = canApproveBatchSettlement(role);
   const roleMeta = getRoleMetadata(role);
@@ -125,13 +127,13 @@ export function BaixasView({
       const isFuture = !isSettled && t.dueDate >= todayStr;
 
       // Filtro da aba
-      if (filterTab === "prontos" && m.suggestedStatus !== "pronto_para_baixa") return false;
-      if (filterTab === "divergentes" && m.suggestedStatus !== "divergente") return false;
-      if (filterTab === "atraso" && !isOverdue) return false;
-      if (filterTab === "a_vencer" && !isFuture) return false;
-      if (filterTab === "baixados" && !isSettled) return false;
-      if (filterTab === "a_receber" && t.category === "payable") return false;
-      if (filterTab === "a_pagar" && t.category !== "payable") return false;
+      if (statusFilter === "prontos" && m.suggestedStatus !== "pronto_para_baixa") return false;
+      if (statusFilter === "divergentes" && m.suggestedStatus !== "divergente") return false;
+      if (statusFilter === "atraso" && !isOverdue) return false;
+      if (statusFilter === "a_vencer" && !isFuture) return false;
+      if (statusFilter === "baixados" && !isSettled) return false;
+      if (natureFilter === "a_receber" && t.category === "payable") return false;
+      if (natureFilter === "a_pagar" && t.category !== "payable") return false;
 
       // Filtro da busca
       if (searchQuery.trim()) {
@@ -147,7 +149,7 @@ export function BaixasView({
 
       return true;
     });
-  }, [matches, filterTab, searchQuery, todayStr]);
+  }, [matches, natureFilter, statusFilter, searchQuery, todayStr]);
 
   return (
     <>
@@ -296,76 +298,37 @@ export function BaixasView({
           )}
         </div>
 
-        {/* Barra de Filtros e Busca */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginTop: "16px", marginBottom: "16px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-            <button
-              className={filterTab === "todos" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("todos")}
-            >
-              Todos ({titles.length})
-            </button>
-            <button
-              className={filterTab === "a_receber" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("a_receber")}
-            >
-              📥 A Receber ({titles.filter((t) => t.category !== "payable").length})
-            </button>
-            <button
-              className={filterTab === "a_pagar" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("a_pagar")}
-            >
-              📤 A Pagar ({titles.filter((t) => t.category === "payable").length})
-            </button>
-            <button
-              className={filterTab === "prontos" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("prontos")}
-            >
-              Prontos p/ Baixa ({matchStats.ready.length})
-            </button>
-            <button
-              className={filterTab === "divergentes" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("divergentes")}
-            >
-              Divergentes ({matchStats.divergent.length})
-            </button>
-            <button
-              className={filterTab === "atraso" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("atraso")}
-            >
-              Em Atraso ({summary.overdueCount})
-            </button>
-            <button
-              className={filterTab === "a_vencer" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("a_vencer")}
-            >
-              A Vencer ({summary.futureCount})
-            </button>
-            <button
-              className={filterTab === "baixados" ? "tab-button active" : "tab-button"}
-              onClick={() => setFilterTab("baixados")}
-            >
-              Liquidados ({summary.settledCount})
-            </button>
+        {/* Filtros organizados por natureza e situação */}
+        <div className="settlement-filter-panel" aria-label="Filtros de títulos">
+          <div className="settlement-filter-group">
+            <div className="settlement-filter-heading">
+              <strong>Natureza</strong>
+              <span>Tipo de título</span>
+            </div>
+            <div className="settlement-filter-options" role="group" aria-label="Filtrar por natureza">
+              <button type="button" className={natureFilter === "todos" ? "tab-button active" : "tab-button"} aria-pressed={natureFilter === "todos"} onClick={() => setNatureFilter("todos")}>Todos ({titles.length})</button>
+              <button type="button" className={natureFilter === "a_receber" ? "tab-button active" : "tab-button"} aria-pressed={natureFilter === "a_receber"} onClick={() => setNatureFilter("a_receber")}>📥 A Receber ({titles.filter((t) => t.category !== "payable").length})</button>
+              <button type="button" className={natureFilter === "a_pagar" ? "tab-button active" : "tab-button"} aria-pressed={natureFilter === "a_pagar"} onClick={() => setNatureFilter("a_pagar")}>📤 A Pagar ({titles.filter((t) => t.category === "payable").length})</button>
+            </div>
           </div>
-
-          <div style={{ minWidth: "260px", flex: 1, maxWidth: "380px" }}>
-            <input
-              type="text"
-              placeholder="Buscar por NF, cliente, banco..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "6px",
-                border: "1px solid var(--line)",
-                background: "var(--bg)",
-                color: "var(--ink)",
-                fontSize: "13px"
-              }}
-            />
+          <div className="settlement-filter-group">
+            <div className="settlement-filter-heading">
+              <strong>Situação</strong>
+              <span>Etapa financeira ou de conciliação</span>
+            </div>
+            <div className="settlement-filter-options" role="group" aria-label="Filtrar por situação">
+              <button type="button" className={statusFilter === "todos" ? "tab-button active" : "tab-button"} aria-pressed={statusFilter === "todos"} onClick={() => setStatusFilter("todos")}>Todas ({matches.length})</button>
+              <button type="button" className={statusFilter === "prontos" ? "tab-button active" : "tab-button"} aria-pressed={statusFilter === "prontos"} onClick={() => setStatusFilter("prontos")}>Prontos p/ Baixa ({matchStats.ready.length})</button>
+              <button type="button" className={statusFilter === "divergentes" ? "tab-button active" : "tab-button"} aria-pressed={statusFilter === "divergentes"} onClick={() => setStatusFilter("divergentes")}>Divergentes ({matchStats.divergent.length})</button>
+              <button type="button" className={statusFilter === "atraso" ? "tab-button active" : "tab-button"} aria-pressed={statusFilter === "atraso"} onClick={() => setStatusFilter("atraso")}>Em Atraso ({summary.overdueCount})</button>
+              <button type="button" className={statusFilter === "a_vencer" ? "tab-button active" : "tab-button"} aria-pressed={statusFilter === "a_vencer"} onClick={() => setStatusFilter("a_vencer")}>A Vencer ({summary.futureCount})</button>
+              <button type="button" className={statusFilter === "baixados" ? "tab-button active" : "tab-button"} aria-pressed={statusFilter === "baixados"} onClick={() => setStatusFilter("baixados")}>Liquidados ({summary.settledCount})</button>
+            </div>
+          </div>
+          <div className="settlement-search">
+            <label htmlFor="settlement-title-search">Buscar títulos</label>
+            <input id="settlement-title-search" type="text" placeholder="NF, cliente, banco ou nosso número..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="search-input" />
+            <span className="settlement-result-count" aria-live="polite">{filteredMatches.length} de {matches.length} títulos encontrados</span>
           </div>
         </div>
 
