@@ -136,6 +136,14 @@ begin
   if not exists (select 1 from public.organizations where id = p_organization_id) then
     raise exception 'organization_not_found' using errcode = '23503';
   end if;
+  if ('qa'=any(p_environments) or 'sandbox'=any(p_environments))
+     and not exists (
+       select 1 from public.organizations
+       where id=p_organization_id
+         and (right(slug,3)='_qa' or slug like 'rsbuild_qa_%')
+     ) then
+    raise exception 'qa_organization_required' using errcode = '22023';
+  end if;
 
   insert into public.intelligence_assignments (
     intelligence_id, organization_id, status, access_mode, environments,
