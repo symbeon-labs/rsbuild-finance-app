@@ -11,7 +11,7 @@ values
 on conflict (id) do nothing;
 
 insert into public.organizations (id, legal_name, display_name, slug)
-values ('e3333333-3333-4333-8333-333333333333','Agent tenant Ltda','Agent tenant','agent_v1_tenant')
+values ('e3333333-3333-4333-8333-333333333333','Agent tenant Ltda','Agent tenant','agent_v1_tenant_qa')
 on conflict (id) do nothing;
 
 insert into public.organizations (legal_name,display_name,slug)
