@@ -36,13 +36,25 @@ export async function GET(
     return NextResponse.json({ error: "document_download_unavailable" }, { status: 502 });
   }
 
-  await admin.from("organization_document_events").insert({
+  const { error: eventError } = await admin.from("organization_document_events").insert({
     document_id: documentId,
     organization_id: organizationId,
     actor_id: guard.ctx.userId,
     event_type: "downloaded",
-    metadata: {}
+    metadata: { delivery: "signed_url_issued" }
   });
+  if (eventError) {
+    console.error(JSON.stringify({
+      event: "data_intake_download_audit_failed",
+      organizationId,
+      documentId,
+      actorId: guard.ctx.userId,
+      code: eventError.code
+    }));
+    // Fail closed: do not disclose a signed URL when the required audit event
+    // cannot be persisted. The unreturned URL expires after 60 seconds.
+    return NextResponse.json({ error: "document_download_audit_failed" }, { status: 502 });
+  }
 
   return NextResponse.redirect(data.signedUrl, {
     status: 302,
