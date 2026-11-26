@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type Intelligence = { id:string; name:string; intelligence_type:string; provider:string; status:string; legacy_agent_id:string|null };
 type Organization = { id:string; slug:string; display_name:string };
 type Assignment = { id:string; intelligence_id:string; organization_id:string; status:string; access_mode:string; environments:string[]; expires_at:string|null; approved_at:string|null };
+type Connection = {id:string;intelligence_id:string;organization_id:string;provider:string;display_name:string;credential_hint:string;status:string};
 const providers = ["openai","anthropic","google","xai","custom_api","mcp"];
 
 export function IntelligenceGovernancePanel() {
   const [items,setItems]=useState<Intelligence[]>([]);
   const [organizations,setOrganizations]=useState<Organization[]>([]);
   const [assignments,setAssignments]=useState<Assignment[]>([]);
+  const [connections,setConnections]=useState<Connection[]>([]);
   const [intelligenceId,setIntelligenceId]=useState("");
   const [organizationId,setOrganizationId]=useState("");
   const [accessMode,setAccessMode]=useState("internal");
@@ -31,13 +33,14 @@ export function IntelligenceGovernancePanel() {
     setItems(j.intelligences||[]);
     setOrganizations((j.organizations||[]).filter((o:Organization)=>o.slug!=="rsbuild"));
     setAssignments(j.assignments||[]);
+    const cr=await fetch("/api/intelligence-connections",{cache:"no-store"});const cj=await cr.json();if(!cr.ok)throw new Error(cj.error||"Falha ao carregar conexões");setConnections(cj.connections||[]);
   },[]);
   useEffect(()=>{void refresh().catch(e=>setMessage(e instanceof Error?e.message:"Falha ao carregar"))},[refresh]);
 
   const assignable=useMemo(()=>items.filter(i=>i.status==="registered"),[items]);
   const activeAssignment=assignments.find(a=>a.id===connectionAssignment && a.status==="active");
   const linkedIntelligence=activeAssignment?items.find(i=>i.id===activeAssignment.intelligence_id):undefined;
-  const canConfigure=Boolean(activeAssignment && linkedIntelligence?.legacy_agent_id && activeAssignment.environments.some(e=>e==="qa"||e==="sandbox"));
+  const canConfigure=Boolean(activeAssignment && linkedIntelligence?.status==="registered" && activeAssignment.environments.some(e=>e==="qa"||e==="sandbox"));
 
   async function assign(){
     setBusy(true);setMessage("");
@@ -57,15 +60,15 @@ export function IntelligenceGovernancePanel() {
     catch(e){setMessage(e instanceof Error?e.message:"Falha ao revogar")}finally{setBusy(false)}
   }
   async function connect(){
-    if(!activeAssignment||!linkedIntelligence?.legacy_agent_id)return;
+    if(!activeAssignment||!linkedIntelligence)return;
     setBusy(true);setMessage("");
     try{
-      const r=await fetch("/api/agent-integrations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-        agentId:linkedIntelligence.legacy_agent_id,organizationId:activeAssignment.organization_id,
+      const r=await fetch("/api/intelligence-connections",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        intelligenceId:linkedIntelligence.id,organizationId:activeAssignment.organization_id,
         provider,displayName,endpointUrl,model,credential
       })});
       const j=await r.json();if(!r.ok)throw new Error(j.error||"Falha ao configurar conexão");
-      setCredential("");setMessage("Conexão armazenada e auditada. Conectividade não verificada; execução permanece desabilitada.");
+      setCredential("");setMessage("Conexão armazenada e auditada. Conectividade não verificada; execução permanece desabilitada.");await refresh();
     }catch(e){setMessage(e instanceof Error?e.message:"Falha ao configurar conexão")}finally{setBusy(false)}
   }
 
@@ -98,7 +101,7 @@ export function IntelligenceGovernancePanel() {
     <div style={{display:"grid",gap:10}}>
       <h3 style={{margin:0,fontSize:14,color:"var(--ink)"}}>3 · Configurar conexão protegida</h3>
       <label style={field}>ATRIBUIÇÃO ATIVA<select style={input} value={connectionAssignment} onChange={e=>setConnectionAssignment(e.target.value)}><option value="">Selecione uma atribuição</option>{assignments.filter(a=>a.status==="active").map(a=>{const i=items.find(x=>x.id===a.intelligence_id),o=organizations.find(x=>x.id===a.organization_id);return <option key={a.id} value={a.id}>{i?.name||"Inteligência"} · {o?.display_name||"Organização"}</option>})}</select></label>
-      {activeAssignment&&!canConfigure&&<div className="notice" role="note">Esta inteligência ainda não está vinculada a um agente de runtime compatível ou não possui escopo QA/Sandbox. A conexão não pode ser configurada nesta etapa.</div>}
+      {activeAssignment&&!canConfigure&&<div className="notice" role="note">Esta inteligência não possui atribuição ativa em QA/Sandbox. A conexão não pode ser configurada nesta etapa.</div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
         <label style={field}>PROVEDOR<select style={input} value={provider} onChange={e=>setProvider(e.target.value)}>{providers.map(p=><option key={p} value={p}>{p}</option>)}</select></label>
         <label style={field}>NOME DA CONEXÃO<input style={input} value={displayName} onChange={e=>setDisplayName(e.target.value)} maxLength={100}/></label>
@@ -108,6 +111,10 @@ export function IntelligenceGovernancePanel() {
       </div>
       <div><button className="primary-button" type="button" disabled={busy||!canConfigure||displayName.trim().length<2||credential.trim().length<8} onClick={()=>void connect()}>{busy?"Processando…":"Salvar conexão protegida"}</button></div>
       <p style={{margin:0,fontSize:10,color:"var(--muted)"}}>Credenciais são criptografadas no servidor, nunca retornadas em claro e nunca testadas ou usadas para execução por esta interface.</p>
+      <div style={{display:"grid",gap:6}}>
+        <strong style={{fontSize:12,color:"var(--ink)"}}>Conexões configuradas</strong>
+        {connections.length?connections.map(c=>{const i=items.find(x=>x.id===c.intelligence_id),o=organizations.find(x=>x.id===c.organization_id);return <div key={c.id} style={{fontSize:11,color:"var(--muted)",display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}><span>{i?.name||"Inteligência"} · {o?.display_name||"Organização"} · {c.provider} · {c.credential_hint} · {c.status}</span>{c.status!=="disabled"&&<button type="button" className="secondary-button" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await fetch("/api/intelligence-connections?id="+encodeURIComponent(c.id),{method:"DELETE"});const j=await r.json();if(!r.ok)throw new Error(j.error||"Falha ao desativar");setMessage("Conexão desativada e auditada.");await refresh()}catch(e){setMessage(e instanceof Error?e.message:"Falha ao desativar")}finally{setBusy(false)}}}>Desativar</button>}</div>}):<span style={{fontSize:11,color:"var(--muted)"}}>Nenhuma conexão configurada.</span>}
+      </div>
     </div>
   </section>;
 }
