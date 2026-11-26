@@ -7070,3 +7070,58 @@ html:has(.inst-page) {
   .movement-filter-field select,
   .movement-filter-field input[type="date"] { transition: none; }
 }
+
+
+/* Finance UX consistency — Baixas e Operações em Lote */
+.settlement-filter-panel {
+  display: grid;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-raised);
+}
+.settlement-filter-group { display: grid; gap: 8px; min-width: 0; }
+.settlement-filter-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 9px; }
+.settlement-filter-heading strong { color: var(--ink); font-size: 12px; }
+.settlement-filter-heading span { color: var(--muted); font-size: 10px; }
+.settlement-filter-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.settlement-filter-options .tab-button { min-height: 38px; }
+.settlement-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.settlement-search label { grid-column: 1 / -1; color: var(--muted); font-size: 11px; font-weight: 600; }
+.settlement-search input { width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 12px; }
+.settlement-result-count { color: var(--muted); font-size: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bulk-filter-panel { display: grid; gap: 8px; }
+.bulk-filter-panel > .text-button { justify-self: start; padding-left: 0; }
+.bulk-selection-status { display: grid; gap: 2px; min-width: 0; color: var(--muted); font-size: 11px; }
+.bulk-selection-status strong { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.bulk-selection-status small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.bulk-selection-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.bulk-selection-total { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.bulk-operations-page .bulk-selection-bar { align-items: center; }
+.bulk-operations-page .bulk-selection-bar > .bulk-selection-status { flex: 1 1 240px; }
+.bulk-operations-page .bulk-selection-bar > .bulk-selection-actions { flex: 0 1 auto; }
+.bulk-operations-page .bulk-selection-actions button { min-height: 40px; }
+.bulk-operations-page .bulk-selection-status + .bulk-selection-actions { margin-left: auto; }
+.settlement-filter-panel button:focus-visible,
+.settlement-search input:focus-visible {
+  outline: 3px solid rgba(181, 88, 60, .24);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .settlement-filter-panel { padding: 12px; gap: 12px; }
+  .settlement-filter-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .settlement-filter-options .tab-button { width: 100%; min-width: 0; }
+  .settlement-search { grid-template-columns: minmax(0, 1fr); }
+  .settlement-result-count { white-space: normal; }
+  .bulk-selection-actions { width: 100%; justify-content: stretch; }
+  .bulk-selection-actions button { flex: 1 1 auto; }
+}
