@@ -15,7 +15,7 @@ async function authorize(request: Request) {
   if (origin && origin !== new URL(request.url).origin) return { client: null, user: null, error: "origin_forbidden" as const };
   const client = await createClient();
   const { data: { user }, error } = await client.auth.getUser();
-  if (error || !user) return { user: null, error: "unauthenticated" as const };
+  if (error || !user) return { client: null, session: null, user: null, error: "unauthenticated" as const };
   if (!consumeRateLimit(`${user.id}:/api/intelligence-registry`)) return { user: null, error: "rate_limited" as const };
   const { data: allowed, error: rpcError } = await client.rpc("is_platform_administrator");
   if (rpcError || allowed !== true) return { user: null, error: "forbidden" as const };
@@ -90,7 +90,6 @@ export async function DELETE(request: Request) {
   if (access.error || !access.user) return fail(access.error ?? "forbidden");
   const id = new URL(request.url).searchParams.get("id") ?? "";
   if (!UUID.test(id)) return NextResponse.json({ error: "invalid_registry_id" }, { status: 400 });
-  const admin = createAdminClient();
   const { error } = await access.client!.rpc("disable_intelligence", { p_intelligence_id: id });
   if (error) return NextResponse.json({ error: error.code === "P0002" ? "registry_item_not_found" : error.message.includes("audit_organization_missing") ? "audit_unavailable" : "registry_disable_failed" }, { status: error.code === "P0002" ? 404 : error.code === "42501" ? 403 : 502 });
   return NextResponse.json({ ok: true });
