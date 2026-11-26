@@ -51,8 +51,8 @@ import {
 } from "@/app/types/workspace";
 import { MemberRole, canAccessSprintZone, canApproveBatchSettlement } from "@/lib/permissions";
 import { applyBrandColor, deriveBrandTokens } from "@/app/lib/brand-color";
-import { MODULE_CONFIGS, Sidebar } from "@/app/components/shell/sidebar";
-import { RsbuildIcon } from "@/app/components/rsbuild-icons";
+import { Sidebar } from "@/app/components/shell/sidebar";
+import { OperationalWorkspaceHomeView } from "@/app/components/executive/operational-workspace-home-view";
 import { Topbar } from "@/app/components/shell/topbar";
 import { WorkspaceModal } from "@/app/components/shell/workspace-modal";
 import { DevZonePanel } from "@/app/components/dev/dev-zone-panel";
@@ -1066,52 +1066,13 @@ export default function OperationalWorkspace({
         <div className="content">
           {!modulesResolved ? <div className="inline-note" role="status">Validando as permissões dos módulos deste ambiente...</div> : <>
           {section === "workspace" ? (
-            <section aria-labelledby="workspace-launcher-title" style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(24px, 5vw, 56px) 0" }}>
-              <div style={{ marginBottom: 30 }}>
-                <p style={{ margin: "0 0 8px", color: "var(--muted)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>CENTRAL DE OPERAÇÕES</p>
-                <h1 id="workspace-launcher-title" style={{ margin: 0, color: "var(--ink)", fontSize: "clamp(26px, 4vw, 38px)", fontWeight: 650, letterSpacing: "-0.04em" }}>{companyName}</h1>
-                <p style={{ margin: "10px 0 0", maxWidth: 620, color: "var(--muted)", fontSize: 14, lineHeight: 1.65 }}>Selecione um módulo para acessar as operações disponíveis neste workspace.</p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 235px), 1fr))", gap: 14 }}>
-                {MODULE_CONFIGS.filter((module) => enabledModules[module.id]).map((module) => {
-                  const destinations: Record<ModuleType, NavSection> = {
-                    finance: "visao-geral",
-                    reconciliation: "baixas",
-                    logistics: "pedidos-ha",
-                    audit: "torre-controle"
-                  };
-                  const descriptions: Record<ModuleType, string> = {
-                    finance: "Movimentações, importações e visão financeira",
-                    reconciliation: "Conferência de títulos, conciliação e baixas",
-                    logistics: "Pedidos, expedição e comprovantes de entrega",
-                    audit: "Governança, rastreabilidade e auditoria operacional"
-                  };
-                  return (
-                    <button
-                      key={module.id}
-                      type="button"
-                      onClick={() => navigateTo(destinations[module.id])}
-                      aria-label={`Abrir módulo ${module.label}`}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 16, minHeight: 132,
-                        padding: "22px", textAlign: "left", cursor: "pointer",
-                        color: "var(--ink)", background: "var(--surface)",
-                        border: "1px solid var(--line)", borderRadius: 12,
-                        transition: "none"
-                      }}
-                    >
-                      <span style={{ display: "grid", placeItems: "center", flex: "0 0 46px", width: 46, height: 46, borderRadius: 10, color: "var(--rsbuild-terracotta, #B5583C)", background: "var(--surface-raised, rgba(255,255,255,0.04))" }}>
-                        <RsbuildIcon name={module.icon} size={25} tone="accent" />
-                      </span>
-                      <span style={{ display: "grid", gap: 7, minWidth: 0 }}>
-                        <strong style={{ fontSize: 16, fontWeight: 650 }}>{module.label}</strong>
-                        <span style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>{descriptions[module.id]}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+            <OperationalWorkspaceHomeView
+              organizationSlug={organizationSlug}
+              organizationName={companyName}
+              organizationDescription={organizationPreset?.description}
+              enabledModules={enabledModules}
+              onNavigateToSection={navigateTo}
+            />
           ) : (
           <>
           <div className="inline-note" role="note">
