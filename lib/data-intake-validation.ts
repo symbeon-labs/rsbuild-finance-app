@@ -72,15 +72,24 @@ function readZipEntries(bytes: Uint8Array): Map<string, { entry: ZipEntry; data:
     const localOffset = view.getUint32(cursor + 42, true);
     const next = cursor + 46 + nameLength + extraLength + commentLength;
     if (next > bytes.length || (flags & 1) !== 0 || (method !== 0 && method !== 8)) return null;
-    const name = new TextDecoder("utf-8", { fatal: true }).decode(bytes.slice(cursor + 46, cursor + 46 + nameLength));
+    let name: string;
+    try { name = new TextDecoder("utf-8", { fatal: true }).decode(bytes.slice(cursor + 46, cursor + 46 + nameLength)); }
+    catch { return null; }
     if (name.startsWith("/") || name.split("/").includes("..") || entries.has(name)) return null;
     totalUncompressed += uncompressedSize;
     if (totalUncompressed > 40 * 1024 * 1024 || (compressedSize === 0 && uncompressedSize > 0) ||
         (compressedSize > 0 && uncompressedSize / compressedSize > 100)) return null;
 
     if (localOffset + 30 > bytes.length || view.getUint32(localOffset, true) !== 0x04034b50) return null;
+    const localFlags = view.getUint16(localOffset + 6, true);
+    const localMethod = view.getUint16(localOffset + 8, true);
     const localNameLength = view.getUint16(localOffset + 26, true);
     const localExtraLength = view.getUint16(localOffset + 28, true);
+    if (localFlags !== flags || localMethod !== method || localNameLength !== nameLength) return null;
+    let localName: string;
+    try { localName = new TextDecoder("utf-8", { fatal: true }).decode(bytes.slice(localOffset + 30, localOffset + 30 + localNameLength)); }
+    catch { return null; }
+    if (localName !== name) return null;
     const dataStart = localOffset + 30 + localNameLength + localExtraLength;
     const dataEnd = dataStart + compressedSize;
     if (dataEnd > bytes.length) return null;
@@ -109,11 +118,12 @@ export function isValidOfficeOpenXml(bytes: Uint8Array, kind: "xlsx" | "docx"): 
   if (!xml.includes("application/vnd.openxmlformats-package")) return false;
 
   if (kind === "xlsx") {
-    return entries.has("xl/workbook.xml") &&
-      (xml.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml") ||
-       xml.includes("application/vnd.ms-excel.sheet.macroEnabled.main+xml") === false);
+    return entries.has("_rels/.rels") &&
+      entries.has("xl/workbook.xml") &&
+      xml.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml");
   }
-  return entries.has("word/document.xml") &&
+  return entries.has("_rels/.rels") &&
+    entries.has("word/document.xml") &&
     xml.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml");
 }
 
