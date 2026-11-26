@@ -31,11 +31,15 @@ export async function GET(request: Request) {
   const access = await authorize(request);
   if (access.error || !access.user) return fail(access.error ?? "forbidden");
   const admin = createAdminClient();
-  const { data, error } = await admin.from("intelligence_assignments")
-    .select("id,intelligence_id,organization_id,status,access_mode,environments,expires_at,created_by,approved_by,approved_at,created_at,updated_at")
-    .order("updated_at", { ascending: false });
-  if (error) return NextResponse.json({ error: "assignments_unavailable" }, { status: 502 });
-  return NextResponse.json({ assignments: data ?? [] }, { headers: { "Cache-Control": "private, no-store" } });
+  const [{ data: assignments, error }, { data: organizations }, { data: intelligences }] = await Promise.all([
+    admin.from("intelligence_assignments")
+      .select("id,intelligence_id,organization_id,status,access_mode,environments,expires_at,created_by,approved_by,approved_at,created_at,updated_at")
+      .order("updated_at", { ascending: false }),
+    admin.from("organizations").select("id,slug,display_name").order("display_name"),
+    admin.from("intelligence_registry").select("id,name,intelligence_type,provider,status,legacy_agent_id").order("name")
+  ]);
+  if (error || !organizations || !intelligences) return NextResponse.json({ error: "assignments_unavailable" }, { status: 502 });
+  return NextResponse.json({ assignments: assignments ?? [], organizations, intelligences }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {
