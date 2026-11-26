@@ -84,6 +84,7 @@ O campo `config_schema_version` versiona o contrato JSON não secreto. O banco e
 - Uma atribuição não cria credenciais, não cria um grant legado e não habilita produção no runtime.
 - Os agentes legados continuam disponíveis como projeção de compatibilidade, vinculados ao catálogo pelo campo `legacy_agent_id`.
 - Cadastro, desativação, atribuição, revogação e configuração/desativação de conexões canônicas usam RPCs transacionais: a mutação e o evento de auditoria confirmam ou revertem juntos.
+- Implementações privilegiadas ficam no schema não exposto `private`; funções públicas são wrappers `SECURITY INVOKER`, com execução concedida somente a `authenticated`. Cada implementação privada revalida sessão e autoridade de plataforma.
 - Configurar credenciais só é permitido depois de uma atribuição ativa em QA ou Sandbox. Revogar uma atribuição ou desativar a inteligência desativa automaticamente as conexões correspondentes.
 - O cadastro no Registry não aceita mais credenciais. Elas só entram na etapa de conexão, após a autorização.
 - Nenhuma migration deve ser aplicada em produção antes da homologação de banco, API e regressão.
