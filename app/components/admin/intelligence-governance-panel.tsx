@@ -5,7 +5,7 @@ type Intelligence = { id:string; name:string; intelligence_type:string; provider
 type Organization = { id:string; slug:string; display_name:string };
 type Assignment = { id:string; intelligence_id:string; organization_id:string; status:string; access_mode:string; environments:string[]; expires_at:string|null; approved_at:string|null };
 type Connection = {id:string;intelligence_id:string;organization_id:string;provider:string;display_name:string;credential_hint:string;status:string};
-const providers = ["openai","anthropic","google","xai","custom_api","mcp"];
+const providers = ["openai","anthropic","google","xai","local","custom","internal","mcp"];
 
 export function IntelligenceGovernancePanel() {
   const [items,setItems]=useState<Intelligence[]>([]);
