@@ -71,76 +71,13 @@ export function decodeImportText(bytes: Uint8Array): string {
   }
 }
 
-export const KNOWN_BANKS: Record<string, string> = {
-  // Tradicionais
-  "0341": "Itaú Unibanco",
-  "341": "Itaú Unibanco",
-  "0422": "Banco Safra",
-  "422": "Banco Safra",
-  "0001": "Banco do Brasil",
-  "1": "Banco do Brasil",
-  "0237": "Bradesco",
-  "237": "Bradesco",
-  "0033": "Santander",
-  "33": "Santander",
-  "0104": "Caixa Econômica Federal",
-  "104": "Caixa Econômica Federal",
-  "0004": "Banco do Nordeste (BNB)",
-  "4": "Banco do Nordeste (BNB)",
-  "0041": "Banrisul",
-  "41": "Banrisul",
-  "0070": "Banco de Brasília (BRB)",
-  "70": "Banco de Brasília (BRB)",
-  "0655": "Banco Votorantim (BV)",
-  "655": "Banco Votorantim (BV)",
-
-  // Digitais e Fintechs PJ
-  "0260": "Nubank",
-  "260": "Nubank",
-  "0077": "Banco Inter",
-  "77": "Banco Inter",
-  "0336": "C6 Bank",
-  "336": "C6 Bank",
-  "0102": "XP Investimentos",
-  "102": "XP Investimentos",
-  "0208": "BTG Pactual",
-  "208": "BTG Pactual",
-  "0403": "Cora SCD",
-  "403": "Cora SCD",
-  "0461": "Asaas Gestão Financeira",
-  "461": "Asaas Gestão Financeira",
-  "0197": "Stone Pagamentos",
-  "197": "Stone Pagamentos",
-  "0290": "PagBank / PagSeguro",
-  "290": "PagBank / PagSeguro",
-  "0323": "Mercado Pago",
-  "323": "Mercado Pago",
-  "0380": "PicPay",
-  "380": "PicPay",
-  "0218": "Banco BS2",
-  "218": "Banco BS2",
-  "0335": "Banco Digio",
-  "335": "Banco Digio",
-  "0707": "Banco Daycoval",
-  "707": "Banco Daycoval",
-
-  // Cooperativas de Crédito
-  "0756": "Sicoob (Bancoob)",
-  "756": "Sicoob (Bancoob)",
-  "0748": "Sicredi",
-  "748": "Sicredi",
-  "0136": "Unicred do Brasil",
-  "136": "Unicred do Brasil",
-  "0133": "Cresol Confederação",
-  "133": "Cresol Confederação",
-  "0085": "Viacredi (Ailos)",
-  "85": "Viacredi (Ailos)"
-};
+/** @deprecated Use BANK_REGISTRY from bank-identification.ts directly. Kept for external consumers only. */
+export const KNOWN_BANKS: Record<string, string> = {};
 
 export function identifyBank(bankId?: string, orgName?: string): { code: string; name: string } {
   if (bankId) {
     const cleanId = bankId.trim().replace(/^0+(?=\d)/, "");
-    const registered = BANK_REGISTRY[cleanId] ?? KNOWN_BANKS[bankId.trim()] ?? KNOWN_BANKS[cleanId];
+    const registered = BANK_REGISTRY[cleanId] ?? BANK_REGISTRY[bankId.trim()];
     if (registered) {
       return { code: bankId.trim(), name: registered };
     }

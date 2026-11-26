@@ -835,7 +835,7 @@ export default function EnterpriseWorkspace({
         />
         <div className="content">
           <div className="inline-note" role="note">
-            Títulos, canhotos e pedidos deste protótipo são dados locais de demonstração, isolados por organização; não representam persistência oficial no servidor.
+            Registros financeiros são persistidos com segurança no servidor. Títulos, canhotos e pedidos são dados temporários desta sessão — não representam persistência oficial no ERP.
           </div>
           {!modulesResolved && (
             <div className="inline-note" role="status">Verificando os módulos autorizados para esta organização…</div>
