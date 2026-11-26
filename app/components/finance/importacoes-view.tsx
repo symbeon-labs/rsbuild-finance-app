@@ -59,6 +59,14 @@ export function ImportacoesView({
     () => [...new Set(pendingImport.map((record) => record.category).filter(Boolean))].sort(),
     [pendingImport]
   );
+  const hasActiveFilters = Boolean(search || direction !== "all" || category !== "all" || dateFrom || dateTo);
+  function clearFilters() {
+    setSearch("");
+    setDirection("all");
+    setCategory("all");
+    setDateFrom("");
+    setDateTo("");
+  }
   const filteredRecords = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
     return pendingImport.filter((record) => {
@@ -132,9 +140,11 @@ export function ImportacoesView({
 
         {pendingImport.length > 0 && (
           <>
-            <div style={{ margin: "18px 0", padding: 14, border: "1px solid var(--border)", borderRadius: 10, display: "grid", gap: 8 }}>
-              <strong>Vincular a uma conta (opcional)</strong>
-              <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Se o arquivo não identificar a conta automaticamente, selecione a conta da organização. O vínculo será gravado junto com a importação.</span>
+            <div className="import-account-link">
+              <div>
+                <strong>Vincular a uma conta <span>(opcional)</span></strong>
+                <p>Se o arquivo não identificar a conta automaticamente, selecione a conta da organização. O vínculo será gravado junto com a importação.</p>
+              </div>
               <select value={selectedAccountId} onChange={(event) => setSelectedAccountId(event.target.value)} disabled={accountsLoading}>
                 <option value="">Identificação automática / sem associação manual</option>
                 {accounts.map((account) => <option key={account.id} value={account.id}>{[account.institution, account.name, account.external_reference ? `•••• ${account.external_reference.slice(-4)}` : ""].filter(Boolean).join(" · ")}</option>)}
@@ -142,14 +152,14 @@ export function ImportacoesView({
               {accountsLoading && <span style={{ fontSize: 12 }}>Carregando contas...</span>}
               {accountsError && <span role="alert" style={{ color: "var(--destructive)", fontSize: 12 }}>{accountsError}</span>}
             </div>
-            <div className="preview-heading">
+            <div className="preview-heading import-preview-heading">
               <div>
                 <h2>Prévia dos registros</h2>
                 <p>Confira os dados antes de confirmar a importação.</p>
               </div>
-              <span>{pendingImport.length} registros</span>
+              <span className="import-total-count">{pendingImport.length} registros no arquivo</span>
             </div>
-            <div className="import-filters" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px", margin: "16px 0" }}>
+            <div className="import-filters" aria-label="Filtros da prévia de importação">
               <label style={{ display: "grid", gap: 4, fontSize: 12 }}>Buscar descrição ou ID
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ex.: PIX, fornecedor..." />
               </label>
@@ -170,12 +180,16 @@ export function ImportacoesView({
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
               </label>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}>
-              <span>{filteredRecords.length} de {pendingImport.length} registros</span>
-              <button className="text-button" onClick={() => { setSearch(""); setDirection("all"); setCategory("all"); setDateFrom(""); setDateTo(""); }}>Limpar filtros</button>
+            <div className="import-filter-summary">
+              <span aria-live="polite"><strong>{filteredRecords.length}</strong> de {pendingImport.length} registros exibidos</span>
+              {hasActiveFilters && <button type="button" className="text-button" onClick={clearFilters}>Limpar filtros</button>}
             </div>
-            <RecordTable records={filteredRecords.slice(0, 8)} />
-            <div className="import-actions">
+            {filteredRecords.length > 0 ? (
+              <RecordTable records={filteredRecords.slice(0, 8)} />
+            ) : (
+              <div className="import-filter-empty" role="status">Nenhum registro corresponde aos filtros. Ajuste ou limpe os critérios para continuar.</div>
+            )}
+            <div className="import-actions" aria-label="Ações da importação">
               <button type="button" className="secondary-button" onClick={onCancelImport}>
                 Cancelar
               </button>
