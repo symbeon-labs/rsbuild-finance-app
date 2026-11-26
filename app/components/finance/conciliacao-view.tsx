@@ -677,6 +677,7 @@ export function ConciliacaoView({
               })}
             </div>
           )}
+          <div className="reconciliation-table-wrap" role="region" aria-label="Tabela de conciliação bancária" tabIndex={0}>
           <table className="data-table">
             <thead>
               <tr>
@@ -720,6 +721,7 @@ export function ConciliacaoView({
               )}
             </tbody>
           </table>
+          </div>
         </section>
       )}
 
@@ -793,6 +795,7 @@ export function ConciliacaoView({
       {selectedTab === "matched" && (
         <section className="panel">
           <h2>Movimentações Casadas & Auditadas</h2>
+          <div className="reconciliation-table-wrap" role="region" aria-label="Tabela de conciliação bancária" tabIndex={0}>
           <table className="data-table">
             <thead>
               <tr>
@@ -845,6 +848,7 @@ export function ConciliacaoView({
               )}
             </tbody>
           </table>
+          </div>
         </section>
       )}
 
@@ -925,7 +929,8 @@ export function ConciliacaoView({
                 Extratos Bancários Pendentes ({filteredUnmatchedBank.length}
                 {filteredUnmatchedBank.length !== unmatchedBank.length ? ` de ${unmatchedBank.length}` : ""})
               </h3>
-              <table className="data-table">
+              <div className="reconciliation-table-wrap" role="region" aria-label="Tabela de conciliação bancária" tabIndex={0}>
+          <table className="data-table">
                 <thead>
                   <tr>
                     <th style={{ width: "36px" }}>Sel</th>
@@ -1041,6 +1046,7 @@ export function ConciliacaoView({
                   )}
                 </tbody>
               </table>
+          </div>
             </div>
 
             <div className="unmatched-section">
@@ -1048,7 +1054,8 @@ export function ConciliacaoView({
                 Lançamentos Omie Pendentes ({filteredUnmatchedOmie.length}
                 {filteredUnmatchedOmie.length !== unmatchedOmie.length ? ` de ${unmatchedOmie.length}` : ""})
               </h3>
-              <table className="data-table">
+              <div className="reconciliation-table-wrap" role="region" aria-label="Tabela de conciliação bancária" tabIndex={0}>
+          <table className="data-table">
                 <thead>
                   <tr>
                     <th style={{ width: "36px" }}>Sel</th>
@@ -1130,6 +1137,7 @@ export function ConciliacaoView({
                   )}
                 </tbody>
               </table>
+          </div>
             </div>
           </div>
 
