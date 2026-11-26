@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(27);
+select plan(29);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -145,6 +145,19 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
+select lives_ok(
+ $q$select public.register_intelligence(
+   'Registry Audit Fixture',null,'llm','openai',null,null,null,'{}'::jsonb,null,null
+ )$q$,
+ 'platform administrator can register an intelligence'
+);
+select is(
+ (select count(*)::int from public.audit_events
+  where event_type='intelligence.registered'
+    and entity_type='intelligence_registry'),
+ 1,
+ 'registry creation and audit event are committed together'
+);
 select lives_ok(
  $q$select public.create_intelligence_assignment(
    'e6666666-6666-4666-8666-666666666666',
