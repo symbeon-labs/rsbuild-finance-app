@@ -24,8 +24,8 @@ INSERT INTO public.organization_capability_licenses (
 SELECT 
   o.id,
   c.capability_key,
-  'granted'::public.capability_license_status,
-  'active'::public.capability_operational_status,
+  'granted',
+  'active',
   ARRAY['qa', 'sandbox']::text[],
   'Concessão homologada de capabilities para ambiente de testes QA',
   now(),
@@ -36,8 +36,8 @@ CROSS JOIN (
 ) AS c(capability_key)
 WHERE o.slug IN ('mundo_sabor_qa', 'hub_acai_qa')
 ON CONFLICT (organization_id, capability_key) DO UPDATE
-SET license_status = 'granted'::public.capability_license_status,
-    operational_status = 'active'::public.capability_operational_status,
+SET license_status = 'granted',
+    operational_status = 'active',
     entitled_environments = ARRAY['qa', 'sandbox']::text[],
     updated_at = now();
 
@@ -49,8 +49,8 @@ INSERT INTO public.organization_capability_licenses (
 SELECT 
   o.id,
   c.capability_key,
-  'granted'::public.capability_license_status,
-  'active'::public.capability_operational_status,
+  'granted',
+  'active',
   ARRAY['production', 'qa', 'sandbox']::text[],
   'Concessão operacional homologada para produção RSBUILD OS',
   now(),
@@ -61,7 +61,7 @@ CROSS JOIN (
 ) AS c(capability_key)
 WHERE o.slug IN ('mundo_sabor', 'mundo-do-sabor', 'hub_acai', 'hub-acai')
 ON CONFLICT (organization_id, capability_key) DO UPDATE
-SET license_status = 'granted'::public.capability_license_status,
-    operational_status = 'active'::public.capability_operational_status,
+SET license_status = 'granted',
+    operational_status = 'active',
     entitled_environments = ARRAY['production', 'qa', 'sandbox']::text[],
     updated_at = now();
