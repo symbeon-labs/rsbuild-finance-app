@@ -15,10 +15,10 @@ async function authorize(request: Request) {
   if (origin && origin !== new URL(request.url).origin) return { client: null, user: null, error: "origin_forbidden" as const };
   const client = await createClient();
   const { data: { user }, error } = await client.auth.getUser();
-  if (error || !user) return { client: null, session: null, user: null, error: "unauthenticated" as const };
-  if (!consumeRateLimit(`${user.id}:/api/intelligence-registry`)) return { user: null, error: "rate_limited" as const };
+  if (error || !user) return { client: null, user: null, error: "unauthenticated" as const };
+  if (!consumeRateLimit(`${user.id}:/api/intelligence-registry`)) return { client: null, user: null, error: "rate_limited" as const };
   const { data: allowed, error: rpcError } = await client.rpc("is_platform_administrator");
-  if (rpcError || allowed !== true) return { user: null, error: "forbidden" as const };
+  if (rpcError || allowed !== true) return { client: null, user: null, error: "forbidden" as const };
   return { client, user, error: null };
 }
 
