@@ -1,4 +1,7 @@
 -- RSBUILD Intelligence Governance Boundaries V1
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
 -- Assignment is separate from credentials and from legacy execution grants.
 
 alter table public.intelligence_registry
@@ -101,7 +104,7 @@ comment on column public.intelligence_registry.legacy_agent_id is
   'Optional one-to-one link to the legacy execution record. Registry owns catalog identity; legacy agents remain a runtime compatibility projection during migration.';
 
 -- Assignment mutation and its audit record commit or roll back together.
-create or replace function public.create_intelligence_assignment(
+create or replace function private.create_intelligence_assignment(
   p_intelligence_id uuid,
   p_organization_id uuid,
   p_access_mode text,
@@ -219,9 +222,9 @@ begin
 end;
 $$;
 
-revoke all on function public.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) from public, anon;
+revoke all on function private.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) from public, anon;
 revoke all on function public.revoke_intelligence_assignment(uuid) from public, anon;
-grant execute on function public.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) to authenticated;
+grant execute on function private.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) to authenticated;
 grant execute on function public.revoke_intelligence_assignment(uuid) to authenticated;
 
 
@@ -519,5 +522,74 @@ $$;
 
 revoke all on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) from public,anon;
 revoke all on function public.disable_intelligence_connection(uuid) from public,anon;
+grant execute on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) to authenticated;
+grant execute on function public.disable_intelligence_connection(uuid) to authenticated;
+
+
+-- Public API wrappers are SECURITY INVOKER. Privileged implementation stays
+-- in the non-exposed private schema; each implementation re-checks auth.uid()
+-- and platform-admin authority before performing writes.
+create or replace function public.create_intelligence_assignment(
+  p_intelligence_id uuid,p_organization_id uuid,p_access_mode text,
+  p_environments text[],p_expires_at timestamptz default null
+) returns uuid language sql security invoker
+set search_path=public,private,auth
+as $$ select private.create_intelligence_assignment($1,$2,$3,$4,$5); $$;
+
+create or replace function public.revoke_intelligence_assignment(p_assignment_id uuid)
+returns void language sql security invoker
+set search_path=public,private,auth
+as $$ select private.revoke_intelligence_assignment($1); $$;
+
+create or replace function public.register_intelligence(
+  p_name text,p_description text,p_type text,p_provider text,p_model text,
+  p_source_uri text,p_runtime text,p_config jsonb,p_credential_encrypted text,p_credential_hint text
+) returns uuid language sql security invoker
+set search_path=public,private,auth
+as $$ select private.register_intelligence($1,$2,$3,$4,$5,$6,$7,$8,$9,$10); $$;
+
+create or replace function public.disable_intelligence(p_intelligence_id uuid)
+returns void language sql security invoker
+set search_path=public,private,auth
+as $$ select private.disable_intelligence($1); $$;
+
+create or replace function public.save_agent_integration(
+  p_agent_id uuid,p_organization_id uuid,p_provider text,p_display_name text,
+  p_endpoint_url text,p_model text,p_credential_encrypted text,p_credential_hint text
+) returns uuid language sql security invoker
+set search_path=public,private,auth
+as $$ select private.save_agent_integration($1,$2,$3,$4,$5,$6,$7,$8); $$;
+
+create or replace function public.disable_agent_integration(p_integration_id uuid)
+returns void language sql security invoker
+set search_path=public,private,auth
+as $$ select private.disable_agent_integration($1); $$;
+
+create or replace function public.save_intelligence_connection(
+  p_intelligence_id uuid,p_organization_id uuid,p_provider text,p_display_name text,
+  p_endpoint_url text,p_model text,p_credential_encrypted text,p_credential_hint text
+) returns uuid language sql security invoker
+set search_path=public,private,auth
+as $$ select private.save_intelligence_connection($1,$2,$3,$4,$5,$6,$7,$8); $$;
+
+create or replace function public.disable_intelligence_connection(p_connection_id uuid)
+returns void language sql security invoker
+set search_path=public,private,auth
+as $$ select private.disable_intelligence_connection($1); $$;
+
+revoke all on function public.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) from public,anon;
+revoke all on function public.revoke_intelligence_assignment(uuid) from public,anon;
+revoke all on function public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) from public,anon;
+revoke all on function public.disable_intelligence(uuid) from public,anon;
+revoke all on function public.save_agent_integration(uuid,uuid,text,text,text,text,text,text) from public,anon;
+revoke all on function public.disable_agent_integration(uuid) from public,anon;
+revoke all on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) from public,anon;
+revoke all on function public.disable_intelligence_connection(uuid) from public,anon;
+grant execute on function public.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) to authenticated;
+grant execute on function public.revoke_intelligence_assignment(uuid) to authenticated;
+grant execute on function public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) to authenticated;
+grant execute on function public.disable_intelligence(uuid) to authenticated;
+grant execute on function public.save_agent_integration(uuid,uuid,text,text,text,text,text,text) to authenticated;
+grant execute on function public.disable_agent_integration(uuid) to authenticated;
 grant execute on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) to authenticated;
 grant execute on function public.disable_intelligence_connection(uuid) to authenticated;
