@@ -7184,3 +7184,48 @@ html:has(.inst-page) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Mesa de Conciliação — conter tabelas largas sem ampliar o viewport */
+.reconciliation-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.reconciliation-table-wrap .data-table {
+  width: 100%;
+  min-width: 760px;
+  margin: 0;
+}
+.reconciliation-table-wrap:focus-visible {
+  outline: 3px solid rgba(181, 88, 60, .28);
+  outline-offset: 2px;
+}
+.reconciliation-account-grid,
+.reconciliation-kpi-grid,
+.reconciliation-split-grid,
+.reconciliation-account-card,
+.reconciliation-account-card-head,
+.reconciliation-account-card-metrics,
+.reconciliation-account-card-footer {
+  min-width: 0;
+}
+.reconciliation-account-card-metrics { flex-wrap: wrap; overflow-wrap: anywhere; }
+.tabs { min-width: 0; flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .content { min-width: 0; width: 100%; padding-inline: 14px; }
+  .panel { min-width: 0; max-width: 100%; }
+  .reconciliation-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reconciliation-account-grid { grid-template-columns: minmax(0, 1fr); }
+  .reconciliation-account-card-metrics { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .tabs { gap: 4px 8px; }
+  .tab, .tab-active { min-width: 0; padding-inline: 10px; text-align: left; }
+}
+@media (max-width: 420px) {
+  .reconciliation-kpi-grid { grid-template-columns: minmax(0, 1fr); }
+}
