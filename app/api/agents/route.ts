@@ -25,14 +25,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "rate_limited" }, { status: 429 });
     }
 
-    const { data: membership, error: membershipError } = await supabase
-      .from("organization_memberships")
-      .select("role, organizations!inner(slug)")
-      .eq("user_id", user.id)
-      .eq("organizations.slug", "rsbuild")
-      .maybeSingle();
+    const { data: isPlatformAdministrator, error: platformAdminError } =
+      await supabase.rpc("is_platform_administrator");
 
-    if (membershipError || !membership || membership.role !== "owner") {
+    if (platformAdminError || isPlatformAdministrator !== true) {
       return NextResponse.json({ error: "agents_forbidden" }, { status: 403 });
     }
 
@@ -95,7 +91,7 @@ export async function GET(request: Request) {
         decisionReason: p.decision_reason,
         executedAt: p.executed_at
       })),
-      role: membership.role
+      role: "platform_admin"
     }, {
       status: 200,
       headers: { "Cache-Control": "private, no-store" }
