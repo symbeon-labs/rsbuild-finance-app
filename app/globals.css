@@ -6500,22 +6500,91 @@ html:has(.inst-page) {
 }
 
 .reconciliation-kpi-card {
+  position: relative;
+  overflow: hidden;
   text-align: left;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px 16px;
+  border-top: 3px solid var(--kpi-accent, var(--rsbuild-terracotta));
+  border-radius: 12px;
+  padding: 15px 16px 14px;
   box-shadow: var(--shadow);
   color: var(--ink);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+  cursor: pointer;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .reconciliation-kpi-card:hover {
-  border-color: var(--rsbuild-terracotta);
-  transform: translateY(-1px);
+  border-color: var(--kpi-accent, var(--rsbuild-terracotta));
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] .reconciliation-kpi-card:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+}
+
+.reconciliation-kpi-card--green {
+  --kpi-accent: var(--green);
+  --kpi-soft: var(--green-soft);
+}
+
+.reconciliation-kpi-card--terracotta {
+  --kpi-accent: var(--rsbuild-terracotta);
+  --kpi-soft: var(--rsbuild-terracotta-soft);
+}
+
+.reconciliation-kpi-card--blue {
+  --kpi-accent: #2563EB;
+  --kpi-soft: rgba(37, 99, 235, 0.12);
+}
+
+[data-theme="dark"] .reconciliation-kpi-card--blue {
+  --kpi-accent: #60A5FA;
+  --kpi-soft: rgba(96, 165, 250, 0.14);
+}
+
+.reconciliation-kpi-card--violet {
+  --kpi-accent: #7C3AED;
+  --kpi-soft: rgba(124, 58, 237, 0.12);
+}
+
+[data-theme="dark"] .reconciliation-kpi-card--violet {
+  --kpi-accent: #A78BFA;
+  --kpi-soft: rgba(167, 139, 250, 0.14);
+}
+
+.reconciliation-kpi-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--kpi-soft, var(--rsbuild-terracotta-soft));
+  color: var(--kpi-accent, var(--rsbuild-terracotta));
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.reconciliation-kpi-cta {
+  margin-top: auto;
+  padding-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--kpi-accent, var(--rsbuild-terracotta));
+  opacity: 0.82;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.reconciliation-kpi-card:hover .reconciliation-kpi-cta {
+  opacity: 1;
 }
 
 .reconciliation-kpi-card:focus-visible,
@@ -6574,32 +6643,222 @@ html:has(.inst-page) {
 
 .reconciliation-account-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
 .reconciliation-account-card {
+  position: relative;
+  overflow: hidden;
   text-align: left;
-  background: var(--surface-raised);
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px;
+  border-top: 3px solid var(--bank-accent, var(--rsbuild-terracotta));
+  border-radius: 12px;
+  padding: 15px 16px;
   color: var(--ink);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+  gap: 11px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .reconciliation-account-card:hover {
-  border-color: var(--rsbuild-terracotta);
-  transform: translateY(-1px);
+  border-color: var(--bank-accent, var(--rsbuild-terracotta));
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] .reconciliation-account-card:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
 }
 
 .reconciliation-account-card--active {
+  border-color: var(--bank-accent, var(--rsbuild-terracotta));
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 2px var(--bank-soft, var(--rsbuild-terracotta-soft));
+}
+
+.reconciliation-bank-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.reconciliation-bank-monogram {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--bank-soft, var(--rsbuild-terracotta-soft));
+  color: var(--bank-accent, var(--rsbuild-terracotta));
+  border: 1px solid var(--line);
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+}
+
+.reconciliation-account-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bank-accent, var(--rsbuild-terracotta));
+}
+
+/* ==========================================================================
+   TORRE DE CONTROLE — SUB-ABAS EVIDENTES & BOTÕES DE AÇÃO EXECUTIVA
+   ========================================================================== */
+
+.torre-command-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.torre-command-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.torre-command-tab:hover {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.torre-command-tab--active {
+  color: #FFFFFF;
+  background: var(--rsbuild-terracotta);
   border-color: var(--rsbuild-terracotta);
-  background: var(--rsbuild-terracotta-soft);
+  box-shadow: 0 4px 12px rgba(181, 88, 60, 0.25);
+}
+
+.torre-command-tab--active:hover {
+  color: #FFFFFF;
+  background: var(--rsbuild-terracotta-hover, #9E4930);
+  border-color: var(--rsbuild-terracotta-hover, #9E4930);
+}
+
+.torre-command-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.torre-command-tab--active .torre-command-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  border-color: transparent;
+}
+
+.torre-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.torre-action-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--tile-accent, var(--rsbuild-terracotta));
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.torre-action-tile:hover {
+  border-color: var(--tile-accent, var(--rsbuild-terracotta));
+  background: var(--surface);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.torre-action-tile--terracotta {
+  --tile-accent: var(--rsbuild-terracotta);
+  --tile-soft: var(--rsbuild-terracotta-soft);
+}
+
+.torre-action-tile--green {
+  --tile-accent: var(--green);
+  --tile-soft: var(--green-soft);
+}
+
+.torre-action-tile--blue {
+  --tile-accent: #2563EB;
+  --tile-soft: rgba(37, 99, 235, 0.12);
+}
+
+[data-theme="dark"] .torre-action-tile--blue {
+  --tile-accent: #60A5FA;
+  --tile-soft: rgba(96, 165, 250, 0.14);
+}
+
+.torre-action-tile-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--tile-soft, var(--rsbuild-terracotta-soft));
+  color: var(--tile-accent, var(--rsbuild-terracotta));
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.torre-action-tile-arrow {
+  color: var(--tile-accent, var(--rsbuild-terracotta));
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.16s ease;
+}
+
+.torre-action-tile:hover .torre-action-tile-arrow {
+  transform: translateX(3px);
 }
 
 .reconciliation-account-card-head {

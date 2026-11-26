@@ -46,6 +46,58 @@ const QUICK_JUSTIFICATIONS = [
   "Compensação de boleto"
 ] as const;
 
+function getBankVisualTheme(bankName: string): { accent: string; soft: string; monogram: string } {
+  const normalized = bankName.toLowerCase();
+  if (normalized.includes("itaú") || normalized.includes("itau")) {
+    return { accent: "#EC7000", soft: "rgba(236, 112, 0, 0.14)", monogram: "IT" };
+  }
+  if (normalized.includes("safra")) {
+    return { accent: "#2563EB", soft: "rgba(37, 99, 235, 0.14)", monogram: "SF" };
+  }
+  if (normalized.includes("bradesco")) {
+    return { accent: "#CC092F", soft: "rgba(204, 9, 47, 0.14)", monogram: "BR" };
+  }
+  if (normalized.includes("santander")) {
+    return { accent: "#DC2626", soft: "rgba(220, 38, 38, 0.14)", monogram: "ST" };
+  }
+  if (normalized.includes("brasil")) {
+    return { accent: "#1D4ED8", soft: "rgba(29, 78, 216, 0.14)", monogram: "BB" };
+  }
+  if (normalized.includes("caixa")) {
+    return { accent: "#0284C7", soft: "rgba(2, 132, 199, 0.14)", monogram: "CX" };
+  }
+  if (normalized.includes("nubank")) {
+    return { accent: "#820AD1", soft: "rgba(130, 10, 209, 0.14)", monogram: "NU" };
+  }
+  if (normalized.includes("inter")) {
+    return { accent: "#F97316", soft: "rgba(249, 115, 22, 0.14)", monogram: "IN" };
+  }
+  if (normalized.includes("cora")) {
+    return { accent: "#E11D48", soft: "rgba(225, 29, 72, 0.14)", monogram: "CR" };
+  }
+  if (normalized.includes("sicoob") || normalized.includes("sicredi")) {
+    return { accent: "#059669", soft: "rgba(5, 150, 105, 0.14)", monogram: normalized.includes("sicoob") ? "SC" : "SI" };
+  }
+  const letters = bankName
+    .replace(/[^A-Za-zÀ-ÿ\s]/g, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || "")
+    .join("");
+  return {
+    accent: "var(--rsbuild-terracotta)",
+    soft: "var(--rsbuild-terracotta-soft)",
+    monogram: letters || "BK"
+  };
+}
+
+function formatCompactAccountId(accountId: string): string {
+  if (accountId.length <= 18) return accountId;
+  return `${accountId.slice(0, 8)}···${accountId.slice(-6)}`;
+}
+
 function getBankAccountIdentity(record: FinancialRecord): BankAccountFilter {
   const resolved = identifyBank(record.bankCode, record.bankName || record.source);
   const bankName =
@@ -453,12 +505,12 @@ export function ConciliacaoView({
       <div className="reconciliation-kpi-grid" aria-label="Indicadores de conciliação">
         <button
           type="button"
-          className={`reconciliation-kpi-card${selectedTab === "matched" ? " reconciliation-kpi-card--active" : ""}`}
+          className={`reconciliation-kpi-card reconciliation-kpi-card--green${selectedTab === "matched" ? " reconciliation-kpi-card--active" : ""}`}
           onClick={() => setSelectedTab("matched")}
         >
           <span className="reconciliation-kpi-label">
-            <span>Total Conciliado</span>
-            <span>{kpis.matchedPercentage}%</span>
+            <span>Total Conciliado ({kpis.matchedPercentage}%)</span>
+            <span className="reconciliation-kpi-icon" aria-hidden="true">✓</span>
           </span>
           <strong className="reconciliation-kpi-value">{formatCurrency(kpis.matchedAmount)}</strong>
           <div className="reconciliation-progress-track" aria-hidden="true">
@@ -467,25 +519,34 @@ export function ConciliacaoView({
           <span className="reconciliation-kpi-sub">
             {kpis.matchedCount} de {kpis.totalBankCount} lançamento(s) casados
           </span>
+          <span className="reconciliation-kpi-cta">
+            <span>Ver casados</span>
+            <span aria-hidden="true">→</span>
+          </span>
         </button>
 
         <button
           type="button"
-          className={`reconciliation-kpi-card${selectedTab === "unmatched" ? " reconciliation-kpi-card--active" : ""}`}
+          className={`reconciliation-kpi-card reconciliation-kpi-card--terracotta${selectedTab === "unmatched" ? " reconciliation-kpi-card--active" : ""}`}
           onClick={() => setSelectedTab("unmatched")}
         >
           <span className="reconciliation-kpi-label">
             <span>Extratos Pendentes</span>
+            <span className="reconciliation-kpi-icon" aria-hidden="true">⏳</span>
           </span>
           <strong className="reconciliation-kpi-value">{kpis.unmatchedBankCount}</strong>
           <span className="reconciliation-kpi-sub">
             {formatCurrency(kpis.unmatchedBankAmount)} aguardando conferência
           </span>
+          <span className="reconciliation-kpi-cta">
+            <span>Abrir mesa de conferência</span>
+            <span aria-hidden="true">→</span>
+          </span>
         </button>
 
         <button
           type="button"
-          className="reconciliation-kpi-card"
+          className="reconciliation-kpi-card reconciliation-kpi-card--blue"
           onClick={() => {
             setSortBy("suggestions");
             setSelectedTab("unmatched");
@@ -493,24 +554,34 @@ export function ConciliacaoView({
         >
           <span className="reconciliation-kpi-label">
             <span>Sugestões do Motor</span>
+            <span className="reconciliation-kpi-icon" aria-hidden="true">✦</span>
           </span>
           <strong className="reconciliation-kpi-value">{kpis.suggestedCount}</strong>
           <span className="reconciliation-kpi-sub">
             Extrato(s) com candidatos Omie sugeridos
           </span>
+          <span className="reconciliation-kpi-cta">
+            <span>Priorizar sugestões</span>
+            <span aria-hidden="true">→</span>
+          </span>
         </button>
 
         <button
           type="button"
-          className={`reconciliation-kpi-card${selectedTab === "transfers" ? " reconciliation-kpi-card--active" : ""}`}
+          className={`reconciliation-kpi-card reconciliation-kpi-card--violet${selectedTab === "transfers" ? " reconciliation-kpi-card--active" : ""}`}
           onClick={() => setSelectedTab("transfers")}
         >
           <span className="reconciliation-kpi-label">
             <span>Transferências Internas</span>
+            <span className="reconciliation-kpi-icon" aria-hidden="true">⇄</span>
           </span>
           <strong className="reconciliation-kpi-value">{kpis.internalTransfersCount}</strong>
           <span className="reconciliation-kpi-sub">
             {kpis.suggestedTransfersCount} par(es) candidato(s) entre contas
+          </span>
+          <span className="reconciliation-kpi-cta">
+            <span>Revisar entre contas</span>
+            <span aria-hidden="true">→</span>
           </span>
         </button>
       </div>
@@ -550,11 +621,18 @@ export function ConciliacaoView({
               {Object.entries(accountTotals).map(([key, totals]) => {
                 const percentage = totals.total > 0 ? Math.round((totals.matched / totals.total) * 100) : 0;
                 const isSelected = selectedBankAccountFilter?.key === key;
+                const theme = getBankVisualTheme(totals.bankName);
                 return (
                   <button
                     key={key}
                     type="button"
                     className={`reconciliation-account-card${isSelected ? " reconciliation-account-card--active" : ""}`}
+                    style={
+                      {
+                        "--bank-accent": theme.accent,
+                        "--bank-soft": theme.soft
+                      } as React.CSSProperties
+                    }
                     onClick={() =>
                       handleSelectAccountCard({
                         key,
@@ -562,17 +640,25 @@ export function ConciliacaoView({
                         accountId: totals.accountId
                       })
                     }
-                    title={`Filtrar mesa de conciliação para ${totals.bankName} · ${totals.accountId}`}
+                    title={`Filtrar mesa de conciliação para ${totals.bankName} · Conta ${totals.accountId}`}
                   >
                     <div className="reconciliation-account-card-head">
-                      <div>
-                        <strong>{totals.bankName}</strong>
-                        <span>Conta {totals.accountId}</span>
+                      <div className="reconciliation-bank-identity">
+                        <span className="reconciliation-bank-monogram" aria-hidden="true">
+                          {theme.monogram}
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <strong>{totals.bankName}</strong>
+                          <span>Conta {formatCompactAccountId(totals.accountId)}</span>
+                        </div>
                       </div>
                       <span className="badge badge-orange">{totals.unmatchedCount} pend.</span>
                     </div>
                     <div className="reconciliation-progress-track" aria-hidden="true">
-                      <div className="reconciliation-progress-fill" style={{ width: `${percentage}%` }} />
+                      <div
+                        className="reconciliation-progress-fill"
+                        style={{ width: `${percentage}%`, background: theme.accent }}
+                      />
                     </div>
                     <div className="reconciliation-account-card-metrics">
                       <span>
@@ -581,6 +667,10 @@ export function ConciliacaoView({
                       <span>
                         Pendente: <b>{formatCurrency(totals.unmatched)}</b>
                       </span>
+                    </div>
+                    <div className="reconciliation-account-card-footer">
+                      <span>{isSelected ? "✓ Filtro ativo na mesa" : "Filtrar pendentes desta conta"}</span>
+                      <span aria-hidden="true">→</span>
                     </div>
                   </button>
                 );
