@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(9);
+select plan(12);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -45,6 +45,26 @@ select ok(
   and not has_table_privilege('authenticated','public.agent_integrations','DELETE')
   and not has_table_privilege('anon','public.agent_integrations','SELECT'),
   'agent integration credentials have no direct client-role privileges'
+);
+
+select ok(
+  not has_table_privilege('authenticated','public.intelligence_registry','SELECT')
+  and not has_table_privilege('authenticated','public.intelligence_registry','INSERT')
+  and not has_table_privilege('authenticated','public.intelligence_registry','UPDATE')
+  and not has_table_privilege('authenticated','public.intelligence_registry','DELETE')
+  and not has_table_privilege('anon','public.intelligence_registry','SELECT')
+  and not has_table_privilege('anon','public.intelligence_registry','INSERT'),
+  'global intelligence registry has no direct client-role privileges'
+);
+select ok(
+  (select relrowsecurity from pg_class where oid='public.intelligence_registry'::regclass),
+  'global intelligence registry enforces row-level security'
+);
+select ok(
+  (select count(*) = 2 from pg_constraint
+   where conrelid='public.intelligence_registry'::regclass
+     and conname in ('intelligence_registry_name_nonempty','intelligence_registry_source_https')),
+  'intelligence registry validates names and HTTPS source references'
 );
 
 set local role authenticated;
