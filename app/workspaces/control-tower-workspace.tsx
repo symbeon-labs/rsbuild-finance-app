@@ -74,7 +74,7 @@ export default function ControlTowerWorkspace({
     ? "projetos"
     : urlTab && ["workspace", "visao-geral", "projetos", "mensagens", "auditoria", "acessos", "agentes", "sandbox"].includes(urlTab)
       ? urlTab
-      : "workspace";
+      : "visao-geral";
 
   function getModuleForSection(_s: NavSection): ModuleType {
     return "audit";
