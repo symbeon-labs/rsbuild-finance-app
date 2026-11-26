@@ -121,6 +121,8 @@ select ok(
   'canonical connections are protected by RLS and authenticated-only RPCs'
 );
 
+grant select on public.intelligence_assignments, public.intelligence_connections to authenticated;
+
 insert into public.intelligence_registry(
  id,name,intelligence_type,provider,config,status,legacy_agent_id
 ) values (
