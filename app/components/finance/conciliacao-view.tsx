@@ -34,6 +34,46 @@ interface ConciliacaoViewProps {
   initialSelectedBankIds?: string[];
 }
 
+type BankAccountFilter = {
+  key: string;
+  bankName: string;
+  accountId: string;
+};
+
+const QUICK_JUSTIFICATIONS = [
+  "Pagamento exato confirmado",
+  "Tarifa bancária inclusa",
+  "Compensação de boleto"
+] as const;
+
+function getBankAccountIdentity(record: FinancialRecord): BankAccountFilter {
+  const resolved = identifyBank(record.bankCode, record.bankName || record.source);
+  const bankName =
+    resolved.name !== "Instituição Bancária"
+      ? resolved.name
+      : (record.bankName?.trim() ||
+        (record.bankCode ? `Banco ${record.bankCode}` : record.source?.replace(/^OFX\s+/i, "").trim() || "Instituição não identificada"));
+  const accountId = record.accountId?.trim() || "sem-conta";
+  const key = `${resolved.code !== "0000" ? resolved.code : bankName}::${accountId}`;
+  return { key, bankName, accountId };
+}
+
+function matchesSearchTerm(
+  query: string,
+  fields: Array<string | number | undefined>
+): boolean {
+  const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+  if (!normalizedQuery) return true;
+  const numericQuery = normalizedQuery.replace(/[^\d.,-]/g, "");
+  return fields.some((field) => {
+    if (field === undefined || field === null) return false;
+    const text = String(field).toLocaleLowerCase("pt-BR");
+    if (text.includes(normalizedQuery)) return true;
+    if (numericQuery.length >= 2 && text.replace(/[^\d.,-]/g, "").includes(numericQuery)) return true;
+    return false;
+  });
+}
+
 export function ConciliacaoView({
   bankRecords,
   omieRecords,
@@ -53,6 +93,10 @@ export function ConciliacaoView({
   const [manualJustification, setManualJustification] = useState("");
   const [omieImportFeedback, setOmieImportFeedback] = useState("");
   const [batchQueue, setBatchQueue] = useState<string[]>([]);
+  const [selectedBankAccountFilter, setSelectedBankAccountFilter] = useState<BankAccountFilter | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [directionFilter, setDirectionFilter] = useState<"all" | "entrada" | "saída">("all");
+  const [sortBy, setSortBy] = useState<"suggestions" | "amount_desc" | "date_asc">("suggestions");
   const omieInputRef = useRef<HTMLInputElement>(null);
   const titlesInputRef = useRef<HTMLInputElement>(null);
   const canMatch = canPerformManualMatch(role);
@@ -95,31 +139,186 @@ export function ConciliacaoView({
   const accountTotals = useMemo(() => {
     const totals: Record<
       string,
-      { bankName: string; accountId: string; total: number; matched: number; unmatched: number }
+      { bankName: string; accountId: string; total: number; matched: number; unmatched: number; count: number; unmatchedCount: number }
     > = {};
 
     for (const record of bankRecords) {
-      const resolved = identifyBank(record.bankCode, record.bankName || record.source);
-      const bankLabel =
-        resolved.name !== "Instituição Bancária"
-          ? resolved.name
-          : (record.bankName?.trim() ||
-            (record.bankCode ? `Banco ${record.bankCode}` : record.source?.replace(/^OFX\s+/i, "").trim() || "Instituição não identificada"));
-      const accountLabel = record.accountId?.trim() || "sem-conta";
-      const key = `${resolved.code !== "0000" ? resolved.code : bankLabel}::${accountLabel}`;
+      const { key, bankName, accountId } = getBankAccountIdentity(record);
       if (!totals[key]) {
-        totals[key] = { bankName: bankLabel, accountId: accountLabel, total: 0, matched: 0, unmatched: 0 };
+        totals[key] = { bankName, accountId, total: 0, matched: 0, unmatched: 0, count: 0, unmatchedCount: 0 };
       }
       totals[key].total += record.amount;
+      totals[key].count += 1;
       if (record.status === "conciliado") {
         totals[key].matched += record.amount;
       } else {
         totals[key].unmatched += record.amount;
+        totals[key].unmatchedCount += 1;
       }
     }
 
     return totals;
   }, [bankRecords]);
+
+  const kpis = useMemo(() => {
+    const totalBankCount = bankRecords.length;
+    const matchedCount = matched.length;
+    const matchedPercentage = totalBankCount > 0 ? Math.round((matchedCount / totalBankCount) * 100) : 0;
+    const matchedAmount = matched.reduce((acc, item) => acc + item.bankRecord.amount, 0);
+    const unmatchedBankAmount = unmatchedBank.reduce((acc, item) => acc + item.amount, 0);
+    const suggestedCount = suggestionsByBankId.size;
+    return {
+      totalBankCount,
+      matchedCount,
+      matchedPercentage,
+      matchedAmount,
+      unmatchedBankCount: unmatchedBank.length,
+      unmatchedBankAmount,
+      suggestedCount,
+      internalTransfersCount: internalTransfers.length,
+      suggestedTransfersCount: suggestedTransfers.length
+    };
+  }, [bankRecords.length, matched, unmatchedBank, suggestionsByBankId.size, internalTransfers.length, suggestedTransfers.length]);
+
+  const selectedBankRecord = useMemo(
+    () => unmatchedBank.find((record) => record.id === selectedBankId) ?? null,
+    [unmatchedBank, selectedBankId]
+  );
+
+  const selectedOmieRecord = useMemo(
+    () => unmatchedOmie.find((record) => record.id === selectedOmieId) ?? null,
+    [unmatchedOmie, selectedOmieId]
+  );
+
+  const selectedBankCandidateMap = useMemo(() => {
+    const map = new Map<string, OmieCandidate>();
+    if (!selectedBankId) return map;
+    const candidates = suggestionsByBankId.get(selectedBankId) ?? [];
+    for (const candidate of candidates) {
+      map.set(candidate.omieRecord.id, candidate);
+    }
+    return map;
+  }, [selectedBankId, suggestionsByBankId]);
+
+  const filteredUnmatchedBank = useMemo(() => {
+    const filtered = unmatchedBank.filter((record) => {
+      if (selectedBankAccountFilter) {
+        const identity = getBankAccountIdentity(record);
+        if (identity.key !== selectedBankAccountFilter.key) return false;
+      }
+      if (directionFilter !== "all" && record.direction !== directionFilter) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const identity = getBankAccountIdentity(record);
+        const matches = matchesSearchTerm(searchQuery, [
+          record.description,
+          record.amount,
+          formatCurrency(record.amount),
+          record.bankName,
+          identity.bankName,
+          identity.accountId
+        ]);
+        if (!matches) return false;
+      }
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "amount_desc") {
+        return b.amount - a.amount;
+      }
+      if (sortBy === "date_asc") {
+        return a.date.localeCompare(b.date);
+      }
+      const aCandidates = suggestionsByBankId.get(a.id) ?? [];
+      const bCandidates = suggestionsByBankId.get(b.id) ?? [];
+      if ((bCandidates.length > 0) !== (aCandidates.length > 0)) {
+        return bCandidates.length > 0 ? 1 : -1;
+      }
+      const aTopScore = aCandidates[0]?.score ?? 0;
+      const bTopScore = bCandidates[0]?.score ?? 0;
+      if (bTopScore !== aTopScore) return bTopScore - aTopScore;
+      return b.amount - a.amount;
+    });
+  }, [unmatchedBank, selectedBankAccountFilter, directionFilter, searchQuery, sortBy, suggestionsByBankId]);
+
+  const filteredUnmatchedOmie = useMemo(() => {
+    const filtered = unmatchedOmie.filter((record) => {
+      if (directionFilter !== "all" && record.direction !== directionFilter) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const matches = matchesSearchTerm(searchQuery, [
+          record.description,
+          record.documentNumber,
+          record.amount,
+          formatCurrency(record.amount)
+        ]);
+        if (!matches) return false;
+      }
+      return true;
+    });
+
+    const getCompatibilityRank = (record: OmieRecord): { tier: number; score: number; diff: number } => {
+      if (!selectedBankRecord) {
+        return { tier: 3, score: 0, diff: 0 };
+      }
+      const candidate = selectedBankCandidateMap.get(record.id);
+      const sameDirection = record.direction === selectedBankRecord.direction;
+      const diff = Math.abs(record.amount - selectedBankRecord.amount);
+      const exactAmount = sameDirection && diff <= 0.01;
+      const closeAmount =
+        sameDirection &&
+        !exactAmount &&
+        (diff <= 50 || diff / Math.max(selectedBankRecord.amount, 1) <= 0.05);
+
+      if (candidate || exactAmount) {
+        return { tier: 0, score: candidate?.score ?? 100, diff };
+      }
+      if (closeAmount) {
+        return { tier: 1, score: 0, diff };
+      }
+      if (sameDirection) {
+        return { tier: 2, score: 0, diff };
+      }
+      return { tier: 3, score: 0, diff };
+    };
+
+    return [...filtered].sort((a, b) => {
+      if (selectedBankRecord) {
+        const rankA = getCompatibilityRank(a);
+        const rankB = getCompatibilityRank(b);
+        if (rankA.tier !== rankB.tier) return rankA.tier - rankB.tier;
+        if (rankA.score !== rankB.score) return rankB.score - rankA.score;
+        if (rankA.diff !== rankB.diff) return rankA.diff - rankB.diff;
+      }
+      if (sortBy === "amount_desc") {
+        return b.amount - a.amount;
+      }
+      if (sortBy === "date_asc") {
+        return a.date.localeCompare(b.date);
+      }
+      return b.amount - a.amount;
+    });
+  }, [unmatchedOmie, directionFilter, searchQuery, sortBy, selectedBankRecord, selectedBankCandidateMap]);
+
+  const handleClearSelection = () => {
+    setSelectedBankId(null);
+    setSelectedOmieId(null);
+    setManualJustification("");
+  };
+
+  const handleSelectAccountCard = (filter: BankAccountFilter) => {
+    setSelectedBankAccountFilter(filter);
+    if (selectedBankId) {
+      const current = unmatchedBank.find((r) => r.id === selectedBankId);
+      if (current && getBankAccountIdentity(current).key !== filter.key) {
+        setSelectedBankId(null);
+      }
+    }
+    setSelectedTab("unmatched");
+  };
 
   const handleManualMatch = () => {
     if (!selectedBankId || !selectedOmieId || !manualJustification.trim()) {
@@ -251,6 +450,71 @@ export function ConciliacaoView({
         </div>
       </div>
 
+      <div className="reconciliation-kpi-grid" aria-label="Indicadores de conciliação">
+        <button
+          type="button"
+          className={`reconciliation-kpi-card${selectedTab === "matched" ? " reconciliation-kpi-card--active" : ""}`}
+          onClick={() => setSelectedTab("matched")}
+        >
+          <span className="reconciliation-kpi-label">
+            <span>Total Conciliado</span>
+            <span>{kpis.matchedPercentage}%</span>
+          </span>
+          <strong className="reconciliation-kpi-value">{formatCurrency(kpis.matchedAmount)}</strong>
+          <div className="reconciliation-progress-track" aria-hidden="true">
+            <div className="reconciliation-progress-fill" style={{ width: `${kpis.matchedPercentage}%` }} />
+          </div>
+          <span className="reconciliation-kpi-sub">
+            {kpis.matchedCount} de {kpis.totalBankCount} lançamento(s) casados
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={`reconciliation-kpi-card${selectedTab === "unmatched" ? " reconciliation-kpi-card--active" : ""}`}
+          onClick={() => setSelectedTab("unmatched")}
+        >
+          <span className="reconciliation-kpi-label">
+            <span>Extratos Pendentes</span>
+          </span>
+          <strong className="reconciliation-kpi-value">{kpis.unmatchedBankCount}</strong>
+          <span className="reconciliation-kpi-sub">
+            {formatCurrency(kpis.unmatchedBankAmount)} aguardando conferência
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="reconciliation-kpi-card"
+          onClick={() => {
+            setSortBy("suggestions");
+            setSelectedTab("unmatched");
+          }}
+        >
+          <span className="reconciliation-kpi-label">
+            <span>Sugestões do Motor</span>
+          </span>
+          <strong className="reconciliation-kpi-value">{kpis.suggestedCount}</strong>
+          <span className="reconciliation-kpi-sub">
+            Extrato(s) com candidatos Omie sugeridos
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={`reconciliation-kpi-card${selectedTab === "transfers" ? " reconciliation-kpi-card--active" : ""}`}
+          onClick={() => setSelectedTab("transfers")}
+        >
+          <span className="reconciliation-kpi-label">
+            <span>Transferências Internas</span>
+          </span>
+          <strong className="reconciliation-kpi-value">{kpis.internalTransfersCount}</strong>
+          <span className="reconciliation-kpi-sub">
+            {kpis.suggestedTransfersCount} par(es) candidato(s) entre contas
+          </span>
+        </button>
+      </div>
+
       <div className="tabs">
         <button
           className={selectedTab === "summary" ? "tab-active" : "tab"}
@@ -281,6 +545,48 @@ export function ConciliacaoView({
       {selectedTab === "summary" && (
         <section className="panel">
           <h2>Totais por Conta Bancária</h2>
+          {Object.keys(accountTotals).length > 0 && (
+            <div className="reconciliation-account-grid" style={{ marginTop: "12px" }}>
+              {Object.entries(accountTotals).map(([key, totals]) => {
+                const percentage = totals.total > 0 ? Math.round((totals.matched / totals.total) * 100) : 0;
+                const isSelected = selectedBankAccountFilter?.key === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`reconciliation-account-card${isSelected ? " reconciliation-account-card--active" : ""}`}
+                    onClick={() =>
+                      handleSelectAccountCard({
+                        key,
+                        bankName: totals.bankName,
+                        accountId: totals.accountId
+                      })
+                    }
+                    title={`Filtrar mesa de conciliação para ${totals.bankName} · ${totals.accountId}`}
+                  >
+                    <div className="reconciliation-account-card-head">
+                      <div>
+                        <strong>{totals.bankName}</strong>
+                        <span>Conta {totals.accountId}</span>
+                      </div>
+                      <span className="badge badge-orange">{totals.unmatchedCount} pend.</span>
+                    </div>
+                    <div className="reconciliation-progress-track" aria-hidden="true">
+                      <div className="reconciliation-progress-fill" style={{ width: `${percentage}%` }} />
+                    </div>
+                    <div className="reconciliation-account-card-metrics">
+                      <span>
+                        Conciliado: <b>{formatCurrency(totals.matched)}</b>
+                      </span>
+                      <span>
+                        Pendente: <b>{formatCurrency(totals.unmatched)}</b>
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <table className="data-table">
             <thead>
               <tr>
@@ -455,7 +761,7 @@ export function ConciliacaoView({
       {selectedTab === "unmatched" && (
         <section className="panel">
           <h2>Registros Pendentes de Conciliação</h2>
-          <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "16px" }}>
+          <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "14px" }}>
             Selecione uma linha do extrato bancário e uma do Omie ERP para realizar a reconciliação manual com justificativa registrada.
           </p>
           {batchQueue.length > 0 && (
@@ -464,9 +770,71 @@ export function ConciliacaoView({
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+          <div className="reconciliation-toolbar" role="region" aria-label="Filtros da mesa de conciliação">
+            <input
+              type="search"
+              className="reconciliation-search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar descrição, documento ou valor..."
+              aria-label="Buscar descrição, documento ou valor"
+            />
+
+            <div className="reconciliation-pill-group" role="group" aria-label="Filtrar por direção">
+              <button
+                type="button"
+                className={`reconciliation-pill${directionFilter === "all" ? " reconciliation-pill--active" : ""}`}
+                onClick={() => setDirectionFilter("all")}
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                className={`reconciliation-pill${directionFilter === "entrada" ? " reconciliation-pill--active" : ""}`}
+                onClick={() => setDirectionFilter("entrada")}
+              >
+                Entradas
+              </button>
+              <button
+                type="button"
+                className={`reconciliation-pill${directionFilter === "saída" ? " reconciliation-pill--active" : ""}`}
+                onClick={() => setDirectionFilter("saída")}
+              >
+                Saídas
+              </button>
+            </div>
+
+            <select
+              className="reconciliation-sort-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "suggestions" | "amount_desc" | "date_asc")}
+              aria-label="Ordenar registros pendentes"
+            >
+              <option value="suggestions">Com sugestões primeiro</option>
+              <option value="amount_desc">Maior valor</option>
+              <option value="date_asc">Mais antigo</option>
+            </select>
+
+            {selectedBankAccountFilter && (
+              <button
+                type="button"
+                className="reconciliation-filter-chip"
+                onClick={() => setSelectedBankAccountFilter(null)}
+                title="Remover filtro de conta bancária"
+              >
+                <span>
+                  Filtrando: {selectedBankAccountFilter.bankName} · {selectedBankAccountFilter.accountId} ×
+                </span>
+              </button>
+            )}
+          </div>
+
+          <div className="reconciliation-split-grid">
             <div className="unmatched-section">
-              <h3 style={{ fontSize: "13px", marginBottom: "8px" }}>Extratos Bancários Pendentes ({unmatchedBank.length})</h3>
+              <h3 style={{ fontSize: "13px", marginBottom: "8px" }}>
+                Extratos Bancários Pendentes ({filteredUnmatchedBank.length}
+                {filteredUnmatchedBank.length !== unmatchedBank.length ? ` de ${unmatchedBank.length}` : ""})
+              </h3>
               <table className="data-table">
                 <thead>
                   <tr>
@@ -475,108 +843,121 @@ export function ConciliacaoView({
                     <th>Descrição</th>
                     <th>Valor</th>
                     <th>Banco</th>
-                    <th style={{ width: "90px" }}>Sugestões</th>
+                    <th style={{ width: "132px" }}>Sugestões</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {unmatchedBank.map(record => {
-                    const candidates = suggestionsByBankId.get(record.id) ?? [];
-                    const expanded = expandedBankId === record.id;
-                    return (
-                      <Fragment key={record.id}>
-                        <tr
-                          onClick={() => setSelectedBankId(record.id === selectedBankId ? null : record.id)}
-                          style={{ cursor: "pointer", background: selectedBankId === record.id ? "rgba(181, 88, 60, 0.1)" : undefined }}
-                        >
-                          <td onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="radio"
-                              name="bankSelection"
-                              checked={selectedBankId === record.id}
-                              onChange={() => setSelectedBankId(record.id)}
-                            />
-                          </td>
-                          <td>{formatDatePtBr(record.date)}</td>
-                          <td style={{ fontSize: "11px" }}>{record.description}</td>
-                          <td><strong>{formatCurrency(record.amount)}</strong></td>
-                          <td>{record.bankName || "-"}</td>
-                          <td onClick={(e) => e.stopPropagation()}>
-                            {candidates.length > 0 ? (
-                              <button
-                                type="button"
-                                className="text-button"
-                                onClick={() => setExpandedBankId(expanded ? null : record.id)}
-                                title="Ver lançamentos Omie candidatos com score e evidências"
-                              >
-                                {expanded ? "Ocultar" : `${candidates.length} cand.`}
-                              </button>
-                            ) : (
-                              <span style={{ fontSize: "11px", color: "var(--muted)" }}>—</span>
-                            )}
-                          </td>
-                        </tr>
-                        {expanded && candidates.length > 0 && (
-                          <tr key={`${record.id}-candidates`}>
-                            <td colSpan={6} style={{ background: "var(--surface-raised, rgba(255,255,255,0.03))", padding: "10px 14px" }}>
-                              <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px" }}>
-                                Candidatos Omie sugeridos pelo motor (valor, data, documento e descrição). A seleção não confirma a conciliação — a confirmação exige justificativa auditada abaixo.
-                              </div>
-                              <div style={{ display: "grid", gap: "8px" }}>
-                                {candidates.map((candidate) => (
-                                  <div
-                                    key={candidate.omieRecord.id}
-                                    style={{
-                                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap",
-                                      padding: "8px 10px", border: "1px solid var(--line)", borderRadius: "6px", background: "var(--surface)"
-                                    }}
-                                  >
-                                    <div style={{ minWidth: 0, flex: 1 }}>
-                                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                                        <strong style={{ fontSize: "12px" }}>{formatCurrency(candidate.omieRecord.amount)}</strong>
-                                        <span style={{ fontSize: "11px", color: "var(--muted)" }}>{formatDatePtBr(candidate.omieRecord.date)}</span>
-                                        {candidate.amountDifference !== 0 && (
-                                          <span className="badge badge-blue">dif. {formatCurrency(candidate.amountDifference)}</span>
-                                        )}
-                                        <span className="badge badge-green" title="Score de similaridade (0-130)">{candidate.score} pts</span>
-                                      </div>
-                                      <div style={{ fontSize: "11px", marginTop: "4px" }}>
-                                        {candidate.omieRecord.description}
-                                        {candidate.omieRecord.documentNumber && (
-                                          <span style={{ color: "var(--muted)" }}> · doc {candidate.omieRecord.documentNumber}</span>
-                                        )}
-                                      </div>
-                                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-                                        {candidate.evidence.map((item) => (
-                                          <span key={item} style={{ fontSize: "10px", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: "4px", padding: "1px 6px" }}>{item}</span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      className="secondary-button"
-                                      onClick={() => {
-                                        setSelectedBankId(record.id);
-                                        setSelectedOmieId(candidate.omieRecord.id);
-                                        setExpandedBankId(null);
-                                      }}
-                                    >
-                                      Selecionar par
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
+                  {filteredUnmatchedBank.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", color: "var(--muted)", padding: "16px" }}>
+                        Nenhum extrato pendente corresponde aos filtros aplicados.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUnmatchedBank.map((record) => {
+                      const candidates = suggestionsByBankId.get(record.id) ?? [];
+                      const topScore = candidates[0]?.score ?? 0;
+                      const expanded = expandedBankId === record.id;
+                      const isSelected = selectedBankId === record.id;
+                      return (
+                        <Fragment key={record.id}>
+                          <tr
+                            onClick={() => setSelectedBankId(isSelected ? null : record.id)}
+                            className={`reconciliation-row${isSelected ? " reconciliation-row--selected" : ""}`}
+                          >
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="radio"
+                                name="bankSelection"
+                                checked={isSelected}
+                                onChange={() => setSelectedBankId(record.id)}
+                              />
+                            </td>
+                            <td>{formatDatePtBr(record.date)}</td>
+                            <td style={{ fontSize: "11px" }}>{record.description}</td>
+                            <td><strong>{formatCurrency(record.amount)}</strong></td>
+                            <td>{record.bankName || "-"}</td>
+                            <td onClick={(e) => e.stopPropagation()}>
+                              {candidates.length > 0 ? (
+                                <button
+                                  type="button"
+                                  className="reconciliation-confidence-badge"
+                                  onClick={() => setExpandedBankId(expanded ? null : record.id)}
+                                  title="Ver lançamentos Omie candidatos com score e evidências"
+                                >
+                                  {expanded ? "Ocultar" : `${candidates.length} cand. · até ${topScore} pts`}
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: "11px", color: "var(--muted)" }}>—</span>
+                              )}
                             </td>
                           </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
+                          {expanded && candidates.length > 0 && (
+                            <tr key={`${record.id}-candidates`}>
+                              <td colSpan={6} style={{ background: "var(--surface-raised)", padding: "10px 14px" }}>
+                                <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px" }}>
+                                  Candidatos Omie sugeridos pelo motor (valor, data, documento e descrição). A seleção não confirma a conciliação — a confirmação exige justificativa auditada abaixo.
+                                </div>
+                                <div style={{ display: "grid", gap: "8px" }}>
+                                  {candidates.map((candidate) => (
+                                    <div
+                                      key={candidate.omieRecord.id}
+                                      style={{
+                                        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap",
+                                        padding: "8px 10px", border: "1px solid var(--line)", borderRadius: "6px", background: "var(--surface)"
+                                      }}
+                                    >
+                                      <div style={{ minWidth: 0, flex: 1 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                          <strong style={{ fontSize: "12px" }}>{formatCurrency(candidate.omieRecord.amount)}</strong>
+                                          <span style={{ fontSize: "11px", color: "var(--muted)" }}>{formatDatePtBr(candidate.omieRecord.date)}</span>
+                                          {candidate.amountDifference !== 0 && (
+                                            <span className="badge badge-blue">dif. {formatCurrency(candidate.amountDifference)}</span>
+                                          )}
+                                          <span className="badge badge-green" title="Score de similaridade (0-130)">{candidate.score} pts</span>
+                                        </div>
+                                        <div style={{ fontSize: "11px", marginTop: "4px" }}>
+                                          {candidate.omieRecord.description}
+                                          {candidate.omieRecord.documentNumber && (
+                                            <span style={{ color: "var(--muted)" }}> · doc {candidate.omieRecord.documentNumber}</span>
+                                          )}
+                                        </div>
+                                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                                          {candidate.evidence.map((item) => (
+                                            <span key={item} style={{ fontSize: "10px", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: "4px", padding: "1px 6px" }}>{item}</span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="secondary-button"
+                                        onClick={() => {
+                                          setSelectedBankId(record.id);
+                                          setSelectedOmieId(candidate.omieRecord.id);
+                                          setExpandedBankId(null);
+                                        }}
+                                      >
+                                        Selecionar par
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
 
             <div className="unmatched-section">
-              <h3 style={{ fontSize: "13px", marginBottom: "8px" }}>Lançamentos Omie Pendentes ({unmatchedOmie.length})</h3>
+              <h3 style={{ fontSize: "13px", marginBottom: "8px" }}>
+                Lançamentos Omie Pendentes ({filteredUnmatchedOmie.length}
+                {filteredUnmatchedOmie.length !== unmatchedOmie.length ? ` de ${unmatchedOmie.length}` : ""})
+              </h3>
               <table className="data-table">
                 <thead>
                   <tr>
@@ -588,62 +969,161 @@ export function ConciliacaoView({
                   </tr>
                 </thead>
                 <tbody>
-                  {unmatchedOmie.length === 0 ? (
+                  {filteredUnmatchedOmie.length === 0 ? (
                     <tr>
                       <td colSpan={5} style={{ textAlign: "center", color: "var(--muted)", padding: "16px" }}>
-                        Nenhum registro pendente no Omie.
+                        Nenhum registro pendente no Omie para os filtros atuais.
                       </td>
                     </tr>
                   ) : (
-                    unmatchedOmie.map(record => (
-                      <tr
-                        key={record.id}
-                        onClick={() => setSelectedOmieId(record.id === selectedOmieId ? null : record.id)}
-                        style={{ cursor: "pointer", background: selectedOmieId === record.id ? "rgba(181, 88, 60, 0.1)" : undefined }}
-                      >
-                        <td>
-                          <input
-                            type="radio"
-                            name="omieSelection"
-                            checked={selectedOmieId === record.id}
-                            onChange={() => setSelectedOmieId(record.id)}
-                          />
-                        </td>
-                        <td>{formatDatePtBr(record.date)}</td>
-                        <td style={{ fontSize: "11px" }}>{record.description}</td>
-                        <td><strong>{formatCurrency(record.amount)}</strong></td>
-                        <td>{record.documentNumber || "-"}</td>
-                      </tr>
-                    ))
+                    filteredUnmatchedOmie.map((record) => {
+                      const isSelected = selectedOmieId === record.id;
+                      const candidate = selectedBankCandidateMap.get(record.id);
+                      const sameDirection = selectedBankRecord ? record.direction === selectedBankRecord.direction : false;
+                      const diff = selectedBankRecord ? Math.abs(record.amount - selectedBankRecord.amount) : Infinity;
+                      const isExact = Boolean(selectedBankRecord && sameDirection && diff <= 0.01);
+                      const isClose = Boolean(
+                        selectedBankRecord &&
+                          sameDirection &&
+                          !isExact &&
+                          (diff <= 50 || diff / Math.max(selectedBankRecord.amount, 1) <= 0.05)
+                      );
+                      const rowClass = [
+                        "reconciliation-row",
+                        isSelected
+                          ? "reconciliation-row--selected"
+                          : isExact
+                            ? "reconciliation-row--exact"
+                            : isClose || candidate
+                              ? "reconciliation-row--compatible"
+                              : ""
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+
+                      return (
+                        <tr
+                          key={record.id}
+                          onClick={() => setSelectedOmieId(isSelected ? null : record.id)}
+                          className={rowClass}
+                        >
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="radio"
+                              name="omieSelection"
+                              checked={isSelected}
+                              onChange={() => setSelectedOmieId(record.id)}
+                            />
+                          </td>
+                          <td>{formatDatePtBr(record.date)}</td>
+                          <td style={{ fontSize: "11px" }}>
+                            <div>{record.description}</div>
+                            {(candidate || isExact || isClose) && (
+                              <span
+                                className={`reconciliation-match-tag ${
+                                  isExact ? "reconciliation-match-tag--exact" : "reconciliation-match-tag--close"
+                                }`}
+                              >
+                                {candidate
+                                  ? `${candidate.score} pts${isExact ? " · Valor exato" : ""}`
+                                  : isExact
+                                    ? "Valor exato"
+                                    : "Valor próximo"}
+                              </span>
+                            )}
+                          </td>
+                          <td><strong>{formatCurrency(record.amount)}</strong></td>
+                          <td>{record.documentNumber || "-"}</td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {selectedBankId && selectedOmieId && (
-            <div style={{ padding: "16px", background: "var(--surface-raised, rgba(255,255,255,0.05))", border: "1px solid var(--rsbuild-terracotta)", borderRadius: "8px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <h3 style={{ fontSize: "13px", color: "var(--ink)", margin: 0 }}>Conciliação Manual com Trilha de Auditoria</h3>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--rsbuild-terracotta)", background: "var(--rsbuild-terracotta-soft)", padding: "2px 8px", borderRadius: "4px" }}>
-                  {roleMeta.badge}
-                </span>
+          {selectedBankRecord && selectedOmieRecord && (() => {
+            const amountDiff = Math.abs(selectedBankRecord.amount - selectedOmieRecord.amount);
+            const isExactDiff = amountDiff <= 0.01 && selectedBankRecord.direction === selectedOmieRecord.direction;
+            return (
+              <div className="reconciliation-action-dock" role="region" aria-label="Confirmação de conciliação manual">
+                <div className="reconciliation-dock-header">
+                  <div className="reconciliation-dock-pair">
+                    <span className="reconciliation-dock-side">
+                      <strong>Banco:</strong> {formatCurrency(selectedBankRecord.amount)} · {formatDatePtBr(selectedBankRecord.date)}
+                    </span>
+                    <span className="reconciliation-dock-arrow" aria-hidden="true">⇄</span>
+                    <span className="reconciliation-dock-side">
+                      <strong>Omie:</strong> {formatCurrency(selectedOmieRecord.amount)} · {formatDatePtBr(selectedOmieRecord.date)}
+                    </span>
+                    <span
+                      className={`reconciliation-diff-badge ${
+                        isExactDiff ? "reconciliation-diff-badge--ok" : "reconciliation-diff-badge--amber"
+                      }`}
+                    >
+                      {isExactDiff ? `${formatCurrency(0)} · Valor exato` : `Diferença: ${formatCurrency(amountDiff)}`}
+                    </span>
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: "var(--rsbuild-terracotta)",
+                      background: "var(--rsbuild-terracotta-soft)",
+                      padding: "3px 8px",
+                      borderRadius: "4px"
+                    }}
+                  >
+                    {roleMeta.badge} · {author}
+                  </span>
+                </div>
+
+                <div className="reconciliation-chips-row">
+                  {QUICK_JUSTIFICATIONS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className={`reconciliation-chip${manualJustification === preset ? " reconciliation-chip--active" : ""}`}
+                      onClick={() => setManualJustification(preset)}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="reconciliation-dock-form">
+                  <input
+                    type="text"
+                    className="reconciliation-dock-input"
+                    value={manualJustification}
+                    onChange={(e) => setManualJustification(e.target.value)}
+                    placeholder="Justificativa formal para trilha de auditoria..."
+                    aria-label="Justificativa formal para conciliação manual"
+                  />
+                  <div className="reconciliation-dock-actions">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={handleClearSelection}
+                    >
+                      Limpar seleção
+                    </button>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={handleManualMatch}
+                      disabled={!canMatch}
+                      title={!canMatch ? "Seu perfil não possui permissão para conciliação manual." : undefined}
+                    >
+                      Confirmar Conciliação
+                    </button>
+                  </div>
+                </div>
               </div>
-              <p style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px" }}>
-                Identificação do Responsável: <strong>{author}</strong> ({roleMeta.label}). Esta ação registrará autor, carimbo de data/hora e justificativa pericial imutável.
-              </p>
-              <textarea
-                value={manualJustification}
-                onChange={(e) => setManualJustification(e.target.value)}
-                placeholder="Insira a justificativa formal para o casamento manual (ex: 'Compensação de duplicata com divergência de tarifa aprovada pela diretoria')..."
-                rows={3}
-                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", marginBottom: "12px", fontSize: "12px" }}
-              />
-              <button className="primary-button" onClick={handleManualMatch}>
-                Confirmar Casamento Manual
-              </button>
-            </div>
-          )}
+            );
+          })()}
         </section>
       )}
     </>
