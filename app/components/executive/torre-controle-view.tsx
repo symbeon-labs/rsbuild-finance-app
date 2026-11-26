@@ -575,23 +575,23 @@ export function TorreControleView({
 
           {/* Síntese de Governança com ações rápidas */}
           <section
-            className="panel"
+            className="panel torre-governance-summary"
             style={{
               borderLeft: "4px solid var(--rsbuild-terracotta)",
               marginBottom: "24px",
               background: "var(--surface)"
             }}
           >
-            <div className="panel-heading">
+            <div className="panel-heading torre-governance-heading">
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ color: "var(--rsbuild-terracotta)", fontSize: "16px" }}>✦</span>
+                <div className="torre-governance-title-row">
+                  <span className="torre-governance-spark" aria-hidden="true">✦</span>
                   <h2>Síntese de Governança</h2>
                 </div>
-                <p>Síntese executiva orientada a regras de negócio e proteção patrimonial da organização.</p>
+                <p className="torre-governance-deck">Leitura executiva das regras de negócio, exposição operacional e proteção patrimonial da organização.</p>
               </div>
               <span
-                className="status-pill"
+                className="status-pill torre-governance-status"
                 style={{
                   background:
                     healthScore !== null && healthScore >= 75
@@ -613,18 +613,10 @@ export function TorreControleView({
             </div>
 
             <div
-              style={{
-                background: "var(--surface-raised)",
-                padding: "16px",
-                borderRadius: "8px",
-                fontSize: "13px",
-                lineHeight: "1.6",
-                color: "var(--ink)",
-                marginBottom: "16px",
-                border: "1px solid var(--line)"
-              }}
+              className="torre-governance-narrative"
             >
-              {rsGuardiaoDiagnosis.summary}
+              <span className="torre-governance-narrative-label">LEITURA DO CENÁRIO</span>
+              <p>{rsGuardiaoDiagnosis.summary}</p>
             </div>
 
             <div className="torre-action-grid">
@@ -680,31 +672,19 @@ export function TorreControleView({
               </button>
             </div>
 
-            <h3
-              style={{
-                fontSize: "11px",
-                textTransform: "uppercase",
-                letterSpacing: "1.2px",
-                color: "var(--muted)",
-                marginBottom: "12px"
-              }}
-            >
-              Recomendações e Diretrizes Imediatas:
-            </h3>
+            <div className="torre-recommendations-heading">
+              <span>PRÓXIMAS DECISÕES</span>
+              <h3>Recomendações e diretrizes imediatas</h3>
+            </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
+            <div className="torre-recommendations-grid">
               {rsGuardiaoDiagnosis.recommendations.map((rec, i) => (
                 <div
                   key={i}
-                  style={{
-                    border: "1px solid var(--line)",
-                    borderRadius: "8px",
-                    padding: "14px",
-                    background: "var(--surface)"
-                  }}
+                  className="torre-recommendation-card"
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                    <strong style={{ fontSize: "12.5px", color: "var(--ink)" }}>{rec.action}</strong>
+                  <div className="torre-recommendation-card-head">
+                    <strong>{rec.action}</strong>
                     <span
                       style={{
                         fontSize: "9px",
@@ -729,7 +709,7 @@ export function TorreControleView({
                       Prioridade {rec.priority}
                     </span>
                   </div>
-                  <p style={{ fontSize: "12px", color: "var(--muted)", margin: 0, lineHeight: "1.5" }}>{rec.detail}</p>
+                  <p>{rec.detail}</p>
                 </div>
               ))}
             </div>
