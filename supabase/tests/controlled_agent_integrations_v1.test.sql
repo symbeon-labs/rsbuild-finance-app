@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(16);
+select plan(21);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -92,6 +92,63 @@ select ok(
   and not has_function_privilege('anon','public.revoke_intelligence_assignment(uuid)','EXECUTE'),
   'assignment mutation RPCs are authenticated-only'
 );
+
+select ok(
+  has_function_privilege('authenticated','public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)','EXECUTE')
+  and not has_function_privilege('anon','public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)','EXECUTE')
+  and has_function_privilege('authenticated','public.save_agent_integration(uuid,uuid,text,text,text,text,text,text)','EXECUTE')
+  and not has_function_privilege('anon','public.save_agent_integration(uuid,uuid,text,text,text,text,text,text)','EXECUTE'),
+  'registry and connection mutation RPCs are authenticated-only'
+);
+
+insert into public.intelligence_registry(
+ id,name,intelligence_type,provider,config,status,legacy_agent_id
+) values (
+ 'e6666666-6666-4666-8666-666666666666','Agent V1 Assignment Fixture',
+ 'agent','internal','{}'::jsonb,'registered','e4444444-4444-4444-8444-444444444444'
+) on conflict(id) do nothing;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e1111111-1111-4111-8111-111111111111',true);
+select throws_ok(
+ $select public.save_agent_integration(
+   'e4444444-4444-4444-8444-444444444444',
+   'e3333333-3333-4333-8333-333333333333',
+   'openai','Fixture','https://api.example.test','fixture-model',
+   'encrypted-test-credential-value','****value'
+ )$,
+ '42501', null,
+ 'connection cannot be configured without an active intelligence assignment'
+);
+reset role;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
+select lives_ok(
+ $select public.create_intelligence_assignment(
+   'e6666666-6666-4666-8666-666666666666',
+   'e3333333-3333-4333-8333-333333333333',
+   'beta',array['qa']::text[],null
+ )$,
+ 'platform administrator can authorize an intelligence for a tenant'
+);
+select lives_ok(
+ $select public.save_agent_integration(
+   'e4444444-4444-4444-8444-444444444444',
+   'e3333333-3333-4333-8333-333333333333',
+   'openai','Fixture','https://api.example.test','fixture-model',
+   'encrypted-test-credential-value','****value'
+ )$,
+ 'active assignment permits credential configuration'
+);
+select is(
+ (select count(*)::int from public.audit_events
+  where event_type='agent.integration.configured'
+    and entity_type='agent_integration'),
+ 1,
+ 'connection configuration writes an audit event in the same transaction'
+);
+reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','e1111111-1111-4111-8111-111111111111',true);
