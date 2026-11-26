@@ -116,7 +116,7 @@ insert into public.intelligence_registry(
  id,name,intelligence_type,provider,config,status,legacy_agent_id
 ) values (
  'e6666666-6666-4666-8666-666666666666','Agent V1 Assignment Fixture',
- 'agent','internal','{}'::jsonb,'registered','e4444444-4444-4444-8444-444444444444'
+ 'agent','openai','{}'::jsonb,'registered','e4444444-4444-4444-8444-444444444444'
 ) on conflict(id) do nothing;
 
 set local role authenticated;
