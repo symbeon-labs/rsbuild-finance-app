@@ -215,3 +215,173 @@ revoke all on function public.create_intelligence_assignment(uuid,uuid,text,text
 revoke all on function public.revoke_intelligence_assignment(uuid) from public, anon;
 grant execute on function public.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) to authenticated;
 grant execute on function public.revoke_intelligence_assignment(uuid) to authenticated;
+
+
+-- Registry and connection writes are audited atomically. The API never writes
+-- these protected tables directly, avoiding best-effort audit gaps.
+create or replace function public.register_intelligence(
+  p_name text, p_description text, p_type text, p_provider text,
+  p_model text, p_source_uri text, p_runtime text, p_config jsonb,
+  p_credential_encrypted text, p_credential_hint text
+) returns uuid
+language plpgsql security definer
+set search_path = public, auth
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_id uuid;
+  v_audit_org uuid;
+begin
+  if v_actor is null or not public.is_platform_administrator() then
+    raise exception 'platform_admin_required' using errcode = '42501';
+  end if;
+  if length(trim(coalesce(p_name,''))) < 2 or length(p_name) > 120
+     or p_type not in ('agent','llm','decision_engine')
+     or p_provider not in ('openai','anthropic','google','xai','local','custom','internal','mcp')
+     or coalesce(p_config,'{}'::jsonb) = 'null'::jsonb
+     or jsonb_typeof(coalesce(p_config,'{}'::jsonb)) <> 'object'
+     or (p_source_uri is not null and p_source_uri !~ '^https://')
+     or (p_credential_encrypted is not null and length(p_credential_encrypted) < 16) then
+    raise exception 'invalid_registry_payload' using errcode = '22023';
+  end if;
+  insert into public.intelligence_registry (
+    name, description, intelligence_type, provider, model, source_uri,
+    runtime, config, credential_encrypted, credential_hint, status,
+    created_by, updated_by, updated_at
+  ) values (
+    trim(p_name), nullif(trim(coalesce(p_description,'')),''), p_type, p_provider,
+    nullif(trim(coalesce(p_model,'')),''), p_source_uri,
+    nullif(trim(coalesce(p_runtime,'')),''), coalesce(p_config,'{}'::jsonb),
+    p_credential_encrypted, p_credential_hint, 'registered',
+    v_actor, v_actor, now()
+  ) returning id into v_id;
+
+  select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
+  if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
+  insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
+  values(v_audit_org,v_actor,'intelligence.registered','intelligence_registry',v_id,
+    jsonb_build_object('type',p_type,'provider',p_provider,'name',trim(p_name),'hasCredential',p_credential_encrypted is not null));
+  return v_id;
+end;
+$$;
+
+create or replace function public.disable_intelligence(p_intelligence_id uuid)
+returns void
+language plpgsql security definer
+set search_path = public, auth
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_item public.intelligence_registry%rowtype;
+  v_audit_org uuid;
+begin
+  if v_actor is null or not public.is_platform_administrator() then
+    raise exception 'platform_admin_required' using errcode='42501';
+  end if;
+  update public.intelligence_registry set status='disabled',updated_by=v_actor,updated_at=now()
+   where id=p_intelligence_id and status <> 'disabled' returning * into v_item;
+  if not found then raise exception 'registry_item_not_found' using errcode='P0002'; end if;
+  select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
+  if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
+  insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
+  values(v_audit_org,v_actor,'intelligence.disabled','intelligence_registry',v_item.id,
+    jsonb_build_object('name',v_item.name,'type',v_item.intelligence_type,'provider',v_item.provider));
+end;
+$$;
+
+create or replace function public.save_agent_integration(
+  p_agent_id uuid, p_organization_id uuid, p_provider text,
+  p_display_name text, p_endpoint_url text, p_model text,
+  p_credential_encrypted text, p_credential_hint text
+) returns uuid
+language plpgsql security definer
+set search_path = public, auth
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_id uuid;
+  v_audit_org uuid;
+begin
+  if v_actor is null or not public.is_platform_administrator() then
+    raise exception 'platform_admin_required' using errcode='42501';
+  end if;
+  if p_provider not in ('openai','anthropic','google','xai','custom_api','mcp')
+     or length(trim(coalesce(p_display_name,''))) < 2
+     or length(p_display_name) > 100
+     or p_credential_encrypted is null
+     or length(p_credential_encrypted) < 16
+     or p_endpoint_url is not null and p_endpoint_url !~ '^https://'
+     or length(coalesce(p_model,'')) > 120 then
+    raise exception 'invalid_integration_payload' using errcode='22023';
+  end if;
+  if not exists (
+    select 1
+    from public.agents a
+    join public.agent_organization_grants g on g.agent_id=a.id
+    join public.intelligence_registry ir on ir.legacy_agent_id=a.id and ir.status='registered'
+    join public.intelligence_assignments ia on ia.intelligence_id=ir.id
+      and ia.organization_id=p_organization_id
+      and ia.status='active'
+      and (ia.expires_at is null or ia.expires_at > now())
+      and ('qa'=any(ia.environments) or 'sandbox'=any(ia.environments))
+    where a.id=p_agent_id and a.status='active'
+  ) then
+    raise exception 'active_intelligence_assignment_required' using errcode='42501';
+  end if;
+
+  insert into public.agent_integrations(
+    agent_id,organization_id,provider,display_name,endpoint_url,model,
+    credential_encrypted,credential_hint,status,last_error,created_by,updated_by,updated_at
+  ) values (
+    p_agent_id,p_organization_id,p_provider,trim(p_display_name),p_endpoint_url,
+    nullif(trim(coalesce(p_model,'')),''),p_credential_encrypted,p_credential_hint,
+    'configured',null,v_actor,v_actor,now()
+  )
+  on conflict(agent_id,organization_id,provider) do update set
+    display_name=excluded.display_name,endpoint_url=excluded.endpoint_url,
+    model=excluded.model,credential_encrypted=excluded.credential_encrypted,
+    credential_hint=excluded.credential_hint,status='configured',last_error=null,
+    updated_by=v_actor,updated_at=now()
+  returning id into v_id;
+
+  select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
+  if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
+  insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
+  values(v_audit_org,v_actor,'agent.integration.configured','agent_integration',v_id,
+    jsonb_build_object('agentId',p_agent_id,'organizationId',p_organization_id,'provider',p_provider,'credentialHint',p_credential_hint));
+  return v_id;
+end;
+$$;
+
+create or replace function public.disable_agent_integration(p_integration_id uuid)
+returns void
+language plpgsql security definer
+set search_path = public, auth
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_item public.agent_integrations%rowtype;
+  v_audit_org uuid;
+begin
+  if v_actor is null or not public.is_platform_administrator() then
+    raise exception 'platform_admin_required' using errcode='42501';
+  end if;
+  update public.agent_integrations set status='disabled',updated_by=v_actor,updated_at=now()
+   where id=p_integration_id and status <> 'disabled' returning * into v_item;
+  if not found then raise exception 'integration_not_found' using errcode='P0002'; end if;
+  select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
+  if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
+  insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
+  values(v_audit_org,v_actor,'agent.integration.disabled','agent_integration',v_item.id,
+    jsonb_build_object('agentId',v_item.agent_id,'organizationId',v_item.organization_id,'provider',v_item.provider));
+end;
+$$;
+
+revoke all on function public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) from public,anon;
+revoke all on function public.disable_intelligence(uuid) from public,anon;
+revoke all on function public.save_agent_integration(uuid,uuid,text,text,text,text,text,text) from public,anon;
+revoke all on function public.disable_agent_integration(uuid) from public,anon;
+grant execute on function public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) to authenticated;
+grant execute on function public.disable_intelligence(uuid) to authenticated;
+grant execute on function public.save_agent_integration(uuid,uuid,text,text,text,text,text,text) to authenticated;
+grant execute on function public.disable_agent_integration(uuid) to authenticated;
