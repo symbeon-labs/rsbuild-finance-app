@@ -50,6 +50,9 @@ export async function POST(request: Request) {
     created_by: guard.ctx.userId,
     expected_file_size: fileSize,
     expected_media_type: mediaType,
+    expected_filename: fileName,
+    expected_document_type: documentType,
+    expected_description: description || null,
     expires_at: expiresAt
   });
   if (intentError) {
