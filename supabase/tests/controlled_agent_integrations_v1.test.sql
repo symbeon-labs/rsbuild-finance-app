@@ -186,11 +186,11 @@ select is(
  'connection configuration writes an audit event in the same transaction'
 );
 select lives_ok(
- $select public.revoke_intelligence_assignment((
+ $q$select public.revoke_intelligence_assignment((
    select id from public.intelligence_assignments
    where intelligence_id='e6666666-6666-4666-8666-666666666666'
      and organization_id='e3333333-3333-4333-8333-333333333333'
- ))$,
+ ))$q$,
  'revoking assignment succeeds'
 );
 select is(
