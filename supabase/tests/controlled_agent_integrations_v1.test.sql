@@ -101,8 +101,12 @@ select ok(
   has_function_privilege('authenticated','public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)','EXECUTE')
   and not has_function_privilege('anon','public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)','EXECUTE')
   and has_function_privilege('authenticated','public.save_agent_integration(uuid,uuid,text,text,text,text,text,text)','EXECUTE')
-  and not has_function_privilege('anon','public.save_agent_integration(uuid,uuid,text,text,text,text,text,text)','EXECUTE'),
-  'registry and connection mutation RPCs are authenticated-only'
+  and not has_function_privilege('anon','public.save_agent_integration(uuid,uuid,text,text,text,text,text,text)','EXECUTE')
+  and has_function_privilege('authenticated','private.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)','EXECUTE')
+  and not has_function_privilege('anon','private.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)','EXECUTE')
+  and (select prosecdef from pg_proc where oid='private.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)'::regprocedure)
+  and not (select prosecdef from pg_proc where oid='public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text)'::regprocedure),
+  'definer implementations are private and public RPC wrappers are invoker-only'
 );
 
 select ok(
