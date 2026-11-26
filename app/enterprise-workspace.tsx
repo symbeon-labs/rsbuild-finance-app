@@ -108,7 +108,7 @@ export default function EnterpriseWorkspace({
     ["workspace", "visao-geral", "projetos", "torre-controle", "movimentacoes", "operacoes-lote", "importacoes", "conciliacao", "baixas", "canhotos", "pedidos-ha", "relatorios", "auditoria", "acessos", "mensagens", "agentes", "sandbox"].includes(urlTab) &&
     (urlTab !== "projetos" || canViewProjectPortfolio)
       ? urlTab
-      : "workspace";
+      : "visao-geral";
 
   function getModuleForSection(s: NavSection): ModuleType {
     if (s === "baixas" || s === "conciliacao") return "reconciliation";
