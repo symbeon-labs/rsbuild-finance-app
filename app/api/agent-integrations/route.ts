@@ -10,8 +10,6 @@ export const dynamic = "force-dynamic";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROVIDERS = ["openai", "anthropic", "google", "xai", "custom_api", "mcp"] as const;
-const MODES = ["internal", "beta", "contractual"] as const;
-const ENVIRONMENTS = ["qa", "sandbox", "production"] as const;
 
 async function authorizePlatformAdmin(request: Request) {
   const origin = request.headers.get("origin");
@@ -66,16 +64,8 @@ export async function POST(request: Request) {
   const endpointRaw = String(body.endpointUrl ?? "").trim();
   const model = String(body.model ?? "").trim();
   const credential = String(body.credential ?? "").trim();
-  const accessMode = String(body.accessMode ?? "internal");
-  const environments = body.environments;
-  const expiresAt = body.expiresAt ? String(body.expiresAt) : null;
-
   if (!UUID.test(agentId) || !UUID.test(organizationId) ||
       !PROVIDERS.includes(provider as typeof PROVIDERS[number]) ||
-      !MODES.includes(accessMode as typeof MODES[number]) ||
-      !Array.isArray(environments) || environments.length === 0 ||
-      environments.some((env: unknown) => !ENVIRONMENTS.includes(String(env) as typeof ENVIRONMENTS[number])) ||
-      (environments.includes("production") && accessMode !== "contractual") ||
       displayName.length < 2 || displayName.length > 100 ||
       credential.length < 8 || credential.length > 8192 ||
       model.length > 120 || endpointRaw.length > 2048) {
@@ -91,13 +81,6 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json({ error: "endpoint_must_be_https" }, { status: 400 });
     }
-  }
-
-  let expiresAtIso: string | null = null;
-  if (expiresAt) {
-    const parsed = new Date(expiresAt);
-    if (!Number.isFinite(parsed.getTime())) return NextResponse.json({ error: "invalid_expiration" }, { status: 400 });
-    expiresAtIso = parsed.toISOString();
   }
 
   let encrypted: string;
@@ -143,18 +126,9 @@ export async function POST(request: Request) {
 
   if (saveError || !saved) return NextResponse.json({ error: "agent_integration_save_failed" }, { status: 502 });
 
-  // Expand or change the agent grant only after the encrypted connection is stored.
-  // If the grant update fails, disable the new connection so access remains fail-closed.
-  const { error: grantUpdateError } = await admin.from("agent_organization_grants").update({
-    access_mode: accessMode,
-    entitled_environments: [...new Set(environments)],
-    expires_at: expiresAtIso,
-    updated_at: now
-  }).eq("id", grant.id);
-  if (grantUpdateError) {
-    await admin.from("agent_integrations").update({ status: "disabled", updated_by: access.user.id, updated_at: new Date().toISOString() }).eq("id", saved.id);
-    return NextResponse.json({ error: "agent_grant_update_failed" }, { status: 502 });
-  }
+  // Connection configuration is intentionally isolated from commercial grants,
+  // environment entitlements and production approval. Those are managed by the
+  // Intelligence Assignment layer, never as a side effect of storing credentials.
 
   const { data: rsbuild } = await admin.from("organizations").select("id").eq("slug", "rsbuild").maybeSingle();
   if (rsbuild?.id) {
@@ -164,7 +138,7 @@ export async function POST(request: Request) {
       eventType: "agent.integration.configured",
       entityType: "agent_integration",
       entityId: saved.id,
-      metadata: { agentId, organizationId, provider, accessMode, environments: [...new Set(environments)], credentialHint: maskKey(credential) }
+      metadata: { agentId, organizationId, provider, credentialHint: maskKey(credential) }
     });
   }
 
