@@ -385,3 +385,119 @@ grant execute on function public.register_intelligence(text,text,text,text,text,
 grant execute on function public.disable_intelligence(uuid) to authenticated;
 grant execute on function public.save_agent_integration(uuid,uuid,text,text,text,text,text,text) to authenticated;
 grant execute on function public.disable_agent_integration(uuid) to authenticated;
+
+
+-- First-class connections are keyed to the canonical intelligence identity,
+-- not to a legacy agent row. This supports LLMs, decision engines and agents.
+create table if not exists public.intelligence_connections (
+  id uuid primary key default gen_random_uuid(),
+  intelligence_id uuid not null references public.intelligence_registry(id) on delete restrict,
+  organization_id uuid not null references public.organizations(id) on delete restrict,
+  provider text not null check (provider in ('openai','anthropic','google','xai','local','custom','internal','mcp')),
+  display_name text not null,
+  endpoint_url text,
+  model text,
+  credential_encrypted text not null,
+  credential_hint text not null,
+  status text not null default 'configured' check (status in ('configured','disabled','error')),
+  last_verified_at timestamptz,
+  last_error text,
+  created_by uuid references auth.users(id) on delete set null,
+  updated_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint intelligence_connections_unique unique(intelligence_id,organization_id,provider),
+  constraint intelligence_connections_name_nonempty check(length(trim(display_name))>0),
+  constraint intelligence_connections_endpoint_https check(endpoint_url is null or endpoint_url ~ '^https://')
+);
+create index if not exists intelligence_connections_org_status_idx
+  on public.intelligence_connections(organization_id,status,updated_at desc);
+alter table public.intelligence_connections enable row level security;
+revoke all on public.intelligence_connections from public,anon,authenticated;
+comment on table public.intelligence_connections is
+  'Tenant-scoped encrypted provider connections attached to canonical intelligence identities. Requires an active approved assignment; no execution capability.';
+
+create or replace function public.save_intelligence_connection(
+  p_intelligence_id uuid,p_organization_id uuid,p_provider text,
+  p_display_name text,p_endpoint_url text,p_model text,
+  p_credential_encrypted text,p_credential_hint text
+) returns uuid
+language plpgsql security definer
+set search_path = public,auth
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_id uuid;
+  v_audit_org uuid;
+begin
+  if v_actor is null or not public.is_platform_administrator() then
+    raise exception 'platform_admin_required' using errcode='42501';
+  end if;
+  if p_provider not in ('openai','anthropic','google','xai','local','custom','internal','mcp')
+     or length(trim(coalesce(p_display_name,'')))<2 or length(p_display_name)>100
+     or p_credential_encrypted is null or length(p_credential_encrypted)<16
+     or (p_endpoint_url is not null and p_endpoint_url !~ '^https://')
+     or length(coalesce(p_model,''))>160 then
+    raise exception 'invalid_connection_payload' using errcode='22023';
+  end if;
+  if not exists (
+    select 1 from public.intelligence_registry ir
+    join public.intelligence_assignments ia on ia.intelligence_id=ir.id
+    where ir.id=p_intelligence_id and ir.status='registered'
+      and ia.organization_id=p_organization_id and ia.status='active'
+      and (ia.expires_at is null or ia.expires_at>now())
+      and ('qa'=any(ia.environments) or 'sandbox'=any(ia.environments))
+  ) then
+    raise exception 'active_intelligence_assignment_required' using errcode='42501';
+  end if;
+  insert into public.intelligence_connections(
+    intelligence_id,organization_id,provider,display_name,endpoint_url,model,
+    credential_encrypted,credential_hint,status,last_error,created_by,updated_by,updated_at
+  ) values (
+    p_intelligence_id,p_organization_id,p_provider,trim(p_display_name),p_endpoint_url,
+    nullif(trim(coalesce(p_model,'')),''),p_credential_encrypted,p_credential_hint,
+    'configured',null,v_actor,v_actor,now()
+  )
+  on conflict(intelligence_id,organization_id,provider) do update set
+    display_name=excluded.display_name,endpoint_url=excluded.endpoint_url,model=excluded.model,
+    credential_encrypted=excluded.credential_encrypted,credential_hint=excluded.credential_hint,
+    status='configured',last_error=null,updated_by=v_actor,updated_at=now()
+  returning id into v_id;
+  select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
+  if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
+  insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
+  values(v_audit_org,v_actor,'intelligence.connection.configured','intelligence_connection',v_id,
+    jsonb_build_object('intelligenceId',p_intelligence_id,'organizationId',p_organization_id,
+      'provider',p_provider,'credentialHint',p_credential_hint));
+  return v_id;
+end;
+$$;
+
+create or replace function public.disable_intelligence_connection(p_connection_id uuid)
+returns void
+language plpgsql security definer
+set search_path = public,auth
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_item public.intelligence_connections%rowtype;
+  v_audit_org uuid;
+begin
+  if v_actor is null or not public.is_platform_administrator() then
+    raise exception 'platform_admin_required' using errcode='42501';
+  end if;
+  update public.intelligence_connections set status='disabled',updated_by=v_actor,updated_at=now()
+    where id=p_connection_id and status<>'disabled' returning * into v_item;
+  if not found then raise exception 'connection_not_found' using errcode='P0002'; end if;
+  select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
+  if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
+  insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
+  values(v_audit_org,v_actor,'intelligence.connection.disabled','intelligence_connection',v_item.id,
+    jsonb_build_object('intelligenceId',v_item.intelligence_id,'organizationId',v_item.organization_id,'provider',v_item.provider));
+end;
+$$;
+
+revoke all on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) from public,anon;
+revoke all on function public.disable_intelligence_connection(uuid) from public,anon;
+grant execute on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) to authenticated;
+grant execute on function public.disable_intelligence_connection(uuid) to authenticated;
