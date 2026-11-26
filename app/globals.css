@@ -6925,3 +6925,148 @@ html:has(.inst-page) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Finance UX consistency — Importações e Movimentações */
+.import-panel {
+  width: 100%;
+  max-width: 1080px;
+}
+.upload-zone {
+  border-color: var(--line);
+  background: var(--surface-raised);
+  gap: 2px;
+}
+.upload-zone .secondary-button { min-height: 42px; }
+.import-file { min-width: 0; }
+.import-file > div { min-width: 0; }
+.import-file strong { overflow-wrap: anywhere; }
+.import-account-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  align-items: center;
+  gap: 16px;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+.import-account-link strong { color: var(--ink); font-size: 12px; }
+.import-account-link strong span { color: var(--muted); font-weight: 500; }
+.import-account-link p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.import-account-link select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+.import-preview-heading { align-items: center; margin: 22px 0 12px; }
+.import-total-count {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-raised);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.import-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(2, minmax(130px, 1fr)) repeat(2, minmax(135px, .8fr));
+  gap: 12px;
+  margin: 14px 0;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+.import-filters label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.import-filters input, .import-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+.import-filters input:focus, .import-filters select:focus,
+.import-account-link select:focus {
+  outline: none;
+  border-color: var(--rsbuild-terracotta);
+  box-shadow: 0 0 0 3px rgba(181, 88, 60, .12);
+}
+.import-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.import-filter-summary strong { color: var(--ink); }
+.import-filter-empty {
+  padding: 22px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+}
+.import-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.import-actions button { min-height: 42px; }
+.movements-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.movements-heading-actions button { min-height: 42px; }
+.movements-toolbar input,
+.movement-filter-field select,
+.movement-filter-field input[type="date"] { background-color: var(--surface); }
+.movement-filters { background: var(--surface-raised); }
+.movement-filter-field { color: var(--muted); }
+
+@media (max-width: 900px) {
+  .import-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .import-account-link { grid-template-columns: minmax(0, 1fr); }
+  .import-preview-heading { align-items: flex-start; flex-direction: column; }
+  .import-filters { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 10px; }
+  .import-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .import-actions button { width: 100%; }
+  .movements-heading-actions { width: 100%; justify-content: stretch; }
+  .movements-heading-actions button { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movements-toolbar input,
+  .movement-filter-field select,
+  .movement-filter-field input[type="date"] { transition: none; }
+}
