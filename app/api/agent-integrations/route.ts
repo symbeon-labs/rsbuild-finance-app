@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       !MODES.includes(accessMode as typeof MODES[number]) ||
       !Array.isArray(environments) || environments.length === 0 ||
       environments.some((env: unknown) => !ENVIRONMENTS.includes(String(env) as typeof ENVIRONMENTS[number])) ||
+      (environments.includes("production") && accessMode !== "contractual") ||
       displayName.length < 2 || displayName.length > 100 ||
       credential.length < 8 || credential.length > 8192 ||
       model.length > 120 || endpointRaw.length > 2048) {
@@ -115,14 +116,6 @@ export async function POST(request: Request) {
   }
 
   const now = new Date().toISOString();
-  const { error: grantUpdateError } = await admin.from("agent_organization_grants").update({
-    access_mode: accessMode,
-    entitled_environments: [...new Set(environments)],
-    expires_at: expiresAtIso,
-    updated_at: now
-  }).eq("id", grant.id);
-  if (grantUpdateError) return NextResponse.json({ error: "agent_grant_update_failed" }, { status: 502 });
-
   const { data: saved, error: saveError } = await admin.from("agent_integrations").upsert({
     agent_id: agentId,
     organization_id: organizationId,
@@ -142,6 +135,19 @@ export async function POST(request: Request) {
     .single();
 
   if (saveError || !saved) return NextResponse.json({ error: "agent_integration_save_failed" }, { status: 502 });
+
+  // Expand or change the agent grant only after the encrypted connection is stored.
+  // If the grant update fails, disable the new connection so access remains fail-closed.
+  const { error: grantUpdateError } = await admin.from("agent_organization_grants").update({
+    access_mode: accessMode,
+    entitled_environments: [...new Set(environments)],
+    expires_at: expiresAtIso,
+    updated_at: now
+  }).eq("id", grant.id);
+  if (grantUpdateError) {
+    await admin.from("agent_integrations").update({ status: "disabled", updated_by: access.user.id, updated_at: new Date().toISOString() }).eq("id", saved.id);
+    return NextResponse.json({ error: "agent_grant_update_failed" }, { status: 502 });
+  }
 
   const { data: rsbuild } = await admin.from("organizations").select("id").eq("slug", "rsbuild").maybeSingle();
   if (rsbuild?.id) {
