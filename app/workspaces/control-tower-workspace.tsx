@@ -22,6 +22,7 @@ import { OrganizationAdminPanel } from "@/app/components/admin/organization-admi
 import { SandboxView } from "@/app/components/admin/sandbox-view";
 import { AgentsGovernanceView } from "@/app/components/admin/agents-governance-view";
 import { AgentsInstitutionalView } from "@/app/components/admin/agents-institutional-view";
+import { ControlledAgentIntegrationsPanel } from "@/app/components/admin/controlled-agent-integrations-panel";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { LeadInboxView } from "@/app/components/admin/lead-inbox-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
@@ -64,7 +65,7 @@ export default function ControlTowerWorkspace({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startSignOutTransition] = useTransition();
-  const isProjectCollaborator = organizationSlug === "rsbuild" && membershipRole === "operator";
+  const isProjectCollaborator = organizationSlug === "rsbuild" && membershipRole === "operator" && !isPlatformAdministrator;
 
   const canViewProjectPortfolio = isPlatformAdministrator || isProjectCollaborator;
 
@@ -356,8 +357,11 @@ export default function ControlTowerWorkspace({
             <AccessDirectoryView />
           )}
           {!isProjectCollaborator && section === "agentes" && (
-            membershipRole === "owner"
-              ? <AgentsGovernanceView canDecide />
+            isPlatformAdministrator
+              ? <div style={{ display: "grid", gap: 20 }}>
+                  <AgentsGovernanceView canDecide />
+                  <ControlledAgentIntegrationsPanel />
+                </div>
               : <AgentsInstitutionalView />
           )}
           {!isProjectCollaborator && section === "sandbox" && (
