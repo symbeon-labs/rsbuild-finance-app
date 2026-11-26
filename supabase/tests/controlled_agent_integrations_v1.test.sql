@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(29);
+select plan(39);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -251,6 +251,108 @@ select is((select count(*)::int from public.agents where id='e4444444-4444-4444-
 select is((select count(*)::int from public.agent_organization_grants where agent_id='e4444444-4444-4444-8444-444444444444'),1,
   'platform administrator can inspect agent grants');
 reset role;
+
+
+-- Additional governance homologation: policy rejection, tenant boundary,
+-- intelligence disable cascade and audit evidence.
+insert into public.organizations (id,legal_name,display_name,slug)
+values
+ ('e8888888-8888-4888-8888-888888888888','Non QA Ltda','Non QA','governance_non_qa'),
+ ('e9999999-9999-4999-8999-999999999999','Second QA Ltda','Second QA','governance_second_qa')
+on conflict (id) do nothing;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e1111111-1111-4111-8111-111111111111',true);
+select throws_ok(
+ $q$select public.register_intelligence(
+   'Unauthorized registry fixture',null,'llm','openai',null,null,null,'{}'::jsonb,null,null
+ )$q$,
+ '42501', null,
+ 'tenant owner cannot register global intelligence'
+);
+reset role;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
+select throws_ok(
+ $q$select public.create_intelligence_assignment(
+   'e6666666-6666-4666-8666-666666666666',
+   'e8888888-8888-4888-8888-888888888888',
+   'beta',array['qa']::text[],null
+ )$q$,
+ '22023', null,
+ 'QA assignment is rejected for a non-QA organization'
+);
+select throws_ok(
+ $q$select public.create_intelligence_assignment(
+   'e6666666-6666-4666-8666-666666666666',
+   'e3333333-3333-4333-8333-333333333333',
+   'beta',array['production']::text[],null
+ )$q$,
+ '22023', null,
+ 'production assignment is rejected without contractual access mode'
+);
+select throws_ok(
+ $q$select public.save_intelligence_connection(
+   'e6666666-6666-4666-8666-666666666666',
+   'e9999999-9999-4999-8999-999999999999',
+   'openai','Cross tenant fixture','https://api.example.test','fixture-model',
+   'encrypted-test-credential-value','****value'
+ )$q$,
+ '42501', null,
+ 'connection cannot cross the organization boundary without its own assignment'
+);
+insert into public.intelligence_registry(
+ id,name,intelligence_type,provider,config,status
+) values (
+ 'e7777777-7777-4777-8777-777777777777','Disable Cascade Fixture',
+ 'llm','openai','{}'::jsonb,'registered'
+) on conflict(id) do nothing;
+select lives_ok(
+ $q$select public.create_intelligence_assignment(
+   'e7777777-7777-4777-8777-777777777777',
+   'e9999999-9999-4999-8999-999999999999',
+   'beta',array['qa']::text[],null
+ )$q$,
+ 'second QA organization receives an explicitly approved test assignment'
+);
+select lives_ok(
+ $q$select public.save_intelligence_connection(
+   'e7777777-7777-4777-8777-777777777777',
+   'e9999999-9999-4999-8999-999999999999',
+   'openai','Disable cascade fixture','https://api.example.test','fixture-model',
+   'encrypted-test-credential-value','****value'
+ )$q$,
+ 'test connection is configured under the second QA assignment'
+);
+select lives_ok(
+ $q$select public.disable_intelligence('e7777777-7777-4777-8777-777777777777')$q$,
+ 'disabling intelligence succeeds'
+);
+reset role;
+select is(
+ (select status from public.intelligence_assignments
+  where intelligence_id='e7777777-7777-4777-8777-777777777777'
+    and organization_id='e9999999-9999-4999-8999-999999999999'),
+ 'revoked',
+ 'disabling intelligence automatically revokes its tenant assignments'
+);
+select is(
+ (select status from public.intelligence_connections
+  where intelligence_id='e7777777-7777-4777-8777-777777777777'
+    and organization_id='e9999999-9999-4999-8999-999999999999'
+    and provider='openai'),
+ 'disabled',
+ 'disabling intelligence automatically disables its tenant connections'
+);
+select is(
+ (select count(*)::int from public.audit_events
+  where event_type='intelligence.disabled'
+    and entity_type='intelligence_registry'
+    and entity_id='e7777777-7777-4777-8777-777777777777'),
+ 1,
+ 'intelligence disable cascade emits an audit event'
+);
 
 update public.platform_administrators set revoked_at=now() where user_id='e2222222-2222-4222-8222-222222222222';
 select * from finish();
