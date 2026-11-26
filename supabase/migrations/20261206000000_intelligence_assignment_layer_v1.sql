@@ -241,7 +241,7 @@ begin
      or coalesce(p_config,'{}'::jsonb) = 'null'::jsonb
      or jsonb_typeof(coalesce(p_config,'{}'::jsonb)) <> 'object'
      or (p_source_uri is not null and p_source_uri !~ '^https://')
-     or (p_credential_encrypted is not null and length(p_credential_encrypted) < 16) then
+     or p_credential_encrypted is not null or p_credential_hint is not null then
     raise exception 'invalid_registry_payload' using errcode = '22023';
   end if;
   insert into public.intelligence_registry (
@@ -281,6 +281,12 @@ begin
   update public.intelligence_registry set status='disabled',updated_by=v_actor,updated_at=now()
    where id=p_intelligence_id and status <> 'disabled' returning * into v_item;
   if not found then raise exception 'registry_item_not_found' using errcode='P0002'; end if;
+  update public.intelligence_assignments
+    set status='revoked',updated_by=v_actor,updated_at=now()
+    where intelligence_id=v_item.id and status<>'revoked';
+  update public.intelligence_connections
+    set status='disabled',updated_by=v_actor,updated_at=now()
+    where intelligence_id=v_item.id and status<>'disabled';
   select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
   if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
