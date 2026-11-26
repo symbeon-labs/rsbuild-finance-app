@@ -31,6 +31,7 @@ export async function GET(request: Request) {
   const access = await authorizePlatformAdmin(request);
   if (access.error || !access.user) return errorResponse(access.error ?? "forbidden");
 
+  const admin = createAdminClient();
   const [{ data: grants, error: grantsError }, { data: integrations, error: integrationsError }, { data: agents }, { data: organizations }] = await Promise.all([
     admin.from("agent_organization_grants").select("id,agent_id,organization_id,capabilities,status,access_mode,entitled_environments,expires_at,created_at,updated_at").order("created_at", { ascending: false }),
     admin.from("agent_integrations").select("id,agent_id,organization_id,provider,display_name,endpoint_url,model,credential_hint,status,last_verified_at,last_error,updated_at").order("updated_at", { ascending: false }),
@@ -85,7 +86,6 @@ export async function POST(request: Request) {
   try { encrypted = encryptSecret(credential); }
   catch { return NextResponse.json({ error: "encryption_unavailable" }, { status: 500 }); }
 
-  const admin = createAdminClient();
   const { data: integrationId, error: saveError } = await access.session!.rpc("save_agent_integration", {
     p_agent_id: agentId,
     p_organization_id: organizationId,
