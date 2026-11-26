@@ -430,16 +430,17 @@ export function TorreControleView({
         </div>
       </div>
 
-      {/* Subseletor Padronizado com 4 Sub-abas */}
-      <div className="tabs" role="tablist" aria-label="Sub-abas da Torre de Controle" style={{ flexWrap: "wrap", alignItems: "center" }}>
+      {/* Subseletor Evidente de Comando Executivo */}
+      <div className="torre-command-tabs" role="tablist" aria-label="Sub-abas da Torre de Controle">
         <button
           type="button"
           role="tab"
           aria-selected={activeSubTab === "estrategia"}
           onClick={() => setActiveSubTab("estrategia")}
-          className={activeSubTab === "estrategia" ? "tab-active" : "tab"}
+          className={`torre-command-tab${activeSubTab === "estrategia" ? " torre-command-tab--active" : ""}`}
         >
-          ⎈ Visão Executiva
+          <span>⎈</span>
+          <span>Visão Executiva</span>
         </button>
 
         <button
@@ -447,9 +448,10 @@ export function TorreControleView({
           role="tab"
           aria-selected={activeSubTab === "fluxo"}
           onClick={() => setActiveSubTab("fluxo")}
-          className={activeSubTab === "fluxo" ? "tab-active" : "tab"}
+          className={`torre-command-tab${activeSubTab === "fluxo" ? " torre-command-tab--active" : ""}`}
         >
-          📈 Fluxo de Caixa 7/15/30/60d
+          <span>📈</span>
+          <span>Fluxo de Caixa 7/15/30/60d</span>
         </button>
 
         <button
@@ -457,9 +459,11 @@ export function TorreControleView({
           role="tab"
           aria-selected={activeSubTab === "controladoria"}
           onClick={() => setActiveSubTab("controladoria")}
-          className={activeSubTab === "controladoria" ? "tab-active" : "tab"}
+          className={`torre-command-tab${activeSubTab === "controladoria" ? " torre-command-tab--active" : ""}`}
         >
-          ⚖ Controladoria &amp; Trilha ({controllershipSummary.totalAlerts})
+          <span>⚖</span>
+          <span>Controladoria &amp; Trilha</span>
+          <span className="torre-command-badge">{controllershipSummary.totalAlerts}</span>
         </button>
 
         <button
@@ -467,19 +471,22 @@ export function TorreControleView({
           role="tab"
           aria-selected={activeSubTab === "sincronizacao"}
           onClick={() => setActiveSubTab("sincronizacao")}
-          className={activeSubTab === "sincronizacao" ? "tab-active" : "tab"}
+          className={`torre-command-tab${activeSubTab === "sincronizacao" ? " torre-command-tab--active" : ""}`}
         >
-          ⇄ Evidências &amp; Integrações ERP ({documentaryReviewCount})
+          <span>⇄</span>
+          <span>Evidências &amp; Integrações ERP</span>
+          <span className="torre-command-badge">{documentaryReviewCount}</span>
         </button>
 
         {hasSprintZone && (
           <button
             type="button"
             onClick={() => onNavigateToTab("projetos")}
-            className="tab"
+            className="torre-command-tab"
             style={{ marginLeft: "auto" }}
           >
-            📊 Zona das Sprints
+            <span>📊</span>
+            <span>Zona das Sprints</span>
           </button>
         )}
       </div>
@@ -620,15 +627,56 @@ export function TorreControleView({
               {rsGuardiaoDiagnosis.summary}
             </div>
 
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px" }}>
-              <button type="button" className="secondary-button" onClick={() => onNavigateToTab("conciliacao")}>
-                ⇄ Ir para Conciliação
+            <div className="torre-action-grid">
+              <button
+                type="button"
+                className="torre-action-tile torre-action-tile--terracotta"
+                onClick={() => onNavigateToTab("conciliacao")}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "11px" }}>
+                  <span className="torre-action-tile-icon" aria-hidden="true">⇄</span>
+                  <div>
+                    <strong style={{ display: "block", fontSize: "13px" }}>Ir para Conciliação</strong>
+                    <span style={{ fontSize: "11px", color: "var(--muted)" }}>
+                      Conferência multibanco de extratos
+                    </span>
+                  </div>
+                </div>
+                <span className="torre-action-tile-arrow" aria-hidden="true">→</span>
               </button>
-              <button type="button" className="secondary-button" onClick={() => onNavigateToTab("baixas")}>
-                ✓ Revisar Baixas &amp; Títulos
+
+              <button
+                type="button"
+                className="torre-action-tile torre-action-tile--green"
+                onClick={() => onNavigateToTab("baixas")}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "11px" }}>
+                  <span className="torre-action-tile-icon" aria-hidden="true">✓</span>
+                  <div>
+                    <strong style={{ display: "block", fontSize: "13px" }}>Revisar Baixas &amp; Títulos</strong>
+                    <span style={{ fontSize: "11px", color: "var(--muted)" }}>
+                      {readySettlements} título(s) candidato(s)
+                    </span>
+                  </div>
+                </div>
+                <span className="torre-action-tile-arrow" aria-hidden="true">→</span>
               </button>
-              <button type="button" className="secondary-button" onClick={() => onNavigateToTab("canhotos")}>
-                🛡 Protocolo de Canhotos
+
+              <button
+                type="button"
+                className="torre-action-tile torre-action-tile--blue"
+                onClick={() => onNavigateToTab("canhotos")}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "11px" }}>
+                  <span className="torre-action-tile-icon" aria-hidden="true">🛡</span>
+                  <div>
+                    <strong style={{ display: "block", fontSize: "13px" }}>Protocolo de Canhotos</strong>
+                    <span style={{ fontSize: "11px", color: "var(--muted)" }}>
+                      {documentaryReviewCount} evidência(s) registrada(s)
+                    </span>
+                  </div>
+                </div>
+                <span className="torre-action-tile-arrow" aria-hidden="true">→</span>
               </button>
             </div>
 
