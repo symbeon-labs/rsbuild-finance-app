@@ -208,6 +208,11 @@ begin
   if not found then
     raise exception 'assignment_not_found' using errcode = 'P0002';
   end if;
+  update public.intelligence_connections
+    set status = 'disabled', updated_by = v_actor, updated_at = now()
+    where intelligence_id = v_row.intelligence_id
+      and organization_id = v_row.organization_id
+      and status <> 'disabled';
   select id into v_audit_org from public.organizations where slug = 'rsbuild' limit 1;
   if v_audit_org is null then
     raise exception 'audit_organization_missing' using errcode = '23502';
