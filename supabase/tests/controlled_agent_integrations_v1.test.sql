@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(21);
+select plan(24);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -101,6 +101,17 @@ select ok(
   'registry and connection mutation RPCs are authenticated-only'
 );
 
+select ok(
+  not has_table_privilege('authenticated','public.intelligence_connections','SELECT')
+  and not has_table_privilege('authenticated','public.intelligence_connections','INSERT')
+  and not has_table_privilege('authenticated','public.intelligence_connections','UPDATE')
+  and not has_table_privilege('authenticated','public.intelligence_connections','DELETE')
+  and not has_table_privilege('anon','public.intelligence_connections','SELECT')
+  and has_function_privilege('authenticated','public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text)','EXECUTE')
+  and not has_function_privilege('anon','public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text)','EXECUTE'),
+  'canonical connections are protected by RLS and authenticated-only RPCs'
+);
+
 insert into public.intelligence_registry(
  id,name,intelligence_type,provider,config,status,legacy_agent_id
 ) values (
@@ -111,12 +122,22 @@ insert into public.intelligence_registry(
 set local role authenticated;
 select set_config('request.jwt.claim.sub','e1111111-1111-4111-8111-111111111111',true);
 select throws_ok(
+ $select public.save_intelligence_connection(
+   'e6666666-6666-4666-8666-666666666666',
+   'e3333333-3333-4333-8333-333333333333',
+   'openai','Canonical fixture','https://api.example.test','fixture-model',
+   'encrypted-test-credential-value','****value'
+ )$,
+ '42501', null,
+ 'canonical connection cannot be configured without an active assignment'
+);
+select throws_ok(
  $select public.save_agent_integration(
    'e4444444-4444-4444-8444-444444444444',
    'e3333333-3333-4333-8333-333333333333',
    'openai','Fixture','https://api.example.test','fixture-model',
    'encrypted-test-credential-value','****value'
- )$,
+ )$$,
  '42501', null,
  'connection cannot be configured without an active intelligence assignment'
 );
@@ -125,12 +146,28 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
 select lives_ok(
- $select public.create_intelligence_assignment(
+ $$select public.create_intelligence_assignment(
    'e6666666-6666-4666-8666-666666666666',
    'e3333333-3333-4333-8333-333333333333',
    'beta',array['qa']::text[],null
- )$,
+ )$$,
  'platform administrator can authorize an intelligence for a tenant'
+);
+select lives_ok(
+ $select public.save_intelligence_connection(
+   'e6666666-6666-4666-8666-666666666666',
+   'e3333333-3333-4333-8333-333333333333',
+   'openai','Canonical fixture','https://api.example.test','fixture-model',
+   'encrypted-test-credential-value','****value'
+ )$,
+ 'active assignment permits a canonical intelligence connection'
+);
+select is(
+ (select count(*)::int from public.audit_events
+  where event_type='intelligence.connection.configured'
+    and entity_type='intelligence_connection'),
+ 1,
+ 'canonical connection and audit event are committed together'
 );
 select lives_ok(
  $select public.save_agent_integration(
@@ -138,7 +175,7 @@ select lives_ok(
    'e3333333-3333-4333-8333-333333333333',
    'openai','Fixture','https://api.example.test','fixture-model',
    'encrypted-test-credential-value','****value'
- )$,
+ )$$,
  'active assignment permits credential configuration'
 );
 select is(
