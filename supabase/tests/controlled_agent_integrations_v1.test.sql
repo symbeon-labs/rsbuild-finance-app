@@ -302,12 +302,15 @@ select throws_ok(
  '42501', null,
  'connection cannot cross the organization boundary without its own assignment'
 );
+reset role;
 insert into public.intelligence_registry(
  id,name,intelligence_type,provider,config,status
 ) values (
  'e7777777-7777-4777-8777-777777777777','Disable Cascade Fixture',
  'llm','openai','{}'::jsonb,'registered'
 ) on conflict(id) do nothing;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
 select lives_ok(
  $q$select public.create_intelligence_assignment(
    'e7777777-7777-4777-8777-777777777777',
