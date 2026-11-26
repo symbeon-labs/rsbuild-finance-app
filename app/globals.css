@@ -7125,3 +7125,55 @@ html:has(.inst-page) {
   .bulk-selection-actions { width: 100%; justify-content: stretch; }
   .bulk-selection-actions button { flex: 1 1 auto; }
 }
+
+
+/* Finance UX consistency — revisão de classificações DRE */
+.dre-feedback {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 11px;
+}
+.dre-feedback--error { color: var(--red); background: var(--surface-raised); border-color: var(--red); }
+.dre-feedback--success { color: var(--green); background: var(--surface-raised); border-color: var(--green); }
+.dre-review-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+.dre-review-heading h3 { margin: 0; color: var(--ink); font-size: 14px; }
+.dre-review-heading p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.dre-review-heading > span { flex: 0 0 auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.dre-review-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-raised);
+}
+.dre-select-visible { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font-size: 11px; font-weight: 600; }
+.dre-review-selection { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; color: var(--muted); font-size: 10px; }
+.dre-review-selection strong { color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.dre-review-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; }
+.dre-review-table-wrap .data-table { min-width: 980px; margin: 0; }
+.dre-review-table-wrap .filter-select { min-width: 150px; }
+.dre-review-toolbar input:focus-visible,
+.dre-review-table-wrap input:focus-visible,
+.dre-review-table-wrap select:focus-visible,
+.dre-review-toolbar button:focus-visible {
+  outline: 3px solid rgba(181, 88, 60, .24);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .dre-review-heading { align-items: flex-start; flex-direction: column; }
+  .dre-review-toolbar { align-items: flex-start; }
+  .dre-review-selection { width: 100%; }
+  .dre-review-table-wrap .data-table { min-width: 940px; }
+}
