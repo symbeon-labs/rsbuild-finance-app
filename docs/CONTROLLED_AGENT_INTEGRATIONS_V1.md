@@ -58,3 +58,30 @@ A interface informa que uma conexão está configurada, mas ainda não verificad
 7. Desativar conexão altera seu estado sem apagar o registro.
 8. Decisões HITL continuam limitadas a administrador de plataforma ou owner do tenant correspondente.
 9. A autoridade de governança global não é inferida de membership owner da organização RSBUILD.
+
+
+## Governança de inteligências — camada de atribuição
+
+A evolução V1 adiciona uma separação explícita entre catálogo, atribuição, conexão e concessão:
+
+- `intelligence_registry` é o catálogo canônico de identidades de inteligências.
+- `legacy_agent_id` mantém vínculo 1:1 com registros existentes em `agents`; os registros antigos são tratados como projeção de compatibilidade do runtime. A migration faz o backfill sem apagar nem alterar os agentes existentes.
+- `intelligence_assignments` registra a atribuição de uma inteligência a uma organização, com estado, modalidade, ambientes, validade e aprovador.
+- `agent_integrations` guarda somente configuração de conexão e credenciais. Salvar credenciais não altera modalidade comercial, ambientes ou validade de uma concessão.
+- `agent_organization_grants` continua sendo a concessão legada exigida pelo runtime atual. A camada de atribuição não cria nem modifica grants legados automaticamente.
+
+### Aprovação e auditoria
+
+A criação/aprovação e revogação de atribuições ocorre por funções SQL com verificação independente de `is_platform_administrator()`. A alteração da atribuição e o respectivo evento em `audit_events` são executados na mesma transação: se a auditoria falhar, a alteração também é revertida.
+
+### Contratos
+
+O campo `config_schema_version` versiona o contrato JSON não secreto. O banco exige um objeto JSON e, quando presentes, `input` e `output` devem ser objetos. A validação semântica específica por tipo/provedor deverá evoluir por versões de contrato; esta etapa não executa nem interpreta os contratos.
+
+### Limites e migração gradual
+
+- Não há execução de inteligências nesta etapa.
+- Uma atribuição não cria credenciais, não cria um grant legado e não habilita produção no runtime.
+- Os agentes legados continuam disponíveis como projeção de compatibilidade, vinculados ao catálogo pelo campo `legacy_agent_id`.
+- A trilha de auditoria das mutações de atribuição é transacional. Os fluxos antigos de cadastro do Registry e de conexão ainda usam o helper de auditoria best-effort e precisam ser migrados para mutações transacionais antes de serem considerados integralmente auditáveis.
+- Nenhuma migration deve ser aplicada em produção antes da homologação de banco, API e regressão.
