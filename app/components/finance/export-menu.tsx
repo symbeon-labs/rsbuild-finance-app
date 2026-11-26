@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { type ErpFormat } from "@/lib/erp-export";
+import { getDefaultErpExportConfig } from "@/lib/erp-export-config";
 
 export type ExportFormat = "csv" | "excel" | "ofx";
 export type ExportTarget = "dre" | "movimentacoes" | "baixas";
@@ -45,7 +46,16 @@ interface ExportMenuProps {
 export function ExportMenu({ target, onExport, disabled = false, className = "", organizationId = "" }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat | null>(null);
+  const [defaultErp, setDefaultErp] = useState<ErpFormat | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (organizationId) {
+      getDefaultErpExportConfig(organizationId).then((config) => {
+        if (config) setDefaultErp(config.erp_format as ErpFormat);
+      });
+    }
+  }, [organizationId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -142,7 +152,7 @@ export function ExportMenu({ target, onExport, disabled = false, className = "",
                   letterSpacing: "0.05em"
                 }}
               >
-                Selecionar ERP
+                Selecionar ERP {defaultErp && `(${defaultErp.toUpperCase()})`}
               </div>
               {erpOptions.map((option) => (
                 <button
@@ -155,18 +165,19 @@ export function ExportMenu({ target, onExport, disabled = false, className = "",
                     width: "100%",
                     padding: "10px 12px",
                     border: "none",
-                    background: "transparent",
+                    background: option.format === defaultErp ? "var(--rsbuild-terracotta-soft)" : "transparent",
                     cursor: "pointer",
                     textAlign: "left",
                     transition: "background 0.15s"
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = option.format === defaultErp ? "var(--rsbuild-terracotta-soft)" : "transparent")}
                 >
                   <span style={{ fontSize: "16px" }}>🏢</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)" }}>
                       {option.label}
+                      {option.format === defaultErp && <span style={{ marginLeft: "6px", fontSize: "10px", color: "var(--rsbuild-terracotta)" }}>⭐</span>}
                     </div>
                     <div style={{ fontSize: "11px", color: "var(--muted)" }}>
                       {option.description}

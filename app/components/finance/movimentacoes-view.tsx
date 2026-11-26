@@ -6,17 +6,20 @@ import { EmptyState, RecordTable } from "./common";
 import { generateFinancialRecordsExcel, downloadExcelFile } from "@/lib/export";
 import { ExportMenu, type ExportFormat } from "./export-menu";
 import { generateErpCsv, type ErpFormat } from "@/lib/erp-export";
+import { ErpExportSettings } from "./erp-export-settings";
 
 interface MovimentacoesViewProps {
   records: FinancialRecord[];
   onOpenImport: () => void;
   onExportOmie: () => void;
+  organizationId?: string;
 }
 
 export function MovimentacoesView({
   records,
   onOpenImport,
-  onExportOmie
+  onExportOmie,
+  organizationId = ""
 }: MovimentacoesViewProps) {
   const [query, setQuery] = useState("");
   const [direction, setDirection] = useState("all");
@@ -25,6 +28,7 @@ export function MovimentacoesView({
   const [status, setStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [showErpSettings, setShowErpSettings] = useState(false);
 
   const categories = useMemo(
     () => [...new Set(records.map((record) => record.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
@@ -98,7 +102,16 @@ export function MovimentacoesView({
           <p>Consulte e filtre os registros financeiros por coluna.</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
-          <ExportMenu target="movimentacoes" onExport={onExportFormat} disabled={!filteredRecords.length} />
+          <ExportMenu target="movimentacoes" onExport={onExportFormat} disabled={!filteredRecords.length} organizationId={organizationId} />
+          {organizationId && (
+            <button
+              className="secondary-button"
+              onClick={() => setShowErpSettings(true)}
+              title="Configurar exportação ERP"
+            >
+              ⚙️ Configurar ERP
+            </button>
+          )}
           {records.length > 0 && (
             <button
               className="secondary-button"
@@ -195,6 +208,14 @@ export function MovimentacoesView({
           />
         )}
       </section>
+
+      {showErpSettings && organizationId && (
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "var(--surface)", borderRadius: "12px", maxWidth: "90vw", maxHeight: "90vh", overflow: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
+            <ErpExportSettings organizationId={organizationId} onClose={() => setShowErpSettings(false)} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

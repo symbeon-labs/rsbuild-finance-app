@@ -27,6 +27,8 @@ import {
   extractSpreadsheetPreview,
   type SpreadsheetSheetPreview
 } from "@/lib/reconciliation";
+import { generateSettlementErpCsv } from "@/lib/settlement-export";
+import { getDefaultErpExportConfig } from "@/lib/erp-export-config";
 import { MUNDO_DO_SABOR_TITLES, MUNDO_DO_SABOR_BANK_RECORDS } from "@/lib/operational-dataset";
 import {
   DeliveryProof,
@@ -764,18 +766,36 @@ export default function OperationalWorkspace({
       return;
     }
     const settlements = buildSettlementItems(target);
-    const csvContent = generateOmieBatchSettlementCsv(settlements);
-    const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
     const dateStr = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `lote_baixas_omie_${dateStr}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setNotice(`Arquivo CSV gerado para conferência e eventual importação manual no Omie (${settlements.length} itens). Nenhum título foi baixado pelo RSBUILD OS.`);
+    
+    // Buscar configuração de ERP da organização (assíncrono)
+    getDefaultErpExportConfig(organizationId).then((erpConfig) => {
+      const erpFormat = erpConfig?.erp_format as "omie" | "bling" | "tiny" | "contaazul" | "generic" | undefined;
+      
+      let csvContent: string;
+      let filename: string;
+      
+      if (erpFormat && erpFormat !== "omie") {
+        // Usar formato específico do ERP configurado
+        csvContent = generateSettlementErpCsv(settlements as any, erpFormat);
+        filename = `lote_baixas_${erpFormat}_${dateStr}.csv`;
+      } else {
+        // Usar formato Omie padrão
+        csvContent = generateOmieBatchSettlementCsv(settlements);
+        filename = `lote_baixas_omie_${dateStr}.csv`;
+      }
+      
+      const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setNotice(`Arquivo CSV gerado para conferência e eventual importação manual no ERP (${settlements.length} itens). Nenhum título foi baixado pelo RSBUILD OS.`);
+    });
   }
 
   async function handleConfirmSettlementInSession() {
