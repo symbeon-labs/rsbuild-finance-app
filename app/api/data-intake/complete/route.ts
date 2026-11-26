@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: intent, error: intentLookupError } = await admin
     .from("organization_document_upload_intents")
-    .select("storage_path, created_by, expected_file_size, expected_media_type, expires_at, completed_at")
+    .select("storage_path, created_by, expected_file_size, expected_media_type, expected_filename, expected_document_type, expected_description, expires_at, completed_at")
     .eq("organization_id", organizationId)
     .eq("storage_path", storagePath)
     .maybeSingle();
@@ -62,7 +62,10 @@ export async function POST(request: Request) {
   if (new Date(intent.expires_at).getTime() < expirationGrace) {
     return NextResponse.json({ error: "upload_intent_expired" }, { status: 410 });
   }
-  if (intent.expected_media_type !== mediaType) {
+  if (intent.expected_media_type !== mediaType ||
+      intent.expected_filename !== fileName ||
+      intent.expected_document_type !== documentType ||
+      (intent.expected_description ?? "") !== description) {
     return NextResponse.json({ error: "upload_intent_mismatch" }, { status: 409 });
   }
 
