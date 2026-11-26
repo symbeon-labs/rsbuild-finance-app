@@ -31,7 +31,7 @@ export function IntelligenceGovernancePanel() {
     const j=await r.json();
     if(!r.ok) throw new Error(j.error||"Falha ao carregar governança");
     setItems(j.intelligences||[]);
-    setOrganizations((j.organizations||[]).filter((o:Organization)=>o.slug!=="rsbuild"));
+    setOrganizations((j.organizations||[]).filter((o:Organization)=>o.slug.endsWith("_qa")||o.slug.startsWith("rsbuild_qa_")));
     setAssignments(j.assignments||[]);
     const cr=await fetch("/api/intelligence-connections",{cache:"no-store"});const cj=await cr.json();if(!cr.ok)throw new Error(cj.error||"Falha ao carregar conexões");setConnections(cj.connections||[]);
   },[]);
