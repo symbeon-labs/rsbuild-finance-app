@@ -6,6 +6,9 @@ create table if not exists public.organization_document_upload_intents (
   created_by uuid references auth.users(id) on delete set null,
   expected_file_size bigint not null check (expected_file_size between 1 and 20971520),
   expected_media_type text not null,
+  expected_filename text not null check (length(expected_filename) between 1 and 255),
+  expected_document_type text not null check (expected_document_type in ('financial_support','invoice','boleto','receipt','contract','spreadsheet','other')),
+  expected_description text,
   expires_at timestamptz not null,
   completed_at timestamptz,
   created_at timestamptz not null default now()
