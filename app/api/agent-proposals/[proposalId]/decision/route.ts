@@ -61,17 +61,11 @@ export async function POST(
 
     // Autoridade decisória é separada da administração operacional:
     // somente owner institucional RSBUILD ou owner do tenant pode decidir.
-    const { data: rsbuildMembership } = await supabase
-      .from("organization_memberships")
-      .select("role, organizations!inner(slug)")
-      .eq("user_id", user.id)
-      .eq("organizations.slug", "rsbuild")
-      .maybeSingle();
-
-    const isRsbuildOwner = rsbuildMembership?.role === "owner";
+    const { data: isPlatformAdministrator } = await supabase.rpc("is_platform_administrator");
+    const isPlatformAdmin = isPlatformAdministrator === true;
 
     let isTenantOwner = false;
-    if (!isRsbuildOwner) {
+    if (!isPlatformAdmin) {
       const { data: tenantMembership } = await supabase
         .from("organization_memberships")
         .select("role")
@@ -81,7 +75,7 @@ export async function POST(
       isTenantOwner = tenantMembership?.role === "owner";
     }
 
-    if (!isRsbuildOwner && !isTenantOwner) {
+    if (!isPlatformAdmin && !isTenantOwner) {
       await recordAuditEvent({
         organizationId: proposal.organization_id,
         actorId: user.id,
@@ -123,7 +117,7 @@ export async function POST(
       metadata: {
         agentId: proposal.agent_id,
         decisionReason: reason,
-        governanceLayer: isRsbuildOwner ? "rsbuild_owner" : "tenant_owner"
+        governanceLayer: isPlatformAdmin ? "platform_admin" : "tenant_owner"
       }
     });
 
