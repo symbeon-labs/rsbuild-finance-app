@@ -107,12 +107,19 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: grant, error: grantError } = await admin
     .from("agent_organization_grants")
-    .select("id,status")
+    .select("id,status,expires_at")
     .eq("agent_id", agentId)
     .eq("organization_id", organizationId)
     .maybeSingle();
-  if (grantError || !grant || grant.status !== "active") {
+  if (grantError || !grant || grant.status !== "active" ||
+      (grant.expires_at && new Date(grant.expires_at).getTime() <= Date.now())) {
     return NextResponse.json({ error: "active_agent_grant_required" }, { status: 409 });
+  }
+
+  const { data: agent, error: agentError } = await admin.from("agents")
+    .select("status").eq("id", agentId).maybeSingle();
+  if (agentError || !agent || agent.status !== "active") {
+    return NextResponse.json({ error: "active_agent_required" }, { status: 409 });
   }
 
   const now = new Date().toISOString();
