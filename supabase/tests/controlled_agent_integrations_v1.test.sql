@@ -107,6 +107,7 @@ select ok(
   and not has_table_privilege('authenticated','public.intelligence_connections','UPDATE')
   and not has_table_privilege('authenticated','public.intelligence_connections','DELETE')
   and not has_table_privilege('anon','public.intelligence_connections','SELECT')
+  and (select relrowsecurity from pg_class where oid='public.intelligence_connections'::regclass)
   and has_function_privilege('authenticated','public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text)','EXECUTE')
   and not has_function_privilege('anon','public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text)','EXECUTE'),
   'canonical connections are protected by RLS and authenticated-only RPCs'
