@@ -1193,6 +1193,7 @@ export default function OperationalWorkspace({
               )}
               <ImportacoesView
                 organizationId={organizationId}
+                canWrite={["owner", "admin", "operator"].includes(membershipRole)}
                 fileName={fileName}
                 detectedColumns={detectedColumns}
                 pendingImport={pendingImport}
