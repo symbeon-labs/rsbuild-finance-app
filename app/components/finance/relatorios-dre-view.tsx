@@ -7,6 +7,8 @@ import { DRE_ACCOUNTS, partitionDreRecords, runDreEngine, type DreOverride, type
 import { generateDreExcel, downloadExcelFile } from "@/lib/export";
 import { ExportMenu, type ExportFormat } from "@/app/components/finance/export-menu";
 import { generateDreErpCsv, type ErpFormat } from "@/lib/erp-export";
+import { GuideBalloon } from "@/app/components/guide/guide-balloon";
+import { getGuide } from "@/lib/guides";
 
 interface Props { records: FinancialRecord[]; organizationId: string; isLoading?: boolean; periodLabel?: string }
 type Totals = { incoming: number; outgoing: number; result: number; count: number };
@@ -117,5 +119,14 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
   {dreEngine.summary.review===0&&<div className="table-empty" style={{marginTop:18}}>Nenhuma classificação pendente de revisão neste período.</div>}
  </section>
  <DreSourceStructure />
+ 
+ {/* Guide Balloon */}
+ {getGuide("dre") && (
+  <GuideBalloon
+   guideId="dre"
+   steps={getGuide("dre")!.steps}
+   autoStart={true}
+  />
+ )}
  </>;
 }

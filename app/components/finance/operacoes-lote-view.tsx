@@ -1,6 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import type { FinancialRecord } from "@/lib/finance";
+import { GuideBalloon } from "@/app/components/guide/guide-balloon";
+import { getGuide } from "@/lib/guides";
 
 type Props = { records: FinancialRecord[]; onOpenReconciliation: (recordIds: string[]) => void; canOpenReconciliation: boolean };
 const money = (value:number) => value.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -27,5 +29,14 @@ export function OperacoesLoteView({records,onOpenReconciliation,canOpenReconcili
    <div className="bulk-table-wrap" role="region" aria-label="Movimentações filtradas para o lote" tabIndex={0}><table className="data-table"><thead><tr><th></th><th>Data</th><th>Movimentação</th><th>Origem</th><th>Direção</th><th>Valor</th><th>Status</th></tr></thead><tbody>{filtered.map(r=><tr key={r.id}><td><input type="checkbox" aria-label={`Selecionar ${r.description}`} checked={selected.includes(r.id)} onChange={e=>setSelected(old=>e.target.checked?[...old,r.id]:old.filter(id=>id!==r.id))}/></td><td>{r.date}</td><td>{r.description}</td><td>{r.bankName||r.source||"Origem não identificada"}</td><td>{r.direction}</td><td>{money(r.amount)}</td><td>{r.status}</td></tr>)}{!filtered.length&&<tr><td colSpan={7} style={{textAlign:"center",padding:28}}>Nenhuma movimentação corresponde aos filtros.</td></tr>}</tbody></table></div>
   </section>
   <section className="panel" style={{padding:18,display:"grid",gap:14}}><div><h2>Prévia e governança</h2><p>O status financeiro não será alterado pelo Centro de Operações.</p></div><div className="stats-grid"><article className="stat-card"><span>Entradas</span><strong>{money(incoming)}</strong></article><article className="stat-card"><span>Saídas</span><strong>{money(outgoing)}</strong></article><article className="stat-card"><span>Saldo líquido</span><strong>{money(incoming-outgoing)}</strong></article></div><div className="bulk-selection-bar"><small>O encaminhamento abre o módulo de conciliação. A aprovação em lote de decisões exige evidência e trilha de auditoria.</small><button className="primary-button" onClick={()=>onOpenReconciliation(chosen.map(record=>record.id))} disabled={!chosen.length||!canOpenReconciliation}>Abrir Conciliação ({chosen.length})</button></div></section>
+  
+  {/* Guide Balloon */}
+  {getGuide("operacoes_lote") && (
+   <GuideBalloon
+    guideId="operacoes_lote"
+    steps={getGuide("operacoes_lote")!.steps}
+    autoStart={true}
+   />
+  )}
  </div>;
 }

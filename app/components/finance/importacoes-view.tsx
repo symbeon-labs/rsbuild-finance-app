@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { BankMetadata, CsvColumnMatch, FinancialRecord, formatCurrency } from "@/lib/finance";
 import { RecordTable } from "./common";
 import { DataIntakePanel } from "./data-intake-panel";
+import { GuideBalloon } from "@/app/components/guide/guide-balloon";
+import { getGuide } from "@/lib/guides";
 
 interface ImportacoesViewProps {
   organizationId: string;
@@ -223,6 +225,15 @@ export function ImportacoesView({
       </div>
 
       <DataIntakePanel organizationId={organizationId} canWrite={canWrite} />
+      
+      {/* Guide Balloon */}
+      {getGuide("importacoes") && (
+        <GuideBalloon
+          guideId="importacoes"
+          steps={getGuide("importacoes")!.steps}
+          autoStart={true}
+        />
+      )}
     </>
   );
 }

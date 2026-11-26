@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { type ErpFormat } from "@/lib/erp-export";
+import { GuideBalloon } from "@/app/components/guide/guide-balloon";
+import { getGuide } from "@/lib/guides";
 
 interface ErpExportConfig {
   id: string;
@@ -303,6 +305,15 @@ export function ErpExportSettings({ organizationId, onClose }: ErpExportSettings
           </div>
         </div>
       </div>
+
+      {/* Guide Balloon */}
+      {getGuide("erp_settings") && (
+        <GuideBalloon
+          guideId="erp_settings"
+          steps={getGuide("erp_settings")!.steps}
+          autoStart={true}
+        />
+      )}
     </div>
   );
 }

@@ -20,6 +20,8 @@ import {
   canApproveDiscrepantMatch,
   getRoleMetadata
 } from "@/lib/permissions";
+import { GuideBalloon } from "@/app/components/guide/guide-balloon";
+import { getGuide } from "@/lib/guides";
 
 interface ConciliacaoViewProps {
   bankRecords: FinancialRecord[];
@@ -1223,6 +1225,15 @@ export function ConciliacaoView({
             );
           })()}
         </section>
+      )}
+
+      {/* Guide Balloon */}
+      {getGuide("conciliacao") && (
+        <GuideBalloon
+          guideId="conciliacao"
+          steps={getGuide("conciliacao")!.steps}
+          autoStart={true}
+        />
       )}
     </div>
   );
