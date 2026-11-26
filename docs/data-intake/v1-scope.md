@@ -13,7 +13,7 @@ Receber e preservar documentos de uma organização com metadados, integridade, 
 7. Membros autorizados consultam a lista; download é feito por URL assinada de 60 segundos.
 
 ## Formatos V1
-PDF, XLSX, XLS, DOCX, CSV, JSON, XML, TXT, PNG, JPG/JPEG e WEBP. Limite por arquivo: 20 MiB.
+PDF, XLSX, XLS, DOCX, CSV, JSON, XML, TXT, PNG, JPG/JPEG e WEBP. Limite por arquivo: 20 MiB. A configuração local do Supabase e o bucket seguem o mesmo limite.
 
 ## Segurança
 - Bucket privado; nenhuma URL pública.
@@ -24,6 +24,11 @@ PDF, XLSX, XLS, DOCX, CSV, JSON, XML, TXT, PNG, JPG/JPEG e WEBP. Limite por arqu
 - Operações de escrita exigem owner/admin/operator e entitlement Finance.
 - Viewer pode listar e baixar documentos da organização.
 - SHA-256 identifica duplicatas por organização.
+- Upload intents são registrados no banco, vinculados ao usuário, nome, tamanho, MIME, classificação e observação, com validade de duas horas.
+- A reconciliação diária remove objetos expirados sem metadados e preserva objetos já registrados.
+- A finalização tem tolerância de 15 minutos após a expiração; a rotina de limpeza respeita a mesma janela.
+- XLSX/DOCX são verificados pela estrutura ZIP/OOXML, tipos de conteúdo e partes internas obrigatórias; limites de entradas e expansão protegem contra ZIP bombs.
+- Download só entrega a URL assinada quando o evento de auditoria obrigatório foi persistido.
 - Não existe exclusão pela interface/API V1.
 
 ## Estados e classificação
