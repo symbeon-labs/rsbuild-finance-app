@@ -81,7 +81,8 @@ export async function POST(request: Request) {
     const message = error.message || "";
     const status = error.code === "42501" ? 403 : error.code === "23503" ? 409 : error.code === "22023" ? 400 : 502;
     return NextResponse.json({ error: message.includes("registered_intelligence_required") ? "registered_intelligence_required" :
-      message.includes("organization_not_found") ? "organization_not_found" :\n      message.includes("qa_organization_required") ? "qa_organization_required" :
+      message.includes("organization_not_found") ? "organization_not_found" :
+      message.includes("qa_organization_required") ? "qa_organization_required" :
       message.includes("invalid_assignment_policy") ? "invalid_assignment_policy" :
       message.includes("audit_organization_missing") ? "audit_unavailable" : "assignment_save_failed" }, { status });
   }
