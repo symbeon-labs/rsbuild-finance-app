@@ -118,7 +118,7 @@ export function ControlledAgentIntegrationsPanel() {
             <input type="password" value={credential} onChange={e => setCredential(e.target.value)} autoComplete="new-password" maxLength={8192} placeholder="A credencial não será exibida novamente" />
           </label>
           <label style={{ display: "grid", gap: 5, color: "var(--muted)", fontSize: 11 }}>MODALIDADE
-            <select value={accessMode} onChange={e => setAccessMode(e.target.value)}>{MODES.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select>
+            <select value={accessMode} onChange={e => { const next = e.target.value; setAccessMode(next); if (next !== "contractual") setEnvironments(current => current.filter(env => env !== "production")); }}>{MODES.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select>
           </label>
           <label style={{ display: "grid", gap: 5, color: "var(--muted)", fontSize: 11 }}>VALIDADE (OPCIONAL)
             <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
@@ -127,7 +127,7 @@ export function ControlledAgentIntegrationsPanel() {
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <strong style={{ color: "var(--muted)", fontSize: 11 }}>AMBIENTES AUTORIZADOS</strong>
           {ENVIRONMENTS.map(env => <label key={env} style={{ display: "inline-flex", gap: 5, alignItems: "center", color: "var(--muted)", fontSize: 11 }}>
-            <input type="checkbox" checked={environments.includes(env)} onChange={e => setEnvironments(current => e.target.checked ? [...current, env] : current.filter(x => x !== env))} />{env.toUpperCase()}
+            <input type="checkbox" checked={environments.includes(env)} disabled={env === "production" && accessMode !== "contractual"} onChange={e => setEnvironments(current => e.target.checked ? [...current, env] : current.filter(x => x !== env))} />{env.toUpperCase()}
           </label>)}
         </div>
         <div><button className="primary-button" type="button" disabled={busy || !agentId || !organizationId || displayName.trim().length < 2 || credential.trim().length < 8 || environments.length === 0} onClick={() => void save()}>{busy ? "Salvando…" : "Salvar configuração segura"}</button></div>
