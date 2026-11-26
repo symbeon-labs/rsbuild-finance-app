@@ -24,7 +24,7 @@ CREATE POLICY "Users can view own organization export configs"
   ON public.erp_export_configs FOR SELECT
   USING (
     organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
+      SELECT organization_id FROM public.organization_memberships WHERE user_id = auth.uid()
     )
   );
 
@@ -32,7 +32,7 @@ CREATE POLICY "Users can insert own organization export configs"
   ON public.erp_export_configs FOR INSERT
   WITH CHECK (
     organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
+      SELECT organization_id FROM public.organization_memberships WHERE user_id = auth.uid()
     )
   );
 
@@ -40,7 +40,7 @@ CREATE POLICY "Users can update own organization export configs"
   ON public.erp_export_configs FOR UPDATE
   USING (
     organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
+      SELECT organization_id FROM public.organization_memberships WHERE user_id = auth.uid()
     )
   );
 
@@ -48,7 +48,7 @@ CREATE POLICY "Users can delete own organization export configs"
   ON public.erp_export_configs FOR DELETE
   USING (
     organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
+      SELECT organization_id FROM public.organization_memberships WHERE user_id = auth.uid()
     )
   );
 
