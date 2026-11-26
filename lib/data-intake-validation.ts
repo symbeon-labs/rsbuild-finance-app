@@ -92,7 +92,7 @@ function readZipEntries(bytes: Uint8Array): Map<string, { entry: ZipEntry; data:
     if (localName !== name) return null;
     const dataStart = localOffset + 30 + localNameLength + localExtraLength;
     const dataEnd = dataStart + compressedSize;
-    if (dataEnd > bytes.length) return null;
+    if (dataEnd > centralOffset || dataEnd > bytes.length) return null;
     const compressed = bytes.slice(dataStart, dataEnd);
     let data: Uint8Array;
     try {
