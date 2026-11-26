@@ -78,7 +78,7 @@ function readZipEntries(bytes: Uint8Array): Map<string, { entry: ZipEntry; data:
     if (name.startsWith("/") || name.split("/").includes("..") || entries.has(name)) return null;
     totalUncompressed += uncompressedSize;
     if (totalUncompressed > 40 * 1024 * 1024 || (compressedSize === 0 && uncompressedSize > 0) ||
-        (compressedSize > 0 && uncompressedSize / compressedSize > 100)) return null;
+        (compressedSize > 0 && uncompressedSize / compressedSize > 1000)) return null;
 
     if (localOffset + 30 > bytes.length || view.getUint32(localOffset, true) !== 0x04034b50) return null;
     const localFlags = view.getUint16(localOffset + 6, true);
