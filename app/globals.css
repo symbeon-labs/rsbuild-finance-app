@@ -7433,3 +7433,272 @@ html:has(.inst-page) {
 @media (max-width: 420px) {
   .reconciliation-kpi-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Finance UX consistency — Importações e Movimentações */
+.import-panel {
+  width: 100%;
+  max-width: 1080px;
+}
+.upload-zone {
+  border-color: var(--line);
+  background: var(--surface-raised);
+  gap: 2px;
+}
+.upload-zone .secondary-button { min-height: 42px; }
+.import-file { min-width: 0; }
+.import-file > div { min-width: 0; }
+.import-file strong { overflow-wrap: anywhere; }
+.import-account-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  align-items: center;
+  gap: 16px;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+.import-account-link strong { color: var(--ink); font-size: 12px; }
+.import-account-link strong span { color: var(--muted); font-weight: 500; }
+.import-account-link p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.import-account-link select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+.import-preview-heading { align-items: center; margin: 22px 0 12px; }
+.import-total-count {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-raised);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.import-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(2, minmax(130px, 1fr)) repeat(2, minmax(135px, .8fr));
+  gap: 12px;
+  margin: 14px 0;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+.import-filters label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.import-filters input, .import-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+.import-filters input:focus, .import-filters select:focus,
+.import-account-link select:focus {
+  outline: none;
+  border-color: var(--rsbuild-terracotta);
+  box-shadow: 0 0 0 3px rgba(181, 88, 60, .12);
+}
+.import-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.import-filter-summary strong { color: var(--ink); }
+.import-filter-empty {
+  padding: 22px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+}
+.import-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.import-actions button { min-height: 42px; }
+.movements-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.movements-heading-actions button { min-height: 42px; }
+.movements-toolbar input,
+.movement-filter-field select,
+.movement-filter-field input[type="date"] { background-color: var(--surface); }
+.movement-filters { background: var(--surface-raised); }
+.movement-filter-field { color: var(--muted); }
+
+@media (max-width: 900px) {
+  .import-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .import-account-link { grid-template-columns: minmax(0, 1fr); }
+  .import-preview-heading { align-items: flex-start; flex-direction: column; }
+  .import-filters { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 10px; }
+  .import-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .import-actions button { width: 100%; }
+  .movements-heading-actions { width: 100%; justify-content: stretch; }
+  .movements-heading-actions button { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movements-toolbar input,
+  .movement-filter-field select,
+  .movement-filter-field input[type="date"] { transition: none; }
+}
+
+
+/* Finance UX consistency — Baixas e Operações em Lote */
+.settlement-filter-panel {
+  display: grid;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-raised);
+}
+.settlement-filter-group { display: grid; gap: 8px; min-width: 0; }
+.settlement-filter-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 9px; }
+.settlement-filter-heading strong { color: var(--ink); font-size: 12px; }
+.settlement-filter-heading span { color: var(--muted); font-size: 10px; }
+.settlement-filter-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.settlement-filter-options .tab-button { min-height: 38px; }
+.settlement-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.settlement-search label { grid-column: 1 / -1; color: var(--muted); font-size: 11px; font-weight: 600; }
+.settlement-search input { width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 12px; }
+.settlement-result-count { color: var(--muted); font-size: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bulk-filter-panel { display: grid; gap: 8px; }
+.bulk-filter-panel > .text-button { justify-self: start; padding-left: 0; }
+.bulk-selection-status { display: grid; gap: 2px; min-width: 0; color: var(--muted); font-size: 11px; }
+.bulk-selection-status strong { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.bulk-selection-status small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.bulk-selection-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.bulk-selection-total { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.bulk-operations-page .bulk-selection-bar { align-items: center; }
+.bulk-operations-page .bulk-selection-bar > .bulk-selection-status { flex: 1 1 240px; }
+.bulk-operations-page .bulk-selection-bar > .bulk-selection-actions { flex: 0 1 auto; }
+.bulk-operations-page .bulk-selection-actions button { min-height: 40px; }
+.bulk-operations-page .bulk-selection-status + .bulk-selection-actions { margin-left: auto; }
+.settlement-filter-panel button:focus-visible,
+.settlement-search input:focus-visible {
+  outline: 3px solid rgba(181, 88, 60, .24);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .settlement-filter-panel { padding: 12px; gap: 12px; }
+  .settlement-filter-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .settlement-filter-options .tab-button { width: 100%; min-width: 0; }
+  .settlement-search { grid-template-columns: minmax(0, 1fr); }
+  .settlement-result-count { white-space: normal; }
+  .bulk-selection-actions { width: 100%; justify-content: stretch; }
+  .bulk-selection-actions button { flex: 1 1 auto; }
+}
+
+
+/* Finance UX consistency — revisão de classificações DRE */
+.dre-feedback {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 11px;
+}
+.dre-feedback--error { color: var(--red); background: var(--surface-raised); border-color: var(--red); }
+.dre-feedback--success { color: var(--green); background: var(--surface-raised); border-color: var(--green); }
+.dre-review-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+.dre-review-heading h3 { margin: 0; color: var(--ink); font-size: 14px; }
+.dre-review-heading p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.dre-review-heading > span { flex: 0 0 auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.dre-review-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-raised);
+}
+.dre-select-visible { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font-size: 11px; font-weight: 600; }
+.dre-review-selection { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; color: var(--muted); font-size: 10px; }
+.dre-review-selection strong { color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.dre-review-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; }
+.dre-review-table-wrap .data-table { min-width: 980px; margin: 0; }
+.dre-review-table-wrap .filter-select { min-width: 150px; }
+.dre-review-toolbar input:focus-visible,
+.dre-review-table-wrap input:focus-visible,
+.dre-review-table-wrap select:focus-visible,
+.dre-review-toolbar button:focus-visible {
+  outline: 3px solid rgba(181, 88, 60, .24);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .dre-review-heading { align-items: flex-start; flex-direction: column; }
+  .dre-review-toolbar { align-items: flex-start; }
+  .dre-review-selection { width: 100%; }
+  .dre-review-table-wrap .data-table { min-width: 940px; }
+}
+
+
+/* Finance UX consistency — indicadores de governança da DRE */
+.dre-governance-heading { align-items: flex-start; }
+.dre-governance-heading > div { min-width: 0; }
+.dre-governance-pending { flex: 0 0 auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dre-governance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.dre-governance-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 7px; min-width: 0; min-height: 112px; padding: 18px 20px; }
+.dre-governance-card > span { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; font-weight: 600; }
+.dre-governance-card > strong { display: block; color: var(--ink); font-family: var(--font-brand); font-size: 26px; line-height: 1.15; letter-spacing: -0.4px; font-variant-numeric: tabular-nums; }
+.dre-governance-card > small { display: block; color: var(--muted); font-size: 11px; line-height: 1.45; }
+@media (max-width: 640px) {
+  .dre-governance-heading { flex-direction: column; }
+  .dre-governance-pending { white-space: normal; }
+  .dre-governance-grid { grid-template-columns: minmax(0, 1fr); }
+  .dre-governance-card { min-height: 0; padding: 16px; }
+  .dre-governance-card > strong { font-size: 23px; }
+}

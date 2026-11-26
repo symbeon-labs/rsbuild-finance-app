@@ -101,7 +101,7 @@ export function MovimentacoesView({
           <h1>Movimentações</h1>
           <p>Consulte e filtre os registros financeiros por coluna.</p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="movements-heading-actions">
           <ExportMenu target="movimentacoes" onExport={onExportFormat} disabled={!filteredRecords.length} organizationId={organizationId} />
           {organizationId && (
             <button
@@ -135,7 +135,7 @@ export function MovimentacoesView({
             placeholder="Buscar descrição, origem, FITID ou lote..."
             aria-label="Buscar movimentações"
           />
-          <span className="movements-count">{filteredRecords.length} de {records.length} registro(s)</span>
+          <span className="movements-count" aria-live="polite">{filteredRecords.length} de {records.length} registro(s)</span>
         </div>
 
         {records.length > 0 && (
