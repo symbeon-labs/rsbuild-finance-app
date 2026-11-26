@@ -122,22 +122,22 @@ insert into public.intelligence_registry(
 set local role authenticated;
 select set_config('request.jwt.claim.sub','e1111111-1111-4111-8111-111111111111',true);
 select throws_ok(
- $select public.save_intelligence_connection(
+ $q$select public.save_intelligence_connection(
    'e6666666-6666-4666-8666-666666666666',
    'e3333333-3333-4333-8333-333333333333',
    'openai','Canonical fixture','https://api.example.test','fixture-model',
    'encrypted-test-credential-value','****value'
- )$,
+ )$q$,
  '42501', null,
  'canonical connection cannot be configured without an active assignment'
 );
 select throws_ok(
- $select public.save_agent_integration(
+ $q$select public.save_agent_integration(
    'e4444444-4444-4444-8444-444444444444',
    'e3333333-3333-4333-8333-333333333333',
    'openai','Fixture','https://api.example.test','fixture-model',
    'encrypted-test-credential-value','****value'
- )$$,
+ )$q$,
  '42501', null,
  'connection cannot be configured without an active intelligence assignment'
 );
@@ -146,20 +146,20 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','e2222222-2222-4222-8222-222222222222',true);
 select lives_ok(
- $$select public.create_intelligence_assignment(
+ $q$select public.create_intelligence_assignment(
    'e6666666-6666-4666-8666-666666666666',
    'e3333333-3333-4333-8333-333333333333',
    'beta',array['qa']::text[],null
- )$$,
+ )$q$,
  'platform administrator can authorize an intelligence for a tenant'
 );
 select lives_ok(
- $select public.save_intelligence_connection(
+ $q$select public.save_intelligence_connection(
    'e6666666-6666-4666-8666-666666666666',
    'e3333333-3333-4333-8333-333333333333',
    'openai','Canonical fixture','https://api.example.test','fixture-model',
    'encrypted-test-credential-value','****value'
- )$,
+ )$q$,
  'active assignment permits a canonical intelligence connection'
 );
 select is(
@@ -170,12 +170,12 @@ select is(
  'canonical connection and audit event are committed together'
 );
 select lives_ok(
- $select public.save_agent_integration(
+ $q$select public.save_agent_integration(
    'e4444444-4444-4444-8444-444444444444',
    'e3333333-3333-4333-8333-333333333333',
    'openai','Fixture','https://api.example.test','fixture-model',
    'encrypted-test-credential-value','****value'
- )$$,
+ )$q$,
  'active assignment permits credential configuration'
 );
 select is(
