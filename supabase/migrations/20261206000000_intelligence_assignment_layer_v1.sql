@@ -67,6 +67,39 @@ comment on column public.intelligence_assignments.environments is
 comment on column public.intelligence_registry.config_schema_version is
   'Version of the non-secret input/output contract stored in config.';
 
+-- The Intelligence Registry is the canonical catalog. Existing executable
+-- agents are linked as legacy runtime projections, not a second catalog.
+alter table public.intelligence_registry
+  add column if not exists legacy_agent_id uuid
+  references public.agents(id) on delete set null;
+
+create unique index if not exists intelligence_registry_legacy_agent_uidx
+  on public.intelligence_registry(legacy_agent_id)
+  where legacy_agent_id is not null;
+
+insert into public.intelligence_registry (
+  name, description, intelligence_type, provider, runtime, config,
+  status, legacy_agent_id, created_at, updated_at
+)
+select
+  a.display_name,
+  a.description,
+  'agent',
+  'internal',
+  a.protocol,
+  jsonb_build_object('legacy', true, 'capabilities', coalesce(a.capabilities, '[]'::jsonb)),
+  case when a.status = 'active' then 'registered' else 'disabled' end,
+  a.id,
+  coalesce(a.created_at, now()),
+  now()
+from public.agents a
+where not exists (
+  select 1 from public.intelligence_registry ir where ir.legacy_agent_id = a.id
+);
+
+comment on column public.intelligence_registry.legacy_agent_id is
+  'Optional one-to-one link to the legacy execution record. Registry owns catalog identity; legacy agents remain a runtime compatibility projection during migration.';
+
 -- Assignment mutation and its audit record commit or roll back together.
 create or replace function public.create_intelligence_assignment(
   p_intelligence_id uuid,
