@@ -25,7 +25,7 @@ PDF, XLSX, XLS, DOCX, CSV, JSON, XML, TXT, PNG, JPG/JPEG e WEBP. Limite por arqu
 - Viewer pode listar e baixar documentos da organização.
 - SHA-256 identifica duplicatas por organização.
 - Upload intents são registrados no banco, vinculados ao usuário, nome, tamanho, MIME, classificação e observação, com validade de duas horas.
-- A reconciliação diária remove objetos expirados sem metadados e preserva objetos já registrados.
+- A reconciliação diária remove objetos expirados sem metadados e preserva objetos já registrados. O ambiente Vercel precisa ter `CRON_SECRET` configurado para autorizar a execução agendada.
 - A finalização tem tolerância de 15 minutos após a expiração; a rotina de limpeza respeita a mesma janela.
 - XLSX/DOCX são verificados pela estrutura ZIP/OOXML, tipos de conteúdo e partes internas obrigatórias; limites de entradas e expansão protegem contra ZIP bombs.
 - Download só entrega a URL assinada quando o evento de auditoria obrigatório foi persistido.
