@@ -442,7 +442,7 @@ export function ConciliacaoView({
   };
 
   return (
-    <>
+    <div className="reconciliation-page">
       <div className="page-heading">
         <div>
           <div className="eyebrow">RECONCILIAÇÃO ERP & EXTRATOS</div>
@@ -1224,6 +1224,6 @@ export function ConciliacaoView({
           })()}
         </section>
       )}
-    </>
+    </div>
   );
 }
