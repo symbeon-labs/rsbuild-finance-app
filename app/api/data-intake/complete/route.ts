@@ -47,6 +47,25 @@ export async function POST(request: Request) {
   if (!guard.ok) return guard.response;
 
   const admin = createAdminClient();
+  const { data: intent, error: intentLookupError } = await admin
+    .from("organization_document_upload_intents")
+    .select("storage_path, created_by, expected_file_size, expected_media_type, expires_at, completed_at")
+    .eq("organization_id", organizationId)
+    .eq("storage_path", storagePath)
+    .maybeSingle();
+  if (intentLookupError) return NextResponse.json({ error: "upload_intent_check_failed" }, { status: 502 });
+  if (!intent || intent.created_by !== guard.ctx.userId) {
+    return NextResponse.json({ error: "upload_intent_not_found" }, { status: 404 });
+  }
+  if (intent.completed_at) return NextResponse.json({ error: "document_already_finalized" }, { status: 409 });
+  const expirationGrace = Date.now() - 15 * 60 * 1000;
+  if (new Date(intent.expires_at).getTime() < expirationGrace) {
+    return NextResponse.json({ error: "upload_intent_expired" }, { status: 410 });
+  }
+  if (intent.expected_media_type !== mediaType) {
+    return NextResponse.json({ error: "upload_intent_mismatch" }, { status: 409 });
+  }
+
   const { data: alreadyRegistered, error: pathCheckError } = await admin
     .from("organization_documents")
     .select("id")
@@ -60,8 +79,14 @@ export async function POST(request: Request) {
   if (downloadError || !storedFile) {
     return NextResponse.json({ error: "uploaded_object_not_found" }, { status: 404 });
   }
+  if (storedFile.size !== Number(intent.expected_file_size)) {
+    await admin.storage.from(BUCKET).remove([storagePath]);
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
+    return NextResponse.json({ error: "uploaded_size_mismatch" }, { status: 409 });
+  }
   if (storedFile.size > MAX_DATA_INTAKE_FILE_BYTES) {
     await admin.storage.from(BUCKET).remove([storagePath]);
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
     return NextResponse.json({ error: "file_too_large" }, { status: 413 });
   }
 
@@ -69,6 +94,7 @@ export async function POST(request: Request) {
   const validationError = validateDataIntakeFile({ name: fileName, size: storedFile.size, type: mediaType }, bytes);
   if (validationError) {
     await admin.storage.from(BUCKET).remove([storagePath]);
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
     return NextResponse.json({ error: "unsupported_or_invalid_file", message: validationError }, { status: 415 });
   }
 
@@ -82,11 +108,13 @@ export async function POST(request: Request) {
 
   if (duplicateError) {
     await admin.storage.from(BUCKET).remove([storagePath]);
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
     console.error(JSON.stringify({ event: "data_intake_duplicate_check_failed", organizationId, code: duplicateError.code }));
     return NextResponse.json({ error: "document_check_failed" }, { status: 502 });
   }
   if (duplicate) {
     await admin.storage.from(BUCKET).remove([storagePath]);
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
     return NextResponse.json({ error: "duplicate_document", existingDocument: duplicate }, { status: 409 });
   }
 
@@ -114,9 +142,11 @@ export async function POST(request: Request) {
         .select("id").eq("organization_id", organizationId).eq("storage_path", storagePath).maybeSingle();
       if (pathOwner) return NextResponse.json({ error: "document_already_finalized" }, { status: 409 });
       await admin.storage.from(BUCKET).remove([storagePath]);
+      await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
       return NextResponse.json({ error: "duplicate_document" }, { status: 409 });
     }
     await admin.storage.from(BUCKET).remove([storagePath]);
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
     console.error(JSON.stringify({ event: "data_intake_metadata_insert_failed", organizationId, code: insertError?.code }));
     return NextResponse.json({ error: "document_registration_failed" }, { status: 502 });
   }
@@ -131,8 +161,20 @@ export async function POST(request: Request) {
   if (eventError) {
     await admin.from("organization_documents").delete().eq("id", document.id).eq("organization_id", organizationId);
     await admin.storage.from(BUCKET).remove([storagePath]);
+    await admin.from("organization_document_upload_intents").delete().eq("storage_path", storagePath);
     console.error(JSON.stringify({ event: "data_intake_event_insert_failed", organizationId, code: eventError.code }));
     return NextResponse.json({ error: "document_audit_failed" }, { status: 502 });
+  }
+
+  const { error: intentCompleteError } = await admin
+    .from("organization_document_upload_intents")
+    .update({ completed_at: new Date().toISOString() })
+    .eq("organization_id", organizationId)
+    .eq("storage_path", storagePath);
+  if (intentCompleteError) {
+    // A registered document is the source of truth; cleanup also checks this
+    // table before ever removing an expired object.
+    console.error(JSON.stringify({ event: "data_intake_intent_completion_failed", organizationId, documentId: document.id, code: intentCompleteError.code }));
   }
 
   await recordAuditEvent({
