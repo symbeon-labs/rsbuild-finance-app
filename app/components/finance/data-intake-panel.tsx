@@ -136,6 +136,8 @@ export function DataIntakePanel({ organizationId, canWrite }: { organizationId: 
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Falha no envio do documento.");
     } finally {
+      // Reset even on failure so the same file can be selected and retried.
+      if (inputRef.current) inputRef.current.value = "";
       setUploading(false);
     }
   }
