@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { type ErpFormat } from "@/lib/erp-export";
-import { getDefaultErpExportConfig } from "@/lib/erp-export-config";
 
 export type ExportFormat = "csv" | "excel" | "ofx";
 export type ExportTarget = "dre" | "movimentacoes" | "baixas";
@@ -51,9 +50,12 @@ export function ExportMenu({ target, onExport, disabled = false, className = "",
 
   useEffect(() => {
     if (organizationId) {
-      getDefaultErpExportConfig(organizationId).then((config) => {
-        if (config) setDefaultErp(config.erp_format as ErpFormat);
-      });
+      fetch(`/api/erp-export-config?organizationId=${organizationId}`)
+        .then((res) => res.json())
+        .then(({ config }) => {
+          if (config) setDefaultErp(config.erp_format as ErpFormat);
+        })
+        .catch((error) => console.error("Error fetching ERP config:", error));
     }
   }, [organizationId]);
 

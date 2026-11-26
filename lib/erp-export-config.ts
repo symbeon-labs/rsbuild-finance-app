@@ -1,9 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import "server-only";
+import { createClient } from "./supabase/server";
 
 export interface ErpExportConfig {
   id: string;
@@ -24,6 +20,7 @@ export interface ErpExportFieldMapping {
  * Busca configurações de exportação por organização.
  */
 export async function getErpExportConfigs(organizationId: string): Promise<ErpExportConfig[]> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("erp_export_configs")
     .select("*")
@@ -56,6 +53,7 @@ export async function saveErpExportConfig(config: {
   custom_columns?: string[];
   is_default?: boolean;
 }): Promise<ErpExportConfig | null> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("erp_export_configs")
     .upsert({
@@ -81,6 +79,7 @@ export async function saveErpExportConfig(config: {
  * Define configuração como padrão da organização.
  */
 export async function setDefaultErpExportConfig(configId: string): Promise<boolean> {
+  const supabase = await createClient();
   const { error } = await supabase
     .from("erp_export_configs")
     .update({ is_default: true, updated_at: new Date().toISOString() })
@@ -98,6 +97,7 @@ export async function setDefaultErpExportConfig(configId: string): Promise<boole
  * Remove configuração de exportação.
  */
 export async function deleteErpExportConfig(configId: string): Promise<boolean> {
+  const supabase = await createClient();
   const { error } = await supabase
     .from("erp_export_configs")
     .delete()

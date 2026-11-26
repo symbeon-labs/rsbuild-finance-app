@@ -1,16 +1,71 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  getErpExportConfigs,
-  saveErpExportConfig,
-  setDefaultErpExportConfig,
-  deleteErpExportConfig,
-  getDefaultFieldMapping,
-  type ErpExportConfig,
-  type ErpExportFieldMapping
-} from "@/lib/erp-export-config";
 import { type ErpFormat } from "@/lib/erp-export";
+
+interface ErpExportConfig {
+  id: string;
+  organization_id: string;
+  erp_format: string;
+  field_mapping: Record<string, string>;
+  custom_columns: string[];
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ErpExportFieldMapping {
+  [sourceField: string]: string;
+}
+
+function getDefaultFieldMapping(erpFormat: string): ErpExportFieldMapping {
+  const defaults: Record<string, ErpExportFieldMapping> = {
+    omie: {
+      date: "Data",
+      description: "Descrição",
+      amount: "Valor",
+      direction: "Tipo",
+      category: "Categoria",
+      account: "Conta Corrente",
+      document: "Documento"
+    },
+    bling: {
+      date: "Data",
+      description: "Descrição",
+      amount: "Valor",
+      direction: "Tipo",
+      category: "Categoria",
+      account: "Conta"
+    },
+    tiny: {
+      date: "Data",
+      description: "Descrição",
+      amount: "Valor",
+      direction: "Natureza",
+      category: "Categoria",
+      account: "Conta"
+    },
+    contaazul: {
+      date: "Data",
+      description: "Descrição",
+      amount: "Valor",
+      direction: "Tipo",
+      category: "Categoria",
+      account: "Conta"
+    },
+    generic: {
+      date: "Data",
+      description: "Descrição",
+      amount: "Valor",
+      direction: "Direção",
+      category: "Categoria",
+      account: "Conta",
+      document: "Documento",
+      status: "Status"
+    }
+  };
+  return defaults[erpFormat] || defaults.generic;
+}
 
 interface ErpExportSettingsProps {
   organizationId: string;
@@ -40,8 +95,14 @@ export function ErpExportSettings({ organizationId, onClose }: ErpExportSettings
 
   async function loadConfigs() {
     setLoading(true);
-    const data = await getErpExportConfigs(organizationId);
-    setConfigs(data);
+    try {
+      const response = await fetch(`/api/erp-export-config?organizationId=${organizationId}`);
+      const { configs: data } = await response.json();
+      setConfigs(data || []);
+    } catch (error) {
+      console.error("Error loading configs:", error);
+      setConfigs([]);
+    }
     setLoading(false);
   }
 
@@ -62,26 +123,48 @@ export function ErpExportSettings({ organizationId, onClose }: ErpExportSettings
   async function handleSave() {
     setSaving(true);
     const customCols = customColumns.split(",").map((c) => c.trim()).filter(Boolean);
-    await saveErpExportConfig({
-      organization_id: organizationId,
-      erp_format: selectedErp,
-      field_mapping: fieldMapping,
-      custom_columns: customCols,
-      is_default: isDefault
-    });
-    await loadConfigs();
+    try {
+      await fetch("/api/erp-export-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          erp_format: selectedErp,
+          field_mapping: fieldMapping,
+          custom_columns: customCols,
+          is_default: isDefault
+        })
+      });
+      await loadConfigs();
+    } catch (error) {
+      console.error("Error saving config:", error);
+    }
     setSaving(false);
   }
 
   async function handleSetDefault(configId: string) {
-    await setDefaultErpExportConfig(configId);
-    await loadConfigs();
+    try {
+      await fetch("/api/erp-export-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ configId })
+      });
+      await loadConfigs();
+    } catch (error) {
+      console.error("Error setting default:", error);
+    }
   }
 
   async function handleDelete(configId: string) {
     if (confirm("Remover esta configuração de exportação?")) {
-      await deleteErpExportConfig(configId);
-      await loadConfigs();
+      try {
+        await fetch(`/api/erp-export-config?configId=${configId}`, {
+          method: "DELETE"
+        });
+        await loadConfigs();
+      } catch (error) {
+        console.error("Error deleting config:", error);
+      }
     }
   }
 

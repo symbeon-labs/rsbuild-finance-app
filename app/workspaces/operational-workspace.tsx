@@ -28,7 +28,6 @@ import {
   type SpreadsheetSheetPreview
 } from "@/lib/reconciliation";
 import { generateSettlementErpCsv } from "@/lib/settlement-export";
-import { getDefaultErpExportConfig } from "@/lib/erp-export-config";
 import { processReverseImport, type ReverseImportResult } from "@/lib/reverse-import";
 import { ReverseImportAlert } from "@/app/components/finance/provenance-badge";
 import { MUNDO_DO_SABOR_TITLES, MUNDO_DO_SABOR_BANK_RECORDS } from "@/lib/operational-dataset";
@@ -780,33 +779,35 @@ export default function OperationalWorkspace({
     const settlements = buildSettlementItems(target);
     const dateStr = new Date().toISOString().slice(0, 10);
     
-    // Buscar configuração de ERP da organização (assíncrono)
-    getDefaultErpExportConfig(organizationId).then((erpConfig) => {
-      const erpFormat = erpConfig?.erp_format as "omie" | "bling" | "tiny" | "contaazul" | "generic" | undefined;
-      
-      let csvContent: string;
-      let filename: string;
-      
-      if (erpFormat && erpFormat !== "omie") {
-        // Usar formato específico do ERP configurado
-        csvContent = generateSettlementErpCsv(settlements as any, {
-          erpFormat,
-          organizationId,
-          organizationName: organizationName || "Organização"
-        });
-        filename = `lote_baixas_${erpFormat}_${dateStr}.csv`;
-      } else {
-        // Usar formato Omie padrão
-        csvContent = generateOmieBatchSettlementCsv(settlements);
-        filename = `lote_baixas_omie_${dateStr}.csv`;
-      }
-      
-      const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
+    // Buscar configuração de ERP da organização via API
+    fetch(`/api/erp-export-config?organizationId=${organizationId}`)
+      .then((res) => res.json())
+      .then(({ config: erpConfig }) => {
+        const erpFormat = erpConfig?.erp_format as "omie" | "bling" | "tiny" | "contaazul" | "generic" | undefined;
+        
+        let csvContent: string;
+        let filename: string;
+        
+        if (erpFormat && erpFormat !== "omie") {
+          // Usar formato específico do ERP configurado
+          csvContent = generateSettlementErpCsv(settlements as any, {
+            erpFormat,
+            organizationId,
+            organizationName: organizationName || "Organização"
+          });
+          filename = `lote_baixas_${erpFormat}_${dateStr}.csv`;
+        } else {
+          // Usar formato Omie padrão
+          csvContent = generateOmieBatchSettlementCsv(settlements);
+          filename = `lote_baixas_omie_${dateStr}.csv`;
+        }
+        
+        const blob = new Blob([csvContent], { type: "text/csv;charset=windows-1252" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
