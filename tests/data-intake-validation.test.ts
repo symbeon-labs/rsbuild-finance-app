@@ -42,9 +42,9 @@ test("rejects unsupported formats", () => {
 
 test("rejects invalid and oversized files", () => {
   const bytes = new TextEncoder().encode("x");
-  assert.match(validateDataIntakeFile({ name: "a.txt", size: 0 }, new Uint8Array()), /tamanho inválido/);
-  assert.match(validateDataIntakeFile({ name: "a.txt", size: MAX_DATA_INTAKE_FILE_BYTES + 1 }, new Uint8Array(MAX_DATA_INTAKE_FILE_BYTES + 1)), /20 MiB/);
-  assert.match(validateDataIntakeFile({ name: "a.txt", size: 2 }, bytes), /tamanho inválido/);
+  assert.match(validateDataIntakeFile({ name: "a.txt", size: 0 }, new Uint8Array()) ?? "", /tamanho inválido/);
+  assert.match(validateDataIntakeFile({ name: "a.txt", size: MAX_DATA_INTAKE_FILE_BYTES + 1 }, new Uint8Array(MAX_DATA_INTAKE_FILE_BYTES + 1)) ?? "", /20 MiB/);
+  assert.match(validateDataIntakeFile({ name: "a.txt", size: 2 }, bytes) ?? "", /tamanho inválido/);
 });
 
 test("rejects binary payloads disguised as UTF-8 text", () => {
