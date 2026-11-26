@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { FinancialRecord } from "@/lib/finance";
 import { EmptyState, RecordTable } from "./common";
 import { generateFinancialRecordsExcel, downloadExcelFile } from "@/lib/export";
+import { ExportMenu, type ExportFormat } from "./export-menu";
+import { generateErpCsv, type ErpFormat } from "@/lib/erp-export";
 
 interface MovimentacoesViewProps {
   records: FinancialRecord[];
@@ -66,10 +68,20 @@ export function MovimentacoesView({
     setDateTo("");
   }
 
-  function onExportExcel() {
+  function onExportFormat(format:ExportFormat,erpFormat?:ErpFormat) {
     if (!filteredRecords.length) return;
-    const data = generateFinancialRecordsExcel(filteredRecords, "Movimentações Financeiras", "período selecionado");
-    downloadExcelFile(data, `movimentacoes-${new Date().toISOString().slice(0,10)}.xlsx`);
+    
+    if(format==="excel"){
+      const data=generateFinancialRecordsExcel(filteredRecords,"Movimentações Financeiras","período selecionado");
+      downloadExcelFile(data,`movimentacoes-${new Date().toISOString().slice(0,10)}.xlsx`);
+    } else if(format==="csv"&&erpFormat){
+      const csv=generateErpCsv(filteredRecords,{format:erpFormat,organizationId:"",periodLabel:"período selecionado"});
+      const blob=new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"});
+      const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`movimentacoes-${erpFormat}-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url);
+    } else if(format==="ofx"){
+      // OFX já existe via onExportOmie
+      onExportOmie();
+    }
   }
 
   const hasActiveFilters = Boolean(
@@ -86,15 +98,7 @@ export function MovimentacoesView({
           <p>Consulte e filtre os registros financeiros por coluna.</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
-          {filteredRecords.length > 0 && (
-            <button
-              className="secondary-button"
-              onClick={onExportExcel}
-              title="Exportar movimentações em Excel com abas por conta bancária"
-            >
-              📊 Exportar Excel
-            </button>
-          )}
+          <ExportMenu target="movimentacoes" onExport={onExportFormat} disabled={!filteredRecords.length} />
           {records.length > 0 && (
             <button
               className="secondary-button"
