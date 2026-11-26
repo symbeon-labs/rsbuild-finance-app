@@ -62,7 +62,7 @@ export function RelatoriosDreView({records,organizationId,isLoading=false,period
    const data=generateDreExcel(dreEngine.classifications,"DRE Gerencial",periodLabel);
    downloadExcelFile(data,`dre-gerencial-${periodLabel.replace(/\s+/g,'-')}.xlsx`);
   } else if(format==="csv"&&erpFormat){
-   const csv=generateDreErpCsv(dreEngine.classifications,{format:erpFormat,organizationId,periodLabel});
+   const csv=generateDreErpCsv(dreEngine.classifications,{format:erpFormat,organizationId,organizationName:"DRE Gerencial",periodLabel});
    const blob=new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"});
    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`dre-${erpFormat}-${periodLabel.replace(/\s+/g,'-')}.csv`;a.click();URL.revokeObjectURL(url);
   } else if(format==="ofx"){

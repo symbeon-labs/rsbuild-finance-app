@@ -79,7 +79,7 @@ export function MovimentacoesView({
       const data=generateFinancialRecordsExcel(filteredRecords,"Movimentações Financeiras","período selecionado");
       downloadExcelFile(data,`movimentacoes-${new Date().toISOString().slice(0,10)}.xlsx`);
     } else if(format==="csv"&&erpFormat){
-      const csv=generateErpCsv(filteredRecords,{format:erpFormat,organizationId:"",periodLabel:"período selecionado"});
+      const csv=generateErpCsv(filteredRecords,{format:erpFormat,organizationId:"",organizationName:"Movimentações Financeiras",periodLabel:"período selecionado"});
       const blob=new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"});
       const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`movimentacoes-${erpFormat}-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url);
     } else if(format==="ofx"){

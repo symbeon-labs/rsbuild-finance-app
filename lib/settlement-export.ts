@@ -1,4 +1,5 @@
 import { type ErpFormat } from "./erp-export";
+import { generateExportMetadata, addExportMetadataToCsv } from "./import-export-traceability";
 
 export interface SettlementExportData {
   titleId: string;
@@ -15,25 +16,48 @@ export interface SettlementExportData {
   observation: string;
 }
 
+export interface SettlementExportConfig {
+  erpFormat: ErpFormat;
+  organizationId: string;
+  organizationName: string;
+}
+
 /**
  * Gera CSV de baixas no formato específico de cada ERP.
+ * Inclui metadata de exportação para rastreabilidade.
  */
 export function generateSettlementErpCsv(
   settlements: SettlementExportData[],
-  erpFormat: ErpFormat
+  config: SettlementExportConfig
 ): string {
-  switch (erpFormat) {
+  let csv: string;
+  
+  switch (config.erpFormat) {
     case "omie":
-      return generateOmieSettlementCsv(settlements);
+      csv = generateOmieSettlementCsv(settlements);
+      break;
     case "bling":
-      return generateBlingSettlementCsv(settlements);
+      csv = generateBlingSettlementCsv(settlements);
+      break;
     case "tiny":
-      return generateTinySettlementCsv(settlements);
+      csv = generateTinySettlementCsv(settlements);
+      break;
     case "contaazul":
-      return generateContaAzulSettlementCsv(settlements);
+      csv = generateContaAzulSettlementCsv(settlements);
+      break;
     default:
-      return generateGenericSettlementCsv(settlements);
+      csv = generateGenericSettlementCsv(settlements);
   }
+
+  // Adicionar metadata de exportação
+  const metadata = generateExportMetadata(
+    config.organizationId,
+    config.organizationName,
+    "baixas",
+    settlements.length
+  );
+  
+  return addExportMetadataToCsv(csv, metadata);
 }
 
 function generateOmieSettlementCsv(settlements: SettlementExportData[]): string {

@@ -1,35 +1,54 @@
 import * as XLSX from "xlsx";
 import { FinancialRecord, formatDate, formatCurrency } from "./finance";
 import { type DreClassification, type DreUnit } from "./dre-engine";
+import { generateExportMetadata, addExportMetadataToCsv } from "./import-export-traceability";
 
 export type ErpFormat = "omie" | "bling" | "tiny" | "contaazul" | "generic";
 
 export interface ErpExportConfig {
   format: ErpFormat;
   organizationId: string;
+  organizationName: string;
   periodLabel: string;
 }
 
 /**
  * Gera CSV no formato específico de cada ERP.
  * Cada ERP tem estrutura de colunas diferente.
+ * Inclui metadata de exportação para rastreabilidade.
  */
 export function generateErpCsv(
   records: FinancialRecord[],
   config: ErpExportConfig
 ): string {
+  let csv: string;
+  
   switch (config.format) {
     case "omie":
-      return generateOmieCsv(records);
+      csv = generateOmieCsv(records);
+      break;
     case "bling":
-      return generateBlingCsv(records);
+      csv = generateBlingCsv(records);
+      break;
     case "tiny":
-      return generateTinyCsv(records);
+      csv = generateTinyCsv(records);
+      break;
     case "contaazul":
-      return generateContaAzulCsv(records);
+      csv = generateContaAzulCsv(records);
+      break;
     default:
-      return generateGenericCsv(records);
+      csv = generateGenericCsv(records);
   }
+
+  // Adicionar metadata de exportação
+  const metadata = generateExportMetadata(
+    config.organizationId,
+    config.organizationName,
+    "movimentacoes",
+    records.length
+  );
+  
+  return addExportMetadataToCsv(csv, metadata);
 }
 
 function generateOmieCsv(records: FinancialRecord[]): string {
@@ -140,6 +159,7 @@ function generateGenericCsv(records: FinancialRecord[]): string {
 
 /**
  * Exporta DRE em formato CSV específico de ERP.
+ * Inclui metadata de exportação para rastreabilidade.
  */
 export function generateDreErpCsv(
   classifications: DreClassification[],
@@ -170,5 +190,15 @@ export function generateDreErpCsv(
     }
   }
 
-  return [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\r\n");
+  const csv = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\r\n");
+  
+  // Adicionar metadata de exportação
+  const metadata = generateExportMetadata(
+    config.organizationId,
+    config.organizationName,
+    "dre",
+    classifications.length
+  );
+  
+  return addExportMetadataToCsv(csv, metadata);
 }

@@ -29,6 +29,8 @@ import {
 } from "@/lib/reconciliation";
 import { generateSettlementErpCsv } from "@/lib/settlement-export";
 import { getDefaultErpExportConfig } from "@/lib/erp-export-config";
+import { processReverseImport, type ReverseImportResult } from "@/lib/reverse-import";
+import { ReverseImportAlert } from "@/app/components/finance/provenance-badge";
 import { MUNDO_DO_SABOR_TITLES, MUNDO_DO_SABOR_BANK_RECORDS } from "@/lib/operational-dataset";
 import {
   DeliveryProof,
@@ -552,16 +554,25 @@ export default function OperationalWorkspace({
     try {
       const text = decodeImportText(new Uint8Array(await file.arrayBuffer()));
       if (extension === "csv") setDetectedColumns(discoverCsvColumns(text.split(/\r?\n/, 1)[0] ?? ""));
+      
+      // Detectar se arquivo foi exportado pelo RSBUILD OS
+      const reverseImport = processReverseImport(text);
+      if (reverseImport.metadata) {
+        setNotice(`⚠️ Arquivo exportado pelo RSBUILD OS detectado. Proveniência: ${reverseImport.provenance.source}`);
+      }
+      
       const result = extension === "ofx" ? parseOfx(text, file.name) : parseCsv(text);
       pendingFileRef.current = file;
       setFileName(file.name);
       setPendingImport(result.records);
       setImportErrors(result.errors);
       setPendingMetadata(result.metadata || null);
+      setReverseImportResult(reverseImport);
     } catch (error) {
       pendingFileRef.current = null;
       setFileName(file.name);
       setImportErrors([error instanceof Error ? error.message : "Não foi possível ler o arquivo. Exporte novamente em CSV/OFX."]);
+      setReverseImportResult(null);
     }
     navigateTo("importacoes");
     event.target.value = "";
@@ -680,6 +691,7 @@ export default function OperationalWorkspace({
   }
 
   const [pendingMapperFile, setPendingMapperFile] = useState<{ fileName: string; sheets: SpreadsheetSheetPreview[] } | null>(null);
+  const [reverseImportResult, setReverseImportResult] = useState<ReverseImportResult | null>(null);
 
   async function persistImportedTitles(importedTitles: ReceivableTitle[]) {
     const response = await fetch(`/api/titles?organizationId=${encodeURIComponent(organizationId)}`, {
@@ -777,7 +789,11 @@ export default function OperationalWorkspace({
       
       if (erpFormat && erpFormat !== "omie") {
         // Usar formato específico do ERP configurado
-        csvContent = generateSettlementErpCsv(settlements as any, erpFormat);
+        csvContent = generateSettlementErpCsv(settlements as any, {
+          erpFormat,
+          organizationId,
+          organizationName: organizationName || "Organização"
+        });
         filename = `lote_baixas_${erpFormat}_${dateStr}.csv`;
       } else {
         // Usar formato Omie padrão
@@ -1170,19 +1186,24 @@ export default function OperationalWorkspace({
             />
           )}
           {section === "importacoes" && (
-            <ImportacoesView
-              organizationId={organizationId}
-              fileName={fileName}
-              detectedColumns={detectedColumns}
-              pendingImport={pendingImport}
-              pendingMetadata={pendingMetadata}
-              importErrors={importErrors}
-              isImporting={isImporting}
-              onSelectFile={() => inputRef.current?.click()}
-              onCancelImport={cancelImport}
-              onExportOmieOfx={() => handleExportOmie(pendingImport)}
-              onConfirmImport={confirmImport}
-            />
+            <>
+              {reverseImportResult && (
+                <ReverseImportAlert result={reverseImportResult} onDismiss={() => setReverseImportResult(null)} />
+              )}
+              <ImportacoesView
+                organizationId={organizationId}
+                fileName={fileName}
+                detectedColumns={detectedColumns}
+                pendingImport={pendingImport}
+                pendingMetadata={pendingMetadata}
+                importErrors={importErrors}
+                isImporting={isImporting}
+                onSelectFile={() => inputRef.current?.click()}
+                onCancelImport={cancelImport}
+                onExportOmieOfx={() => handleExportOmie(pendingImport)}
+                onConfirmImport={confirmImport}
+              />
+            </>
           )}
           {section === "conciliacao" && (
             <ConciliacaoView
