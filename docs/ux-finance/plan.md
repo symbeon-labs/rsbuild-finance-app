@@ -30,4 +30,4 @@ A PR #156 já cobre uma trilha de elevação visual da Torre de Controle e compo
 4. Homologação visual em desktop e mobile nos ambientes QA, sem tocar workspaces operacionais.
 
 ## Status
-Implementação parcial registrada: primeira fatia aplicada em Importações e Movimentações. Typecheck, testes, build, Preview e QA visual ainda pendentes.
+Implementação visual parcial registrada em Importações, Movimentações, Baixas/Títulos, DRE e Centro de Operações em Lote. Typecheck, testes, build, Preview e QA visual ainda pendentes.
