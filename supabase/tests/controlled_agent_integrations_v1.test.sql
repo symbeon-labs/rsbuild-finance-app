@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(25);
+select plan(27);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -184,6 +184,22 @@ select is(
     and entity_type='agent_integration'),
  1,
  'connection configuration writes an audit event in the same transaction'
+);
+select lives_ok(
+ $select public.revoke_intelligence_assignment((
+   select id from public.intelligence_assignments
+   where intelligence_id='e6666666-6666-4666-8666-666666666666'
+     and organization_id='e3333333-3333-4333-8333-333333333333'
+ ))$,
+ 'revoking assignment succeeds'
+);
+select is(
+ (select status from public.intelligence_connections
+  where intelligence_id='e6666666-6666-4666-8666-666666666666'
+    and organization_id='e3333333-3333-4333-8333-333333333333'
+    and provider='openai'),
+ 'disabled',
+ 'revoking assignment automatically disables its stored connection'
 );
 reset role;
 
