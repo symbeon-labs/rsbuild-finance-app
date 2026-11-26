@@ -187,7 +187,7 @@ begin
 end;
 $$;
 
-create or replace function public.revoke_intelligence_assignment(p_assignment_id uuid)
+create or replace function private.revoke_intelligence_assignment(p_assignment_id uuid)
 returns void
 language plpgsql
 security definer
@@ -223,14 +223,14 @@ end;
 $$;
 
 revoke all on function private.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) from public, anon;
-revoke all on function public.revoke_intelligence_assignment(uuid) from public, anon;
+revoke all on function private.revoke_intelligence_assignment(uuid) from public, anon;
 grant execute on function private.create_intelligence_assignment(uuid,uuid,text,text[],timestamptz) to authenticated;
-grant execute on function public.revoke_intelligence_assignment(uuid) to authenticated;
+grant execute on function private.revoke_intelligence_assignment(uuid) to authenticated;
 
 
 -- Registry and connection writes are audited atomically. The API never writes
 -- these protected tables directly, avoiding best-effort audit gaps.
-create or replace function public.register_intelligence(
+create or replace function private.register_intelligence(
   p_name text, p_description text, p_type text, p_provider text,
   p_model text, p_source_uri text, p_runtime text, p_config jsonb,
   p_credential_encrypted text, p_credential_hint text
@@ -276,7 +276,7 @@ begin
 end;
 $$;
 
-create or replace function public.disable_intelligence(p_intelligence_id uuid)
+create or replace function private.disable_intelligence(p_intelligence_id uuid)
 returns void
 language plpgsql security definer
 set search_path = public, auth
@@ -306,7 +306,7 @@ begin
 end;
 $$;
 
-create or replace function public.save_agent_integration(
+create or replace function private.save_agent_integration(
   p_agent_id uuid, p_organization_id uuid, p_provider text,
   p_display_name text, p_endpoint_url text, p_model text,
   p_credential_encrypted text, p_credential_hint text
@@ -370,7 +370,7 @@ begin
 end;
 $$;
 
-create or replace function public.disable_agent_integration(p_integration_id uuid)
+create or replace function private.disable_agent_integration(p_integration_id uuid)
 returns void
 language plpgsql security definer
 set search_path = public, auth
@@ -394,14 +394,14 @@ begin
 end;
 $$;
 
-revoke all on function public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) from public,anon;
-revoke all on function public.disable_intelligence(uuid) from public,anon;
-revoke all on function public.save_agent_integration(uuid,uuid,text,text,text,text,text,text) from public,anon;
-revoke all on function public.disable_agent_integration(uuid) from public,anon;
-grant execute on function public.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) to authenticated;
-grant execute on function public.disable_intelligence(uuid) to authenticated;
-grant execute on function public.save_agent_integration(uuid,uuid,text,text,text,text,text,text) to authenticated;
-grant execute on function public.disable_agent_integration(uuid) to authenticated;
+revoke all on function private.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) from public,anon;
+revoke all on function private.disable_intelligence(uuid) from public,anon;
+revoke all on function private.save_agent_integration(uuid,uuid,text,text,text,text,text,text) from public,anon;
+revoke all on function private.disable_agent_integration(uuid) from public,anon;
+grant execute on function private.register_intelligence(text,text,text,text,text,text,text,jsonb,text,text) to authenticated;
+grant execute on function private.disable_intelligence(uuid) to authenticated;
+grant execute on function private.save_agent_integration(uuid,uuid,text,text,text,text,text,text) to authenticated;
+grant execute on function private.disable_agent_integration(uuid) to authenticated;
 
 
 -- First-class connections are keyed to the canonical intelligence identity,
@@ -434,7 +434,7 @@ revoke all on public.intelligence_connections from public,anon,authenticated;
 comment on table public.intelligence_connections is
   'Tenant-scoped encrypted provider connections attached to canonical intelligence identities. Requires an active approved assignment; no execution capability.';
 
-create or replace function public.save_intelligence_connection(
+create or replace function private.save_intelligence_connection(
   p_intelligence_id uuid,p_organization_id uuid,p_provider text,
   p_display_name text,p_endpoint_url text,p_model text,
   p_credential_encrypted text,p_credential_hint text
@@ -496,7 +496,7 @@ begin
 end;
 $$;
 
-create or replace function public.disable_intelligence_connection(p_connection_id uuid)
+create or replace function private.disable_intelligence_connection(p_connection_id uuid)
 returns void
 language plpgsql security definer
 set search_path = public,auth
@@ -520,10 +520,10 @@ begin
 end;
 $$;
 
-revoke all on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) from public,anon;
-revoke all on function public.disable_intelligence_connection(uuid) from public,anon;
-grant execute on function public.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) to authenticated;
-grant execute on function public.disable_intelligence_connection(uuid) to authenticated;
+revoke all on function private.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) from public,anon;
+revoke all on function private.disable_intelligence_connection(uuid) from public,anon;
+grant execute on function private.save_intelligence_connection(uuid,uuid,text,text,text,text,text,text) to authenticated;
+grant execute on function private.disable_intelligence_connection(uuid) to authenticated;
 
 
 -- Public API wrappers are SECURITY INVOKER. Privileged implementation stays
