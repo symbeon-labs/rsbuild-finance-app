@@ -67,7 +67,7 @@ A evolução V1 adiciona uma separação explícita entre catálogo, atribuiçã
 - `intelligence_registry` é o catálogo canônico de identidades de inteligências.
 - `legacy_agent_id` mantém vínculo 1:1 com registros existentes em `agents`; os registros antigos são tratados como projeção de compatibilidade do runtime. A migration faz o backfill sem apagar nem alterar os agentes existentes.
 - `intelligence_assignments` registra a atribuição de uma inteligência a uma organização, com estado, modalidade, ambientes, validade e aprovador.
-- `agent_integrations` guarda somente configuração de conexão e credenciais. Salvar credenciais não altera modalidade comercial, ambientes ou validade de uma concessão.
+- `intelligence_connections` guarda conexões por identidade canônica e organização, inclusive LLMs e motores de decisão; `agent_integrations` permanece como compatibilidade do runtime legado. Salvar credenciais não altera modalidade comercial, ambientes ou validade de uma concessão.
 - `agent_organization_grants` continua sendo a concessão legada exigida pelo runtime atual. A camada de atribuição não cria nem modifica grants legados automaticamente.
 
 ### Aprovação e auditoria
@@ -83,5 +83,19 @@ O campo `config_schema_version` versiona o contrato JSON não secreto. O banco e
 - Não há execução de inteligências nesta etapa.
 - Uma atribuição não cria credenciais, não cria um grant legado e não habilita produção no runtime.
 - Os agentes legados continuam disponíveis como projeção de compatibilidade, vinculados ao catálogo pelo campo `legacy_agent_id`.
-- A trilha de auditoria das mutações de atribuição é transacional. Os fluxos antigos de cadastro do Registry e de conexão ainda usam o helper de auditoria best-effort e precisam ser migrados para mutações transacionais antes de serem considerados integralmente auditáveis.
+- Cadastro, desativação, atribuição, revogação e configuração/desativação de conexões canônicas usam RPCs transacionais: a mutação e o evento de auditoria confirmam ou revertem juntos.
+- Configurar credenciais só é permitido depois de uma atribuição ativa em QA ou Sandbox. Revogar uma atribuição ou desativar a inteligência desativa automaticamente as conexões correspondentes.
+- O cadastro no Registry não aceita mais credenciais. Elas só entram na etapa de conexão, após a autorização.
 - Nenhuma migration deve ser aplicada em produção antes da homologação de banco, API e regressão.
+
+
+### Fluxo homologável nesta versão
+
+1. Cadastrar a identidade no Registry sem credenciais.
+2. Aprovar uma atribuição para uma organização em QA ou Sandbox.
+3. Configurar uma conexão vinculada à identidade canônica e à organização; a API e a função SQL exigem atribuição ativa e não expirada.
+4. Consultar apenas metadados e hint mascarado; o segredo cifrado nunca é devolvido.
+5. Revogar a atribuição ou desativar a identidade; conexões são desativadas automaticamente.
+6. Nenhuma etapa verifica conectividade, invoca o provedor ou executa a inteligência.
+
+O fluxo canônico usa `intelligence_connections`; o endpoint antigo `agent-integrations` foi endurecido para exigir atribuição ativa quando opera sobre agentes legados. A camada de execução ainda não consome as novas conexões.
