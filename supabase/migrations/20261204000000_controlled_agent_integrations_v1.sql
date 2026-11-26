@@ -16,6 +16,10 @@ begin
     alter table public.agent_organization_grants add constraint agent_grants_environment_scope_check
       check (entitled_environments <@ array['qa','sandbox','production']::text[] and cardinality(entitled_environments) > 0);
   end if;
+  if not exists (select 1 from pg_constraint where conrelid='public.agent_organization_grants'::regclass and conname='agent_grants_production_requires_contractual_check') then
+    alter table public.agent_organization_grants add constraint agent_grants_production_requires_contractual_check
+      check (not ('production' = any(entitled_environments)) or access_mode = 'contractual');
+  end if;
 end;
 $$;
 
