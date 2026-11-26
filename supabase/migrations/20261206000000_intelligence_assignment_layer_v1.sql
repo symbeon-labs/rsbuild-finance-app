@@ -163,7 +163,7 @@ begin
     organization_id, actor_id, event_type, entity_type, entity_id, metadata
   ) values (
     v_audit_org, v_actor, 'intelligence.assignment.approved',
-    'intelligence_assignment', v_assignment_id,
+    'intelligence_assignment', v_assignment_id::text,
     jsonb_build_object(
       'intelligenceId', p_intelligence_id,
       'organizationId', p_organization_id,
@@ -205,7 +205,7 @@ begin
     organization_id, actor_id, event_type, entity_type, entity_id, metadata
   ) values (
     v_audit_org, v_actor, 'intelligence.assignment.revoked',
-    'intelligence_assignment', v_row.id,
+    'intelligence_assignment', v_row.id::text,
     jsonb_build_object('intelligenceId',v_row.intelligence_id,'organizationId',v_row.organization_id)
   );
 end;
@@ -259,7 +259,7 @@ begin
   select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
   if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
-  values(v_audit_org,v_actor,'intelligence.registered','intelligence_registry',v_id,
+  values(v_audit_org,v_actor,'intelligence.registered','intelligence_registry',v_id::text,
     jsonb_build_object('type',p_type,'provider',p_provider,'name',trim(p_name),'hasCredential',p_credential_encrypted is not null));
   return v_id;
 end;
@@ -290,7 +290,7 @@ begin
   select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
   if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
-  values(v_audit_org,v_actor,'intelligence.disabled','intelligence_registry',v_item.id,
+  values(v_audit_org,v_actor,'intelligence.disabled','intelligence_registry',v_item.id::text,
     jsonb_build_object('name',v_item.name,'type',v_item.intelligence_type,'provider',v_item.provider));
 end;
 $$;
@@ -353,7 +353,7 @@ begin
   select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
   if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
-  values(v_audit_org,v_actor,'agent.integration.configured','agent_integration',v_id,
+  values(v_audit_org,v_actor,'agent.integration.configured','agent_integration',v_id::text,
     jsonb_build_object('agentId',p_agent_id,'organizationId',p_organization_id,'provider',p_provider,'credentialHint',p_credential_hint));
   return v_id;
 end;
@@ -378,7 +378,7 @@ begin
   select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
   if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
-  values(v_audit_org,v_actor,'agent.integration.disabled','agent_integration',v_item.id,
+  values(v_audit_org,v_actor,'agent.integration.disabled','agent_integration',v_item.id::text,
     jsonb_build_object('agentId',v_item.agent_id,'organizationId',v_item.organization_id,'provider',v_item.provider));
 end;
 $$;
@@ -478,7 +478,7 @@ begin
   select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
   if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
-  values(v_audit_org,v_actor,'intelligence.connection.configured','intelligence_connection',v_id,
+  values(v_audit_org,v_actor,'intelligence.connection.configured','intelligence_connection',v_id::text,
     jsonb_build_object('intelligenceId',p_intelligence_id,'organizationId',p_organization_id,
       'provider',p_provider,'credentialHint',p_credential_hint));
   return v_id;
@@ -504,7 +504,7 @@ begin
   select id into v_audit_org from public.organizations where slug='rsbuild' limit 1;
   if v_audit_org is null then raise exception 'audit_organization_missing' using errcode='23502'; end if;
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,metadata)
-  values(v_audit_org,v_actor,'intelligence.connection.disabled','intelligence_connection',v_item.id,
+  values(v_audit_org,v_actor,'intelligence.connection.disabled','intelligence_connection',v_item.id::text,
     jsonb_build_object('intelligenceId',v_item.intelligence_id,'organizationId',v_item.organization_id,'provider',v_item.provider));
 end;
 $$;
