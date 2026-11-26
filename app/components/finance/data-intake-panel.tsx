@@ -120,6 +120,8 @@ export function DataIntakePanel({ organizationId, canWrite }: { organizationId: 
       if (!completeResponse.ok) {
         const messages: Record<string, string> = {
           duplicate_document: "Este arquivo já foi recebido nesta organização.",
+          upload_intent_expired: "O prazo de envio expirou. Selecione o arquivo novamente.",
+          upload_intent_mismatch: "Os dados do envio foram alterados. Inicie um novo envio.",
           document_already_finalized: "Este envio já foi finalizado. Atualize a lista de documentos.",
           unsupported_or_invalid_file: payload.message || "Formato ou conteúdo de arquivo inválido.",
           document_registration_failed: "O arquivo foi enviado, mas não foi possível registrar seus metadados.",
