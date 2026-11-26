@@ -16,11 +16,13 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
+  // Keep a 15-minute completion grace after signed intent expiry.
+  const cleanupBefore = new Date(Date.now() - 15 * 60 * 1000).toISOString();
   const { data: intents, error: listError } = await admin
     .from("organization_document_upload_intents")
     .select("organization_id, storage_path")
     .is("completed_at", null)
-    .lt("expires_at", now)
+    .lt("expires_at", cleanupBefore)
     .order("expires_at", { ascending: true })
     .limit(BATCH_SIZE);
 
