@@ -23,6 +23,7 @@ import { SandboxView } from "@/app/components/admin/sandbox-view";
 import { AgentsGovernanceView } from "@/app/components/admin/agents-governance-view";
 import { AgentsInstitutionalView } from "@/app/components/admin/agents-institutional-view";
 import { ControlledAgentIntegrationsPanel } from "@/app/components/admin/controlled-agent-integrations-panel";
+import { IntelligenceGovernancePanel } from "@/app/components/admin/intelligence-governance-panel";
 import { ProjectPortfolioView } from "@/app/components/projects/project-portfolio-view";
 import { LeadInboxView } from "@/app/components/admin/lead-inbox-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
@@ -361,6 +362,7 @@ export default function ControlTowerWorkspace({
               ? <div style={{ display: "grid", gap: 20 }}>
                   <AgentsGovernanceView canDecide />
                   <ControlledAgentIntegrationsPanel />
+                  <IntelligenceGovernancePanel />
                 </div>
               : <AgentsInstitutionalView />
           )}
