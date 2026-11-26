@@ -115,7 +115,7 @@ export function isValidOfficeOpenXml(bytes: Uint8Array, kind: "xlsx" | "docx"): 
   let xml: string;
   try { xml = new TextDecoder("utf-8", { fatal: true }).decode(contentTypes); }
   catch { return false; }
-  if (!xml.includes("application/vnd.openxmlformats-package")) return false;
+  if (!xml.includes("schemas.openxmlformats.org/package/2006/content-types")) return false;
 
   if (kind === "xlsx") {
     return entries.has("_rels/.rels") &&
