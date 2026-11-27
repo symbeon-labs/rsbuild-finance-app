@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { ALL_NAV_ITEMS, NavSection } from "@/app/types/workspace";
 import { getRoleMetadata } from "@/lib/permissions";
 import { RsbuildIcon } from "@/app/components/rsbuild-icons";
+import { FeedbackModal } from "@/app/components/feedback/feedback-modal";
 
 interface TopbarProps {
   companyName: string;
@@ -21,6 +23,7 @@ interface TopbarProps {
   onResetSession: () => void;
   onOpenConfig: () => void;
   onOpenTour?: () => void;
+  organizationId?: string;
 }
 
 export function Topbar({
@@ -39,10 +42,12 @@ export function Topbar({
   onToggleTheme,
   onResetSession,
   onOpenConfig,
-  onOpenTour
+  onOpenTour,
+  organizationId
 }: TopbarProps) {
   const currentLabel = ALL_NAV_ITEMS.find((item) => item.id === section)?.label || "Visão Geral";
   const roleMeta = getRoleMetadata(userRole);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const displayUserText = userFullName ? userFullName : userEmail;
   const userFullTitle = [userFullName, userRoleTitle, userEmail, roleMeta.description].filter(Boolean).join(" · ");
@@ -192,6 +197,38 @@ export function Topbar({
           </button>
         )}
 
+        {/* Botão de Feedback */}
+        <button
+          type="button"
+          className="feedback-btn"
+          onClick={() => setIsFeedbackOpen(true)}
+          title="Feedback e Sugestões"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            minHeight: "38px",
+            padding: "0 13px",
+            marginLeft: "10px",
+            borderRadius: "9px",
+            border: "1px solid var(--line)",
+            background: "var(--bg)",
+            color: "var(--muted)",
+            cursor: "pointer",
+            fontSize: "11px",
+            fontWeight: 600,
+            transition: "all 160ms ease"
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-.7 5.4 8.8 8.8 0 0 1 3.8.9c.1 0 .2.1.2.2 3-.1 0-.3-.1-.5-.2-.7a8.8 8.8 0 0 1-.5-3.8 8.5 8.5 0 0 1 .9-3.8 8.8 8.8 0 0 1 .5 3.8 8.5 8.5 0 0 1-.7 5.4" />
+            <path d="M9 11h6" />
+            <path d="M12 14v-2" />
+          </svg>
+          <span>Feedback</span>
+        </button>
+
         <button
           type="button"
           className="workspace-switcher-trigger"
@@ -223,6 +260,15 @@ export function Topbar({
           <span aria-hidden="true" style={{ fontSize: "13px", lineHeight: 1 }}>⌄</span>
         </button>
       </div>
+
+      {/* Feedback Modal */}
+      {organizationId && (
+        <FeedbackModal
+          organizationId={organizationId}
+          isOpen={isFeedbackOpen}
+          onClose={() => setIsFeedbackOpen(false)}
+        />
+      )}
     </header>
   );
 }

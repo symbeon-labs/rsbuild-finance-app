@@ -312,6 +312,7 @@ export default function ControlTowerWorkspace({
           onResetSession={() => {}}
           onOpenConfig={() => setIsConfigOpen(true)}
           onOpenTour={() => setIsTourOpen(true)}
+          organizationId={organizationId}
         />
         <div className="content">
           {!isProjectCollaborator && <div className="inline-note" role="note">

@@ -1055,6 +1055,7 @@ export default function OperationalWorkspace({
           onResetSession={resetSession}
           onOpenConfig={() => setIsConfigOpen(true)}
           onOpenTour={() => setIsTourOpen(true)}
+          organizationId={organizationId}
         />
         {/* Faixa de Retorno à Holding RSBUILD */}
         <div
