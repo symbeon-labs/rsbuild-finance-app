@@ -235,6 +235,44 @@ export const GUIDES: Record<string, GuideConfig> = {
         position: "top"
       }
     ]
+  },
+
+  feedback: {
+    id: "feedback",
+    title: "Feedback e Sugestões",
+    description: "Canal para feedback, bugs e sugestões",
+    steps: [
+      {
+        id: "category",
+        title: "Categoria",
+        description: "Selecione o tipo de feedback: Bug, Melhoria, Elogio ou Outro.",
+        position: "center"
+      },
+      {
+        id: "severity",
+        title: "Severidade (para Bugs)",
+        description: "Para bugs, informe a severidade: Alta, Média ou Baixa.",
+        position: "center"
+      },
+      {
+        id: "description",
+        title: "Descrição",
+        description: "Descreva o problema, sugestão ou elogio. Máximo 1000 caracteres.",
+        position: "center"
+      },
+      {
+        id: "screenshots",
+        title: "Screenshots (opcional)",
+        description: "Adicione prints da tela para ilustrar o feedback (máximo 5 imagens).",
+        position: "center"
+      },
+      {
+        id: "history",
+        title: "Histórico",
+        description: "Veja seus feedbacks anteriores e as respostas da equipe nas abas Meus pedidos, Abertos e Resolvidos.",
+        position: "center"
+      }
+    ]
   }
 };
 
