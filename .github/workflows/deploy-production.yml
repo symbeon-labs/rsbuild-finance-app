@@ -1,4 +1,4 @@
-name: Deploy Production
+name: Verify Production Release
 
 on:
   push:
@@ -21,33 +21,21 @@ permissions:
   contents: read
 
 concurrency:
-  group: vercel-production
+  group: verify-production-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Build and deploy to Vercel Production
+  verify:
+    name: Validate code and confirm Vercel production release
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Validate deployment credentials
-        shell: bash
-        run: |
-          set -euo pipefail
-          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "::error::Required GitHub secret $name is not configured."
-              exit 1
-            fi
-          done
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -63,30 +51,63 @@ jobs:
           npm test
           npm run typecheck
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel production configuration
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build production artifacts
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-
-      - name: Deploy prebuilt artifacts to production
-        id: deploy
+      - name: Validate Vercel verification credentials
+        shell: bash
         run: |
           set -euo pipefail
-          DEPLOYMENT_URL="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
-          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
-          echo "Production deployment created: $DEPLOYMENT_URL"
+          for name in VERCEL_TOKEN VERCEL_PROJECT_ID; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Required GitHub secret $name is not configured."
+              exit 1
+            fi
+          done
 
-      - name: Publish deployment summary
-        if: success()
+      - name: Confirm native Vercel Git deployment for this commit
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          {
-            echo "## RSBUILD Production Deployment"
-            echo ""
-            echo "- Commit: `$GITHUB_SHA`"
-            echo "- Branch: `$GITHUB_REF_NAME`"
-            echo "- Deployment: `${{ steps.deploy.outputs.deployment_url }}`"
-          } >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          API_URL="https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=production&limit=20"
+          for attempt in $(seq 1 30); do
+            RESPONSE="$(curl --silent --show-error --fail \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Accept: application/json" \
+              "${API_URL}")"
+            MATCH="$(printf '%s' "$RESPONSE" | jq -c --arg sha "$COMMIT_SHA" '
+              [.deployments[]?
+                | select(.meta.githubCommitSha == $sha and .target == "production")]
+              | sort_by(.createdAt // .created // 0)
+              | last // empty
+            ')"
+            if [[ -n "$MATCH" ]]; then
+              STATE="$(printf '%s' "$MATCH" | jq -r '.readyState // .state // "UNKNOWN"')"
+              URL="$(printf '%s' "$MATCH" | jq -r '.url // empty')"
+              case "$STATE" in
+                READY)
+                  echo "Verified Vercel production deployment for $COMMIT_SHA: https://$URL"
+                  {
+                    echo "## RSBUILD Production Release Verified"
+                    echo ""
+                    echo "- Commit: `$COMMIT_SHA`"
+                    echo "- Deployment: https://$URL"
+                    echo "- Source: native Vercel Git integration"
+                    echo "- Tests and typecheck: passed"
+                  } >> "$GITHUB_STEP_SUMMARY"
+                  exit 0
+                  ;;
+                ERROR|CANCELED|BLOCKED)
+                  echo "::error::Vercel production deployment for $COMMIT_SHA finished with state $STATE."
+                  exit 1
+                  ;;
+                *)
+                  echo "Deployment found with state $STATE; waiting for READY (attempt $attempt/30)."
+                  ;;
+              esac
+            else
+              echo "Vercel has not registered a production deployment for $COMMIT_SHA yet (attempt $attempt/30)."
+            fi
+            sleep 10
+          done
+          echo "::error::No READY Vercel production deployment was found for commit $COMMIT_SHA within five minutes."
+          exit 1

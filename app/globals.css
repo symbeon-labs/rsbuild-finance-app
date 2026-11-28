@@ -7703,6 +7703,296 @@ html:has(.inst-page) {
   .dre-governance-card > strong { font-size: 23px; }
 }
 
+
+/* RSBUILD editorial refinement — bulk operations and governance synthesis */
+.bulk-operations-page .bulk-table-wrap {
+  border-color: var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(36, 28, 23, .045);
+}
+.bulk-operations-page .bulk-table-wrap .data-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 820px;
+}
+.bulk-operations-page .bulk-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 14px 13px;
+  background: #F3EEE8;
+  color: #75665D;
+  border-bottom: 1px solid #E3D8CE;
+  font-family: var(--font-brand);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+[data-theme="dark"] .bulk-operations-page .bulk-table-wrap thead th {
+  background: #292522;
+  color: #C8B8AC;
+  border-bottom-color: #49413B;
+}
+.bulk-operations-page .bulk-table-wrap tbody tr {
+  transition: background .15s ease;
+}
+.bulk-operations-page .bulk-table-wrap tbody tr:hover {
+  background: rgba(181, 88, 60, .045);
+}
+.bulk-operations-page .bulk-table-wrap tbody td {
+  padding: 13px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12px;
+  vertical-align: middle;
+}
+.bulk-operations-page .bulk-table-wrap tbody tr:last-child td { border-bottom: 0; }
+.bulk-operations-page .bulk-check-cell { width: 42px; text-align: center; }
+.bulk-operations-page .bulk-check-cell input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--rsbuild-terracotta);
+  cursor: pointer;
+}
+.bulk-operations-page .bulk-date-cell {
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  font-variant-numeric: tabular-nums;
+}
+.bulk-operations-page .bulk-description-cell {
+  color: var(--ink) !important;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.bulk-operations-page .bulk-origin {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+.bulk-operations-page .bulk-direction,
+.bulk-operations-page .bulk-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 25px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .01em;
+}
+.bulk-operations-page .bulk-direction--incoming {
+  color: #16734A;
+  background: #E8F5ED;
+  border: 1px solid #C9E7D4;
+}
+.bulk-operations-page .bulk-direction--outgoing {
+  color: #A8423B;
+  background: #FBECEA;
+  border: 1px solid #F0D0CC;
+}
+[data-theme="dark"] .bulk-operations-page .bulk-direction--incoming {
+  color: #86D6A8; background: rgba(22, 115, 74, .2); border-color: rgba(82, 178, 125, .35);
+}
+[data-theme="dark"] .bulk-operations-page .bulk-direction--outgoing {
+  color: #F0A19A; background: rgba(168, 66, 59, .2); border-color: rgba(220, 112, 102, .35);
+}
+.bulk-operations-page .bulk-value-cell {
+  text-align: right;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.bulk-operations-page .bulk-value-cell--incoming { color: #16734A !important; }
+.bulk-operations-page .bulk-value-cell--outgoing { color: #A8423B !important; }
+[data-theme="dark"] .bulk-operations-page .bulk-value-cell--incoming { color: #86D6A8 !important; }
+[data-theme="dark"] .bulk-operations-page .bulk-value-cell--outgoing { color: #F0A19A !important; }
+.bulk-operations-page .bulk-status--pending {
+  color: #9A5A12; background: #FFF3DD; border: 1px solid #F2D9AB;
+}
+.bulk-operations-page .bulk-status--settled {
+  color: #16734A; background: #E8F5ED; border: 1px solid #C9E7D4;
+}
+.bulk-operations-page .bulk-status--neutral {
+  color: var(--muted); background: var(--surface-raised); border: 1px solid var(--line);
+}
+[data-theme="dark"] .bulk-operations-page .bulk-status--pending {
+  color: #F1C27D; background: rgba(154, 90, 18, .2); border-color: rgba(209, 153, 76, .35);
+}
+[data-theme="dark"] .bulk-operations-page .bulk-status--settled {
+  color: #86D6A8; background: rgba(22, 115, 74, .2); border-color: rgba(82, 178, 125, .35);
+}
+.bulk-operations-page .bulk-selection-total {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  color: var(--rsbuild-terracotta);
+  background: var(--rsbuild-terracotta-soft);
+  font-size: 11px;
+  font-weight: 750;
+}
+@media (max-width: 760px) {
+  .bulk-operations-page .bulk-table-wrap .data-table { min-width: 820px; }
+  .bulk-operations-page .bulk-table-wrap tbody td { padding: 11px 10px; }
+}
+
+/* Torre de Governança — hierarquia editorial e leitura executiva */
+.torre-governance-summary {
+  padding: clamp(20px, 2.5vw, 30px) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 32px rgba(36, 28, 23, .055);
+}
+.torre-governance-heading {
+  align-items: flex-start !important;
+  gap: 20px;
+  margin-bottom: 20px !important;
+}
+.torre-governance-title-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.torre-governance-spark {
+  color: var(--rsbuild-terracotta);
+  font-size: 24px;
+  line-height: 1;
+}
+.torre-governance-title-row h2 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-brand);
+  font-size: clamp(23px, 2.2vw, 29px);
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.12;
+}
+.torre-governance-deck {
+  max-width: 680px;
+  margin: 9px 0 0 !important;
+  color: var(--muted);
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+}
+.torre-governance-status {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  padding: 7px 11px !important;
+  border-radius: 999px !important;
+  font-size: 9px !important;
+  letter-spacing: .06em;
+}
+.torre-governance-narrative {
+  position: relative;
+  margin: 0 0 23px;
+  padding: 22px 24px 23px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rsbuild-terracotta);
+  border-radius: 0 12px 12px 0;
+  background: linear-gradient(110deg, var(--surface-raised), var(--surface));
+}
+.torre-governance-narrative-label,
+.torre-recommendations-heading > span {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--rsbuild-terracotta);
+  font-family: var(--font-brand);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .14em;
+}
+.torre-governance-narrative p {
+  max-width: 1120px;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(15px, 1.35vw, 18px);
+  font-weight: 520;
+  line-height: 1.75;
+  letter-spacing: -.012em;
+}
+.torre-recommendations-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0 13px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--line);
+}
+.torre-recommendations-heading > span { margin: 0; }
+.torre-recommendations-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-brand);
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -.025em;
+}
+.torre-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 13px;
+}
+.torre-recommendation-card {
+  min-width: 0;
+  padding: 17px 17px 16px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--recommendation-accent, var(--rsbuild-terracotta));
+  border-radius: 10px;
+  background: var(--surface);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.torre-recommendation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.torre-recommendation-card:nth-child(1) { --recommendation-accent: var(--red); }
+.torre-recommendation-card:nth-child(2) { --recommendation-accent: var(--rsbuild-terracotta); }
+.torre-recommendation-card:nth-child(3) { --recommendation-accent: #3974C6; }
+.torre-recommendation-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+.torre-recommendation-card-head strong {
+  color: var(--ink);
+  font-size: 14px !important;
+  line-height: 1.35;
+}
+.torre-recommendation-card-head span {
+  flex: 0 0 auto;
+  padding: 4px 8px !important;
+  border-radius: 999px !important;
+  font-size: 9px !important;
+  letter-spacing: .04em;
+}
+.torre-recommendation-card > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px !important;
+  line-height: 1.65 !important;
+}
+@media (max-width: 700px) {
+  .torre-governance-heading { flex-direction: column; gap: 12px; }
+  .torre-governance-title-row h2 { font-size: 23px; }
+  .torre-governance-narrative { padding: 17px; }
+  .torre-governance-narrative p { font-size: 15px; }
+  .torre-recommendations-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .torre-recommendations-grid { grid-template-columns: minmax(0, 1fr); }
+  .torre-recommendation-card-head { flex-wrap: wrap; }
+}
+
 /* ─── Guide Balloons ─────────────────────────────────────────────────────── */
 
 .guide-balloon {

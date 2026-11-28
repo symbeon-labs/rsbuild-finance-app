@@ -8,7 +8,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, feat/finance-payables-foundation]
+    branches: [main, feat/finance-payables-foundation, feat/controlled-agent-integrations-v1]
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "app/**"
