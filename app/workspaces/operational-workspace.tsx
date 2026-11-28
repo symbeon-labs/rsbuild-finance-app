@@ -72,6 +72,7 @@ import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
+import { AIPetButton } from "@/app/components/ai/ai-pet-button";
  
 function formatOperationalNotice(message: string): string {
   if (message.includes("capability_entitlement_unavailable")) {
@@ -1338,6 +1339,9 @@ export default function OperationalWorkspace({
         onClose={() => setIsTourOpen(false)}
         onNavigateToSection={(targetSection) => navigateTo(targetSection)}
       />
+
+      {/* AI Assistant Pet */}
+      <AIPetButton organizationId={organizationId} />
     </main>
   );
 }

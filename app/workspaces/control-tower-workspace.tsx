@@ -27,6 +27,7 @@ import { LeadInboxView } from "@/app/components/admin/lead-inbox-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
 import { HoldingWorkspaceManagementView, type HoldingWorkspaceOrganization } from "@/app/components/executive/holding-workspace-management-view";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
+import { AIPetButton } from "@/app/components/ai/ai-pet-button";
 
 type ControlTowerWorkspaceProps = {
   organizationId: string;
@@ -405,6 +406,9 @@ export default function ControlTowerWorkspace({
         onClose={() => setIsTourOpen(false)}
         onNavigateToSection={(targetSection) => navigateTo(targetSection)}
       />
+
+      {/* AI Assistant Pet */}
+      <AIPetButton organizationId={organizationId} />
     </main>
   );
 }
