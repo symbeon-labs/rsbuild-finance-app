@@ -212,39 +212,7 @@ export function Topbar({
           </button>
         )}
 
-        {/* Botão de Feedback */}
-        <button
-          type="button"
-          className="feedback-btn"
-          onClick={() => setIsFeedbackOpen(true)}
-          title="Feedback e Sugestões"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "6px",
-            minHeight: "38px",
-            padding: "0 13px",
-            marginLeft: "10px",
-            borderRadius: "9px",
-            border: "1px solid var(--line)",
-            background: "var(--bg)",
-            color: "var(--muted)",
-            cursor: "pointer",
-            fontSize: "11px",
-            fontWeight: 600,
-            transition: "all 160ms ease"
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-.7 5.4 8.8 8.8 0 0 1 3.8.9c.1 0 .2.1.2.2 3-.1 0-.3-.1-.5-.2-.7a8.8 8.8 0 0 1-.5-3.8 8.5 8.5 0 0 1 .9-3.8 8.8 8.8 0 0 1 .5 3.8 8.5 8.5 0 0 1-.7 5.4" />
-            <path d="M9 11h6" />
-            <path d="M12 14v-2" />
-          </svg>
-          <span>Feedback</span>
-        </button>
-
-        {/* Botão de Guias */}
+        {/* Botão de Ajuda (Guias + Feedback) */}
         <button
           type="button"
           className="guides-btn"
@@ -255,7 +223,7 @@ export function Topbar({
               setIsGuideMenuOpen(true);
             }
           }}
-          title="Guias de ajuda"
+          title="Ajuda e Feedback"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -282,7 +250,7 @@ export function Topbar({
           <span>Ajuda</span>
         </button>
 
-        {/* Menu de Guias */}
+        {/* Menu de Ajuda */}
         {isGuideMenuOpen && (
           <div
             className="guide-menu"
@@ -302,7 +270,7 @@ export function Topbar({
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ marginBottom: "12px", paddingBottom: "8px", borderBottom: "1px solid var(--line)" }}>
-              <strong style={{ fontSize: "13px" }}>Guias de Ajuda</strong>
+              <strong style={{ fontSize: "13px" }}>Ajuda e Suporte</strong>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <button
@@ -319,6 +287,24 @@ export function Topbar({
                 style={{
                   padding: "8px 12px",
                   background: "transparent",
+                  border: "1px solid var(--line)",
+                  borderRadius: "6px",
+                  color: "var(--ink)",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  textAlign: "left"
+                }}
+              >
+                Reiniciar guias de ajuda
+              </button>
+              <button
+                onClick={() => {
+                  setIsGuideMenuOpen(false);
+                  setIsFeedbackOpen(true);
+                }}
+                style={{
+                  padding: "8px 12px",
+                  background: "rgba(181, 88, 60, 0.1)",
                   border: "1px solid var(--rsbuild-terracotta)",
                   borderRadius: "6px",
                   color: "var(--rsbuild-terracotta)",
@@ -327,7 +313,7 @@ export function Topbar({
                   textAlign: "left"
                 }}
               >
-                Reiniciar todos os guias
+                Feedback e Sugestões
               </button>
               <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>
                 {allGuides.length} guias disponíveis
