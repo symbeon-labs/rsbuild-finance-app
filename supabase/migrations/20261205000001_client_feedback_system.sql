@@ -59,21 +59,22 @@ create policy "Organization members can read feedback"
       and m.user_id = (select auth.uid())
   ));
 
--- Users can update their own feedback (status change by admins)
+-- Users can update their own feedback (status change by RSBUILD team only)
 create policy "Users can update their own feedback"
   on public.client_feedback for update to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
--- Admins can update any feedback (status, response)
-create policy "Admins can update any feedback"
+-- RSBUILD platform admins can update any feedback (status, response)
+-- This is for the development team only, not workspace admins
+create policy "RSBUILD admins can update any feedback"
   on public.client_feedback for update to authenticated
-  using (exists (
-    select 1 from public.organization_memberships m
-    where m.organization_id = client_feedback.organization_id
-      and m.user_id = (select auth.uid())
-      and m.role in ('owner', 'admin')
-  ));
+  using (
+    exists (
+      select 1 from public.platform_administrators pa
+      where pa.user_id = (select auth.uid())
+    )
+  );
 
 -- Screenshots RLS
 create policy "Organization members can read screenshots"

@@ -200,7 +200,8 @@ export type NavSection =
   | "projetos"
   | "mensagens"
   | "agentes"
-  | "sandbox";
+  | "sandbox"
+  | "feedback";
 
 export interface NavItem {
   id: NavSection;
@@ -239,6 +240,9 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   { id: "agentes", label: "Agentes & IA", icon: "integration", module: "audit" },
   { id: "torre-controle", label: "Governança & Controle", icon: "control-tower", module: "audit" },
   { id: "acessos", label: "Acessos & Identidades", icon: "users", module: "audit" },
+
+  // 6. Feedback & Sugestões (RSBUILD Team Only)
+  { id: "feedback", label: "Feedback & Sugestões", icon: "document", module: "all" },
 ];
 
 export const INITIAL_SAMPLE_TITLES: ReceivableTitle[] = [

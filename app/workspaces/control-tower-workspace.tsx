@@ -30,6 +30,7 @@ import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 import { AIPetButton } from "@/app/components/ai/ai-pet-button";
 import { FeedbackModal } from "@/app/components/feedback/feedback-modal";
 import { SuggestionRewardsBadge } from "@/app/components/feedback/suggestion-rewards-badge";
+import { FeedbackAdminPanel } from "@/app/components/feedback/feedback-admin-panel";
 
 type ControlTowerWorkspaceProps = {
   organizationId: string;
@@ -347,6 +348,7 @@ export default function ControlTowerWorkspace({
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
           {!isProjectCollaborator && section === "mensagens" && <LeadInboxView />}
+          {!isProjectCollaborator && section === "feedback" && <FeedbackAdminPanel />}
           {!isProjectCollaborator && section === "visao-geral" && (
             <HoldingOverviewCockpit
               onNavigateToTab={navigateTo}
