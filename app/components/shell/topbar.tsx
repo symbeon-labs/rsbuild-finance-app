@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ALL_NAV_ITEMS, NavSection } from "@/app/types/workspace";
 import { getRoleMetadata } from "@/lib/permissions";
 import { RsbuildIcon } from "@/app/components/rsbuild-icons";
 import { FeedbackModal } from "@/app/components/feedback/feedback-modal";
+import { getAllGuides, type GuideConfig } from "@/lib/guides";
 
 interface TopbarProps {
   companyName: string;
@@ -48,6 +49,20 @@ export function Topbar({
   const currentLabel = ALL_NAV_ITEMS.find((item) => item.id === section)?.label || "Visão Geral";
   const roleMeta = getRoleMetadata(userRole);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false);
+  const allGuides = getAllGuides();
+
+  // Close guide menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isGuideMenuOpen && !target.closest(".guides-btn") && !target.closest(".guide-menu")) {
+        setIsGuideMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [isGuideMenuOpen]);
 
   const displayUserText = userFullName ? userFullName : userEmail;
   const userFullTitle = [userFullName, userRoleTitle, userEmail, roleMeta.description].filter(Boolean).join(" · ");
@@ -57,7 +72,7 @@ export function Topbar({
       <div className="breadcrumb">
         <strong>{companyName}</strong> <span>/</span> {currentLabel}
       </div>
-      <div className="topbar-right">
+      <div className="topbar-right" style={{ position: "relative" }}>
         {/* Badge de Nível de Alçada do Integrante */}
         {userRole && (
           <div
@@ -228,6 +243,98 @@ export function Topbar({
           </svg>
           <span>Feedback</span>
         </button>
+
+        {/* Botão de Guias */}
+        <button
+          type="button"
+          className="guides-btn"
+          onClick={() => {
+            if (isGuideMenuOpen) {
+              setIsGuideMenuOpen(false);
+            } else {
+              setIsGuideMenuOpen(true);
+            }
+          }}
+          title="Guias de ajuda"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            minHeight: "38px",
+            padding: "0 13px",
+            marginLeft: "10px",
+            borderRadius: "9px",
+            border: "1px solid var(--line)",
+            background: "var(--bg)",
+            color: "var(--muted)",
+            cursor: "pointer",
+            fontSize: "11px",
+            fontWeight: 600,
+            transition: "all 160ms ease"
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span>Ajuda</span>
+        </button>
+
+        {/* Menu de Guias */}
+        {isGuideMenuOpen && (
+          <div
+            className="guide-menu"
+            style={{
+              position: "absolute",
+              top: "100%",
+              right: "0",
+              marginTop: "8px",
+              background: "var(--surface)",
+              border: "1px solid var(--line)",
+              borderRadius: "8px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+              zIndex: 1001,
+              minWidth: "280px",
+              padding: "12px"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ marginBottom: "12px", paddingBottom: "8px", borderBottom: "1px solid var(--line)" }}>
+              <strong style={{ fontSize: "13px" }}>Guias de Ajuda</strong>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <button
+                onClick={() => {
+                  // Clear only guide-related localStorage keys
+                  Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith("guide-seen-")) {
+                      localStorage.removeItem(key);
+                    }
+                  });
+                  setIsGuideMenuOpen(false);
+                  window.location.reload();
+                }}
+                style={{
+                  padding: "8px 12px",
+                  background: "transparent",
+                  border: "1px solid var(--rsbuild-terracotta)",
+                  borderRadius: "6px",
+                  color: "var(--rsbuild-terracotta)",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  textAlign: "left"
+                }}
+              >
+                Reiniciar todos os guias
+              </button>
+              <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>
+                {allGuides.length} guias disponíveis
+              </div>
+            </div>
+          </div>
+        )}
 
         <button
           type="button"

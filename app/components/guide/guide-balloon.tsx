@@ -129,39 +129,6 @@ export function GuideBalloon({ guideId, steps, onComplete, autoStart = true }: G
     setHasSeen(false);
   };
 
-  if (!isVisible && hasSeen) {
-    return (
-      <button
-        className="guide-restart-button"
-        onClick={handleRestart}
-        title="Reiniciar guia"
-        style={{
-          position: "fixed",
-          bottom: "20px",
-          right: "20px",
-          width: "40px",
-          height: "40px",
-          borderRadius: "50%",
-          background: "var(--rsbuild-terracotta)",
-          color: "white",
-          border: "none",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "18px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          zIndex: 1000,
-          transition: "transform 0.2s"
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.1)"}
-        onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-      >
-        ?
-      </button>
-    );
-  }
-
   if (!isVisible) return null;
 
   const step = steps[currentStep];
