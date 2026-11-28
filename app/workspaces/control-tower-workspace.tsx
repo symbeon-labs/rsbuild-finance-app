@@ -29,6 +29,10 @@ import { LeadInboxView } from "@/app/components/admin/lead-inbox-view";
 import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overview-cockpit";
 import { HoldingWorkspaceManagementView, type HoldingWorkspaceOrganization } from "@/app/components/executive/holding-workspace-management-view";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
+import { AIPetButton } from "@/app/components/ai/ai-pet-button";
+import { FeedbackModal } from "@/app/components/feedback/feedback-modal";
+import { SuggestionRewardsBadge } from "@/app/components/feedback/suggestion-rewards-badge";
+import { FeedbackAdminPanel } from "@/app/components/feedback/feedback-admin-panel";
 
 type ControlTowerWorkspaceProps = {
   organizationId: string;
@@ -105,6 +109,7 @@ export default function ControlTowerWorkspace({
   const [currentUserEmail] = useState<string>(userEmail);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const [theme, setTheme] = useState<"sand" | "dark">(preferredTheme || "sand");
 
@@ -314,6 +319,7 @@ export default function ControlTowerWorkspace({
           onResetSession={() => {}}
           onOpenConfig={() => setIsConfigOpen(true)}
           onOpenTour={() => setIsTourOpen(true)}
+          organizationId={organizationId}
         />
         <div className="content">
           {!isProjectCollaborator && <div className="inline-note" role="note">
@@ -344,6 +350,7 @@ export default function ControlTowerWorkspace({
           )}
           {section === "projetos" && canViewProjectPortfolio && <ProjectPortfolioView canManage={["owner", "admin", "operator"].includes(membershipRole)} />}
           {!isProjectCollaborator && section === "mensagens" && <LeadInboxView />}
+          {!isProjectCollaborator && section === "feedback" && <FeedbackAdminPanel />}
           {!isProjectCollaborator && section === "visao-geral" && (
             <HoldingOverviewCockpit
               onNavigateToTab={navigateTo}
@@ -410,6 +417,31 @@ export default function ControlTowerWorkspace({
         onClose={() => setIsTourOpen(false)}
         onNavigateToSection={(targetSection) => navigateTo(targetSection)}
       />
+
+      {/* AI Assistant Pet */}
+      <AIPetButton
+        organizationId={organizationId}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
+        onOpenGuides={() => {
+          // Clear guide-seen keys and reload
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith("guide-seen-")) {
+              localStorage.removeItem(key);
+            }
+          });
+          window.location.reload();
+        }}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        organizationId={organizationId}
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+      />
+
+      {/* Suggestion Rewards Badge */}
+      <SuggestionRewardsBadge organizationId={organizationId} />
     </main>
   );
 }

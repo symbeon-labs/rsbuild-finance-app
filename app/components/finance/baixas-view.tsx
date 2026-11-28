@@ -6,6 +6,8 @@ import { ReceivableTitle, ReconciliationMatch } from "@/lib/reconciliation";
 import { DeliveryProof } from "@/lib/delivery";
 import { canApproveBatchSettlement, getRoleMetadata } from "@/lib/permissions";
 import { Metric, EmptyState } from "./common";
+import { GuideBalloon } from "@/app/components/guide/guide-balloon";
+import { getGuide } from "@/lib/guides";
 
 interface BaixasViewProps {
   titles: ReceivableTitle[];
@@ -537,6 +539,15 @@ export function BaixasView({
       <div className="inline-note" style={{ marginTop: "16px" }}>
         <strong>Governança & Alçadas:</strong> a exportação gera um lote em formato CSV compatível com o Omie para conferência e importação assistida. Nenhuma baixa direta é disparada no ERP sem validação expressa da Diretoria.
       </div>
+
+      {/* Guide Balloon */}
+      {getGuide("baixas") && (
+        <GuideBalloon
+          guideId="baixas"
+          steps={getGuide("baixas")!.steps}
+          autoStart={true}
+        />
+      )}
     </>
   );
 }

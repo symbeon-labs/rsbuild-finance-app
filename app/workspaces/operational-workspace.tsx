@@ -72,6 +72,9 @@ import { PedidosHaView } from "@/app/components/logistics/pedidos-ha-view";
 import { TorreControleView } from "@/app/components/executive/torre-controle-view";
 import { AuditTrailView } from "@/app/components/admin/audit-trail-view";
 import { OrganizationAdminPanel } from "@/app/components/admin/organization-admin-panel";
+import { AIPetButton } from "@/app/components/ai/ai-pet-button";
+import { FeedbackModal } from "@/app/components/feedback/feedback-modal";
+import { SuggestionRewardsBadge } from "@/app/components/feedback/suggestion-rewards-badge";
  
 function formatOperationalNotice(message: string): string {
   if (message.includes("capability_entitlement_unavailable")) {
@@ -192,6 +195,8 @@ export default function OperationalWorkspace({
   const [period, setPeriod] = useState<PeriodOption>("all");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false);
 
   function handlePeriodChange(nextPeriod: string, start?: string, end?: string) {
     const p = nextPeriod as PeriodOption;
@@ -1055,6 +1060,7 @@ export default function OperationalWorkspace({
           onResetSession={resetSession}
           onOpenConfig={() => setIsConfigOpen(true)}
           onOpenTour={() => setIsTourOpen(true)}
+          organizationId={organizationId}
         />
         {/* Faixa de Retorno à Holding RSBUILD */}
         <div
@@ -1193,6 +1199,7 @@ export default function OperationalWorkspace({
               )}
               <ImportacoesView
                 organizationId={organizationId}
+                canWrite={["owner", "admin", "operator"].includes(membershipRole)}
                 fileName={fileName}
                 detectedColumns={detectedColumns}
                 pendingImport={pendingImport}
@@ -1336,6 +1343,31 @@ export default function OperationalWorkspace({
         onClose={() => setIsTourOpen(false)}
         onNavigateToSection={(targetSection) => navigateTo(targetSection)}
       />
+
+      {/* AI Assistant Pet */}
+      <AIPetButton
+        organizationId={organizationId}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
+        onOpenGuides={() => {
+          // Clear guide-seen keys and reload
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith("guide-seen-")) {
+              localStorage.removeItem(key);
+            }
+          });
+          window.location.reload();
+        }}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        organizationId={organizationId}
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+      />
+
+      {/* Suggestion Rewards Badge */}
+      <SuggestionRewardsBadge organizationId={organizationId} />
     </main>
   );
 }

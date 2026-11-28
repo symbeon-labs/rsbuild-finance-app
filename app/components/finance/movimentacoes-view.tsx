@@ -7,6 +7,8 @@ import { generateFinancialRecordsExcel, downloadExcelFile } from "@/lib/export";
 import { ExportMenu, type ExportFormat } from "./export-menu";
 import { generateErpCsv, type ErpFormat } from "@/lib/erp-export";
 import { ErpExportSettings } from "./erp-export-settings";
+import { GuideBalloon } from "@/app/components/guide/guide-balloon";
+import { getGuide } from "@/lib/guides";
 
 interface MovimentacoesViewProps {
   records: FinancialRecord[];
@@ -215,6 +217,15 @@ export function MovimentacoesView({
             <ErpExportSettings organizationId={organizationId} onClose={() => setShowErpSettings(false)} />
           </div>
         </div>
+      )}
+
+      {/* Guide Balloon */}
+      {getGuide("movimentacoes") && (
+        <GuideBalloon
+          guideId="movimentacoes"
+          steps={getGuide("movimentacoes")!.steps}
+          autoStart={true}
+        />
       )}
     </>
   );
