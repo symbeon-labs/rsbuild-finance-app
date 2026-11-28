@@ -1,295 +1,256 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 interface AIPetButtonProps {
   organizationId?: string;
+  onOpenFeedback?: () => void;
+  onOpenGuides?: () => void;
 }
 
-export function AIPetButton({ organizationId }: AIPetButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
-    { role: "assistant", content: "Olá! Sou seu assistente RSBUILD. Como posso ajudar você hoje?" }
-  ]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+export function AIPetButton({ organizationId, onOpenFeedback, onOpenGuides }: AIPetButtonProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [eyeBlink, setEyeBlink] = useState(false);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Eye blinking animation
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isOpen]);
+    const interval = setInterval(() => {
+      setEyeBlink(true);
+      setTimeout(() => setEyeBlink(false), 150);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage = input.trim();
-    setInput("");
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
-    setIsTyping(true);
-
-    // Placeholder for AI integration
-    // TODO: Integrate with OpenAI/Anthropic API
-    setTimeout(() => {
-      const responses = [
-        "Entendi sua pergunta! Posso ajudar com isso.",
-        "Ótima pergunta. Vou verificar no sistema.",
-        "Isso faz parte do módulo financeiro. Quer que eu explique mais?",
-        "Você pode encontrar essa opção no menu lateral.",
-        "Estou aqui para ajudar! O que mais você precisa saber?"
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      setMessages(prev => [...prev, { role: "assistant", content: randomResponse }]);
-      setIsTyping(false);
-    }, 1000);
+  const handleClick = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const handleFeedback = () => {
+    setIsMenuOpen(false);
+    onOpenFeedback?.();
+  };
+
+  const handleGuides = () => {
+    setIsMenuOpen(false);
+    onOpenGuides?.();
   };
 
   return (
     <>
-      {/* Pet Button */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="ai-pet-button"
+      {/* Pet Container */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          zIndex: 1000
+        }}
+      >
+        {/* Pet Avatar */}
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={handleClick}
           style={{
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            width: "56px",
-            height: "56px",
+            width: "64px",
+            height: "64px",
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #B5583C 0%, #E8A87C 100%)",
+            background: "linear-gradient(135deg, #2B2C2E 0%, #614943 100%)",
             border: "3px solid var(--surface)",
-            boxShadow: "0 8px 24px rgba(181, 88, 60, 0.4)",
+            boxShadow: isHovered 
+              ? "0 12px 32px rgba(181, 88, 60, 0.5)" 
+              : "0 8px 24px rgba(0,0,0,0.3)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "28px",
-            zIndex: 1000,
-            transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-            animation: "float 3s ease-in-out infinite"
+            transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            transform: isHovered ? "scale(1.1)" : "scale(1)",
+            position: "relative"
           }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}
-          onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1) rotate(0deg)"}
-          title="Assistente RSBUILD"
         >
-          🤖
-        </button>
-      )}
+          {/* Eyes */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div
+              style={{
+                width: "8px",
+                height: eyeBlink ? "2px" : "8px",
+                borderRadius: "50%",
+                background: isHovered ? "#FFD700" : "#fff",
+                transition: "all 0.15s ease",
+                boxShadow: isHovered ? "0 0 8px #FFD700" : "none"
+              }}
+            />
+            <div
+              style={{
+                width: "8px",
+                height: eyeBlink ? "2px" : "8px",
+                borderRadius: "50%",
+                background: isHovered ? "#FFD700" : "#fff",
+                transition: "all 0.15s ease",
+                boxShadow: isHovered ? "0 0 8px #FFD700" : "none"
+              }}
+            />
+          </div>
 
-      {/* Chat Window */}
-      {isOpen && (
-        <div
-          className="ai-pet-chat"
-          style={{
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            width: "380px",
-            maxHeight: "500px",
-            background: "var(--surface)",
-            border: "1px solid var(--line)",
-            borderRadius: "16px",
-            boxShadow: "0 12px 48px rgba(0,0,0,0.2)",
-            zIndex: 1000,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden"
-          }}
-        >
-          {/* Header */}
+          {/* Mouth (smile when hovered) */}
           <div
             style={{
-              padding: "16px",
-              background: "linear-gradient(135deg, #B5583C 0%, #E8A87C 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between"
+              position: "absolute",
+              bottom: "14px",
+              width: "16px",
+              height: "8px",
+              borderBottom: isHovered ? "2px solid #fff" : "2px solid #D9CCB5",
+              borderRadius: "0 0 8px 8px",
+              transition: "all 0.3s ease"
+            }}
+          />
+        </div>
+
+        {/* Speech Bubble */}
+        {isHovered && !isMenuOpen && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "70px",
+              right: "0",
+              background: "var(--surface)",
+              padding: "8px 12px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              fontSize: "12px",
+              color: "var(--ink)",
+              whiteSpace: "nowrap",
+              animation: "fadeIn 0.2s ease"
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "24px" }}>🤖</span>
-              <div>
-                <strong style={{ color: "white", fontSize: "14px" }}>Assistente RSBUILD</strong>
-                <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "11px" }}>
-                  {isTyping ? "Digitando..." : "Online"}
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
+            Como posso ajudar?
+            <div
               style={{
-                background: "rgba(255,255,255,0.2)",
+                position: "absolute",
+                bottom: "-6px",
+                right: "20px",
+                width: "0",
+                height: "0",
+                borderLeft: "6px solid transparent",
+                borderRight: "6px solid transparent",
+                borderTop: "6px solid var(--surface)"
+              }}
+            />
+          </div>
+        )}
+
+        {/* Menu */}
+        {isMenuOpen && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "75px",
+              right: "0",
+              background: "var(--surface)",
+              border: "1px solid var(--line)",
+              borderRadius: "12px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+              minWidth: "220px",
+              overflow: "hidden",
+              animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"
+            }}
+          >
+            <div
+              style={{
+                padding: "12px 16px",
+                background: "linear-gradient(135deg, rgba(181, 88, 60, 0.1) 0%, rgba(181, 88, 60, 0.05) 100%)",
+                borderBottom: "1px solid var(--line)",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--ink)"
+              }}
+            >
+              Como posso ajudar?
+            </div>
+
+            <button
+              onClick={handleGuides}
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                background: "transparent",
                 border: "none",
-                color: "white",
-                width: "28px",
-                height: "28px",
-                borderRadius: "50%",
+                textAlign: "left",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                fontSize: "16px"
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Messages */}
-          <div
-            style={{
-              flex: 1,
-              padding: "16px",
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              background: "var(--bg)"
-            }}
-          >
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  flexDirection: msg.role === "user" ? "row-reverse" : "row",
-                  gap: "8px"
-                }}
-              >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "50%",
-                    background: msg.role === "user" ? "var(--line)" : "linear-gradient(135deg, #B5583C 0%, #E8A87C 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "16px",
-                    flexShrink: 0
-                  }}
-                >
-                  {msg.role === "user" ? "👤" : "🤖"}
-                </div>
-                <div
-                  style={{
-                    maxWidth: "70%",
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    background: msg.role === "user" ? "var(--rsbuild-terracotta-soft, rgba(181, 88, 60, 0.1))" : "var(--surface)",
-                    color: "var(--ink)",
-                    fontSize: "13px",
-                    lineHeight: "1.4"
-                  }}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {isTyping && (
-              <div style={{ display: "flex", gap: "8px" }}>
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #B5583C 0%, #E8A87C 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "16px"
-                  }}
-                >
-                  🤖
-                </div>
-                <div
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    background: "var(--surface)",
-                    color: "var(--muted)",
-                    fontSize: "13px"
-                  }}
-                >
-                  <span style={{ animation: "pulse 1.5s infinite" }}>...</span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <div
-            style={{
-              padding: "12px",
-              background: "var(--surface)",
-              borderTop: "1px solid var(--line)",
-              display: "flex",
-              gap: "8px"
-            }}
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua mensagem..."
-              style={{
-                flex: 1,
-                padding: "10px 14px",
-                borderRadius: "20px",
-                border: "1px solid var(--line)",
-                background: "var(--bg)",
-                color: "var(--ink)",
+                gap: "10px",
                 fontSize: "13px",
-                outline: "none"
+                color: "var(--ink)",
+                transition: "background 0.2s"
               }}
-            />
+              onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ fontSize: "18px" }}>📖</span>
+              <div>
+                <div>Guias de Ajuda</div>
+                <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
+                  Aprenda a usar cada funcionalidade
+                </div>
+              </div>
+            </button>
+
             <button
-              onClick={handleSend}
-              disabled={!input.trim() || isTyping}
+              onClick={handleFeedback}
               style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #B5583C 0%, #E8A87C 100%)",
+                width: "100%",
+                padding: "12px 16px",
+                background: "transparent",
                 border: "none",
-                color: "white",
-                cursor: input.trim() && !isTyping ? "pointer" : "not-allowed",
+                textAlign: "left",
+                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                fontSize: "16px",
-                opacity: input.trim() && !isTyping ? 1 : 0.5
+                gap: "10px",
+                fontSize: "13px",
+                color: "var(--ink)",
+                transition: "background 0.2s"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ fontSize: "18px" }}>💬</span>
+              <div>
+                <div>Feedback e Sugestões</div>
+                <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
+                  Conte-nos sua experiência
+                </div>
+              </div>
+            </button>
+
+            <div
+              style={{
+                padding: "12px 16px",
+                borderTop: "1px solid var(--line)",
+                background: "rgba(181, 88, 60, 0.05)",
+                fontSize: "11px",
+                color: "var(--muted)",
+                textAlign: "center"
               }}
             >
-              ➤
-            </button>
+              Sua opinião ajuda a melhorar o RSBUILD
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* CSS Animations */}
       <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(5px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </>

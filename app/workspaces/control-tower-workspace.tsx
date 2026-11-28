@@ -28,6 +28,8 @@ import { HoldingOverviewCockpit } from "@/app/components/executive/holding-overv
 import { HoldingWorkspaceManagementView, type HoldingWorkspaceOrganization } from "@/app/components/executive/holding-workspace-management-view";
 import { ProductTourModal } from "@/app/components/shell/product-tour-modal";
 import { AIPetButton } from "@/app/components/ai/ai-pet-button";
+import { FeedbackModal } from "@/app/components/feedback/feedback-modal";
+import { SuggestionRewardsBadge } from "@/app/components/feedback/suggestion-rewards-badge";
 
 type ControlTowerWorkspaceProps = {
   organizationId: string;
@@ -104,6 +106,7 @@ export default function ControlTowerWorkspace({
   const [currentUserEmail] = useState<string>(userEmail);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const [theme, setTheme] = useState<"sand" | "dark">(preferredTheme || "sand");
 
@@ -408,7 +411,29 @@ export default function ControlTowerWorkspace({
       />
 
       {/* AI Assistant Pet */}
-      <AIPetButton organizationId={organizationId} />
+      <AIPetButton
+        organizationId={organizationId}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
+        onOpenGuides={() => {
+          // Clear guide-seen keys and reload
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith("guide-seen-")) {
+              localStorage.removeItem(key);
+            }
+          });
+          window.location.reload();
+        }}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        organizationId={organizationId}
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+      />
+
+      {/* Suggestion Rewards Badge */}
+      <SuggestionRewardsBadge organizationId={organizationId} />
     </main>
   );
 }
